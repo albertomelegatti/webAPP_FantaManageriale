@@ -1,4 +1,5 @@
-from flask import Flask, render_template
+import os
+from flask import Flask, render_template, send_from_directory
 
 app = Flask(__name__)
 
@@ -9,9 +10,10 @@ def home():
 @app.route("/scarica-regolamento")
 def scarica_regolamento():
     directory = os.path.join(app.root_path, "static")
-    filename = "Regolamento_Fantacalcio_Manageriale.pdf"
+    filename = "regolamento.pdf"
     return send_from_directory(directory, filename, as_attachment=True)
 
 if __name__ == "__main__":
     app.run(debug=True)
+
 
