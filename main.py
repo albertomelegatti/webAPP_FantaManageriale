@@ -14,6 +14,7 @@ def home():
 # Rotta per login admin
 @app.route("/login-admin", methods=["GET", "POST"])
 def login_admin():
+    return
     username = request.form.get("username")
     password = request.form.get("password")
 
