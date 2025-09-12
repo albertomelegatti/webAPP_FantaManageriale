@@ -3,72 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Login Admin - Fanta Manageriale</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #FAFAFA;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start; /* sposta verso l'alto */
-            padding-top: 10vh;       /* distanza dal bordo superiore */
-            height: 100vh;
-            margin: 0;
-        }
-        .login-box {
-            background: #ffffff;
-            padding: 3vh 3vw;        /* padding relativo allo schermo */
-            border-radius: 1vw;
-            box-shadow: 0 0.5vh 1vh rgba(0,0,0,0.1);
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-        }
-        h2 {
-            margin-bottom: 3vh;
-            color: #333;
-            font-size: 3vw;          /* testo proporzionato */
-        }
-        input[type="text"], input[type="password"] {
-            width: 100%;
-            padding: 1.5vh 1vw;
-            margin: 1vh 0;
-            border: 1px solid #ccc;
-            border-radius: 0.5vw;
-            font-size: 2vw;
-        }
-        input[type="submit"] {
-            width: 100%;
-            background-color: #4CAF50;
-            color: white;
-            padding: 1.5vh 0;
-            margin-top: 2vh;
-            border: none;
-            border-radius: 0.5vw;
-            font-size: 2vw;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-        }
-        input[type="submit"]:hover {
-            background-color: #45a049;
-            transform: scale(1.02);
-        }
-        .footer-link {
-            margin-top: 2vh;
-            font-size: 1.5vw;
-        }
-        .footer-link a {
-            color: #4CAF50;
-            text-decoration: none;
-        }
-        .footer-link a:hover {
-            text-decoration: underline;
-        }
-        @media (max-width: 600px) {
-            h2, input[type="text"], input[type="password"], input[type="submit"], .footer-link {
-                font-size: 4vw; /* dimensione più leggibile su smartphone */
-            }
-        }
-    </style>
+    <!-- Collegamento al CSS unico -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="login-box">

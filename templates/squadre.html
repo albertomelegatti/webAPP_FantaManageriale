@@ -3,67 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Area Squadre - Fanta Manageriale</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #FAFAFA;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 5vh 2vw;
-            margin: 0;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 5vh;
-            font-size: 4vw; /* dimensione proporzionata */
-        }
-        .btn {
-            display: block;
-            width: 40vw; /* larghezza proporzionata allo schermo */
-            max-width: 300px;
-            margin: 2vh 0;
-            padding: 2vh 0;
-            font-size: 2.5vw; /* testo proporzionato */
-            font-weight: bold;
-            text-align: center;
-            border: none;
-            border-radius: 1vw;
-            background-color: #4CAF50;
-            color: white;
-            text-decoration: none;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .btn:hover {
-            background-color: #45a049;
-            transform: scale(1.03);
-        }
-        .footer-link {
-            margin-top: 5vh;
-            font-size: 1.5vw;
-        }
-        .footer-link a {
-            color: #4CAF50;
-            text-decoration: none;
-        }
-        .footer-link a:hover {
-            text-decoration: underline;
-        }
-
-        /* Media query per smartphone */
-        @media (max-width: 600px) {
-            h1 {
-                font-size: 6vw;
-            }
-            .btn {
-                width: 80vw;
-                font-size: 4vw;
-            }
-            .footer-link {
-                font-size: 3vw;
-            }
-        }
-    </style>
+    <!-- Collegamento al CSS unico -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <h1>Area Squadre</h1>
