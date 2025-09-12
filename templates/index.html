@@ -3,58 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Web App Fanta Manageriale</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding-top: 10vh;
-            margin: 0;
-            background-color: #FAFAFA;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 8vh;
-            font-size: 4vw; /* dimensione testo proporzionata alla larghezza schermo */
-        }
-        .btn {
-            display: inline-block;
-            margin: 2vh 1vw;
-            padding: 2vh 5vw; /* altezza e larghezza proporzionale allo schermo */
-            font-size: 2.5vw; /* testo proporzionato alla larghezza */
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            background-color: #4CAF50;
-            color: white;
-            border-radius: 1vw;
-            text-decoration: none;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .btn:hover {
-            background-color: #45a049;
-            transform: scale(1.05);
-        }
-        .btn-small {
-            display: inline-block;
-            margin-top: 6vh;
-            padding: 1vh 2vw;
-            font-size: 1.5vw;
-            background-color: #008CBA;
-            border-radius: 0.5vw;
-            text-decoration: none;
-            color: white;
-            transition: background-color 0.2s;
-        }
-        .btn-small:hover {
-            background-color: #007bb5;
-        }
-        .footer {
-            position: fixed;
-            bottom: 2vh;
-            width: 100%;
-            text-align: center;
-        }
-    </style>
+    <!-- Collegamento al CSS unico -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <h1>Benvenuto nella Web App del Fantacalcio Manageriale</h1>
