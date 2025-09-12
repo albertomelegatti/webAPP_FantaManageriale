@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Web App Fanta Manageriale</title>
-    <!-- Collegamento al CSS unico -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>Benvenuto nella Web App del Fantacalcio Manageriale</h1>
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo">
+    <h1>Benvenuto</h1>
 
     <!-- Bottoni principali -->
     <a href="{{ url_for('login_admin') }}" class="btn">Admin</a>
