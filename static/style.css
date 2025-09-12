@@ -1,0 +1,137 @@
+/* Reset di base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Stile generale del body */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #FAFAFA;
+    color: #333;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+/* Titoli principali */
+h1 {
+    font-size: 4vw;
+    margin-bottom: 6vh;
+}
+
+h2 {
+    font-size: 2.5vw;
+    margin-bottom: 3vh;
+}
+
+/* Bottoni principali */
+.btn {
+    display: inline-block;
+    margin: 2vh 1vw;
+    padding: 2vh 5vw;
+    font-size: 2vw;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 1vw;
+    text-decoration: none;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn:hover {
+    background-color: #45a049;
+    transform: scale(1.05);
+}
+
+/* Bottoni secondari */
+.btn-small {
+    display: inline-block;
+    margin-top: 4vh;
+    padding: 1vh 2vw;
+    font-size: 1.2vw;
+    background-color: #008CBA;
+    border-radius: 0.5vw;
+    text-decoration: none;
+    color: white;
+    transition: background-color 0.2s;
+}
+
+.btn-small:hover {
+    background-color: #007bb5;
+}
+
+/* Box di login */
+.login-box {
+    background: #ffffff;
+    padding: 3vh 3vw;
+    border-radius: 1vw;
+    box-shadow: 0 0.5vh 1vh rgba(0,0,0,0.1);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    margin: auto;
+}
+
+/* Input del form */
+input[type="text"], 
+input[type="password"], 
+input[type="submit"] {
+    width: 100%;
+    padding: 1.5vh 1vw;
+    margin: 1vh 0;
+    border: 1px solid #ccc;
+    border-radius: 0.5vw;
+    font-size: 1.6vw;
+}
+
+/* Pulsante di invio nei form */
+input[type="submit"] {
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+
+input[type="submit"]:hover {
+    background-color: #45a049;
+    transform: scale(1.02);
+}
+
+/* Link di ritorno / footer */
+.footer-link {
+    margin-top: 2vh;
+    font-size: 1.2vw;
+}
+
+.footer-link a {
+    color: #4CAF50;
+    text-decoration: none;
+}
+
+.footer-link a:hover {
+    text-decoration: underline;
+}
+
+/* Footer fisso (per regolamento) */
+.footer {
+    position: fixed;
+    bottom: 2vh;
+    width: 100%;
+    text-align: center;
+}
+
+/* 📱 Responsività per smartphone */
+@media (max-width: 600px) {
+    h1 { font-size: 8vw; }
+    h2 { font-size: 5vw; }
+    .btn { font-size: 5vw; padding: 2vh 8vw; }
+    .btn-small { font-size: 3.5vw; }
+    input[type="text"], 
+    input[type="password"], 
+    input[type="submit"] { font-size: 4vw; }
+    .footer-link { font-size: 3vw; }
+}
