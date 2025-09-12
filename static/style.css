@@ -115,15 +115,14 @@ input[type="submit"]:hover {
     text-align: center;
 }
 
-/* Logo sopra il titolo */
 .logo {
     display: block;
     margin: 0 auto 3vh auto;
-    width: 25vw;
+    width: 20vw;
     max-width: 250px;
     height: auto;
     box-shadow: 0 0.5vh 1vh rgba(0,0,0,0.2);
-    border-radius: 1vw;
+    border-radius: 0vw;
 }
 
 @media (max-width: 600px) {
