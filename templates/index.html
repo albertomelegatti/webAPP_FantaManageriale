@@ -7,36 +7,64 @@
         body {
             font-family: Arial, sans-serif;
             text-align: center;
-            padding-top: 50px;
+            padding-top: 80px;
+            margin: 0;
+            background-color: #FAFAFA;
         }
         h1 {
             color: #333;
+            margin-bottom: 60px;
         }
-        button {
-            margin: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
+        .btn {
+            display: inline-block;
+            margin: 20px;
+            padding: 20px 50px;
+            font-size: 22px;
+            font-weight: bold;
             cursor: pointer;
             border: none;
             background-color: #4CAF50;
             color: white;
-            border-radius: 5px;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: background-color 0.2s, transform 0.1s;
         }
-        button:hover {
+        .btn:hover {
             background-color: #45a049;
+            transform: scale(1.05);
+        }
+        .btn-small {
+            display: inline-block;
+            margin-top: 60px;
+            padding: 8px 16px;
+            font-size: 14px;
+            background-color: #008CBA;
+            border-radius: 5px;
+            text-decoration: none;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        .btn-small:hover {
+            background-color: #007bb5;
+        }
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <h1>Benvenuto nella web App del Fantacalcio Manageriale</h1>
+    <h1>Benvenuto nella Web App del Fantacalcio Manageriale</h1>
 
-    <!-- Altri bottoni -->
-    <button>Rose</button>
-    <button>Altra opzione</button>
+    <!-- Bottoni principali -->
+    <a href="{{ url_for('login_admin') }}" class="btn">Admin</a>
+    <a href="{{ url_for('login_squadre') }}" class="btn">Squadre</a>
 
-    <!-- Bottone per scaricare il regolamento -->
-    <a href="/scarica-regolamento">
-        <button>Regolamento</button>
-    </a>
+    <!-- Bottone in basso per scaricare il regolamento -->
+    <div class="footer">
+        <a href="/scarica-regolamento" class="btn-small">Scarica Regolamento</a>
+    </div>
 </body>
 </html>
