@@ -1,37 +1,33 @@
-/* Reset di base */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* Stile generale del body */
 body {
     font-family: Arial, sans-serif;
     background-color: #FAFAFA;
     color: #333;
     text-align: center;
     margin: 0;
-    padding: 0;
+    padding: 5vh 0 0 0;
 }
 
-/* Titoli principali */
 h1 {
-    font-size: 4vw;
-    margin-bottom: 6vh;
+    font-size: 3.2vw;
+    margin-bottom: 5vh;
 }
 
 h2 {
-    font-size: 2.5vw;
-    margin-bottom: 3vh;
+    font-size: 2vw;
+    margin-bottom: 2.5vh;
 }
 
-/* Bottoni principali */
 .btn {
     display: inline-block;
     margin: 2vh 1vw;
-    padding: 2vh 5vw;
-    font-size: 2vw;
+    padding: 1.8vh 4vw;
+    font-size: 1.6vw;
     font-weight: bold;
     cursor: pointer;
     border: none;
@@ -47,12 +43,11 @@ h2 {
     transform: scale(1.05);
 }
 
-/* Bottoni secondari */
 .btn-small {
     display: inline-block;
     margin-top: 4vh;
     padding: 1vh 2vw;
-    font-size: 1.2vw;
+    font-size: 1vw;
     background-color: #008CBA;
     border-radius: 0.5vw;
     text-decoration: none;
@@ -64,7 +59,6 @@ h2 {
     background-color: #007bb5;
 }
 
-/* Box di login */
 .login-box {
     background: #ffffff;
     padding: 3vh 3vw;
@@ -76,19 +70,17 @@ h2 {
     margin: auto;
 }
 
-/* Input del form */
 input[type="text"], 
 input[type="password"], 
 input[type="submit"] {
     width: 100%;
-    padding: 1.5vh 1vw;
+    padding: 1.2vh 1vw;
     margin: 1vh 0;
     border: 1px solid #ccc;
     border-radius: 0.5vw;
-    font-size: 1.6vw;
+    font-size: 1.3vw;
 }
 
-/* Pulsante di invio nei form */
 input[type="submit"] {
     background-color: #4CAF50;
     color: white;
@@ -101,10 +93,9 @@ input[type="submit"]:hover {
     transform: scale(1.02);
 }
 
-/* Link di ritorno / footer */
 .footer-link {
     margin-top: 2vh;
-    font-size: 1.2vw;
+    font-size: 1vw;
 }
 
 .footer-link a {
@@ -116,7 +107,6 @@ input[type="submit"]:hover {
     text-decoration: underline;
 }
 
-/* Footer fisso (per regolamento) */
 .footer {
     position: fixed;
     bottom: 2vh;
@@ -124,14 +114,13 @@ input[type="submit"]:hover {
     text-align: center;
 }
 
-/* 📱 Responsività per smartphone */
 @media (max-width: 600px) {
-    h1 { font-size: 8vw; }
-    h2 { font-size: 5vw; }
-    .btn { font-size: 5vw; padding: 2vh 8vw; }
-    .btn-small { font-size: 3.5vw; }
+    h1 { font-size: 6.5vw; }
+    h2 { font-size: 4vw; }
+    .btn { font-size: 4vw; padding: 1.8vh 6vw; }
+    .btn-small { font-size: 3vw; }
     input[type="text"], 
     input[type="password"], 
-    input[type="submit"] { font-size: 4vw; }
-    .footer-link { font-size: 3vw; }
+    input[type="submit"] { font-size: 3.5vw; }
+    .footer-link { font-size: 2.5vw; }
 }
