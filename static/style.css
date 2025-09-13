@@ -1,91 +1,64 @@
-/* --- CSS base --- */
-
-body {
-  font-family: Arial, sans-serif;
-  background-color: #FAFAFA;
-  color: #333;
-  text-align: center;
-  margin: 0;
-  padding: 5vh 0 0 0;
+/* Login box */
+.login-box {
+    background: #ffffff;
+    padding: 3vh 3vw;
+    border-radius: 1vw;
+    box-shadow: 0 0.5vh 1vh rgba(0,0,0,0.1);
+    width: 90%;           /* larghezza mobile-friendly */
+    max-width: 400px;     /* limite su desktop */
+    text-align: center;
+    margin: 5vh auto;     /* centrato verticalmente e orizzontalmente */
 }
 
-.container {
-  width: 100%;
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 20px;
-  padding-right: 20px;
+/* Campi input e submit */
+.login-box input[type="text"],
+.login-box input[type="password"],
+.login-box input[type="submit"] {
+    width: 100%;
+    padding: 1.2vh 1vw;
+    margin: 1vh 0;
+    border: 1px solid #ccc;
+    border-radius: 0.5vw;
+    font-size: 1.3vw;
+    box-sizing: border-box;
 }
 
-/* Titoli base (mobile-first) */
-h1 {
-  font-size: 6vw;
-  margin-bottom: 5vh;
-}
-h2 {
-  font-size: 4.5vw;
-  margin-bottom: 2.5vh;
+.login-box input[type="submit"] {
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
 }
 
-/* Bottoni */
-.btn, .btn-small {
-  display: block;
-  width: 80%;
-  margin: 12px auto;
-  padding: 14px;
-  font-size: 4vw;
-  font-weight: bold;
-  border: none;
-  border-radius: 8px;
-  text-decoration: none;
-  color: white;
-  transition: background-color 0.2s, transform 0.1s;
-  cursor: pointer;
-}
-.btn {
-  background-color: #4CAF50;
-}
-.btn:hover {
-  background-color: #45a049;
-  transform: scale(1.05);
-}
-.btn-small {
-  background-color: #008CBA;
-}
-.btn-small:hover {
-  background-color: #007bb5;
+.login-box input[type="submit"]:hover {
+    background-color: #45a049;
+    transform: scale(1.02);
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 20px auto;
-  width: 60%;
-  max-width: 180px;
-  height: auto;
+/* Footer link dentro login-box */
+.login-box .footer-link {
+    margin-top: 2vh;
+    font-size: 1vw;
 }
 
-.footer {
-  margin-top: 40px;
-  text-align: center;
+.login-box .footer-link a {
+    color: #4CAF50;
+    text-decoration: none;
 }
 
-/* --- Versione desktop --- */
-@media (min-width: 768px) {
-  h1 { font-size: 3rem; }
-  h2 { font-size: 2rem; }
+.login-box .footer-link a:hover {
+    text-decoration: underline;
+}
 
-  .btn, .btn-small {
-    display: inline-block;
-    width: auto;
-    margin: 2vh 1vw;
-    padding: 18px 36px;
-    font-size: 1.4rem;
-    border-radius: 10px;
-  }
+/* --- Responsive --- */
+@media (max-width: 600px) {
+    .login-box input[type="text"],
+    .login-box input[type="password"],
+    .login-box input[type="submit"] {
+        font-size: 3.5vw;
+    }
 
-  .logo {
-    width: 20%;
-    max-width: 250px;
-  }
+    .login-box .footer-link {
+        font-size: 2.5vw;
+    }
 }
