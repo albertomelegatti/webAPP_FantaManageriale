@@ -1,85 +1,91 @@
+/* --- CSS base --- */
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #FAFAFA;
-    color: #333;
-    text-align: center;
-    margin: 0;
-    padding: 5vh 0 0 0;
+  font-family: Arial, sans-serif;
+  background-color: #FAFAFA;
+  color: #333;
+  text-align: center;
+  margin: 0;
+  padding: 5vh 0 0 0;
 }
 
-/* Titoli di base (mobile-first) */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+/* Titoli base (mobile-first) */
 h1 {
-    font-size: 6vw;  
-    margin-bottom: 5vh;
+  font-size: 6vw;
+  margin-bottom: 5vh;
 }
-
 h2 {
-    font-size: 4.5vw;
-    margin-bottom: 2.5vh;
+  font-size: 4.5vw;
+  margin-bottom: 2.5vh;
 }
 
-/* Bottoni principali e "Scarica Regolamento" uguali */
+/* Bottoni */
 .btn, .btn-small {
-    display: block;
-    width: 80%;
-    margin: 12px auto;
-    padding: 14px;
-    font-size: 4vw;
-    font-weight: bold;
-    border: none;
-    border-radius: 8px;
-    text-decoration: none;
-    color: white;
-    transition: background-color 0.2s, transform 0.1s;
-    cursor: pointer;
+  display: block;
+  width: 80%;
+  margin: 12px auto;
+  padding: 14px;
+  font-size: 4vw;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  text-decoration: none;
+  color: white;
+  transition: background-color 0.2s, transform 0.1s;
+  cursor: pointer;
 }
-
 .btn {
-    background-color: #4CAF50;
+  background-color: #4CAF50;
 }
-
 .btn:hover {
-    background-color: #45a049;
-    transform: scale(1.05);
+  background-color: #45a049;
+  transform: scale(1.05);
 }
-
 .btn-small {
-    background-color: #008CBA;
+  background-color: #008CBA;
 }
-
 .btn-small:hover {
-    background-color: #007bb5;
+  background-color: #007bb5;
 }
 
 .logo {
-    display: block;
-    margin: 0 auto 20px auto;
-    width: 60%;
-    max-width: 180px;
-    height: auto;
+  display: block;
+  margin: 0 auto 20px auto;
+  width: 60%;
+  max-width: 180px;
+  height: auto;
 }
 
 .footer {
-    margin-top: 40px;
-    text-align: center;
+  margin-top: 40px;
+  text-align: center;
 }
 
-/* ✅ Versione desktop */
+/* --- Versione desktop --- */
 @media (min-width: 768px) {
-    h1 { font-size: 3rem; }
-    h2 { font-size: 2rem; }
+  h1 { font-size: 3rem; }
+  h2 { font-size: 2rem; }
 
-    .btn, .btn-small {
-        display: inline-block;
-        width: auto;
-        margin: 2vh 1vw;
-        padding: 18px 36px;
-        font-size: 1.4rem;  /* più grande del solito */
-        border-radius: 10px;
-    }
+  .btn, .btn-small {
+    display: inline-block;
+    width: auto;
+    margin: 2vh 1vw;
+    padding: 18px 36px;
+    font-size: 1.4rem;
+    border-radius: 10px;
+  }
 
-    .logo {
-        width: 20%;
-        max-width: 250px;
-    }
+  .logo {
+    width: 20%;
+    max-width: 250px;
+  }
 }
