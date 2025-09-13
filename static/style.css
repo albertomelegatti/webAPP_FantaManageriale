@@ -7,9 +7,9 @@ body {
     padding: 5vh 0 0 0;
 }
 
-/* Dimensioni di base (mobile-first) */
+/* Titoli di base (mobile-first) */
 h1 {
-    font-size: 6vw;  /* leggibile su mobile */
+    font-size: 6vw;  
     margin-bottom: 5vh;
 }
 
@@ -18,7 +18,8 @@ h2 {
     margin-bottom: 2.5vh;
 }
 
-.btn {
+/* Bottoni principali e "Scarica Regolamento" uguali */
+.btn, .btn-small {
     display: block;
     width: 80%;
     margin: 12px auto;
@@ -26,23 +27,28 @@ h2 {
     font-size: 4vw;
     font-weight: bold;
     border: none;
-    background-color: #4CAF50;
-    color: white;
     border-radius: 8px;
     text-decoration: none;
+    color: white;
     transition: background-color 0.2s, transform 0.1s;
+    cursor: pointer;
+}
+
+.btn {
+    background-color: #4CAF50;
+}
+
+.btn:hover {
+    background-color: #45a049;
+    transform: scale(1.05);
 }
 
 .btn-small {
-    display: block;
-    width: 70%;
-    margin: 10px auto;
-    padding: 12px;
-    font-size: 3.5vw;
     background-color: #008CBA;
-    border-radius: 6px;
-    text-decoration: none;
-    color: white;
+}
+
+.btn-small:hover {
+    background-color: #007bb5;
 }
 
 .logo {
@@ -53,23 +59,23 @@ h2 {
     height: auto;
 }
 
-/* ✅ Per schermi grandi (tablet e PC) */
-@media (min-width: 768px) {
-    h1 { font-size: 2.5rem; }
-    h2 { font-size: 1.8rem; }
+.footer {
+    margin-top: 40px;
+    text-align: center;
+}
 
-    .btn {
+/* ✅ Versione desktop */
+@media (min-width: 768px) {
+    h1 { font-size: 3rem; }
+    h2 { font-size: 2rem; }
+
+    .btn, .btn-small {
         display: inline-block;
         width: auto;
         margin: 2vh 1vw;
-        padding: 14px 28px;
-        font-size: 1.2rem;
-    }
-
-    .btn-small {
-        width: auto;
-        font-size: 1rem;
-        padding: 10px 20px;
+        padding: 18px 36px;
+        font-size: 1.4rem;  /* più grande del solito */
+        border-radius: 10px;
     }
 
     .logo {
