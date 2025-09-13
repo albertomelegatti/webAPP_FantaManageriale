@@ -2,24 +2,24 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Login Admin - Fanta Manageriale</title>
-    <!-- Collegamento al CSS unico -->
+    <title>Web App Fanta Manageriale</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- ✅ fondamentale -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
 </head>
 <body>
-    <div class="container">
-        <div class="login-box">
-            <h2>Login Admin</h2>
-            <form method="POST" action="/login-admin">
-                <input type="text" name="username" placeholder="Username" required>
-                <input type="password" name="password" placeholder="Password" required>
-                <input type="submit" value="Accedi">
-            </form>
-            <div class="footer-link">
-                <a href="/">← Torna alla Home</a>
-            </div>
-        </div>
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo">
+    <h1>Benvenuto</h1>
+
+    <!-- Bottoni principali -->
+    <div class="buttons">
+        <a href="{{ url_for('login_admin') }}" class="btn">Admin</a>
+        <a href="{{ url_for('login_squadre') }}" class="btn">Squadre</a>
+    </div>
+
+    <!-- Bottone in basso per scaricare il regolamento -->
+    <div class="footer">
+        <a href="/scarica-regolamento" class="btn-small">Scarica Regolamento</a>
     </div>
 </body>
 </html>
