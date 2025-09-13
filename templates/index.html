@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Web App Fanta Manageriale</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- ✅ fondamentale -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
 </head>
@@ -11,8 +12,10 @@
     <h1>Benvenuto</h1>
 
     <!-- Bottoni principali -->
-    <a href="{{ url_for('login_admin') }}" class="btn">Admin</a>
-    <a href="{{ url_for('login_squadre') }}" class="btn">Squadre</a>
+    <div class="buttons">
+        <a href="{{ url_for('login_admin') }}" class="btn">Admin</a>
+        <a href="{{ url_for('login_squadre') }}" class="btn">Squadre</a>
+    </div>
 
     <!-- Bottone in basso per scaricare il regolamento -->
     <div class="footer">
