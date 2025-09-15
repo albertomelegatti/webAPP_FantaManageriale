@@ -118,6 +118,20 @@ h1 {
     padding: 12px 20px; font-size: 1.05rem; border-radius: 9px;
 }
 
+.login-box input[type="submit"] {
+    background-color: var(--primary);
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.login-box input[type="submit"]:hover {
+    background-color: var(--primary-dark);
+    transform: scale(1.02);
+}
+
+
 /* Tabelle */
 .table-responsive { width: 100%; overflow-x: auto; margin-top: 22px; }
 .table {
