@@ -20,12 +20,19 @@ h1 {
     font-weight: 700;
 }
 
+/* Contenitore bottoni */
+.buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* sempre 2 bottoni per riga */
+    gap: 20px;
+    justify-content: center;
+    max-width: 400px;   /* limita la larghezza totale */
+    margin: 0 auto 40px auto;
+}
+
 /* --- Bottoni generici (home / login) --- */
 .btn, .btn-small {
-    display: block;
-    width: 80%;
-    margin: 12px auto;
-    padding: 14px;
+    padding: 14px 28px;
     font-size: 1.2rem;
     font-weight: bold;
     border: none;
@@ -34,6 +41,7 @@ h1 {
     color: white;
     cursor: pointer;
     transition: background-color 0.2s, transform 0.1s;
+    text-align: center;
 }
 
 .btn {
@@ -47,6 +55,8 @@ h1 {
 
 .btn-small {
     background-color: #6c757d;
+    padding: 10px 20px;
+    font-size: 1rem;
 }
 
 .btn-small:hover {
@@ -69,11 +79,15 @@ h1 {
 }
 
 /* --- Responsive --- */
-@media (max-width: 768px) {
-    .btn, .btn-small {
-        width: 90%;
+@media (max-width: 600px) {
+    .buttons {
+        grid-template-columns: 1fr 1fr; /* sempre 2 colonne anche su mobile */
+        gap: 12px;
+    }
+
+    .btn {
         font-size: 1rem;
-        padding: 12px;
+        padding: 12px 20px;
     }
 
     .logo {
