@@ -6,67 +6,38 @@
 }
 
 body {
-    font-family: 'Open Sans', sans-serif;
+    font-family: 'Open Sans', Arial, sans-serif;
     background-color: #f8f9fa;
     color: #333;
     text-align: center;
-    padding: 0;
+    padding-top: 5vh;
 }
 
-/* Container centrale */
-.container {
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
+/* Titoli */
+h1 {
+    font-size: 2.2rem;
+    margin-bottom: 30px;
+    font-weight: 700;
 }
 
-/* Header compatto */
-header {
-    background-color: #007bff;
-    color: white;
-    padding: 10px 0;
-    text-align: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-/* Logo ridotto */
-.logo {
+/* --- Bottoni generici (home / login) --- */
+.btn, .btn-small {
     display: block;
-    margin: 5px auto;
-    max-width: 120px;
-    height: auto;
+    width: 80%;
+    margin: 12px auto;
+    padding: 14px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
 }
 
-/* Titolo header */
-header h1 {
-    font-size: 1.6em;
-    margin: 5px 0 15px 0;
-}
-
-/* Sezione principale con bottoni centrati */
-main.buttons {
-    min-height: 50vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 20px;
-    padding: 20px 0;
-}
-
-/* Bottoni principali */
 .btn {
     background-color: #007bff;
-    color: white;
-    padding: 18px 36px;
-    font-size: 1.4rem;
-    font-weight: 600;
-    border-radius: 10px;
-    text-decoration: none;
-    display: inline-block;
-    transition: background 0.3s, transform 0.1s;
-    cursor: pointer;
-    border: none;
 }
 
 .btn:hover {
@@ -74,90 +45,40 @@ main.buttons {
     transform: scale(1.05);
 }
 
-/* Bottone footer */
 .btn-small {
-    padding: 8px 16px;
     background-color: #6c757d;
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
-    transition: background 0.3s;
 }
 
 .btn-small:hover {
     background-color: #495057;
 }
 
-/* Footer */
+/* Logo */
+.logo {
+    display: block;
+    margin: 0 auto 20px auto;
+    width: 20%;
+    max-width: 250px;
+    height: auto;
+}
+
+/* Footer generale */
 .footer {
+    margin-top: 40px;
     text-align: center;
-    margin-top: 30px;
-}
-
-/* Login box */
-.login-box {
-    background: #ffffff;
-    padding: 3vh 3vw;
-    border-radius: 1vw;
-    box-shadow: 0 0.5vh 1vh rgba(0,0,0,0.1);
-    width: 90%;
-    max-width: 400px;
-    margin: 5vh auto;
-    text-align: center;
-}
-
-/* Campi input e submit */
-.login-box input[type="text"],
-.login-box input[type="password"],
-.login-box input[type="submit"] {
-    width: 100%;
-    padding: 1.2vh 1vw;
-    margin: 1vh 0;
-    border: 1px solid #ccc;
-    border-radius: 0.5vw;
-    font-size: 1.1rem;
-    box-sizing: border-box;
-}
-
-.login-box input[type="submit"] {
-    background-color: #4CAF50;
-    color: white;
-    cursor: pointer;
-    transition: background 0.2s, transform 0.1s;
-}
-
-.login-box input[type="submit"]:hover {
-    background-color: #45a049;
-    transform: scale(1.02);
-}
-
-.login-box .footer-link {
-    margin-top: 2vh;
-    font-size: 1rem;
-}
-
-.login-box .footer-link a {
-    color: #4CAF50;
-    text-decoration: none;
-}
-
-.login-box .footer-link a:hover {
-    text-decoration: underline;
 }
 
 /* --- Responsive --- */
 @media (max-width: 768px) {
     .btn, .btn-small {
         width: 90%;
-        font-size: 1.2rem;
-        padding: 16px;
+        font-size: 1rem;
+        padding: 12px;
     }
 
     .logo {
-        width: 30%;
+        width: 40%;
     }
 
-    header h1 {
-        font-size: 1.4rem;
-    }
+    h1 { font-size: 1.8rem; }
 }
