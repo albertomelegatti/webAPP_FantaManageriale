@@ -135,9 +135,10 @@ h1 {
 /* Tabelle */
 .table-responsive { width: 100%; overflow-x: auto; margin-top: 22px; }
 .table {
-    width: 100%; border-collapse: collapse; min-width: 680px;
+    width: 80%; border-collapse: collapse; min-width: 680px;
     background: var(--white); border-radius: 9px; overflow: hidden;
     box-shadow: 0 6px 18px rgba(20,20,20,0.04); font-size: 1.05rem;
+    margin: 20px auto;
 }
 .table thead th {
     background: var(--table-head); color: #fff; padding: 14px 16px;
