@@ -1,3 +1,8 @@
+/* =====================================================
+   style.css - Home, bottoni, login, tabelle, responsiveness
+   Mantiene il blu: #007bff
+   ===================================================== */
+
 /* --- Reset generale --- */
 * {
     margin: 0;
@@ -5,94 +10,303 @@
     box-sizing: border-box;
 }
 
+:root{
+    --bg: #f8f9fa;
+    --text: #333;
+    --primary: #007bff;
+    --primary-dark: #0056b3;
+    --muted: #6c757d;
+    --table-head: #007bff;
+    --white: #ffffff;
+
+    /* colori ruoli */
+    --col-portiere: #e6f3ff;
+    --col-difensore: #e9fef0;
+    --col-centro: #fff9db;
+    --col-attaccante: #ffe7e7;
+}
+
+/* --- Body / layout --- */
 body {
     font-family: 'Open Sans', Arial, sans-serif;
-    background-color: #f8f9fa;
-    color: #333;
+    background-color: var(--bg);
+    color: var(--text);
     text-align: center;
-    padding-top: 5vh;
+    padding: 4vh 0 6vh 0;
+    -webkit-font-smoothing:antialiased;
 }
 
-/* Titoli */
-h1 {
-    font-size: 2.2rem;
-    margin-bottom: 30px;
-    font-weight: 700;
+/* Container centrale (uso generico) */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
 }
 
-/* Contenitore bottoni */
-.buttons {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr); /* sempre 2 bottoni per riga */
-    gap: 20px;
-    justify-content: center;
-    max-width: 400px;   /* limita la larghezza totale */
-    margin: 0 auto 40px auto;
-}
-
-/* --- Bottoni generici (home / login) --- */
-.btn, .btn-small {
-    padding: 14px 28px;
-    font-size: 1.2rem;
-    font-weight: bold;
-    border: none;
-    border-radius: 8px;
-    text-decoration: none;
-    color: white;
-    cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
+/* --- Header / logo --- */
+header {
+    background-color: var(--primary);
+    color: var(--white);
+    padding: 10px 0; /* compatto */
     text-align: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
-.btn {
-    background-color: #007bff;
-}
-
-.btn:hover {
-    background-color: #0056b3;
-    transform: scale(1.05);
-}
-
-.btn-small {
-    background-color: #6c757d;
-    padding: 10px 20px;
-    font-size: 1rem;
-}
-
-.btn-small:hover {
-    background-color: #495057;
-}
-
-/* Logo */
 .logo {
     display: block;
-    margin: 0 auto 20px auto;
-    width: 20%;
-    max-width: 250px;
+    margin: 6px auto;
+    max-width: 140px;
+    width: 18%;
     height: auto;
 }
 
-/* Footer generale */
-.footer {
-    margin-top: 40px;
+/* titolo generico (h1 delle pagine) */
+h1 {
+    font-size: 2.0rem;
+    margin: 18px 0 18px 0;
+    font-weight: 700;
+}
+
+/* --- Bottoni (layout con flex wrap) --- */
+.buttons {
+    display: flex;
+    flex-wrap: wrap;            /* affianca e poi va a capo */
+    justify-content: center;
+    gap: 18px;
+    margin: 18px auto 28px auto;
+    padding: 0 12px;
+    max-width: 980px;
+}
+
+/* bottone principale */
+.btn {
+    background-color: var(--primary);
+    color: var(--white);
+    padding: 14px 30px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-radius: 9px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 140px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.18s ease, transform 0.08s ease;
+}
+
+.btn:hover,
+.btn:focus {
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+/* bottone secondario (footer ecc.) */
+.btn-small {
+    background-color: var(--muted);
+    color: var(--white);
+    padding: 10px 18px;
+    font-size: 0.98rem;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-block;
+    border: none;
+    cursor: pointer;
+    transition: background 0.18s ease, transform 0.08s ease;
+}
+
+.btn-small:hover,
+.btn-small:focus {
+    background-color: #495057;
+    transform: translateY(-1px);
+}
+
+/* --- Login box (form) --- */
+.login-box {
+    background: var(--white);
+    padding: 3vh 3vw;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(20,20,20,0.06);
+    width: 92%;
+    max-width: 420px;
+    margin: 5vh auto;
+    text-align: left;
+}
+
+.login-box h2 {
+    margin-bottom: 12px;
+    font-size: 1.2rem;
     text-align: center;
 }
 
-/* --- Responsive --- */
-@media (max-width: 600px) {
-    .buttons {
-        grid-template-columns: 1fr 1fr; /* sempre 2 colonne anche su mobile */
-        gap: 12px;
-    }
-
-    .btn {
-        font-size: 1rem;
-        padding: 12px 20px;
-    }
-
-    .logo {
-        width: 40%;
-    }
-
-    h1 { font-size: 1.8rem; }
+.login-box label {
+    display: block;
+    margin: 10px 0 6px 0;
+    font-size: 0.95rem;
+    color: #222;
 }
+
+.login-box input[type="text"],
+.login-box input[type="password"],
+.login-box select,
+.login-box textarea {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    border: 1px solid #d0d5da;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: #fff;
+}
+
+.login-box input:focus,
+.login-box select:focus,
+.login-box textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.12);
+    border-color: var(--primary);
+}
+
+.login-box .form-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* submit button nel form (usa stile btn) */
+.login-box .btn-submit {
+    background-color: var(--primary);
+    color: var(--white);
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.login-box .btn-submit:hover {
+    background-color: var(--primary-dark);
+}
+
+/* link di supporto sotto form */
+.login-box .footer-link {
+    margin-top: 10px;
+    font-size: 0.95rem;
+    text-align: center;
+}
+.login-box .footer-link a { color: var(--primary); text-decoration: none; }
+.login-box .footer-link a:hover { text-decoration: underline; }
+
+/* --- Tabelle generiche --- */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto; /* scroll orizzontale su mobile */
+    -webkit-overflow-scrolling: touch;
+    margin-top: 18px;
+}
+
+/* stile base per tutte le tabelle */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 640px; /* evita che si rompa troppo su desktop */
+    background: var(--white);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 6px 18px rgba(20,20,20,0.04);
+}
+
+/* head */
+.table thead th {
+    background-color: var(--table-head);
+    color: #fff;
+    padding: 12px 14px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.98rem;
+}
+
+/* corpo */
+.table tbody td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #eef2f6;
+    font-size: 0.95rem;
+    vertical-align: middle;
+}
+
+/* righe alternate */
+.table tbody tr:nth-child(even) {
+    background: #fbfcfe;
+}
+
+/* hover */
+.table tbody tr:hover {
+    background: #f1f8ff;
+}
+
+/* piccole azioni (pulsanti dentro tabella) */
+.table .action-btn {
+    padding: 6px 10px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    color: #fff;
+    background: var(--primary);
+}
+.table .action-btn.ghost { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+
+/* se vuoi evidenziare il ruolo colorando la riga (classi usate nel template: <tr class=\"Portiere\">) */
+.table tbody tr.Portiere { background: var(--col-portiere); }
+.table tbody tr.Difensore { background: var(--col-difensore); }
+.table tbody tr.Centrocampista { background: var(--col-centro); }
+.table tbody tr.Attaccante { background: var(--col-attaccante); }
+
+/* badge per ruolo (opzionale: se usi un td con classe role-badge) */
+.role-badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+/* colori badge */
+.role-badge.portiere { background: #3aa0ff; color: #07203a; }
+.role-badge.difensore { background: #28c76f; color: #053112; }
+.role-badge.centrocampista { background: #ffd966; color: #4a3f00; }
+.role-badge.attaccante { background: #ff6b6b; color: #4a0b0b; }
+
+/* --- Footer generico --- */
+.footer {
+    margin-top: 36px;
+    text-align: center;
+    font-size: 0.95rem;
+    color: #555;
+}
+
+/* --- Responsive rules --- */
+@media (max-width: 980px) {
+    .buttons { gap: 12px; padding: 0 10px; }
+    .btn { min-width: 120px; padding: 12px 22px; font-size: 1rem; }
+    .logo { width: 26%; max-width: 120px; }
+    h1 { font-size: 1.6rem; margin: 12px 0; }
+    .table { min-width: 520px; }
+}
+
+@media (max-width: 680px) {
+    body { padding-top: 3vh; }
+    .buttons { gap: 10px; }
+    .btn { min-width: 110px; padding: 10px 18px; font-size: 0.98rem; }
+    .logo { width: 36%; max-width: 110px; }
+    .login-box { width: 94%; padding: 3vh 2.5vw; }
+    .table { min-width: 480px; font-size: 0.92rem; }
+}
+
+/* Optional: utility */
+.text-muted { color: #7a8087; font-size: 0.95rem; }
+.small { font-size: 0.85rem; }
+.center { text-align: center; }
