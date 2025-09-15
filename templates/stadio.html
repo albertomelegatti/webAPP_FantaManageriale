@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Stadi - Fanta Manageriale</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; text-align: left; border: 1px solid #ddd; }
+        th { background-color: #f2f2f2; }
+        tbody tr:nth-child(even) { background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Lista Stadi</h1>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome Stadio</th>
+                    <th>Squadra Fantacalcistica</th>
+                    <th>Crediti Generati</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Esempio hardcoded: in futuro popolare con DB -->
+                <tr>
+                    <td>Stadio Alfa</td>
+                    <td>Squadra_1</td>
+                    <td>120</td>
+                </tr>
+                <tr>
+                    <td>Stadio Beta</td>
+                    <td>Squadra_2</td>
+                    <td>95</td>
+                </tr>
+                <tr>
+                    <td>Stadio Gamma</td>
+                    <td>Squadra_3</td>
+                    <td>110</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="footer-link">
+            <a href="/login-squadre">← Torna alle Squadre</a>
+        </div>
+    </div>
+</body>
+</html>
