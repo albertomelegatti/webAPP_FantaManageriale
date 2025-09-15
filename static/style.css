@@ -6,11 +6,11 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
-    background-color: #fafafa,
+    font-family: 'Open Sans', Arial, sans-serif;
+    background-color: #f8f9fa;
     color: #333;
     text-align: center;
-    padding: 5vh 0 0 0;
+    padding-top: 5vh;
 }
 
 /* Container centrale */
@@ -23,13 +23,14 @@ body {
 
 /* Titoli */
 h1 {
-    font-size: 6vw;
-    margin-bottom: 5vh;
+    font-size: 3rem;
+    margin-bottom: 3vh;
+    font-weight: 700;
 }
 
 h2 {
-    font-size: 4.5vw;
-    margin-bottom: 2.5vh;
+    font-size: 2rem;
+    margin-bottom: 2vh;
 }
 
 /* Login box */
@@ -53,7 +54,7 @@ h2 {
     margin: 1vh 0;
     border: 1px solid #ccc;
     border-radius: 0.5vw;
-    font-size: 1.3vw;
+    font-size: 1.1rem;
     box-sizing: border-box;
 }
 
@@ -72,7 +73,7 @@ h2 {
 /* Footer link dentro login-box */
 .login-box .footer-link {
     margin-top: 2vh;
-    font-size: 1vw;
+    font-size: 1rem;
 }
 
 .login-box .footer-link a {
@@ -90,7 +91,7 @@ h2 {
     width: 80%;
     margin: 12px auto;
     padding: 14px;
-    font-size: 4vw;
+    font-size: 1.2rem;
     font-weight: bold;
     border: none;
     border-radius: 8px;
@@ -101,28 +102,28 @@ h2 {
 }
 
 .btn {
-    background-color: #4CAF50;
+    background-color: #007bff;
 }
 
 .btn:hover {
-    background-color: #45a049;
+    background-color: #0056b3;
     transform: scale(1.05);
 }
 
 .btn-small {
-    background-color: #008CBA;
+    background-color: #6c757d;
 }
 
 .btn-small:hover {
-    background-color: #007bb5;
+    background-color: #495057;
 }
 
 /* Logo */
 .logo {
     display: block;
     margin: 0 auto 20px auto;
-    width: 60%;
-    max-width: 180px;
+    width: 20%;
+    max-width: 250px;
     height: auto;
 }
 
@@ -132,53 +133,18 @@ h2 {
     text-align: center;
 }
 
-/* --- Versione desktop --- */
-@media (min-width: 768px) {
-    h1 { font-size: 3rem; }
-    h2 { font-size: 2rem; }
-
+/* --- Responsive --- */
+@media (max-width: 768px) {
     .btn, .btn-small {
-        display: inline-block;
-        width: auto;
-        margin: 2vh 1vw;
-        padding: 18px 36px;
-        font-size: 1.4rem;
-        border-radius: 10px;
+        width: 90%;
+        font-size: 1rem;
+        padding: 12px;
     }
 
     .logo {
-        width: 20%;
-        max-width: 250px;
+        width: 40%;
     }
 
-    .login-box input[type="text"],
-    .login-box input[type="password"],
-    .login-box input[type="submit"] {
-        font-size: 1rem;
-    }
-
-    .login-box .footer-link {
-        font-size: 1rem;
-    }
-}
-
-/* --- Mobile responsive --- */
-@media (max-width: 600px) {
-    h1 { font-size: 6vw; }
-    h2 { font-size: 4vw; }
-
-    .btn, .btn-small {
-        font-size: 4vw;
-        padding: 1.8vh 6vw;
-    }
-
-    .login-box input[type="text"],
-    .login-box input[type="password"],
-    .login-box input[type="submit"] {
-        font-size: 3.5vw;
-    }
-
-    .login-box .footer-link {
-        font-size: 2.5vw;
-    }
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.5rem; }
 }
