@@ -43,7 +43,7 @@ def mostra_rosa(nome_squadra):
 
 @app.route("/stadi")
 def stadi():
-    return "<h2>Sezione Stadi (in costruzione)</h2>"
+    return render_template("stadi.html")
 
 @app.route("/prestiti")
 def prestiti():
