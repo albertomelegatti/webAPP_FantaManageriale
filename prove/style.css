@@ -1,23 +1,17 @@
 /* =====================================================
-   style.css - version fluida con tabelle centrate
+   style.css - versione completa con tabelle integrate
    ===================================================== */
 
 /* Reset */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-    --bg: #f8f9fa;
+    --bg: #dabe25;
     --text: #333;
     --primary: #007bff;
     --primary-dark: #0056b3;
     --muted: #6c757d;
-    --table-head: #007bff;
     --white: #ffffff;
-
-    --col-portiere: #e6f3ff;
-    --col-difensore: #e9fef0;
-    --col-centro: #fff9db;
-    --col-attaccante: #ffe7e7;
 }
 
 /* Body */
@@ -30,6 +24,14 @@ body {
     font-size: 1.05rem;
 }
 
+/* Container */
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2%;
+}
+
 /* Header */
 header {
     background-color: var(--primary);
@@ -39,6 +41,7 @@ header {
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
+/* Logo */
 .logo {
     display: block;
     margin: 10px auto;
@@ -47,6 +50,7 @@ header {
     height: auto;
 }
 
+/* Titoli */
 h1 {
     font-size: 2.4rem;
     margin: 22px 0 20px 0;
@@ -80,7 +84,11 @@ h1 {
     cursor: pointer;
     transition: background 0.18s ease, transform 0.08s ease;
 }
-.btn:hover { background-color: var(--primary-dark); transform: translateY(-2px); }
+
+.btn:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+}
 
 .btn-small {
     background-color: var(--muted);
@@ -94,9 +102,13 @@ h1 {
     cursor: pointer;
     transition: background 0.18s ease, transform 0.08s ease;
 }
-.btn-small:hover { background-color: #495057; transform: translateY(-1px); }
 
-/* Login */
+.btn-small:hover {
+    background-color: #495057;
+    transform: translateY(-1px);
+}
+
+/* Login box */
 .login-box {
     background: var(--white);
     padding: 3.5vh 3vw;
@@ -108,12 +120,28 @@ h1 {
     text-align: left;
     font-size: 1.05rem;
 }
-.login-box h2 { margin-bottom: 16px; font-size: 1.4rem; text-align: center; }
-.login-box label { display: block; margin: 12px 0 6px 0; font-size: 1rem; }
-.login-box input, .login-box select, .login-box textarea {
-    width: 100%; padding: 0.8em 1em; margin-bottom: 12px;
-    border: 1px solid #d0d5da; border-radius: 0.8em; font-size: 1.05rem;
+
+.login-box h2 {
+    margin-bottom: 16px;
+    font-size: 1.4rem;
+    text-align: center;
 }
+
+.login-box label {
+    display: block;
+    margin: 12px 0 6px 0;
+    font-size: 1rem;
+}
+
+.login-box input, .login-box select, .login-box textarea {
+    width: 100%;
+    padding: 0.8em 1em;
+    margin-bottom: 12px;
+    border: 1px solid #d0d5da;
+    border-radius: 0.8em;
+    font-size: 1.05rem;
+}
+
 .login-box input[type="submit"] {
     background-color: var(--primary);
     color: white;
@@ -121,9 +149,25 @@ h1 {
     font-weight: 600;
     transition: background 0.2s, transform 0.1s;
 }
+
 .login-box input[type="submit"]:hover {
     background-color: var(--primary-dark);
     transform: scale(1.02);
+}
+
+/* Footer link */
+.footer-link {
+    margin-top: 2em;
+    font-size: 1rem;
+}
+
+.footer-link a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.footer-link a:hover {
+    text-decoration: underline;
 }
 
 /* Tabelle */
