@@ -70,7 +70,7 @@ h1 {
     flex-wrap: wrap;
     justify-content: center;
     gap: 2%;
-    row-gap: 2%;
+    row-gap: 10%;
     margin: 2% auto 4% auto;
     padding: 0 2%;
     max-width: 1000px;
