@@ -37,7 +37,7 @@ def login_squadre():
 def rose():
     return render_template("rose.html")
 
-@app.route("/squadra/nome_squadra>")
+@app.route("/squadra/<nome_squadra>")
 def mostra_rosa(nome_squadra):
     return render_template("rosa.html", nome_squadra=nome_squadra)
 
