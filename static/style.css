@@ -6,11 +6,11 @@
 }
 
 body {
-    font-family: 'Open Sans', Arial, sans-serif;
+    font-family: 'Open Sans', sans-serif;
     background-color: #f8f9fa;
     color: #333;
     text-align: center;
-    padding-top: 3vh; /* ridotto padding superiore per header più compatto */
+    padding: 0;
 }
 
 /* Container centrale */
@@ -21,16 +21,77 @@ body {
     padding: 0 20px;
 }
 
-/* Titoli */
-h1 {
-    font-size: 2.2rem; /* ridotto font per il banner */
-    margin-bottom: 2vh;
-    font-weight: 700;
+/* Header compatto */
+header {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 0;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-h2 {
-    font-size: 1.8rem;
-    margin-bottom: 2vh;
+/* Logo ridotto */
+.logo {
+    display: block;
+    margin: 5px auto;
+    max-width: 120px;
+    height: auto;
+}
+
+/* Titolo header */
+header h1 {
+    font-size: 1.6em;
+    margin: 5px 0 15px 0;
+}
+
+/* Sezione principale con bottoni centrati */
+main.buttons {
+    min-height: 50vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+    padding: 20px 0;
+}
+
+/* Bottoni principali */
+.btn {
+    background-color: #007bff;
+    color: white;
+    padding: 18px 36px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    border-radius: 10px;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.3s, transform 0.1s;
+    cursor: pointer;
+    border: none;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+/* Bottone footer */
+.btn-small {
+    padding: 8px 16px;
+    background-color: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background 0.3s;
+}
+
+.btn-small:hover {
+    background-color: #495057;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    margin-top: 30px;
 }
 
 /* Login box */
@@ -70,7 +131,6 @@ h2 {
     transform: scale(1.02);
 }
 
-/* Footer link dentro login-box */
 .login-box .footer-link {
     margin-top: 2vh;
     font-size: 1rem;
@@ -85,66 +145,19 @@ h2 {
     text-decoration: underline;
 }
 
-/* --- Bottoni generici (home / login) --- */
-.btn, .btn-small {
-    display: block;
-    width: 80%;
-    margin: 12px auto;
-    padding: 14px;
-    font-size: 1.2rem;
-    font-weight: bold;
-    border: none;
-    border-radius: 8px;
-    text-decoration: none;
-    color: white;
-    transition: background-color 0.2s, transform 0.1s;
-    cursor: pointer;
-}
-
-.btn {
-    background-color: #007bff;
-}
-
-.btn:hover {
-    background-color: #0056b3;
-    transform: scale(1.05);
-}
-
-.btn-small {
-    background-color: #6c757d;
-}
-
-.btn-small:hover {
-    background-color: #495057;
-}
-
-/* Logo */
-.logo {
-    display: block;
-    margin: 10px auto 15px auto; /* ridotto margine per banner più compatto */
-    width: 15%; /* logo più piccolo */
-    max-width: 180px;
-    height: auto;
-}
-
-/* Footer generale */
-.footer {
-    margin-top: 30px; /* leggermente ridotto */
-    text-align: center;
-}
-
 /* --- Responsive --- */
 @media (max-width: 768px) {
     .btn, .btn-small {
         width: 90%;
-        font-size: 1rem;
-        padding: 12px;
+        font-size: 1.2rem;
+        padding: 16px;
     }
 
     .logo {
-        width: 30%; /* leggermente più piccolo su mobile */
+        width: 30%;
     }
 
-    h1 { font-size: 1.8rem; }
-    h2 { font-size: 1.5rem; }
+    header h1 {
+        font-size: 1.4rem;
+    }
 }
