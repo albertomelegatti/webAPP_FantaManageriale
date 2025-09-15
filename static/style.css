@@ -1,11 +1,11 @@
 /* =====================================================
-   style.css - versione riscritta (stessi valori, più robusta)
+   style.css - versione ingrandita con margini laterali tabelle
    ===================================================== */
 
 /* Reset */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-:root{
+:root {
     --bg: #f8f9fa;
     --text: #333;
     --primary: #007bff;
@@ -39,7 +39,6 @@ header {
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
-/* Logo */
 .logo {
     display: block;
     margin: 10px auto;
@@ -48,14 +47,13 @@ header {
     height: auto;
 }
 
-/* Titolo principale */
 h1 {
     font-size: 2.4rem;
     margin: 22px 0 20px 0;
     font-weight: 700;
 }
 
-/* Bottoni (contenitore e bottoni) */
+/* Bottoni */
 .buttons {
     display: flex;
     flex-wrap: wrap;
@@ -98,25 +96,6 @@ h1 {
 }
 .btn-small:hover { background-color: #495057; transform: translateY(-1px); }
 
-/* Rendere gli input submit simili ai bottoni (se non hanno classe) */
-input[type="submit"],
-button[type="submit"] {
-    background-color: var(--primary);
-    color: var(--white);
-    padding: 12px 20px;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    transition: background 0.18s ease, transform 0.06s ease;
-}
-input[type="submit"]:hover,
-button[type="submit"]:hover {
-    background-color: var(--primary-dark);
-    transform: translateY(-1px);
-}
-
 /* Login */
 .login-box {
     background: var(--white);
@@ -138,8 +117,6 @@ button[type="submit"]:hover {
 .login-box .btn-submit {
     padding: 12px 20px; font-size: 1.05rem; border-radius: 9px;
 }
-
-/* Specifica per submit dentro login-box (sovrascrive se necessario) */
 .login-box input[type="submit"] {
     background-color: var(--primary);
     color: white;
@@ -153,67 +130,50 @@ button[type="submit"]:hover {
 }
 
 /* Tabelle */
-/* applica lo stile sia agli elementi con classe .table sia ai tag <table> normali */
-.table-responsive { width: 100%; overflow-x: auto; margin-top: 22px; }
-
-/* Se vuoi che anche <table> senza classe erediti lo stile, includilo qui */
-.table, table {
-    width: 80%;
-    border-collapse: collapse;
-    min-width: 680px;
-    background: var(--white);
-    border-radius: 9px;
-    overflow: hidden;
-    box-shadow: 0 6px 18px rgba(20,20,20,0.04);
-    font-size: 1.05rem;
-    margin: 20px auto;
+.table-responsive { 
+    width: 100%; 
+    overflow-x: auto; 
+    margin-top: 22px; 
 }
-
-.table thead th,
-table thead th {
-    background: var(--table-head);
-    color: #fff;
-    padding: 14px 16px;
+.table {
+    width: calc(100% - 200px); /* margine laterale fisso di 100px per lato */
+    border-collapse: collapse; 
+    min-width: 680px;
+    background: var(--white); 
+    border-radius: 9px; 
+    overflow: hidden;
+    box-shadow: 0 6px 18px rgba(20,20,20,0.04); 
     font-size: 1.05rem;
+    margin: 20px auto; /* centrata */
+}
+.table thead th {
+    background: var(--table-head); 
+    color: #fff; 
+    padding: 14px 16px;
+    font-size: 1.05rem; 
     text-align: left;
 }
+.table tbody td { padding: 14px 16px; }
+.table tbody tr:nth-child(even) { background: #fbfcfe; }
+.table tbody tr:hover { background: #f1f8ff; }
 
-.table tbody td,
-table tbody td {
-    padding: 14px 16px;
-}
-
-.table tbody tr:nth-child(even),
-table tbody tr:nth-child(even) {
-    background: #fbfcfe;
-}
-
-.table tbody tr:hover,
-table tbody tr:hover {
-    background: #f1f8ff;
-}
-
-/* Colori per ruoli (mantengo le classi originali) */
-.table tbody tr.Portiere,
-table tbody tr.Portiere { background: var(--col-portiere); }
-.table tbody tr.Difensore,
-table tbody tr.Difensore { background: var(--col-difensore); }
-.table tbody tr.Centrocampista,
-table tbody tr.Centrocampista { background: var(--col-centro); }
-.table tbody tr.Attaccante,
-table tbody tr.Attaccante { background: var(--col-attaccante); }
+/* Colori per ruoli */
+.table tbody tr.Portiere { background: var(--col-portiere); }
+.table tbody tr.Difensore { background: var(--col-difensore); }
+.table tbody tr.Centrocampista { background: var(--col-centro); }
+.table tbody tr.Attaccante { background: var(--col-attaccante); }
 
 /* Responsive */
 @media (max-width: 980px) {
     .btn { min-width: 130px; padding: 14px 26px; font-size: 1.05rem; }
     .logo { width: 28%; max-width: 140px; }
     h1 { font-size: 2rem; }
-    .table, table { min-width: 560px; }
+    .table { min-width: 560px; width: calc(100% - 100px); }
 }
 @media (max-width: 680px) {
     .btn { min-width: 120px; padding: 12px 20px; font-size: 1rem; }
     .logo { width: 38%; max-width: 120px; }
     h1 { font-size: 1.7rem; }
     .login-box { width: 96%; padding: 3vh 3vw; }
-    .table, table { min-width: 500px; font-size: 0.98rem; }
+    .table { min-width: 500px; font-size: 0.98rem; width: calc(100% - 60px); }
 }
