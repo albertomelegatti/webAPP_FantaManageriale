@@ -1,5 +1,5 @@
 /* =====================================================
-   style.css - version fluida con tabelle centrate
+   style.css - versione completa con tabelle integrate
    ===================================================== */
 
 /* Reset */
@@ -11,13 +11,14 @@
     --primary: #007bff;
     --primary-dark: #0056b3;
     --muted: #6c757d;
-    --table-head: #007bff;
     --white: #ffffff;
 
     --col-portiere: #e6f3ff;
     --col-difensore: #e9fef0;
     --col-centro: #fff9db;
     --col-attaccante: #ffe7e7;
+
+    --table-head: #007bff;
 }
 
 /* Body */
@@ -30,6 +31,14 @@ body {
     font-size: 1.05rem;
 }
 
+/* Container */
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2%;
+}
+
 /* Header */
 header {
     background-color: var(--primary);
@@ -39,6 +48,7 @@ header {
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
+/* Logo */
 .logo {
     display: block;
     margin: 10px auto;
@@ -47,6 +57,7 @@ header {
     height: auto;
 }
 
+/* Titoli */
 h1 {
     font-size: 2.4rem;
     margin: 22px 0 20px 0;
@@ -80,7 +91,11 @@ h1 {
     cursor: pointer;
     transition: background 0.18s ease, transform 0.08s ease;
 }
-.btn:hover { background-color: var(--primary-dark); transform: translateY(-2px); }
+
+.btn:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-2px);
+}
 
 .btn-small {
     background-color: var(--muted);
@@ -94,9 +109,13 @@ h1 {
     cursor: pointer;
     transition: background 0.18s ease, transform 0.08s ease;
 }
-.btn-small:hover { background-color: #495057; transform: translateY(-1px); }
 
-/* Login */
+.btn-small:hover {
+    background-color: #495057;
+    transform: translateY(-1px);
+}
+
+/* Login box */
 .login-box {
     background: var(--white);
     padding: 3.5vh 3vw;
@@ -108,12 +127,28 @@ h1 {
     text-align: left;
     font-size: 1.05rem;
 }
-.login-box h2 { margin-bottom: 16px; font-size: 1.4rem; text-align: center; }
-.login-box label { display: block; margin: 12px 0 6px 0; font-size: 1rem; }
-.login-box input, .login-box select, .login-box textarea {
-    width: 100%; padding: 0.8em 1em; margin-bottom: 12px;
-    border: 1px solid #d0d5da; border-radius: 0.8em; font-size: 1.05rem;
+
+.login-box h2 {
+    margin-bottom: 16px;
+    font-size: 1.4rem;
+    text-align: center;
 }
+
+.login-box label {
+    display: block;
+    margin: 12px 0 6px 0;
+    font-size: 1rem;
+}
+
+.login-box input, .login-box select, .login-box textarea {
+    width: 100%;
+    padding: 0.8em 1em;
+    margin-bottom: 12px;
+    border: 1px solid #d0d5da;
+    border-radius: 0.8em;
+    font-size: 1.05rem;
+}
+
 .login-box input[type="submit"] {
     background-color: var(--primary);
     color: white;
@@ -121,12 +156,28 @@ h1 {
     font-weight: 600;
     transition: background 0.2s, transform 0.1s;
 }
+
 .login-box input[type="submit"]:hover {
     background-color: var(--primary-dark);
     transform: scale(1.02);
 }
 
-/* Tabelle */
+/* Footer link */
+.footer-link {
+    margin-top: 2em;
+    font-size: 1rem;
+}
+
+.footer-link a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.footer-link a:hover {
+    text-decoration: underline;
+}
+
+/* Tabelle centrate e responsive */
 .table-responsive {
     width: 100%;
     overflow-x: auto;
@@ -134,10 +185,14 @@ h1 {
 }
 
 .table {
-    width: 100%;             /* occupa tutto lo spazio del container */
+    width: 90%;               /* larghezza proporzionale al container */
+    max-width: 1200px;
     border-collapse: collapse;
-    margin: 0 auto;
+    margin: 0 auto;           /* centrata */
     font-size: 1rem;
+    background: var(--white);
+    border-radius: 0.5em;
+    box-shadow: 0 0.4em 1em rgba(0,0,0,0.05);
 }
 
 .table th, .table td {
@@ -147,20 +202,26 @@ h1 {
 }
 
 .table thead th {
-    background-color: #f2f2f2;
-    color: #000;
+    background-color: var(--table-head);
+    color: #fff;
 }
 
 .table tbody tr:nth-child(even) {
     background-color: #f9f9f9;
 }
 
+/* Colori per ruoli */
+.table tbody tr.Portiere { background-color: var(--col-portiere); }
+.table tbody tr.Difensore { background-color: var(--col-difensore); }
+.table tbody tr.Centrocampista { background-color: var(--col-centro); }
+.table tbody tr.Attaccante { background-color: var(--col-attaccante); }
+
 /* Responsive */
 @media (max-width: 980px) {
     .btn { min-width: 20%; padding: 0.9em 1.5em; font-size: 1.05rem; }
     .logo { width: 28%; max-width: 140px; }
     h1 { font-size: 2rem; }
-    .table { font-size: 0.95rem; }
+    .table { font-size: 0.95rem; width: 95%; }
 }
 
 @media (max-width: 680px) {
@@ -168,5 +229,5 @@ h1 {
     .logo { width: 38%; max-width: 120px; }
     h1 { font-size: 1.7rem; }
     .login-box { width: 96%; padding: 3vh 3vw; }
-    .table { font-size: 0.9rem; }
+    .table { font-size: 0.9rem; width: 100%; }
 }
