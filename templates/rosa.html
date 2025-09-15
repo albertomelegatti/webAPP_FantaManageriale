@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Rosa {{ nome_squadra }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Rosa di {{ nome_squadra }}</h1>
+
+        <p>Qui verranno mostrati i giocatori di {{ nome_squadra }}.</p>
+
+        <div class="footer-link">
+            <a href="/">← Torna alle Squadre</a>
+        </div>
+    </div>
+</body>
+</html>
