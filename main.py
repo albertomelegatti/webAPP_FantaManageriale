@@ -35,7 +35,7 @@ def login_squadre():
 # Pagine squadre placeholder
 @app.route("/rose")
 def rose():
-    return "<h2>Sezione Rose (in costruzione)</h2>"
+    return render_template("rose.html")
 
 @app.route("/stadi")
 def stadi():
