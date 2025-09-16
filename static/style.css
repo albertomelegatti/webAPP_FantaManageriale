@@ -62,7 +62,7 @@ header {
 .content-wrapper {
     opacity: 0;
     transform: translateY(-30px);
-    animation: fadeInUp 2s ease forwards;
+    animation: fadeInUp 0.25s ease forwards;
 }
 
 /* Keyframes */

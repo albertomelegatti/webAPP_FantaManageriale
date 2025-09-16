@@ -1,29 +1,29 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <title>Stadi - Fanta Manageriale</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <h1>Lista Stadi</h1>
+{% extends 'base.html' %}
 
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>Proprietario</th>
-                        <th>Crediti annui generati</th>
-                    </tr>
-                </thead>
-            </table>
-        </div>
-        <div class="footer-link">
-            <a href="/login-squadre">← Torna alle Squadre</a>
-        </div>
+{% block content %}
+<div class="container">
+    <h1>Lista Stadi</h1>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Proprietario</th>
+                    <th>Crediti annui generati</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Qui puoi aggiungere i dati dinamicamente con Flask -->
+                {% for stadio in stadi %}
+                <tr>
+                    <td>{{ stadio.nome }}</td>
+                    <td>{{ stadio.proprietario }}</td>
+                    <td>{{ stadio.crediti_annui }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

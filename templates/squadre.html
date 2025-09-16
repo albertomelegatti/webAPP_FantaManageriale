@@ -1,25 +1,13 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <title>Area Squadre - Fanta Manageriale</title>
-    <!-- Collegamento al CSS unico -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <meta name="viewport" content="width=device-width, initial-scale=1"> <!-- aggiunto per mobile -->
-</head>
-<body>
-    <div class="container">
-        <h1>Area Squadre</h1>
+{% extends 'base.html' %}
 
-        <div class="buttons">
-            <a href="/rose" class="btn">Rose</a>
-            <a href="/stadi" class="btn">Stadi</a>
-            <a href="/prestiti" class="btn">Prestiti</a>
-        </div>
+{% block content %}
+<div class="container">
+    <h1>Area Squadre</h1>
 
-        <div class="footer-link">
-            <a href="/">← Torna alla Home</a>
-        </div>
+    <div class="buttons"> 
+        <a href="/rose" class="btn">Rose</a> 
+        <a href="/stadi" class="btn">Stadi</a> 
+        <a href="/prestiti" class="btn">Prestiti</a> 
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

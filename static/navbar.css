@@ -1,0 +1,42 @@
+body {
+    margin: 0;
+}
+
+/* Navbar minimale */
+.custom-navbar {
+    width: 100%;
+    background-color: #343a40;
+    color: white;
+    padding: 10px 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* titolo a sinistra, icona a destra */
+}
+
+.custom-navbar h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+/* Classe per le icone nella navbar */
+.navbar-icon {
+    color: white;
+    font-size: 1.5rem;
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.navbar-icon:hover {
+    color: #ffc107; /* colore al passaggio del mouse */
+}
+
+.content-wrapper {
+    margin-top: 70px; /* spazio per la navbar fissa */
+    text-align: center;
+}

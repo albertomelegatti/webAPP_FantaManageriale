@@ -1,34 +1,30 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <title>Rosa {{ nome_squadra | replace('_',' ') }}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <h1>Rosa di {{ nome_squadra | replace('_',' ') }}</h1>
+{% extends 'base.html' %}
 
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Ruolo</th>
-                        <th>Nome Giocatore</th>
-                        <th>Squadra</th>
-                        <th>Voto</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Qui in futuro verranno inseriti i giocatori dal database -->
-                </tbody>
-            </table>
-        </div>
+{% block content %}
+<div class="container">
+    <h1>Rosa di {{ nome_squadra | replace('_',' ') }}</h1>
 
-        <div class="footer-link">
-            <a href="/login-squadre">← Torna alle Squadre</a>
-        </div>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Ruolo</th>
+                    <th>Nome Giocatore</th>
+                    <th>Squadra</th>
+                    <th>Voto</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for giocatore in rosa %}
+                <tr>
+                    <td>{{ giocatore.ruolo }}</td>
+                    <td>{{ giocatore.nome }}</td>
+                    <td>{{ giocatore.squadra }}</td>
+                    <td>{{ giocatore.voto }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
