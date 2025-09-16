@@ -58,6 +58,40 @@ header {
 }
 
 
+/* Animazione per tutto il contenitore */
+.content-wrapper {
+    opacity: 0;
+    transform: translateY(-30px);
+    animation: fadeInUp 2s ease forwards;
+}
+
+/* Keyframes */
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+
+
+.center-image {
+    display: block;
+    margin: auto;       /* centra orizzontalmente */
+    position: absolute; 
+    top: 50%;           /* centro verticale */
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 80%;     /* limita larghezza */
+    max-height: 80%;    /* limita altezza */
+}
+
+
 /* Titoli */
 h1 {
     font-size: 2.4rem;
