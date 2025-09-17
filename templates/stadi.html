@@ -5,12 +5,15 @@
     <h1>Lista Stadi</h1>
 
     <div class="table-responsive">
-        <table class="table table-striped">
+        <table class="table table-striped smart-table">
             <thead>
                 <tr>
                     <th>Nome</th>
                     <th>Proprietario</th>
-                    <th>Crediti annui generati</th>
+                    <th>Livello</th>
+                    <th>Capacità</th>
+                    <th>Bonus</th>
+                    <th>Crediti generati per partite in casa</th>
                 </tr>
             </thead>
             <tbody>
@@ -19,7 +22,10 @@
                 <tr>
                     <td>{{ stadio.nome }}</td>
                     <td>{{ stadio.proprietario }}</td>
-                    <td>{{ stadio.crediti_annui }}</td>
+                    <td>{{ stadio.livello }}</td>
+                    <td>{{ stadio.capacità }}</td>
+                    <td>{{ stadio.bonus }}</td>
+                    <td>{{ stadio.crediti_giornalieri }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

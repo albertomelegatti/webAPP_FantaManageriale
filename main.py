@@ -1,5 +1,24 @@
 import os
+import psycopg2
 from flask import Flask, render_template, send_from_directory, request
+from dotenv import load_dotenv
+
+load_dotenv()
+
+USER = os.getenv("DB_USER")
+PASSWORD = os.getenv("DB_PASSWORD")
+HOST = os.getenv("DB_HOST")
+PORT = os.getenv("DB_PORT")
+DBNAME = os.getenv("DB_NAME")
+
+def get_connection():
+    return psycopg2.connect(
+        user = USER,
+        password = PASSWORD,
+        host = HOST,
+        port = PORT,
+        dbname = DBNAME
+    )
 
 app = Flask(__name__)
 
@@ -41,9 +60,55 @@ def rose():
 def mostra_rosa(nome_squadra):
     return render_template("rosa.html", nome_squadra=nome_squadra)
 
+
+
+
 @app.route("/stadi")
 def stadi():
-    return render_template("stadi.html")
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Prendi i dati dal database
+    cur.execute("SELECT nome, proprietario, livello, capacità FROM stadio ORDER BY nome ASC;")
+    stadi_raw = cur.fetchall()  # lista di tuple
+
+    stadi = []
+    for s in stadi_raw:
+        nome = s['nome']
+        proprietario = s['proprietario']
+        livello = s['livello']
+        capacita = int(s['capacità'])
+        
+        if capacita < 30000:
+            bonus = "+0"
+        elif 30000 <= capacita < 60000:
+            bonus = "+0,5"
+        elif 60000 <= capacita < 90000:
+            bonus = "+1"
+        elif 90000 <= capacita < 150000:
+            bonus = "+1,5"
+        else:
+            bonus = "+2"
+       
+
+        stadi.append({
+            "nome": nome,
+            "proprietario": proprietario,
+            "livello": livello,
+            "capacità": capacita,
+            "bonus": bonus,
+            "crediti_giornalieri": int(capacita / 10000)
+        })
+
+    #print(stadi)
+    cur.close()
+    conn.close()
+
+    return render_template("stadi.html", stadi=stadi)
+
+
+
+
 
 @app.route("/prestiti")
 def prestiti():
