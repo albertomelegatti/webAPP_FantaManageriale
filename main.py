@@ -45,15 +45,49 @@ def login_admin():
 def login_squadre():
     return render_template("squadre.html")
 
+
+
+
+
 # Pagine squadre placeholder
 @app.route("/rose")
 def rose():
-    return render_template("rose.html")
+    conn = get_connection()
+    cur = conn.cursor()
+
+    # Prendi i dati dal database
+    cur.execute("SELECT nome FROM squadra ORDER BY nome ASC;")
+    squadre = [row[0] for row in cur.fetchall()]  # lista di nomi di squadre
+
+    cur.close()
+    conn.close()
+
+
+    return render_template("rose.html", squadre=squadre)
+
+
+
+
 
 @app.route("/squadra/<nome_squadra>")
 def mostra_rosa(nome_squadra):
-    return render_template("rosa.html", nome_squadra=nome_squadra)
+    conn = get_connection()
+    cur = conn.cursor()
 
+    # Prendi i giocatori della rosa direttamente
+    #cur.execute("""
+        #SELECT nome, ruolo, valore
+        #FROM giocatori
+        #WHERE squadra_nome = %s
+        #ORDER BY ruolo ASC;
+    #""", (nome_squadra,))
+    #rosa = cur.fetchall()
+    rosa = []
+
+    cur.close()
+    conn.close()
+
+    return render_template("rosa.html", nome_squadra=nome_squadra, rosa=rosa)
 
 
 

@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="container">
-    <h1>Rosa di {{ nome_squadra | replace('_',' ') }}</h1>
+    <h1>Rosa di {{ nome_squadra }}</h1>
 
     <div class="table-responsive">
         <table class="table table-striped">
@@ -17,10 +17,10 @@
             <tbody>
                 {% for giocatore in rosa %}
                 <tr>
-                    <td>{{ giocatore.ruolo }}</td>
-                    <td>{{ giocatore.nome }}</td>
-                    <td>{{ giocatore.squadra }}</td>
-                    <td>{{ giocatore.voto }}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                 </tr>
                 {% endfor %}
             </tbody>
