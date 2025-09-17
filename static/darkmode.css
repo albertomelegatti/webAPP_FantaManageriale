@@ -9,5 +9,18 @@ body.dark-mode .custom-navbar {
 }
 
 body.dark-mode a {
-    color: #9ecbff;
+    color: #ffffff;
+}
+
+body.dark-mode .login-box {
+    background-color: #1e1e1e;
+    color: #f1f1f1;
+    border: 1px solid #333;
+}
+
+body.dark-mode .login-box input[type="text"],
+body.dark-mode .login-box input[type="password"] {
+    background-color: #121212; /* stesso colore dello sfondo della pagina */
+    color: #f1f1f1;            /* testo chiaro */
+    border: 1px solid #444;
 }

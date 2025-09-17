@@ -9,8 +9,10 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
     toggleButton.addEventListener("click", () => {
+        // Alterna modalità scura
         body.classList.toggle("dark-mode");
 
+        // Salva preferenza
         if (body.classList.contains("dark-mode")) {
             localStorage.setItem("darkMode", "enabled");
             toggleButton.innerHTML = '<i class="bi bi-sun"></i>';
