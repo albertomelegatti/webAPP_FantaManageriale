@@ -2,23 +2,17 @@ import os
 import psycopg2
 from flask import Flask, render_template, send_from_directory, request
 from dotenv import load_dotenv
+from psycopg2.extras import RealDictCursor
 
 load_dotenv()
 
-USER = os.getenv("DB_USER")
-PASSWORD = os.getenv("DB_PASSWORD")
-HOST = os.getenv("DB_HOST")
-PORT = os.getenv("DB_PORT")
-DBNAME = os.getenv("DB_NAME")
+DATABASE_URL = os.getenv("DATABASE_URL")
+print(f"Connessione al DB con {DATABASE_URL}")
+
+#print(f"Connessione al DB con utente {USER} su host {HOST}:{PORT}, db {DBNAME}")
 
 def get_connection():
-    return psycopg2.connect(
-        user = USER,
-        password = PASSWORD,
-        host = HOST,
-        port = PORT,
-        dbname = DBNAME
-    )
+    return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
 
 app = Flask(__name__)
 
