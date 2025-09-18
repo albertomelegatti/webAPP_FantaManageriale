@@ -2,26 +2,27 @@
    style.css - versione completa con tabelle integrate
    ===================================================== */
 
-/* Reset */
+/* Reset di margini, padding e box-sizing per uniformità */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* Variabili CSS per colori e stili */
 :root {
-    --bg: #f8f9fa;
-    --text: #333;
-    --primary: #007bff;
-    --primary-dark: #0056b3;
-    --muted: #6c757d;
-    --white: #ffffff;
+    --bg: #f8f9fa;             /* colore sfondo principale */
+    --text: #333;              /* colore testo base */
+    --primary: #007bff;        /* colore primario (blu) */
+    --primary-dark: #0056b3;   /* colore primario scuro per hover */
+    --muted: #6c757d;          /* colore grigio neutro */
+    --white: #ffffff;          /* colore bianco */
 
-    --col-portiere: #e6f3ff;
-    --col-difensore: #e9fef0;
-    --col-centro: #fff9db;
-    --col-attaccante: #ffe7e7;
+    --col-portiere: #e6f3ff;   /* sfondo riga portiere */
+    --col-difensore: #e9fef0;  /* sfondo riga difensore */
+    --col-centro: #fff9db;     /* sfondo riga centrocampista */
+    --col-attaccante: #ffe7e7; /* sfondo riga attaccante */
 
-    --table-head: #007bff;
+    --table-head: #007bff;     /* sfondo intestazione tabella */
 }
 
-/* Body */
+/* Body - imposta font, colori e spaziatura globale */
 body {
     font-family: 'Open Sans', Arial, sans-serif;
     background-color: var(--bg);
@@ -31,7 +32,7 @@ body {
     font-size: 1.05rem;
 }
 
-/* Container */
+/* Container centrale con larghezza massima */
 .container {
     width: 90%;
     max-width: 1200px;
@@ -39,7 +40,7 @@ body {
     padding: 0 2%;
 }
 
-/* Header */
+/* Header del sito */
 header {
     background-color: var(--primary);
     color: var(--white);
@@ -48,7 +49,7 @@ header {
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
-/* Logo */
+/* Logo nell'header */
 .logo {
     display: block;
     margin: 0px auto;
@@ -57,15 +58,14 @@ header {
     height: auto;
 }
 
-
-/* Animazione per tutto il contenitore */
+/* Contenitore animato per il contenuto principale */
 .content-wrapper {
     opacity: 0;
     transform: translateY(-30px);
     animation: fadeInUp 0.25s ease forwards;
 }
 
-/* Keyframes */
+/* Keyframes animazione per entrata verso l’alto */
 @keyframes fadeInUp {
     0% {
         opacity: 0;
@@ -77,17 +77,14 @@ header {
     }
 }
 
-
-
-
-/* Titoli */
+/* Titoli principali */
 h1 {
     font-size: 2.4rem;
     margin: 0px 0 0px 0;
     font-weight: 700;
 }
 
-/* Bottoni */
+/* Contenitore bottoni con layout flessibile */
 .buttons {
     display: flex;
     flex-wrap: wrap;
@@ -99,6 +96,17 @@ h1 {
     max-width: 1000px;
 }
 
+
+.buttons .btn {
+    width: 9em;              /* larghezza fissa per tutti i bottoni */
+    text-align: center;        /* testo centrato */
+    white-space: nowrap;       /* evita l'andare a capo */
+}
+
+
+
+
+/* Stile dei bottoni principali */
 .btn {
     background-color: var(--primary);
     color: var(--white);
@@ -116,11 +124,13 @@ h1 {
     transition: background 0.18s ease, transform 0.08s ease;
 }
 
+/* Hover dei bottoni principali */
 .btn:hover {
     background-color: var(--primary-dark);
     transform: translateY(-2px);
 }
 
+/* Bottoni più piccoli (es. azioni secondarie) */
 .btn-small {
     background-color: var(--muted);
     color: var(--white);
@@ -134,12 +144,13 @@ h1 {
     transition: background 0.18s ease, transform 0.08s ease;
 }
 
+/* Hover dei bottoni piccoli */
 .btn-small:hover {
     background-color: #495057;
     transform: translateY(-1px);
 }
 
-/* Login box */
+/* Box di login (form centrato) */
 .login-box {
     background: var(--white);
     padding: 3.5vh 3vw;
@@ -152,18 +163,21 @@ h1 {
     font-size: 1.05rem;
 }
 
+/* Titolo dentro la login-box */
 .login-box h2 {
     margin-bottom: 16px;
     font-size: 1.4rem;
     text-align: center;
 }
 
+/* Label nei form */
 .login-box label {
     display: block;
     margin: 12px 0 6px 0;
     font-size: 1rem;
 }
 
+/* Input, select e textarea */
 .login-box input, .login-box select, .login-box textarea {
     width: 100%;
     padding: 0.8em 1em;
@@ -173,6 +187,7 @@ h1 {
     font-size: 1.05rem;
 }
 
+/* Bottone di submit del form login */
 .login-box input[type="submit"] {
     background-color: var(--primary);
     color: white;
@@ -181,33 +196,20 @@ h1 {
     transition: background 0.2s, transform 0.1s;
 }
 
+/* Hover del bottone di submit */
 .login-box input[type="submit"]:hover {
     background-color: var(--primary-dark);
     transform: scale(1.02);
 }
 
-/* Footer link */
-.footer-link {
-    margin-top: 2em;
-    font-size: 1rem;
-}
-
-.footer-link a {
-    color: var(--primary);
-    text-decoration: none;
-}
-
-.footer-link a:hover {
-    text-decoration: underline;
-}
-
-/* Tabelle centrate e responsive */
+/* Contenitore per rendere le tabelle scrollabili e responsive */
 .table-responsive {
     width: 100%;
-    overflow-x: auto;
+    overflow-x: auto; /* scroll orizzontale se la tabella è troppo larga */
     margin-top: 2em;
 }
 
+/* Tabelle principali */
 .table {
     width: 90%;               /* larghezza proporzionale al container */
     max-width: 1200px;
@@ -219,39 +221,57 @@ h1 {
     box-shadow: 0 0.4em 1em rgba(0,0,0,0.05);
 }
 
+/* Celle della tabella */
 .table th, .table td {
     padding: 10px;
     text-align: left;
     border: 1px solid #ddd;
 }
 
+/* Intestazione tabella */
 .table thead th {
     background-color: var(--table-head);
     color: #fff;
 }
 
+/* Riga alternata (zebratura) */
 .table tbody tr:nth-child(even) {
     background-color: #f9f9f9;
 }
 
-/* Colori per ruoli */
+/* Riga tabella colorata in base al ruolo */
 .table tbody tr.Portiere { background-color: var(--col-portiere); }
 .table tbody tr.Difensore { background-color: var(--col-difensore); }
 .table tbody tr.Centrocampista { background-color: var(--col-centro); }
 .table tbody tr.Attaccante { background-color: var(--col-attaccante); }
 
-/* Responsive */
+/* Classe unica per immagini responsive e ridimensionabili */
+.img-responsive {
+    width: 40%;            /* dimensione base dell'immagine */
+    max-width: none;      /* non supera mai questa larghezza */
+    height: auto;          /* mantiene le proporzioni */
+    display: block;        /* elimina spazi bianchi indesiderati */
+    margin: 0 auto;        /* centra l'immagine orizzontalmente */
+    border-radius: 8px;    /* angoli arrotondati */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* ombra leggera */
+}
+
+
+/* Media query per schermi medi (tablet) */
 @media (max-width: 980px) {
     .btn { min-width: 20%; padding: 0.9em 1.5em; font-size: 1.05rem; }
     .logo { width: 28%; max-width: 140px; }
     h1 { font-size: 2rem; }
     .table { font-size: 0.95rem; width: 95%; }
+    .img-responsive { width: 95%; }
 }
 
+/* Media query per schermi piccoli (smartphone) */
 @media (max-width: 680px) {
     .btn { min-width: 25%; padding: 0.8em 1em; font-size: 1rem; }
     .logo { width: 38%; max-width: 120px; }
     h1 { font-size: 1.7rem; }
     .login-box { width: 96%; padding: 3vh 3vw; }
     .table { font-size: 0.9rem; width: 100%; }
+    .img-responsive { width: 80%; }
 }

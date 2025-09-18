@@ -7,7 +7,7 @@ from psycopg2.extras import RealDictCursor
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-print(f"Connessione al DB con {DATABASE_URL}")
+#print(f"Connessione al DB con {DATABASE_URL}")
 
 #print(f"Connessione al DB con utente {USER} su host {HOST}:{PORT}, db {DBNAME}")
 
@@ -148,6 +148,10 @@ def scarica_regolamento():
     directory = os.path.join(app.root_path, "static")
     filename = "regolamento.pdf"
     return send_from_directory(directory, filename, as_attachment=True)
+
+
+
+
 
 if __name__ == "__main__":
     # Specificare host per Render
