@@ -7,9 +7,6 @@ from psycopg2.extras import RealDictCursor
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-#print(f"Connessione al DB con {DATABASE_URL}")
-
-#print(f"Connessione al DB con utente {USER} su host {HOST}:{PORT}, db {DBNAME}")
 
 def get_connection():
     return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
@@ -46,9 +43,6 @@ def login_squadre():
     return render_template("squadre.html")
 
 
-
-
-
 # Pagine squadre placeholder
 @app.route("/rose")
 def rose():
@@ -64,9 +58,6 @@ def rose():
 
 
     return render_template("rose.html", squadre=squadre)
-
-
-
 
 
 @app.route("/squadra/<nome_squadra>")
