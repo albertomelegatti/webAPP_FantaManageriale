@@ -21,7 +21,7 @@ body {
 
 .custom-navbar h1 {
     margin: 0;
-    font-size: 1.5rem;
+    font-size: 2rem;
 }
 
 .navbar-icons {
@@ -46,3 +46,13 @@ body {
     margin-top: 70px; /* spazio per la navbar fissa */
     text-align: center;
 }
+
+
+
+@media (max-width: 680px) {
+    .custom-navbar h1 {
+        font-size: 1.4rem;
+    }
+
+}
+
