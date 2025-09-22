@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="login-box">
+        <h2>Login</h2>
+        <form method="POST" action="/login">
+            <input type="text" name="username" placeholder="Username" required>
+            <div class="password-container">
+                <input type="password" id="password-field" name="password" placeholder="Password" required>
+                <i class="bi bi-eye-slash" id="togglePassword"></i>
+            </div>
+            <input type="submit" value="Accedi">
+        </form>
+    </div>
+</div>
+{% endblock %}

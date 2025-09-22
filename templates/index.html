@@ -2,13 +2,15 @@
 
 {% block content %}
 <div class="content-wrapper">
-    <img src="{{ url_for('static', filename='images/logo2.png') }}" alt="Logo" class="logo">
+    <img src="{{ url_for('static', filename='images/logo3.png') }}" alt="Logo" class="logo">
     <h1>Benvenuto</h1>
 
     <!-- Bottoni principali -->
     <div class="buttons">
-        <a href="{{ url_for('login_admin') }}" class="btn">Admin</a>
-        <a href="{{ url_for('login_squadre') }}" class="btn">Squadre</a>
+        <a href="{{ url_for('squadre') }}" class="btn">Squadre</a>
+        <a href="{{ url_for('creditiStadi') }}" class="btn">Crediti e Stadi</a>
+        <a href="{{ url_for('listone') }}" class="btn">Listone</a>
+        <a href="{{ url_for('aste') }}" class="btn">Aste</a>
     </div>
 
     <!-- Bottone per scaricare il regolamento -->

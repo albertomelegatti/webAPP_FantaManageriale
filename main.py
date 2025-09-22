@@ -1,8 +1,10 @@
 import os
 import psycopg2
-from flask import Flask, render_template, send_from_directory, request
+import secrets
+from flask import Flask, render_template, send_from_directory, request, session
 from dotenv import load_dotenv
 from psycopg2.extras import RealDictCursor
+from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
 
@@ -12,10 +14,7 @@ def get_connection():
     return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
 
 app = Flask(__name__)
-
-# Credenziali admin
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "1234"
+app.secret_key = secrets.token_hex(16)
 
 # Pagina principale
 @app.route("/")
@@ -23,19 +22,38 @@ def home():
     return render_template("index.html")
 
 # Rotta per login admin
-@app.route("/login-admin", methods=["GET", "POST"])
-def login_admin():
+@app.route("/login", methods=["GET", "POST"])
+def login():
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
 
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-            return "<h2>Login riuscito! Benvenuto Admin 👋</h2>"
+        conn = get_connection()
+        cur = conn.cursor()
+
+        if username == "admin":
+            cur.execute("SELECT hash_password FROM admin WHERE username = %s", (username,))
+            row = cur.fetchone()
+            if row and check_password_hash(row[0], password):
+                cur.close()
+                conn.close()
+                return render_template("admin.html")
         else:
-            return "<h2>Credenziali non valide. Riprova.</h2><a href='/login-admin'>Riprova</a>"
-    
-    # Se GET → mostra il form di login
-    return render_template("adminLogin.html")
+            cur.execute("SELECT hash_password FROM squadra WHERE username = %s", (username,))
+            row = cur.fetchone()
+            if row and check_password_hash(row[0], password):
+                nome_squadra = cur.execute("SELECT nome FROM squadra WHERE username = %s", (username,))
+                nome_squadra = cur.fetchone()[0]
+                cur.close()
+                conn.close()
+                session['username'] = username  # Memorizza l'username nella sessione
+                return render_template("squadraLogin.html", nome_squadra=nome_squadra)
+
+        cur.close()
+        conn.close()
+
+    return render_template("login.html", error="Username o password errati.")
+
 
 # Rotta per area squadre
 @app.route("/login-squadre")
@@ -44,8 +62,8 @@ def login_squadre():
 
 
 # Pagine squadre placeholder
-@app.route("/rose")
-def rose():
+@app.route("/squadre")
+def squadre():
     conn = get_connection()
     cur = conn.cursor()
 
@@ -56,12 +74,11 @@ def rose():
     cur.close()
     conn.close()
 
-
-    return render_template("rose.html", squadre=squadre)
+    return render_template("squadre.html", squadre=squadre)
 
 
 @app.route("/squadra/<nome_squadra>")
-def mostra_rosa(nome_squadra):
+def dashboardSquadra(nome_squadra):
     conn = get_connection()
     cur = conn.cursor()
 
@@ -78,12 +95,12 @@ def mostra_rosa(nome_squadra):
     cur.close()
     conn.close()
 
-    return render_template("rosa.html", nome_squadra=nome_squadra, rosa=rosa)
+    return render_template("dashboardSquadra.html", nome_squadra=nome_squadra, rosa=rosa)
 
 
 
-@app.route("/stadi")
-def stadi():
+@app.route("/creditiStadi")
+def creditiStadi():
     conn = get_connection()
     cur = conn.cursor()
 
@@ -108,7 +125,6 @@ def stadi():
             bonus = "+1,5"
         else:
             bonus = "+2"
-       
 
         stadi.append({
             "nome": nome,
@@ -123,22 +139,52 @@ def stadi():
     cur.close()
     conn.close()
 
-    return render_template("stadi.html", stadi=stadi)
+    return render_template("creditiStadi.html", stadi=stadi)
 
 
+@app.route("/listone")
+def listone():
+    return render_template("listone.html")
+
+@app.route("/aste")
+def aste():
+    return render_template("aste.html")
 
 
+@app.route('/cambia_password', methods=['GET', 'POST'])
+def cambia_password():
+    if request.method == 'POST':
+        username = session.get('username')
+        old_password = request.form.get('old_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
 
-@app.route("/prestiti")
-def prestiti():
-    return "<h2>Sezione Prestiti (in costruzione)</h2>"
+        if new_password != confirm_password:
+            return render_template("changePassword.html", error="Le nuove password non corrispondono.")
 
-# Scarica regolamento
-@app.route("/scarica-regolamento")
-def scarica_regolamento():
-    directory = os.path.join(app.root_path, "static")
-    filename = "regolamento.pdf"
-    return send_from_directory(directory, filename, as_attachment=True)
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("SELECT hash_password FROM squadra WHERE username = %s", (username,))
+        row = cur.fetchone()
+        print(row)
+        if row and check_password_hash(row[0], old_password):
+            new_hashed_password = generate_password_hash(new_password)
+            cur.execute("UPDATE squadra SET hash_password = %s WHERE username = %s", (new_hashed_password, username))
+            conn.commit()
+            nome_squadra = cur.execute("SELECT nome FROM squadra WHERE username = %s", (username,))
+            nome_squadra = cur.fetchone()[0]
+            cur.close()
+            conn.close()
+            return render_template("squadraLogin.html", nome_squadra=nome_squadra, message="Password cambiata con successo.")
+
+        cur.close()
+        conn.close()
+        return render_template("changePassword.html", error="Errore nel cambio password. Controlla i dati inseriti.")
+
+    return render_template("changePassword.html")
+
+
 
 
 

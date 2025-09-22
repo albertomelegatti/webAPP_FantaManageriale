@@ -5,9 +5,11 @@
     <h1>Area Squadre</h1>
 
     <div class="buttons"> 
-        <a href="/rose" class="btn">Rose</a> 
-        <a href="/stadi" class="btn">Stadi</a> 
-        <a href="/prestiti" class="btn">Prestiti</a> 
+        {% for squadra in squadre %}
+            <a href="/squadra/{{ squadra }}" class="btn">
+                {{ squadra }}
+            </a>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}
