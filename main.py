@@ -1,7 +1,7 @@
 import os
 import psycopg2
 import secrets
-from flask import Flask, render_template, send_from_directory, request, session
+from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for
 from dotenv import load_dotenv
 from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -24,9 +24,15 @@ def home():
 # Rotta per login admin
 @app.route("/login", methods=["GET", "POST"])
 def login():
+
+    error = None
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
+
+        if not username or not password:
+            flash("Compila tutti i campi.", "danger")
+            return redirect(url_for('login'))
 
         conn = get_connection()
         cur = conn.cursor()
@@ -37,22 +43,32 @@ def login():
             if row and check_password_hash(row[0], password):
                 cur.close()
                 conn.close()
-                return render_template("admin.html")
-        else:
-            cur.execute("SELECT hash_password FROM squadra WHERE username = %s", (username,))
-            row = cur.fetchone()
-            if row and check_password_hash(row[0], password):
-                nome_squadra = cur.execute("SELECT nome FROM squadra WHERE username = %s", (username,))
-                nome_squadra = cur.fetchone()[0]
-                cur.close()
-                conn.close()
                 session['username'] = username  # Memorizza l'username nella sessione
-                return render_template("squadraLogin.html", nome_squadra=nome_squadra)
+                return render_template("admin.html")
+            else:
+                flash("Credenziali admin errate.", "danger")
+
+        else:
+            cur.execute("SELECT hash_password, nome FROM squadra WHERE username = %s", (username,))
+            row = cur.fetchone()
+            print(row)
+            if row is not None:
+                hash_password, nome_squadra = row
+                if check_password_hash(hash_password, password):
+                    session['username'] = username  # Memorizza l'username nella sessione
+                    cur.close()
+                    conn.close()
+                    return render_template("squadraLogin.html", nome_squadra=nome_squadra)
+                else:
+                    flash("Password errata.", "danger")
+            else:
+                flash("Username non trovato.", "danger")
 
         cur.close()
         conn.close()
+        return redirect(url_for('login'))
 
-    return render_template("login.html", error="Username o password errati.")
+    return render_template("login.html", error=error)
 
 
 # Rotta per area squadre
@@ -150,6 +166,10 @@ def listone():
 def aste():
     return render_template("aste.html")
 
+@app.route("/scarica_regolamento")
+def scarica_regolamento():
+    return send_from_directory(directory='static', path='regolamento.pdf', as_attachment=True)
+
 
 @app.route('/cambia_password', methods=['GET', 'POST'])
 def cambia_password():
@@ -160,34 +180,33 @@ def cambia_password():
         confirm_password = request.form.get('confirm_password')
 
         if new_password != confirm_password:
-            return render_template("changePassword.html", error="Le nuove password non corrispondono.")
+            flash("Le password non corrispondono.", "danger")
+            return redirect(url_for('cambia_password'))
 
         conn = get_connection()
         cur = conn.cursor()
 
         cur.execute("SELECT hash_password FROM squadra WHERE username = %s", (username,))
         row = cur.fetchone()
-        print(row)
-        if row and check_password_hash(row[0], old_password):
-            new_hashed_password = generate_password_hash(new_password)
-            cur.execute("UPDATE squadra SET hash_password = %s WHERE username = %s", (new_hashed_password, username))
-            conn.commit()
-            nome_squadra = cur.execute("SELECT nome FROM squadra WHERE username = %s", (username,))
-            nome_squadra = cur.fetchone()[0]
-            cur.close()
-            conn.close()
-            return render_template("squadraLogin.html", nome_squadra=nome_squadra, message="Password cambiata con successo.")
+
+        if row is not None:
+            print(row[0])
+            if check_password_hash(row[0], old_password):
+                new_hashed_password = generate_password_hash(new_password)
+                cur.execute("UPDATE squadra SET hash_password = %s WHERE username = %s", (new_hashed_password, username))
+                conn.commit()
+                nome_squadra = cur.execute("SELECT nome FROM squadra WHERE username = %s", (username,))
+                nome_squadra = cur.fetchone()[0]
+                cur.close()
+                conn.close()
+                return render_template("squadraLogin.html", nome_squadra=nome_squadra, message="Password cambiata con successo.")
 
         cur.close()
         conn.close()
-        return render_template("changePassword.html", error="Errore nel cambio password. Controlla i dati inseriti.")
+        flash("Errore nel cambio password.", "danger")
+        return redirect(url_for('cambia_password'))
 
     return render_template("changePassword.html")
-
-
-
-
-
 
 
 if __name__ == "__main__":

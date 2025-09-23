@@ -269,7 +269,7 @@ h1 {
     box-sizing: border-box; /* per evitare che il padding aumenti la larghezza */
 }
 
-#togglePassword {
+.password-container .togglePassword {
     position: absolute;
     right: 15px; /* Sposta l'icona a destra */
     top: 50%; /* Centra verticalmente */

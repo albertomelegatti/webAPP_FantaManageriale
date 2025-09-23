@@ -1,13 +1,9 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const passwordField = document.getElementById('password-field');
-    const togglePassword = document.getElementById('togglePassword');
-
-    togglePassword.addEventListener('click', () => {
-        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordField.setAttribute('type', type);
-        
-        // Cambia icona
-        togglePassword.classList.toggle('bi-eye');
-        togglePassword.classList.toggle('bi-eye-slash');
+document.querySelectorAll('.togglePassword').forEach(toggle => {
+    toggle.addEventListener('click', () => {
+        const input = toggle.previousElementSibling;
+        const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+        input.setAttribute('type', type);
+        toggle.classList.toggle('bi-eye');
+        toggle.classList.toggle('bi-eye-slash');
     });
 });
