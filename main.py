@@ -212,3 +212,6 @@ def cambia_password():
 if __name__ == "__main__":
     # Specificare host per Render
     app.run(host="0.0.0.0", port=8080, debug=True)
+
+
+#commit test - Murari Andrea
