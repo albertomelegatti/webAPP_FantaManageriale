@@ -1,18 +1,17 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Regolamento</h2>
+<div class="container my-4">
+    <!-- Visualizzazione PDF responsive -->
+    <div style="width: 100%; height: 80vh;">
+        <embed 
+            src="{{ url_for('static', filename='regolamento.pdf') }}" 
+            type="application/pdf"
+            width="100%" 
+            height="100%"
+            style="border: none;">
+        </embed>
+    </div>
 
-<!-- Visualizzazione PDF -->
-<iframe 
-    src="{{ url_for('static', filename='static\regolamento.pdf') }}" 
-    width="100%" 
-    height="600px"
-    style="border: none;">
-</iframe>
-
-<br><br>
-
-<!-- Link per scaricare il PDF -->
-<a href="{{ url_for('download_regolamento') }}">📥 Scarica il regolamento</a>
+</div>
 {% endblock %}

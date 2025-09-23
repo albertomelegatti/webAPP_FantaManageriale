@@ -106,17 +106,10 @@ def dashboardSquadra(nome_squadra):
     stadio = cur.fetchone()  # lista di tuple
 
     
-  
-
-
     cur.execute("SELECT crediti FROM squadra WHERE nome = %s;", (nome_squadra,))
     crediti = cur.fetchone()  # lista di tuple
     crediti = crediti[0]
     
-
-    
-   
-
     # Prendi i dati dal database
     rosa = []
 
