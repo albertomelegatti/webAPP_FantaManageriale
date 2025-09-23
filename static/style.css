@@ -35,7 +35,7 @@ body {
 /* Container centrale con larghezza massima */
 .container {
     width: 90%;
-    max-width: 1200px;
+    max-width: 1650px;
     margin: 0 auto;
     padding: 0 2%;
 }

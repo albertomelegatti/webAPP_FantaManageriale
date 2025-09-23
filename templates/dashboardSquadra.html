@@ -1,30 +1,140 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container">
-    <h1>Dashboard di {{ nome_squadra }}</h1>
+<h1>Dashboard di {{ nome_squadra }}</h1>
+<div class="container my-4">
 
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Ruolo</th>
-                    <th>Nome Giocatore</th>
-                    <th>Squadra</th>
-                    <th>Voto</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for giocatore in rosa %}
-                <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Titolo e Stadio -->
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <div class="card shadow p-3">
+                <h2 class="mb-0">{{ nome_squadra }}</h2>
+                <p class="text-muted">Stadio: {{ stadio.nome }} - Livello {{ stadio.livello }}</p>
+            </div>
+        </div>
+        <div class="col-md-4 d-flex flex-wrap gap-2">
+            <div class="card shadow text-center flex-fill p-2">
+                <h5 class="mb-1">Slot occupati</h5>
+                <h3>{{ slot_occupati }}/30</h3>
+            </div>
+            <div class="card shadow text-center flex-fill p-2">
+                <h5 class="mb-1">Prestiti IN</h5>
+                <h3>{{ prestiti_in }}/2</h3>
+            </div>
+            <div class="card shadow text-center flex-fill p-2">
+                <h5 class="mb-1">Crediti</h5>
+                <h3>{{ crediti }}</h3>
+            </div>
+        </div>
     </div>
+
+    <!-- Rosa e Prestiti -->
+    <div class="row mb-3">
+        <!-- Rosa -->
+        <div class="col-md-6">
+            <div class="card shadow p-3">
+                <h4>Rosa</h4>
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th>Calciatore</th>
+                            <th>Tipo Contratto</th>
+                            <th>Ruolo</th>
+                            <th>QA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for giocatore in rosa %}
+                        <tr>
+                            <td>{{ giocatore.nome }}</td>
+                            <td>{{ giocatore.contratto }}</td>
+                            <td>{{ giocatore.ruolo }}</td>
+                            <td>{{ giocatore.qa }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Prestiti -->
+        <div class="col-md-6">
+            <div class="card shadow p-3 mb-3">
+                <h4>Prestiti OUT</h4>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Calciatore</th>
+                            <th>Tipo Contratto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in prestiti_out %}
+                        <tr>
+                            <td>{{ p.nome }}</td>
+                            <td>{{ p.tipo }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card shadow p-3">
+                <h4>Prestiti IN</h4>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Calciatore</th>
+                            <th>Club</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in prestiti_in_lista %}
+                        <tr>
+                            <td>{{ p.nome }}</td>
+                            <td>{{ p.club }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Primavera e Movimenti di mercato -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow p-3">
+                <h4>Primavera</h4>
+                <ul class="list-group list-group-flush">
+                    {% for p in primavera %}
+                    <li class="list-group-item">{{ p.nome }} ({{ p.ruolo }})</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card shadow p-3">
+                <h4>Movimenti di mercato</h4>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Evento</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in mercato %}
+                        <tr>
+                            <td>{{ m.data }}</td>
+                            <td>{{ m.evento }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}

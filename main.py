@@ -98,13 +98,32 @@ def dashboardSquadra(nome_squadra):
     conn = get_connection()
     cur = conn.cursor()
 
+    stadio = []
+    squadra = []
+
+    # Prendo i dati dello stadio
+    cur.execute("SELECT nome, proprietario, livello FROM stadio WHERE proprietario = %s;", (nome_squadra,))
+    stadio = cur.fetchone()  # lista di tuple
+
+    
+  
+
+
+    cur.execute("SELECT crediti FROM squadra WHERE nome = %s;", (nome_squadra,))
+    crediti = cur.fetchone()  # lista di tuple
+    crediti = crediti[0]
+    
+
+    
+   
+
     # Prendi i dati dal database
     rosa = []
 
     cur.close()
     conn.close()
 
-    return render_template("dashboardSquadra.html", nome_squadra=nome_squadra, rosa=rosa)
+    return render_template("dashboardSquadra.html", nome_squadra=nome_squadra, rosa=rosa, stadio=stadio, crediti=crediti, squadra=squadra)
 
 
 
