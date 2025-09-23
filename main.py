@@ -109,7 +109,7 @@ def dashboardSquadra(nome_squadra):
 
 
 @app.route("/creditiStadi")
-def creditiStadiSlot():
+def creditiStadi():
     conn = get_connection()
     cur = conn.cursor()
 
