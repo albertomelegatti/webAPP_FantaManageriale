@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>PDF Viewer Moderno</title>
+<script src="https://unpkg.com/pdfjs-dist@4.3.136/build/pdf.js"></script>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f6fa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    padding: 20px;
+  }
+
+  h2 {
+    margin-bottom: 20px;
+    color: #333;
+  }
+
+  #toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+  }
+
+  button, a {
+    background-color: #4a90e2;
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+
+  button:hover, a:hover {
+    background-color: #357ab8;
+  }
+
+  #page-info {
+    align-self: center;
+    font-size: 14px;
+    color: #555;
+    margin-left: 10px;
+  }
+
+  #pdf-container {
+    background: #fff;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+
+  canvas {
+    display: block;
+    margin: 0 auto;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+
+<h2>PDF Viewer Moderno</h2>
+
+<div id="toolbar">
+  <button id="prev-page">⬅ Pagina precedente</button>
+  <button id="next-page">➡ Pagina successiva</button>
+  <span id="page-info">Pagina <span id="page-num">1</span> di <span id="page-count">1</span></span>
+  <button id="zoom-out">➖ Zoom</button>
+  <button id="zoom-in">➕ Zoom</button>
+  <a id="download" href="/files/documento.pdf" download="documento.pdf">📥 Scarica PDF</a>
+</div>
+
+<div id="pdf-container">
+  <canvas id="pdf-render"></canvas>
+</div>
+
+<script>
+const url = 'static/regolamento.pdf';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://unpkg.com/pdfjs-dist@4.3.136/build/pdf.worker.js';
+
+let pdfDoc = null,
+    pageNum = 1,
+    scale = 1.5,
+    canvas = document.getElementById('pdf-render'),
+    ctx = canvas.getContext('2d');
+
+function renderPage(num) {
+  pdfDoc.getPage(num).then(page => {
+    const viewport = page.getViewport({ scale });
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    page.render({ canvasContext: ctx, viewport: viewport });
+    document.getElementById('page-num').textContent = num;
+  });
+}
+
+pdfjsLib.getDocument(url).promise.then(doc => {
+  pdfDoc = doc;
+  document.getElementById('page-count').textContent = pdfDoc.numPages;
+  renderPage(pageNum);
+});
+
+document.getElementById('prev-page').addEventListener('click', () => {
+  if(pageNum <= 1) return;
+  pageNum--;
+  renderPage(pageNum);
+});
+
+document.getElementById('next-page').addEventListener('click', () => {
+  if(pageNum >= pdfDoc.numPages) return;
+  pageNum++;
+  renderPage(pageNum);
+});
+
+document.getElementById('zoom-in').addEventListener('click', () => {
+  scale += 0.2;
+  renderPage(pageNum);
+});
+
+document.getElementById('zoom-out').addEventListener('click', () => {
+  if(scale <= 0.4) return;
+  scale -= 0.2;
+  renderPage(pageNum);
+});
+</script>
+
+</body>
+</html>

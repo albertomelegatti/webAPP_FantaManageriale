@@ -170,6 +170,9 @@ def aste():
 def scarica_regolamento():
     return send_from_directory(directory='static', path='regolamento.pdf', as_attachment=True)
 
+@app.route("/regolamento")
+def listone():
+    return render_template("regolamento.html")
 
 @app.route('/cambia_password', methods=['GET', 'POST'])
 def cambia_password():
