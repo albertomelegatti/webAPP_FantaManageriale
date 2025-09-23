@@ -2,9 +2,16 @@
 
 {% block content %}
 <div class="container my-4">
-    <button onclick="window.open('{{ url_for('visualizza_pdf') }}', '_blank')" 
-            class="btn btn-primary">
-        Visualizza PDF
-    </button>
+    <!-- Visualizzazione PDF responsive -->
+    <div style="width: 100%; height: 80vh;">
+        <iframe 
+            src="{{ url_for('static', filename='regolamento.pdf') }}" 
+            type="application/pdf"
+            width="100%" 
+            height="100%"
+            style="border: none;">
+        </iframe>
+    </div>
+
 </div>
 {% endblock %}
