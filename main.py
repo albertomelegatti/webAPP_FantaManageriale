@@ -44,7 +44,7 @@ def login():
                 cur.close()
                 conn.close()
                 session['username'] = username  # Memorizza l'username nella sessione
-                return render_template("admin.html")
+                return redirect(url_for('admin'))
             else:
                 flash("Credenziali admin errate.", "danger")
 
@@ -58,7 +58,7 @@ def login():
                     session['username'] = username  # Memorizza l'username nella sessione
                     cur.close()
                     conn.close()
-                    return render_template("squadraLogin.html", nome_squadra=nome_squadra)
+                    return redirect(url_for('squadraLogin', nome_squadra=nome_squadra))
                 else:
                     flash("Password errata.", "danger")
             else:
@@ -98,14 +98,7 @@ def dashboardSquadra(nome_squadra):
     conn = get_connection()
     cur = conn.cursor()
 
-    # Prendi i giocatori della rosa direttamente
-    #cur.execute("""
-        #SELECT nome, ruolo, valore
-        #FROM giocatori
-        #WHERE squadra_nome = %s
-        #ORDER BY ruolo ASC;
-    #""", (nome_squadra,))
-    #rosa = cur.fetchall()
+    # Prendi i dati dal database
     rosa = []
 
     cur.close()
@@ -120,8 +113,22 @@ def creditiStadi():
     conn = get_connection()
     cur = conn.cursor()
 
+    # Prendo la quantità di crediti per ogni squadra
+    cur.execute("SELECT nome, crediti FROM squadra ORDER BY nome ASC;")
+    squadre_raw = cur.fetchall()  # lista di tuple
+    squadre = []
+    for c in squadre_raw:
+        nome = c['nome']
+        crediti = c['crediti']
+        squadre.append({
+            "nome": nome,
+            "crediti": crediti
+        })
+
+
+
     # Prendi i dati dal database
-    cur.execute("SELECT nome, proprietario, livello, capacità FROM stadio ORDER BY nome ASC;")
+    cur.execute("SELECT nome, proprietario, livello FROM stadio ORDER BY nome ASC;")
     stadi_raw = cur.fetchall()  # lista di tuple
 
     stadi = []
@@ -129,38 +136,48 @@ def creditiStadi():
         nome = s['nome']
         proprietario = s['proprietario']
         livello = s['livello']
-        capacita = int(s['capacità'])
         
-        if capacita < 30000:
-            bonus = "+0"
-        elif 30000 <= capacita < 60000:
-            bonus = "+0,5"
-        elif 60000 <= capacita < 90000:
-            bonus = "+1"
-        elif 90000 <= capacita < 150000:
-            bonus = "+1,5"
-        else:
-            bonus = "+2"
+        if livello == 0:
+            bonus = 0
+        elif livello == 1:
+            bonus = 4
+        elif livello == 2:
+            bonus = 8
+        elif livello == 3:
+            bonus = 14
+        elif livello == 4:
+            bonus = 18
+        elif livello == 5:
+            bonus = 25
+        elif livello == 6:
+            bonus = 30
+        elif livello == 7:
+            bonus = 39
+        elif livello == 8:
+            bonus = 44
+
 
         stadi.append({
-            "nome": nome,
             "proprietario": proprietario,
+            "nome": nome,
             "livello": livello,
-            "capacità": capacita,
-            "bonus": bonus,
-            "crediti_giornalieri": int(capacita / 10000)
+            "crediti_annuali": bonus
         })
 
     #print(stadi)
     cur.close()
     conn.close()
 
-    return render_template("creditiStadi.html", stadi=stadi)
+    return render_template("creditiStadi.html", stadi=stadi, squadre=squadre)
 
 
 @app.route("/listone")
 def listone():
     return render_template("listone.html")
+
+@app.route("/squadraLogin/<nome_squadra>")
+def squadraLogin(nome_squadra):
+    return render_template("squadraLogin.html", nome_squadra=nome_squadra)
 
 @app.route("/aste")
 def aste():
@@ -202,7 +219,7 @@ def cambia_password():
                 nome_squadra = cur.fetchone()[0]
                 cur.close()
                 conn.close()
-                return render_template("squadraLogin.html", nome_squadra=nome_squadra, message="Password cambiata con successo.")
+                return redirect(url_for('squadraLogin', nome_squadra=nome_squadra))
 
         cur.close()
         conn.close()
