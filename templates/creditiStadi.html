@@ -2,34 +2,56 @@
 
 {% block content %}
 <div class="container">
-    <h1>Lista Stadi</h1>
+    <div class="row">
+        <!-- Colonna Crediti -->
+        <div class="col-md-6">
+            <h2>Crediti</h2>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped small smart-table">
+                    <thead>
+                        <tr>
+                            <th>Squadra</th>
+                            <th>Crediti</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for squadra in squadre %}
+                        <tr>
+                            <td>{{ squadra.nome }}</td>
+                            <td>{{ squadra.crediti }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-    <div class="table-responsive">
-        <table class="table table-striped smart-table">
-            <thead>
-                <tr>
-                    <th>Nome</th>
-                    <th>Proprietario</th>
-                    <th>Livello</th>
-                    <th>Capacità</th>
-                    <th>Bonus</th>
-                    <th>Crediti generati per partite in casa</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Qui puoi aggiungere i dati dinamicamente con Flask -->
-                {% for stadio in stadi %}
-                <tr>
-                    <td>{{ stadio.nome }}</td>
-                    <td>{{ stadio.proprietario }}</td>
-                    <td>{{ stadio.livello }}</td>
-                    <td>{{ stadio.capacità }}</td>
-                    <td>{{ stadio.bonus }}</td>
-                    <td>{{ stadio.crediti_giornalieri }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <!-- Colonna Stadi -->
+        <div class="col-md-6">
+            <h2>Stadi</h2>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped small smart-table">
+                    <thead>
+                        <tr>
+                            <th>Squadra</th>
+                            <th>Nome Stadio</th>
+                            <th>Livello</th>
+                            <th>Crediti generati</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stadio in stadi %}
+                        <tr>
+                            <td>{{ stadio.proprietario }}</td>
+                            <td>{{ stadio.nome }}</td>
+                            <td>{{ stadio.livello }}</td>
+                            <td>{{ stadio.crediti_annuali }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
