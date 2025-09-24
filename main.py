@@ -3,6 +3,7 @@ import psycopg2
 import secrets
 from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for
 from dotenv import load_dotenv
+from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
