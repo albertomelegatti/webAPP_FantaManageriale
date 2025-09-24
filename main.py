@@ -3,7 +3,6 @@ import psycopg2
 import secrets
 from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for
 from dotenv import load_dotenv
-from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 
 load_dotenv()
@@ -111,7 +110,6 @@ def dashboardSquadra(nome_squadra):
     username = squadra_raw[0]
     crediti = squadra_raw[1]
     
-    # Prendi i dati dal database
     rosa = []
 
     cur.close()
@@ -177,7 +175,6 @@ def creditiStadi():
             "crediti_annuali": bonus
         })
 
-    #print(stadi)
     cur.close()
     conn.close()
 
@@ -239,5 +236,4 @@ def cambia_password():
 
 
 if __name__ == "__main__":
-    # Specificare host per Render
     app.run(host="0.0.0.0", port=8080, debug=True)
