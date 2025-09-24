@@ -286,9 +286,6 @@ h1 {
     h1 { font-size: 2rem; }
     .table { font-size: 0.95rem; width: 95%; }
     .img-responsive { width: 95%; }
-    .logo-img {
-        width: 45%;
-    }
 }
 
 /* Media query per schermi piccoli (smartphone) */
@@ -299,7 +296,4 @@ h1 {
     .login-box { width: 96%; padding: 3vh 3vw; }
     .table { font-size: 0.9rem; width: 100%; }
     .img-responsive { width: 80%; }
-    .logo-img {
-        width: 60%;
-    }
 }
