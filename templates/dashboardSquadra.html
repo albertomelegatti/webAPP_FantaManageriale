@@ -4,9 +4,17 @@
 <h1>Dashboard di {{ nome_squadra }}</h1>
 <div class="container my-4">
 
-    <!-- Titolo e Stadio -->
+    <!-- Titolo, Stadio e Logo -->
     <div class="row mb-3">
-        <div class="col-md-8">
+        <div class="col-md-2 d-flex align-items-center justify-content-center">
+            <div class="card shadow p-2 text-center">
+                <img    src="{{ url_for('static', filename='loghi/' ~ username ~ '.png') }}" 
+                        alt="Logo {{ nome_squadra }}" 
+                        class="img-fluid" 
+                        style="max-width: 100%; height: auto;">
+            </div>
+        </div>
+        <div class="col-md-6">
             <div class="card shadow p-3">
                 <h2 class="mb-0">{{ nome_squadra }}</h2>
                 <p class="text-muted">Stadio: {{ stadio.nome }} - Livello {{ stadio.livello }}</p>

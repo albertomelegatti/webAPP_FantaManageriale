@@ -106,9 +106,10 @@ def dashboardSquadra(nome_squadra):
     stadio = cur.fetchone()  # lista di tuple
 
     
-    cur.execute("SELECT crediti FROM squadra WHERE nome = %s;", (nome_squadra,))
-    crediti = cur.fetchone()  # lista di tuple
-    crediti = crediti[0]
+    cur.execute("SELECT username, crediti FROM squadra WHERE nome = %s;", (nome_squadra,))
+    squadra_raw = cur.fetchone()  # lista di tuple
+    username = squadra_raw[0]
+    crediti = squadra_raw[1]
     
     # Prendi i dati dal database
     rosa = []
@@ -116,7 +117,7 @@ def dashboardSquadra(nome_squadra):
     cur.close()
     conn.close()
 
-    return render_template("dashboardSquadra.html", nome_squadra=nome_squadra, rosa=rosa, stadio=stadio, crediti=crediti, squadra=squadra)
+    return render_template("dashboardSquadra.html", nome_squadra=nome_squadra, rosa=rosa, stadio=stadio, username=username, crediti=crediti, squadra=squadra)
 
 
 
