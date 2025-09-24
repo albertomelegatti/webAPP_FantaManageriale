@@ -197,15 +197,9 @@ def aste():
     return render_template("aste.html")
 
 @app.route("/scarica_regolamento")
-#def scarica_regolamento():
-#    return send_from_directory(directory='static', path='regolamento.pdf', as_attachment=True)
 def vedi_regolamento():
-    return send_from_directory(
-        'static',               # cartella dove è il PDF
-        'regolamento.pdf',      # nome del PDF
-        mimetype='application/pdf',
-        as_attachment=False     # forza apertura inline
-    )
+    return send_from_directory('static', 'regolamento.pdf', mimetype='application/pdf', as_attachment=False)
+
 @app.route('/cambia_password', methods=['GET', 'POST'])
 def cambia_password():
     if request.method == 'POST':
