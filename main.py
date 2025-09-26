@@ -71,6 +71,12 @@ def login():
     return render_template("login.html", error=error)
 
 
+# Rotta per area admin
+@app.route("/admin")
+def admin():
+    return render_template("admin.html")
+
+
 # Rotta per area squadre
 @app.route("/login-squadre")
 def login_squadre():
