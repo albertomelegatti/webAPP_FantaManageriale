@@ -32,9 +32,9 @@
         </div>
     </div>
 
-    <!-- Rosa e Prestiti -->
+    <!-- Rosa + Colonna Destra -->
     <div class="row mb-4">
-        <!-- Rosa -->
+        <!-- Rosa (sx) -->
         <div class="col-12 col-md-6 mb-3 mb-md-0">
             <div class="card shadow p-3 h-100">
                 <h4>Rosa</h4>
@@ -63,8 +63,34 @@
             </div>
         </div>
 
-        <!-- Prestiti -->
+        <!-- Colonna destra: Primavera, Prestiti OUT, Prestiti IN, Movimenti -->
         <div class="col-12 col-md-6">
+            <!-- Primavera -->
+            <div class="card shadow p-3 mb-3">
+                <h4>Primavera</h4>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0 table-striped">
+                        <thead>
+                            <tr>
+                                <th>Calciatore</th>
+                                <th>Ruolo</th>
+                                <th>QA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for g in primavera %}
+                            <tr>
+                                <td>{{ g.nome }}</td>
+                                <td>{{ g.ruolo }}</td>
+                                <td>{{ g.quot_att_mantra }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Prestiti OUT -->
             <div class="card shadow p-3 mb-3">
                 <h4>Prestiti OUT</h4>
                 <div class="table-responsive">
@@ -91,7 +117,8 @@
                 </div>
             </div>
 
-            <div class="card shadow p-3">
+            <!-- Prestiti IN -->
+            <div class="card shadow p-3 mb-3">
                 <h4>Prestiti IN</h4>
                 <div class="table-responsive">
                     <table class="table table-sm mb-0 table-striped">
@@ -110,44 +137,16 @@
                                 <td>{{ g.ruolo }}</td>
                                 <td>{{ g.quot_att_mantra }}</td>
                                 <td>{{ g.detentore_cartellino }}</td>
+                                <td>{{ g.costo }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Primavera e Movimenti di mercato -->
-    <div class="row">
-        <div class="col-12 col-md-4 mb-3 mb-md-0">
-            <div class="card shadow p-3 h-100">
-                <h4>Primavera</h4>
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0 table-striped">
-                        <thead>
-                            <tr>
-                                <th>Calciatore</th>
-                                <th>Ruolo</th>
-                                <th>QA</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for g in primavera %}
-                            <tr>
-                                <td>{{ g.nome }}</td>
-                                <td>{{ g.ruolo }}</td>
-                                <td>{{ g.quot_att_mantra }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <div class="col-12 col-md-8">
-            <div class="card shadow p-3 h-100">
+            <!-- Movimenti di mercato -->
+            <div class="card shadow p-3">
                 <h4>Movimenti di mercato</h4>
                 <div class="table-responsive">
                     <table class="table table-sm mb-0 table-striped">
@@ -168,6 +167,7 @@
                     </table>
                 </div>
             </div>
+
         </div>
     </div>
 
