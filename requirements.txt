@@ -2,12 +2,3 @@ Flask==3.0.0
 gunicorn
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
-faiss-cpu
-numpy
-pandas
-scikit-learn
-sentence-transformer
-transformer
-torch
-tensorflow==2.15.0
-tf-keras
