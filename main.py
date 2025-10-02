@@ -305,16 +305,40 @@ def creditiStadi():
 
 @app.route("/listone")
 def listone():
-    # Collegamento al google sheet
     
+    conn = get_connection()
+    cur = conn.cursor()
 
+    cur.execute('''SELECT id, nome, squadra_att, detentore_cartellino, club, quot_att_mantra, tipo_contratto, ruolo, costo
+                FROM giocatore''')
+    giocatori_raw = cur.fetchall()
+    giocatori = []
 
+    for g in giocatori_raw:
+        id = g["id"]
+        nome = g["nome"]
+        squadra_att = g["squadra_att"]
+        detentore_cartellino = g["detentore_cartellino"]
+        club = g["club"]
+        quot_att_mantra = g["quot_att_mantra"]
+        tipo_contratto = g["tipo_contratto"]
+        ruolo = g["ruolo"]
+        ruolo = ruolo.strip("{}")
+        costo = g["costo"]
+        giocatori.append({
+            "id": id,
+            "nome": nome,
+            "squadra_att": squadra_att,
+            "detentore_cartellino": detentore_cartellino,
+            "club": club,
+            "quot_att_mantra": quot_att_mantra,
+            "tipo_contratto": tipo_contratto,
+            "ruolo": ruolo,
+            "costo": costo
+        })
 
-
-
-
-
-    return render_template("listone.html")
+    
+    return render_template("listone.html", giocatori=giocatori)
 
 @app.route("/squadraLogin/<nome_squadra>")
 def squadraLogin(nome_squadra):
