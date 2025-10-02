@@ -138,7 +138,7 @@ def dashboardSquadra(nome_squadra):
     
     # ROSA
     rosa = []
-    cur.execute('''SELECT nome, tipo_contratto, ruolo, quot_att_mantra 
+    cur.execute('''SELECT nome, tipo_contratto, ruolo, quot_att_mantra, costo 
                 FROM giocatore 
                 WHERE squadra_att = %s 
                     AND tipo_contratto <> 'Primavera';''' , (nome_squadra,))
@@ -150,11 +150,13 @@ def dashboardSquadra(nome_squadra):
         ruolo = g['ruolo']
         ruolo = ruolo.strip("{}")
         quot_att_mantra = g['quot_att_mantra']
+        costo = g['costo']
         rosa.append({
             "nome": nome,
             "tipo_contratto": tipo_contratto,
             "ruolo": ruolo,
-            "quot_att_mantra": quot_att_mantra
+            "quot_att_mantra": quot_att_mantra,
+            "costo": costo
         })
 
     # PRIMAVERA
