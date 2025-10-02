@@ -40,7 +40,9 @@ def login():
         cur = conn.cursor()
 
         if username == "admin":
-            cur.execute("SELECT hash_password FROM admin WHERE username = %s", (username,))
+            cur.execute('''SELECT hash_password 
+                        FROM admin 
+                        WHERE username = %s''', (username,))
             row = cur.fetchone()
             if row and check_password_hash(row[0], password):
                 cur.close()
@@ -51,7 +53,9 @@ def login():
                 flash("Credenziali admin errate.", "danger")
 
         else:
-            cur.execute("SELECT hash_password, nome FROM squadra WHERE username = %s", (username,))
+            cur.execute('''SELECT hash_password, nome 
+                        FROM squadra 
+                        WHERE username = %s''', (username,))
             row = cur.fetchone()
             print(row)
             if row is not None:
@@ -92,7 +96,9 @@ def squadre():
     cur = conn.cursor()
 
     # Prendi i dati dal database
-    cur.execute("SELECT nome FROM squadra WHERE nome <> 'Svincolato' ORDER BY nome ASC;")
+    cur.execute('''SELECT nome 
+                FROM squadra 
+                WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
     squadre = [row[0] for row in cur.fetchall()]  # lista di nomi di squadre
 
     cur.close()
@@ -109,21 +115,33 @@ def dashboardSquadra(nome_squadra):
     stadio = []
     squadra = []
 
-    # Prendo i dati dello stadio
-    cur.execute("SELECT nome, proprietario, livello FROM stadio WHERE proprietario = %s;", (nome_squadra,))
-    stadio = cur.fetchone()  # lista di tuple
+    # STADIO
+    cur.execute('''SELECT nome, proprietario, livello 
+                FROM stadio 
+                WHERE proprietario = %s;''', (nome_squadra,))
+    stadio = cur.fetchone()
 
-    
-    cur.execute("SELECT username, crediti FROM squadra WHERE nome = %s;", (nome_squadra,))
-    squadra_raw = cur.fetchone()  # lista di tuple
+    # CREDITI
+    cur.execute('''SELECT username, crediti 
+                FROM squadra 
+                WHERE nome = %s;''', (nome_squadra,))
+    squadra_raw = cur.fetchone()
     username = squadra_raw[0]
     crediti = squadra_raw[1]
 
-    cur.execute("SELECT COUNT(id) AS slotOccupati FROM giocatore WHERE squadra_att = %s AND tipo_contratto IN ('Hold', 'Indeterminato');", (nome_squadra,))
+    # CONTEGGIO SLOT OCCUPATI
+    cur.execute('''SELECT COUNT(id) AS slotOccupati 
+                FROM giocatore 
+                WHERE squadra_att = %s 
+                    AND tipo_contratto IN ('Hold', 'Indeterminato');''', (nome_squadra,))
     slotOccupati = cur.fetchone()[0]
     
+    # ROSA
     rosa = []
-    cur.execute("SELECT nome, tipo_contratto, ruolo, quot_att_mantra FROM giocatore WHERE squadra_att = %s AND tipo_contratto <> 'Primavera';" , (nome_squadra,))
+    cur.execute('''SELECT nome, tipo_contratto, ruolo, quot_att_mantra 
+                FROM giocatore 
+                WHERE squadra_att = %s 
+                    AND tipo_contratto <> 'Primavera';''' , (nome_squadra,))
     rosa_raw = cur.fetchall()
 
     for g in rosa_raw:
@@ -139,8 +157,12 @@ def dashboardSquadra(nome_squadra):
             "quot_att_mantra": quot_att_mantra
         })
 
+    # PRIMAVERA
     primavera = []
-    cur.execute("SELECT nome, tipo_contratto, ruolo, quot_att_mantra FROM giocatore WHERE squadra_att = %s AND tipo_contratto = 'Primavera';" , (nome_squadra,))
+    cur.execute('''SELECT nome, tipo_contratto, ruolo, quot_att_mantra 
+                FROM giocatore 
+                WHERE squadra_att = %s 
+                    AND tipo_contratto = 'Primavera';''' , (nome_squadra,))
     primavera_raw = cur.fetchall()
 
     for g in primavera_raw:
@@ -154,12 +176,65 @@ def dashboardSquadra(nome_squadra):
             "ruolo": ruolo,
             "quot_att_mantra": quot_att_mantra
         })
-        print(g)
+
+
+    # CONTEGGIO PRESTITI IN
+    cur.execute('''SELECT COUNT(id)
+                FROM giocatore
+                WHERE squadra_att = %s 
+                    AND tipo_contratto = 'Fanta-Prestito';''', (nome_squadra,))
+    prestiti_in_num = cur.fetchone()[0]
+
+    # PRESTITI IN
+    prestiti_in = []
+    cur.execute('''SELECT nome, ruolo, quot_att_mantra, detentore_cartellino
+                FROM giocatore 
+                WHERE squadra_att = %s 
+                    AND tipo_contratto = 'Fanta-Prestito';''', (nome_squadra,))
+    prestiti_in_raw = cur.fetchall()
+
+    for g in prestiti_in_raw:
+        nome = g['nome']
+        ruolo = g['ruolo']
+        ruolo = ruolo.strip("{}")
+        quot_att_mantra = g['quot_att_mantra']
+        detentore_cartellino = g["detentore_cartellino"]
+        prestiti_in.append({
+            "nome": nome,
+            "ruolo": ruolo,
+            "quot_att_mantra": quot_att_mantra,
+            "detentore_cartellino": detentore_cartellino
+        })
+
+
+    # PRESTITI OUT
+    prestiti_out = []
+    cur.execute('''SELECT nome, ruolo, quot_att_mantra, squadra_att
+                FROM giocatore 
+                WHERE detentore_cartellino = %s 
+                    AND tipo_contratto = 'Fanta-Prestito';''', (nome_squadra,))
+    prestiti_out_raw = cur.fetchall()
+    print(prestiti_out_raw)
+
+    for g in prestiti_out_raw:
+        nome = g['nome']
+        ruolo = g['ruolo']
+        ruolo = ruolo.strip("{}")
+        quot_att_mantra = g['quot_att_mantra']
+        squadra_att = g['squadra_att']
+        prestiti_out.append({
+            "nome": nome,
+            "ruolo": ruolo,
+            "quot_att_mantra": quot_att_mantra,
+            "squadra_att": squadra_att
+        })
+    
+    
 
     cur.close()
     conn.close()
 
-    return render_template("dashboardSquadra.html", nome_squadra=nome_squadra, rosa=rosa, primavera=primavera, stadio=stadio, username=username, crediti=crediti, squadra=squadra, slotOccupati=slotOccupati)
+    return render_template("dashboardSquadra.html", nome_squadra=nome_squadra, rosa=rosa, primavera=primavera,prestiti_in=prestiti_in, prestiti_in_num=prestiti_in_num, prestiti_out=prestiti_out, stadio=stadio, username=username, crediti=crediti, squadra=squadra, slotOccupati=slotOccupati)
 
 
 
@@ -169,7 +244,9 @@ def creditiStadi():
     cur = conn.cursor()
 
     # Prendo la quantità di crediti per ogni squadra
-    cur.execute("SELECT nome, crediti FROM squadra ORDER BY nome ASC;")
+    cur.execute('''SELECT nome, crediti 
+                FROM squadra 
+                WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
     squadre_raw = cur.fetchall()  # lista di tuple
     squadre = []
     for c in squadre_raw:
@@ -183,7 +260,8 @@ def creditiStadi():
 
 
     # Prendi i dati dal database
-    cur.execute("SELECT nome, proprietario, livello FROM stadio ORDER BY nome ASC;")
+    cur.execute('''SELECT nome, proprietario, livello 
+                FROM stadio ORDER BY nome ASC;''')
     stadi_raw = cur.fetchall()  # lista di tuple
 
     stadi = []
@@ -265,16 +343,22 @@ def cambia_password():
         conn = get_connection()
         cur = conn.cursor()
 
-        cur.execute("SELECT hash_password FROM squadra WHERE username = %s", (username,))
+        cur.execute('''SELECT hash_password 
+                    FROM squadra 
+                    WHERE username = %s''', (username,))
         row = cur.fetchone()
 
         if row is not None:
             print(row[0])
             if check_password_hash(row[0], old_password):
                 new_hashed_password = generate_password_hash(new_password)
-                cur.execute("UPDATE squadra SET hash_password = %s WHERE username = %s", (new_hashed_password, username))
+                cur.execute('''UPDATE squadra 
+                            SET hash_password = %s 
+                            WHERE username = %s''', (new_hashed_password, username))
                 conn.commit()
-                nome_squadra = cur.execute("SELECT nome FROM squadra WHERE username = %s", (username,))
+                nome_squadra = cur.execute('''SELECT nome 
+                                           FROM squadra 
+                                           WHERE username = %s''', (username,))
                 nome_squadra = cur.fetchone()[0]
                 cur.close()
                 conn.close()

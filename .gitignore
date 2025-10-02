@@ -5,3 +5,4 @@ embeddings.npy
 chat.html
 paragraphs.txt
 models
+fromGoogleSheet2Supabase.py

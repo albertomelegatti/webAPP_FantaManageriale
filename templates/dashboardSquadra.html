@@ -23,7 +23,7 @@
             </div>
             <div class="card shadow text-center p-2 flex-fill">
                 <h5 class="mb-1">Prestiti IN</h5>
-                <h3>{{ prestiti_in }}/2</h3>
+                <h3>{{ prestiti_in_num }}/2</h3>
             </div>
             <div class="card shadow text-center p-2 flex-fill">
                 <h5 class="mb-1">Crediti</h5>
@@ -68,18 +68,22 @@
             <div class="card shadow p-3 mb-3">
                 <h4>Prestiti OUT</h4>
                 <div class="table-responsive">
-                    <table class="table table-sm mb-0">
+                    <table class="table table-sm mb-0 table-striped">
                         <thead>
                             <tr>
                                 <th>Calciatore</th>
-                                <th>Tipo Contratto</th>
+                                <th>Ruolo</th>
+                                <th>QA</th>
+                                <th>Verso</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for p in prestiti_out %}
                             <tr>
                                 <td>{{ p.nome }}</td>
-                                <td>{{ p.tipo }}</td>
+                                <td>{{ p.ruolo }}</td>
+                                <td>{{ p.quot_att_mantra }}</td>
+                                <td>{{ p.squadra_att }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -90,17 +94,22 @@
             <div class="card shadow p-3">
                 <h4>Prestiti IN</h4>
                 <div class="table-responsive">
-                    <table class="table table-sm mb-0">
+                    <table class="table table-sm mb-0 table-striped">
                         <thead>
                             <tr>
                                 <th>Calciatore</th>
                                 <th>Ruolo</th>
+                                <th>QA</th>
+                                <th>Proprietario</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for g in prestiti_in %}
                             <tr>
-                                
+                                <td>{{ g.nome }}</td>
+                                <td>{{ g.ruolo }}</td>
+                                <td>{{ g.quot_att_mantra }}</td>
+                                <td>{{ g.detentore_cartellino }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -116,7 +125,7 @@
             <div class="card shadow p-3 h-100">
                 <h4>Primavera</h4>
                 <div class="table-responsive">
-                    <table class="table table-sm mb-0">
+                    <table class="table table-sm mb-0 table-striped">
                         <thead>
                             <tr>
                                 <th>Calciatore</th>
@@ -141,7 +150,7 @@
             <div class="card shadow p-3 h-100">
                 <h4>Movimenti di mercato</h4>
                 <div class="table-responsive">
-                    <table class="table table-sm mb-0">
+                    <table class="table table-sm mb-0 table-striped">
                         <thead>
                             <tr>
                                 <th>Data</th>
