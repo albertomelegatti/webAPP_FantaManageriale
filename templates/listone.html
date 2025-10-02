@@ -1,5 +1,45 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <h1>Schermata listone</h1>
+<div class="container">
+    <div class="row">
+        <!-- Colonna Giocatori -->
+        <div class="col-md-12">
+            <h2>Giocatori</h2>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped small smart-table">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Nome</th>
+                            <th>Ruolo</th>
+                            <th>Contratto</th>
+                            <th>Squadra attuale</th>
+                            <th>Detentore cartellino</th>
+                            <th>Club</th>
+                            <th>QA</th>
+                            <th>Costo</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for giocatore in giocatori %}
+                        <tr>
+                            <td>{{ giocatore.id }}</td>
+                            <td>{{ giocatore.nome}}</td>
+                            <td>{{ giocatore.ruolo}}</td>
+                            <td>{{ giocatore.tipo_contratto}}</td>
+                            <td>{{ giocatore.squadra_att}}</td>
+                            <td>{{ giocatore.detentore_cartellino}}</td>
+                            <td>{{ giocatore.club}}</td>
+                            <td>{{ giocatore.quot_att}}</td>
+                            <td>{{ giocatore.costo}}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
