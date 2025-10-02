@@ -1,1 +1,7 @@
 .env
+chatbot.py
+faiss.index
+embeddings.npy
+chat.html
+paragraphs.txt
+models

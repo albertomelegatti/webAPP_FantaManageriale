@@ -19,7 +19,7 @@
         <div class="col-12 col-md-4 d-flex flex-wrap gap-2 justify-content-center">
             <div class="card shadow text-center p-2 flex-fill">
                 <h5 class="mb-1">Slot occupati</h5>
-                <h3>{{ slot_occupati }}/30</h3>
+                <h3>{{ slotOccupati }}/30</h3>
             </div>
             <div class="card shadow text-center p-2 flex-fill">
                 <h5 class="mb-1">Prestiti IN</h5>
@@ -52,9 +52,9 @@
                             {% for giocatore in rosa %}
                             <tr>
                                 <td>{{ giocatore.nome }}</td>
-                                <td>{{ giocatore.contratto }}</td>
+                                <td>{{ giocatore.tipo_contratto }}</td>
                                 <td>{{ giocatore.ruolo }}</td>
-                                <td>{{ giocatore.qa }}</td>
+                                <td>{{ giocatore.quot_att_mantra }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -94,14 +94,13 @@
                         <thead>
                             <tr>
                                 <th>Calciatore</th>
-                                <th>Club</th>
+                                <th>Ruolo</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for p in prestiti_in_lista %}
+                            {% for g in prestiti_in %}
                             <tr>
-                                <td>{{ p.nome }}</td>
-                                <td>{{ p.club }}</td>
+                                
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -116,11 +115,26 @@
         <div class="col-12 col-md-4 mb-3 mb-md-0">
             <div class="card shadow p-3 h-100">
                 <h4>Primavera</h4>
-                <ul class="list-group list-group-flush">
-                    {% for p in primavera %}
-                    <li class="list-group-item">{{ p.nome }} ({{ p.ruolo }})</li>
-                    {% endfor %}
-                </ul>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Calciatore</th>
+                                <th>Ruolo</th>
+                                <th>QA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for g in primavera %}
+                            <tr>
+                                <td>{{ g.nome }}</td>
+                                <td>{{ g.ruolo }}</td>
+                                <td>{{ g.quot_att_mantra }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
         <div class="col-12 col-md-8">

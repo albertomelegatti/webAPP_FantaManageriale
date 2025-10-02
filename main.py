@@ -1,10 +1,11 @@
 import os
 import psycopg2
 import secrets
-from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for
+from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify
 from dotenv import load_dotenv
 from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
+#from chatbot import Chatbot
 
 load_dotenv()
 
@@ -14,6 +15,7 @@ def get_connection():
     return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
 
 app = Flask(__name__)
+#chatbot = Chatbot()
 app.secret_key = secrets.token_hex(16)
 
 # Pagina principale
@@ -90,7 +92,7 @@ def squadre():
     cur = conn.cursor()
 
     # Prendi i dati dal database
-    cur.execute("SELECT nome FROM squadra ORDER BY nome ASC;")
+    cur.execute("SELECT nome FROM squadra WHERE nome <> 'Svincolato' ORDER BY nome ASC;")
     squadre = [row[0] for row in cur.fetchall()]  # lista di nomi di squadre
 
     cur.close()
@@ -116,13 +118,48 @@ def dashboardSquadra(nome_squadra):
     squadra_raw = cur.fetchone()  # lista di tuple
     username = squadra_raw[0]
     crediti = squadra_raw[1]
+
+    cur.execute("SELECT COUNT(id) AS slotOccupati FROM giocatore WHERE squadra_att = %s AND tipo_contratto IN ('Hold', 'Indeterminato');", (nome_squadra,))
+    slotOccupati = cur.fetchone()[0]
     
     rosa = []
+    cur.execute("SELECT nome, tipo_contratto, ruolo, quot_att_mantra FROM giocatore WHERE squadra_att = %s AND tipo_contratto <> 'Primavera';" , (nome_squadra,))
+    rosa_raw = cur.fetchall()
+
+    for g in rosa_raw:
+        nome = g['nome']
+        tipo_contratto = g['tipo_contratto']
+        ruolo = g['ruolo']
+        ruolo = ruolo.strip("{}")
+        quot_att_mantra = g['quot_att_mantra']
+        rosa.append({
+            "nome": nome,
+            "tipo_contratto": tipo_contratto,
+            "ruolo": ruolo,
+            "quot_att_mantra": quot_att_mantra
+        })
+
+    primavera = []
+    cur.execute("SELECT nome, tipo_contratto, ruolo, quot_att_mantra FROM giocatore WHERE squadra_att = %s AND tipo_contratto = 'Primavera';" , (nome_squadra,))
+    primavera_raw = cur.fetchall()
+
+    for g in primavera_raw:
+        nome = g['nome']
+        tipo_contratto = g['tipo_contratto']
+        ruolo = g['ruolo']
+        ruolo = ruolo.strip("{}")
+        quot_att_mantra = g['quot_att_mantra']
+        primavera.append({
+            "nome": nome,
+            "ruolo": ruolo,
+            "quot_att_mantra": quot_att_mantra
+        })
+        print(g)
 
     cur.close()
     conn.close()
 
-    return render_template("dashboardSquadra.html", nome_squadra=nome_squadra, rosa=rosa, stadio=stadio, username=username, crediti=crediti, squadra=squadra)
+    return render_template("dashboardSquadra.html", nome_squadra=nome_squadra, rosa=rosa, primavera=primavera, stadio=stadio, username=username, crediti=crediti, squadra=squadra, slotOccupati=slotOccupati)
 
 
 
@@ -190,6 +227,15 @@ def creditiStadi():
 
 @app.route("/listone")
 def listone():
+    # Collegamento al google sheet
+    
+
+
+
+
+
+
+
     return render_template("listone.html")
 
 @app.route("/squadraLogin/<nome_squadra>")
@@ -240,6 +286,21 @@ def cambia_password():
         return redirect(url_for('cambia_password'))
 
     return render_template("changePassword.html")
+
+@app.route("/chat")
+def chat_page():
+    return render_template("chat.html")  # Pagina HTML con la chat
+
+@app.route("/ask", methods=["POST"])
+def ask():
+    print("SDROGO")
+    user_question = request.json.get("question")  # <-- così leggi il JSON
+    print("Domanda:", user_question)  # Stampa a terminale
+    answer = chatbot.get_answer(user_question)
+    print("Risposta:", answer)       # Stampa a terminale
+    return jsonify({"answer": answer})
+
+
 
 
 if __name__ == "__main__":
