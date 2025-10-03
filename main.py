@@ -1,20 +1,37 @@
 import os
 import psycopg2
 import secrets
-from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify
+from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify, g
 from dotenv import load_dotenv
 from psycopg2.extras import RealDictCursor
+from psycopg2 import pool
 from werkzeug.security import generate_password_hash, check_password_hash
 #from chatbot import Chatbot
 
 load_dotenv()
-
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-def get_connection():
-    return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
+connection_pool = psycopg2.pool.SimpleConnectionPool(
+    minconn=1,
+    maxconn=25,
+    dsn=DATABASE_URL
+)
 
 app = Flask(__name__)
+
+def get_connection():
+    if "db" not in g:
+        g.db = connection_pool.getconn()
+    return g.db
+    #return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
+
+@app.teardown_appcontext
+def close_connection(exception=None):
+    db = g.pop("db", None)
+    if db is not None:
+        connection_pool.putconn(db)
+
+
 #chatbot = Chatbot()
 app.secret_key = secrets.token_hex(16)
 
@@ -37,7 +54,7 @@ def login():
             return redirect(url_for('login'))
 
         conn = get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
         if username == "admin":
             cur.execute('''SELECT hash_password 
@@ -71,7 +88,7 @@ def login():
                 flash("Username non trovato.", "danger")
 
         cur.close()
-        conn.close()
+        #conn.close()
         return redirect(url_for('login'))
 
     return render_template("login.html", error=error)
@@ -93,16 +110,16 @@ def login_squadre():
 @app.route("/squadre")
 def squadre():
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
 
     # Prendi i dati dal database
     cur.execute('''SELECT nome 
                 FROM squadra 
                 WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
-    squadre = [row[0] for row in cur.fetchall()]  # lista di nomi di squadre
+    squadre = [row["nome"] for row in cur.fetchall()]  # lista di nomi di squadre
 
     cur.close()
-    conn.close()
+    #conn.close()
 
     return render_template("squadre.html", squadre=squadre)
 
@@ -110,7 +127,7 @@ def squadre():
 @app.route("/squadra/<nome_squadra>")
 def dashboardSquadra(nome_squadra):
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
 
     stadio = []
     squadra = []
@@ -126,15 +143,15 @@ def dashboardSquadra(nome_squadra):
                 FROM squadra 
                 WHERE nome = %s;''', (nome_squadra,))
     squadra_raw = cur.fetchone()
-    username = squadra_raw[0]
-    crediti = squadra_raw[1]
+    username = squadra_raw["username"]
+    crediti = squadra_raw["crediti"]
 
     # CONTEGGIO SLOT OCCUPATI
     cur.execute('''SELECT COUNT(id) AS slotOccupati 
                 FROM giocatore 
                 WHERE squadra_att = %s 
                     AND tipo_contratto IN ('Hold', 'Indeterminato');''', (nome_squadra,))
-    slotOccupati = cur.fetchone()[0]
+    slotOccupati = cur.fetchone()["slotoccupati"]
     
     # ROSA
     rosa = []
@@ -181,11 +198,11 @@ def dashboardSquadra(nome_squadra):
 
 
     # CONTEGGIO PRESTITI IN
-    cur.execute('''SELECT COUNT(id)
+    cur.execute('''SELECT COUNT(id) AS prestiti_in_num
                 FROM giocatore
                 WHERE squadra_att = %s 
                     AND tipo_contratto = 'Fanta-Prestito';''', (nome_squadra,))
-    prestiti_in_num = cur.fetchone()[0]
+    prestiti_in_num = cur.fetchone()["prestiti_in_num"]
 
     # PRESTITI IN
     prestiti_in = []
@@ -216,7 +233,6 @@ def dashboardSquadra(nome_squadra):
                 WHERE detentore_cartellino = %s 
                     AND tipo_contratto = 'Fanta-Prestito';''', (nome_squadra,))
     prestiti_out_raw = cur.fetchall()
-    print(prestiti_out_raw)
 
     for g in prestiti_out_raw:
         nome = g['nome']
@@ -234,7 +250,7 @@ def dashboardSquadra(nome_squadra):
     
 
     cur.close()
-    conn.close()
+    #conn.close()
 
     return render_template("dashboardSquadra.html", nome_squadra=nome_squadra, rosa=rosa, primavera=primavera,prestiti_in=prestiti_in, prestiti_in_num=prestiti_in_num, prestiti_out=prestiti_out, stadio=stadio, username=username, crediti=crediti, squadra=squadra, slotOccupati=slotOccupati)
 
@@ -243,7 +259,7 @@ def dashboardSquadra(nome_squadra):
 @app.route("/creditiStadi")
 def creditiStadi():
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
 
     # Prendo la quantità di crediti per ogni squadra
     cur.execute('''SELECT nome, crediti 
@@ -300,7 +316,7 @@ def creditiStadi():
         })
 
     cur.close()
-    conn.close()
+    #conn.close()
 
     return render_template("creditiStadi.html", stadi=stadi, squadre=squadre)
 
@@ -309,7 +325,7 @@ def creditiStadi():
 def listone():
     
     conn = get_connection()
-    cur = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
 
     cur.execute('''SELECT id, nome, squadra_att, detentore_cartellino, club, quot_att_mantra, tipo_contratto, ruolo, costo
                 FROM giocatore''')
@@ -367,7 +383,7 @@ def cambia_password():
             return redirect(url_for('cambia_password'))
 
         conn = get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''SELECT hash_password 
                     FROM squadra 
@@ -391,7 +407,7 @@ def cambia_password():
                 return redirect(url_for('squadraLogin', nome_squadra=nome_squadra))
 
         cur.close()
-        conn.close()
+        #conn.close()
         flash("Errore nel cambio password.", "danger")
         return redirect(url_for('cambia_password'))
 
