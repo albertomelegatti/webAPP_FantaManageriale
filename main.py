@@ -11,26 +11,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-connection_pool = psycopg2.pool.SimpleConnectionPool(
-    minconn=1,
-    maxconn=10,
-    dsn=DATABASE_URL
-)
-
 app = Flask(__name__)
 
 def get_connection():
-    if "db" not in g:
-        g.db = connection_pool.getconn()
-    return g.db
-    #return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
-
-@app.teardown_appcontext
-def close_connection(exception=None):
-    db = g.pop("db", None)
-    if db is not None:
-        connection_pool.putconn(db)
-
+    return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
 
 #chatbot = Chatbot()
 app.secret_key = secrets.token_hex(16)
@@ -54,7 +38,7 @@ def login():
             return redirect(url_for('login'))
 
         conn = get_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
 
         if username == "admin":
             cur.execute('''SELECT hash_password 
@@ -88,7 +72,7 @@ def login():
                 flash("Username non trovato.", "danger")
 
         cur.close()
-        #conn.close()
+        conn.close()
         return redirect(url_for('login'))
 
     return render_template("login.html", error=error)
@@ -110,7 +94,7 @@ def login_squadre():
 @app.route("/squadre")
 def squadre():
     conn = get_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur = conn.cursor()
 
     # Prendi i dati dal database
     cur.execute('''SELECT nome 
@@ -119,7 +103,7 @@ def squadre():
     squadre = [row["nome"] for row in cur.fetchall()]  # lista di nomi di squadre
 
     cur.close()
-    #conn.close()
+    conn.close()
 
     return render_template("squadre.html", squadre=squadre)
 
@@ -127,7 +111,7 @@ def squadre():
 @app.route("/squadra/<nome_squadra>")
 def dashboardSquadra(nome_squadra):
     conn = get_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur = conn.cursor()
 
     stadio = []
     squadra = []
@@ -250,7 +234,7 @@ def dashboardSquadra(nome_squadra):
     
 
     cur.close()
-    #conn.close()
+    conn.close()
 
     return render_template("dashboardSquadra.html", nome_squadra=nome_squadra, rosa=rosa, primavera=primavera,prestiti_in=prestiti_in, prestiti_in_num=prestiti_in_num, prestiti_out=prestiti_out, stadio=stadio, username=username, crediti=crediti, squadra=squadra, slotOccupati=slotOccupati)
 
@@ -259,7 +243,7 @@ def dashboardSquadra(nome_squadra):
 @app.route("/creditiStadi")
 def creditiStadi():
     conn = get_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur = conn.cursor()
 
     # Prendo la quantità di crediti per ogni squadra
     cur.execute('''SELECT nome, crediti 
@@ -316,7 +300,7 @@ def creditiStadi():
         })
 
     cur.close()
-    #conn.close()
+    conn.close()
 
     return render_template("creditiStadi.html", stadi=stadi, squadre=squadre)
 
@@ -325,7 +309,7 @@ def creditiStadi():
 def listone():
     
     conn = get_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur = conn.cursor()
 
     cur.execute('''SELECT id, nome, squadra_att, detentore_cartellino, club, quot_att_mantra, tipo_contratto, ruolo, costo
                 FROM giocatore''')
@@ -354,6 +338,9 @@ def listone():
             "ruolo": ruolo,
             "costo": costo
         })
+    
+    cur.close()
+    conn.close()
 
     
     return render_template("listone.html", giocatori=giocatori)
@@ -383,7 +370,7 @@ def cambia_password():
             return redirect(url_for('cambia_password'))
 
         conn = get_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor()
 
         cur.execute('''SELECT hash_password 
                     FROM squadra 
@@ -407,7 +394,7 @@ def cambia_password():
                 return redirect(url_for('squadraLogin', nome_squadra=nome_squadra))
 
         cur.close()
-        #conn.close()
+        conn.close()
         flash("Errore nel cambio password.", "danger")
         return redirect(url_for('cambia_password'))
 
