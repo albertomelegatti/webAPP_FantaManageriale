@@ -2,3 +2,13 @@ Flask==3.0.0
 gunicorn
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
+pandas
+numpy
+gspread
+gspread-dataframe
+psycopg2-binary
+requests
+selenium
+openpyxl
+lxml
+html5lib
