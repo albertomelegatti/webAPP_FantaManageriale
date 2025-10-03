@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Gestione Aste - {{ nome_squadra }}</h1>
+        <!-- Bottone Nuova Asta -->
+        <a href="{{ url_for('user.nuova_asta') }}" class="btn btn-success btn-lg">
+             Nuova Asta
+        </a>
+    </div>
+
+    <!-- Le mie aste attive -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            Le mie aste attive
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nome Asta</th>
+                        <th>Data inizio</th>
+                        <th>Data fine</th>
+                        <th>Stato</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asta in aste_attive %}
+                    <tr>
+                        <td>{{ asta.id }}</td>
+                        <td>{{ asta.nome }}</td>
+                        <td>{{ asta.data_inizio }}</td>
+                        <td>{{ asta.data_fine }}</td>
+                        <td>{{ asta.stato }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Aste a cui posso iscrivermi -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            Aste a cui posso iscrivermi
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nome Asta</th>
+                        <th>Data inizio</th>
+                        <th>Data fine</th>
+                        <th>Iscriviti</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asta in aste_disponibili %}
+                    <tr>
+                        <td>{{ asta.id }}</td>
+                        <td>{{ asta.nome }}</td>
+                        <td>{{ asta.data_inizio }}</td>
+                        <td>{{ asta.data_fine }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('iscrivi_asta', asta_id=asta.id) }}">
+                                <button type="submit" class="btn btn-primary btn-sm">Iscriviti</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Le mie aste concluse -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            Le mie aste concluse
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nome Asta</th>
+                        <th>Data inizio</th>
+                        <th>Data fine</th>
+                        <th>Vincitore</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asta in aste_concluse %}
+                    <tr>
+                        <td>{{ asta.id }}</td>
+                        <td>{{ asta.nome }}</td>
+                        <td>{{ asta.data_inizio }}</td>
+                        <td>{{ asta.data_fine }}</td>
+                        <td>{{ asta.vincitore }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

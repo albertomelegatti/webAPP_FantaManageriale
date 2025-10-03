@@ -1,23 +1,21 @@
-import os
-import psycopg2
 import secrets
-from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify, g
-from dotenv import load_dotenv
+from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify
 from psycopg2.extras import RealDictCursor
-from psycopg2 import pool
 from werkzeug.security import generate_password_hash, check_password_hash
+from admin import admin_bp
+from user import user_bp
+from db import get_connection
 #from chatbot import Chatbot
-
-load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
 
 app = Flask(__name__)
 
-def get_connection():
-    return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
+
 
 #chatbot = Chatbot()
 app.secret_key = secrets.token_hex(16)
+
+app.register_blueprint(admin_bp)
+app.register_blueprint(user_bp)
 
 # Pagina principale
 @app.route("/")
@@ -49,7 +47,7 @@ def login():
                 cur.close()
                 conn.close()
                 session['username'] = username  # Memorizza l'username nella sessione
-                return redirect(url_for('admin'))
+                return redirect(url_for('admin.home_admin'))
             else:
                 flash("Credenziali admin errate.", "danger")
 
@@ -58,14 +56,15 @@ def login():
                         FROM squadra 
                         WHERE username = %s''', (username,))
             row = cur.fetchone()
-            print(row)
+
             if row is not None:
                 hash_password, nome_squadra = row
                 if check_password_hash(hash_password, password):
                     session['username'] = username  # Memorizza l'username nella sessione
+                    session["nome_squadra"] = nome_squadra
                     cur.close()
                     conn.close()
-                    return redirect(url_for('squadraLogin', nome_squadra=nome_squadra))
+                    return redirect(url_for('user.squadraLogin', nome_squadra=nome_squadra))
                 else:
                     flash("Password errata.", "danger")
             else:
@@ -78,19 +77,7 @@ def login():
     return render_template("login.html", error=error)
 
 
-# Rotta per area admin
-@app.route("/admin")
-def admin():
-    return render_template("admin.html")
-
-
-# Rotta per area squadre
-@app.route("/login-squadre")
-def login_squadre():
-    return render_template("squadre.html")
-
-
-# Pagine squadre placeholder
+# Schermata squadre con bottoni
 @app.route("/squadre")
 def squadre():
     conn = get_connection()
@@ -307,51 +294,21 @@ def creditiStadi():
 
 @app.route("/listone")
 def listone():
-    
-    conn = get_connection()
-    cur = conn.cursor()
+    link_fantacalcio_it = "https://www.fantacalcio.it/quotazioni-fantacalcio"
+    return redirect(link_fantacalcio_it)
 
-    cur.execute('''SELECT id, nome, squadra_att, detentore_cartellino, club, quot_att_mantra, tipo_contratto, ruolo, costo
-                FROM giocatore''')
-    giocatori_raw = cur.fetchall()
-    giocatori = []
-
-    for g in giocatori_raw:
-        id = g["id"]
-        nome = g["nome"]
-        squadra_att = g["squadra_att"]
-        detentore_cartellino = g["detentore_cartellino"]
-        club = g["club"]
-        quot_att_mantra = g["quot_att_mantra"]
-        tipo_contratto = g["tipo_contratto"]
-        ruolo = g["ruolo"]
-        ruolo = ruolo.strip("{}")
-        costo = g["costo"]
-        giocatori.append({
-            "id": id,
-            "nome": nome,
-            "squadra_att": squadra_att,
-            "detentore_cartellino": detentore_cartellino,
-            "club": club,
-            "quot_att_mantra": quot_att_mantra,
-            "tipo_contratto": tipo_contratto,
-            "ruolo": ruolo,
-            "costo": costo
-        })
-    
-    cur.close()
-    conn.close()
-
-    
-    return render_template("listone.html", giocatori=giocatori)
-
-@app.route("/squadraLogin/<nome_squadra>")
-def squadraLogin(nome_squadra):
-    return render_template("squadraLogin.html", nome_squadra=nome_squadra)
 
 @app.route("/aste")
 def aste():
     return render_template("aste.html")
+
+
+
+
+
+
+
+
 
 @app.route("/scarica_regolamento")
 def vedi_regolamento():

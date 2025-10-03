@@ -6,9 +6,10 @@
         <h1 class="mb-4">Sezione riservata di {{ nome_squadra }}</h1>
         <p class="lead">Gestisci le aste direttamente da qui.</p>
 
-        <a href="/aste" class="btn btn-primary btn-lg">
+       <a href="{{ url_for('user.user_aste', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg">
             <i class="bi bi-cash-stack"></i> Aste
         </a>
+
         <a href="/cambia_password" class="btn btn-warning btn-lg">
             <i class="bi bi-key-fill"></i> Cambia Password
         </a>

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center mb-4">
+        <h1>Inserimento nuova asta</h1>
+        <p class="lead">Seleziona un giocatore per iniziare una nuova asta.</p>
+    </div>
+
+    <!-- Form di selezione giocatore -->
+    <form id="nuovaAstaForm" method="POST">
+        <div class="mb-4 position-relative">
+            <label for="giocatore" class="form-label">Cerca Giocatore</label>
+            <input type="text" id="giocatore" name="giocatore" class="form-control" placeholder="Inizia a digitare il nome..." autocomplete="off">
+            <div id="suggerimenti" class="list-group position-absolute w-100" style="z-index:1000;"></div>
+
+            <!-- Messaggi dinamici -->
+            <div id="erroreGiocatore" class="text-danger mt-2" style="display:none;">Seleziona un giocatore valido dalla lista.</div>
+            <div id="confermaGiocatore" class="text-success mt-2" style="display:none;">Giocatore selezionato correttamente!</div>
+        </div>
+
+        <!-- Bottone di conferma -->
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary btn-lg">Avvia Asta</button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const input = document.getElementById("giocatore");
+    const suggerimenti = document.getElementById("suggerimenti");
+    const form = document.getElementById("nuovaAstaForm");
+    const erroreMsg = document.getElementById("erroreGiocatore");
+    const confermaMsg = document.getElementById("confermaGiocatore");
+
+    // Lista di giocatori passata dal server
+    const giocatori = JSON.parse('{{ giocatori_disponibili_per_asta|tojson|safe }}');
+
+    input.addEventListener("input", function() {
+        const query = this.value.toLowerCase();
+        suggerimenti.innerHTML = "";
+        erroreMsg.style.display = "none";
+        confermaMsg.style.display = "none";
+
+        if (query.length < 2) return;
+
+        const filtrati = giocatori.filter(g => g.toLowerCase().includes(query));
+
+        filtrati.forEach(g => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.classList.add("list-group-item", "list-group-item-action");
+            button.textContent = g;
+            button.onclick = () => {
+                input.value = g;
+                suggerimenti.innerHTML = "";
+                erroreMsg.style.display = "none";
+                confermaMsg.style.display = "block"; // Mostra messaggio di conferma
+            };
+            suggerimenti.appendChild(button);
+        });
+    });
+
+    document.addEventListener("click", function(e) {
+        if (!input.contains(e.target)) {
+            suggerimenti.innerHTML = "";
+        }
+    });
+
+    // Controllo sul submit con conferma
+    form.addEventListener("submit", function(e) {
+        const valore = input.value.trim();
+        if (!giocatori.includes(valore)) {
+            e.preventDefault();
+            confermaMsg.style.display = "none";
+            erroreMsg.style.display = "block";
+        } else {
+            erroreMsg.style.display = "none";
+            confermaMsg.style.display = "block";
+
+            // Chiedo conferma prima di inviare
+            if (!confirm(`Vuoi davvero avviare un'asta per ${valore}?`)) {
+                e.preventDefault(); // blocca l'invio se l'utente annulla
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

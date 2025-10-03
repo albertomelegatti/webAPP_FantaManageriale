@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center">
+        <h1 class="mb-4">Home admin</h1>
+
+        <!-- Bottone Gestione Aste -->
+        <a href="{{ url_for('admin.admin_aste') }}" class="btn btn-primary btn-lg">Gestione Aste</a>
+    </div>
+</div>
+{% endblock %}
