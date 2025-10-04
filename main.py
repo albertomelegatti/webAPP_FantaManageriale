@@ -4,28 +4,30 @@ from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 from admin import admin_bp
 from user import user_bp
-from db import get_connection
-#from chatbot import Chatbot
+from db import get_connection, release_connection, init_pool
+# from chatbot import Chatbot
 
 app = Flask(__name__)
 
-
-
-#chatbot = Chatbot()
+# chatbot = Chatbot()
 app.secret_key = secrets.token_hex(16)
+
+# 🔹 inizializza il pool una sola volta
+init_pool()
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
+
 
 # Pagina principale
 @app.route("/")
 def home():
     return render_template("index.html")
 
+
 # Rotta per login admin
 @app.route("/login", methods=["GET", "POST"])
 def login():
-
     error = None
     if request.method == "POST":
         username = request.form.get("username")
@@ -35,43 +37,54 @@ def login():
             flash("Compila tutti i campi.", "danger")
             return redirect(url_for('login'))
 
-        conn = get_connection()
-        cur = conn.cursor()
+        conn = None
+        try:
+            conn = get_connection()
+            cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        if username == "admin":
-            cur.execute('''SELECT hash_password 
-                        FROM admin 
-                        WHERE username = %s''', (username,))
-            row = cur.fetchone()
-            if row and check_password_hash(row[0], password):
-                cur.close()
-                conn.close()
-                session['username'] = username  # Memorizza l'username nella sessione
-                return redirect(url_for('admin.home_admin'))
-            else:
-                flash("Credenziali admin errate.", "danger")
-
-        else:
-            cur.execute('''SELECT hash_password, nome 
-                        FROM squadra 
-                        WHERE username = %s''', (username,))
-            row = cur.fetchone()
-
-            if row is not None:
-                hash_password, nome_squadra = row
-                if check_password_hash(hash_password, password):
-                    session['username'] = username  # Memorizza l'username nella sessione
-                    session["nome_squadra"] = nome_squadra
+            if username == "admin":
+                cur.execute('''SELECT hash_password 
+                            FROM admin 
+                            WHERE username = %s''', (username,))
+                row = cur.fetchone()
+                if row and check_password_hash(row["hash_password"], password):
                     cur.close()
-                    conn.close()
-                    return redirect(url_for('user.squadraLogin', nome_squadra=nome_squadra))
+                    release_connection(conn)
+                    session['username'] = username
+                    return redirect(url_for('admin.home_admin'))
                 else:
-                    flash("Password errata.", "danger")
-            else:
-                flash("Username non trovato.", "danger")
+                    flash("Credenziali admin errate.", "danger")
 
-        cur.close()
-        conn.close()
+            else:
+                cur.execute('''SELECT hash_password, nome 
+                            FROM squadra 
+                            WHERE username = %s''', (username,))
+                row = cur.fetchone()
+
+                if row is not None:
+                    hash_password = row["hash_password"]
+                    nome_squadra = row["nome"]
+                    if check_password_hash(hash_password, password):
+                        session['username'] = username
+                        session["nome_squadra"] = nome_squadra
+                        cur.close()
+                        release_connection(conn)
+                        return redirect(url_for('user.squadraLogin', nome_squadra=nome_squadra))
+                    else:
+                        flash("Password errata.", "danger")
+                else:
+                    flash("Username non trovato.", "danger")
+
+            cur.close()
+
+        except Exception as e:
+            print("Errore login:", e)
+            flash("Errore di connessione al database.", "danger")
+
+        finally:
+            if conn:
+                release_connection(conn)
+
         return redirect(url_for('login'))
 
     return render_template("login.html", error=error)
@@ -80,216 +93,208 @@ def login():
 # Schermata squadre con bottoni
 @app.route("/squadre")
 def squadre():
-    conn = get_connection()
-    cur = conn.cursor()
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
-    # Prendi i dati dal database
-    cur.execute('''SELECT nome 
-                FROM squadra 
-                WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
-    squadre = [row["nome"] for row in cur.fetchall()]  # lista di nomi di squadre
+        cur.execute('''SELECT nome 
+                    FROM squadra 
+                    WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
+        squadre = [row["nome"] for row in cur.fetchall()]
 
-    cur.close()
-    conn.close()
+        cur.close()
+        return render_template("squadre.html", squadre=squadre)
 
-    return render_template("squadre.html", squadre=squadre)
+    except Exception as e:
+        print("Errore squadre:", e)
+        flash("Errore nel recupero squadre.", "danger")
+        return redirect(url_for('home'))
+
+    finally:
+        if conn:
+            release_connection(conn)
 
 
 @app.route("/squadra/<nome_squadra>")
 def dashboardSquadra(nome_squadra):
-    conn = get_connection()
-    cur = conn.cursor()
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
-    stadio = []
-    squadra = []
+        # STADIO
+        cur.execute('''SELECT nome, proprietario, livello 
+                    FROM stadio 
+                    WHERE proprietario = %s;''', (nome_squadra,))
+        stadio = cur.fetchone()
 
-    # STADIO
-    cur.execute('''SELECT nome, proprietario, livello 
-                FROM stadio 
-                WHERE proprietario = %s;''', (nome_squadra,))
-    stadio = cur.fetchone()
+        # CREDITI
+        cur.execute('''SELECT username, crediti 
+                    FROM squadra 
+                    WHERE nome = %s;''', (nome_squadra,))
+        squadra_raw = cur.fetchone()
+        username = squadra_raw["username"]
+        crediti = squadra_raw["crediti"]
 
-    # CREDITI
-    cur.execute('''SELECT username, crediti 
-                FROM squadra 
-                WHERE nome = %s;''', (nome_squadra,))
-    squadra_raw = cur.fetchone()
-    username = squadra_raw["username"]
-    crediti = squadra_raw["crediti"]
+        # CONTEGGIO SLOT OCCUPATI
+        cur.execute('''SELECT COUNT(id) AS slot_occupati 
+                    FROM giocatore 
+                    WHERE squadra_att = %s 
+                        AND tipo_contratto IN ('Hold', 'Indeterminato');''', (nome_squadra,))
+        slotOccupati = cur.fetchone()["slot_occupati"]
 
-    # CONTEGGIO SLOT OCCUPATI
-    cur.execute('''SELECT COUNT(id) AS slotOccupati 
-                FROM giocatore 
-                WHERE squadra_att = %s 
-                    AND tipo_contratto IN ('Hold', 'Indeterminato');''', (nome_squadra,))
-    slotOccupati = cur.fetchone()["slotoccupati"]
-    
-    # ROSA
-    rosa = []
-    cur.execute('''SELECT nome, tipo_contratto, ruolo, quot_att_mantra, costo 
-                FROM giocatore 
-                WHERE squadra_att = %s 
-                    AND tipo_contratto <> 'Primavera';''' , (nome_squadra,))
-    rosa_raw = cur.fetchall()
+        # ROSA
+        rosa = []
+        cur.execute('''SELECT nome, tipo_contratto, ruolo, quot_att_mantra, costo 
+                    FROM giocatore 
+                    WHERE squadra_att = %s 
+                        AND tipo_contratto <> 'Primavera';''' , (nome_squadra,))
+        rosa_raw = cur.fetchall()
 
-    for g in rosa_raw:
-        nome = g['nome']
-        tipo_contratto = g['tipo_contratto']
-        ruolo = g['ruolo']
-        ruolo = ruolo.strip("{}")
-        quot_att_mantra = g['quot_att_mantra']
-        costo = g['costo']
-        rosa.append({
-            "nome": nome,
-            "tipo_contratto": tipo_contratto,
-            "ruolo": ruolo,
-            "quot_att_mantra": quot_att_mantra,
-            "costo": costo
-        })
+        for g in rosa_raw:
+            nome = g['nome']
+            tipo_contratto = g['tipo_contratto']
+            ruolo = g['ruolo'].strip("{}")
+            quot_att_mantra = g['quot_att_mantra']
+            costo = g['costo']
+            rosa.append({
+                "nome": nome,
+                "tipo_contratto": tipo_contratto,
+                "ruolo": ruolo,
+                "quot_att_mantra": quot_att_mantra,
+                "costo": costo
+            })
 
-    # PRIMAVERA
-    primavera = []
-    cur.execute('''SELECT nome, tipo_contratto, ruolo, quot_att_mantra 
-                FROM giocatore 
-                WHERE squadra_att = %s 
-                    AND tipo_contratto = 'Primavera';''' , (nome_squadra,))
-    primavera_raw = cur.fetchall()
+        # PRIMAVERA
+        primavera = []
+        cur.execute('''SELECT nome, tipo_contratto, ruolo, quot_att_mantra 
+                    FROM giocatore 
+                    WHERE squadra_att = %s 
+                        AND tipo_contratto = 'Primavera';''' , (nome_squadra,))
+        primavera_raw = cur.fetchall()
 
-    for g in primavera_raw:
-        nome = g['nome']
-        tipo_contratto = g['tipo_contratto']
-        ruolo = g['ruolo']
-        ruolo = ruolo.strip("{}")
-        quot_att_mantra = g['quot_att_mantra']
-        primavera.append({
-            "nome": nome,
-            "ruolo": ruolo,
-            "quot_att_mantra": quot_att_mantra
-        })
+        for g in primavera_raw:
+            nome = g['nome']
+            ruolo = g['ruolo'].strip("{}")
+            quot_att_mantra = g['quot_att_mantra']
+            primavera.append({
+                "nome": nome,
+                "ruolo": ruolo,
+                "quot_att_mantra": quot_att_mantra
+            })
 
+        # CONTEGGIO PRESTITI IN
+        cur.execute('''SELECT COUNT(id) AS prestiti_in_num
+                    FROM giocatore
+                    WHERE squadra_att = %s 
+                        AND tipo_contratto = 'Fanta-Prestito';''', (nome_squadra,))
+        prestiti_in_num = cur.fetchone()["prestiti_in_num"]
 
-    # CONTEGGIO PRESTITI IN
-    cur.execute('''SELECT COUNT(id) AS prestiti_in_num
-                FROM giocatore
-                WHERE squadra_att = %s 
-                    AND tipo_contratto = 'Fanta-Prestito';''', (nome_squadra,))
-    prestiti_in_num = cur.fetchone()["prestiti_in_num"]
+        # PRESTITI IN
+        prestiti_in = []
+        cur.execute('''SELECT nome, ruolo, quot_att_mantra, detentore_cartellino
+                    FROM giocatore 
+                    WHERE squadra_att = %s 
+                        AND tipo_contratto = 'Fanta-Prestito';''', (nome_squadra,))
+        prestiti_in_raw = cur.fetchall()
 
-    # PRESTITI IN
-    prestiti_in = []
-    cur.execute('''SELECT nome, ruolo, quot_att_mantra, detentore_cartellino
-                FROM giocatore 
-                WHERE squadra_att = %s 
-                    AND tipo_contratto = 'Fanta-Prestito';''', (nome_squadra,))
-    prestiti_in_raw = cur.fetchall()
+        for g in prestiti_in_raw:
+            nome = g['nome']
+            ruolo = g['ruolo'].strip("{}")
+            quot_att_mantra = g['quot_att_mantra']
+            detentore_cartellino = g["detentore_cartellino"]
+            prestiti_in.append({
+                "nome": nome,
+                "ruolo": ruolo,
+                "quot_att_mantra": quot_att_mantra,
+                "detentore_cartellino": detentore_cartellino
+            })
 
-    for g in prestiti_in_raw:
-        nome = g['nome']
-        ruolo = g['ruolo']
-        ruolo = ruolo.strip("{}")
-        quot_att_mantra = g['quot_att_mantra']
-        detentore_cartellino = g["detentore_cartellino"]
-        prestiti_in.append({
-            "nome": nome,
-            "ruolo": ruolo,
-            "quot_att_mantra": quot_att_mantra,
-            "detentore_cartellino": detentore_cartellino
-        })
+        # PRESTITI OUT
+        prestiti_out = []
+        cur.execute('''SELECT nome, ruolo, quot_att_mantra, squadra_att
+                    FROM giocatore 
+                    WHERE detentore_cartellino = %s 
+                        AND tipo_contratto = 'Fanta-Prestito';''', (nome_squadra,))
+        prestiti_out_raw = cur.fetchall()
 
+        for g in prestiti_out_raw:
+            nome = g['nome']
+            ruolo = g['ruolo'].strip("{}")
+            quot_att_mantra = g['quot_att_mantra']
+            squadra_att = g['squadra_att']
+            prestiti_out.append({
+                "nome": nome,
+                "ruolo": ruolo,
+                "quot_att_mantra": quot_att_mantra,
+                "squadra_att": squadra_att
+            })
 
-    # PRESTITI OUT
-    prestiti_out = []
-    cur.execute('''SELECT nome, ruolo, quot_att_mantra, squadra_att
-                FROM giocatore 
-                WHERE detentore_cartellino = %s 
-                    AND tipo_contratto = 'Fanta-Prestito';''', (nome_squadra,))
-    prestiti_out_raw = cur.fetchall()
+        cur.close()
+        return render_template(
+            "dashboardSquadra.html",
+            nome_squadra=nome_squadra,
+            rosa=rosa,
+            primavera=primavera,
+            prestiti_in=prestiti_in,
+            prestiti_in_num=prestiti_in_num,
+            prestiti_out=prestiti_out,
+            stadio=stadio,
+            username=username,
+            crediti=crediti,
+            squadra=[],
+            slotOccupati=slotOccupati
+        )
 
-    for g in prestiti_out_raw:
-        nome = g['nome']
-        ruolo = g['ruolo']
-        ruolo = ruolo.strip("{}")
-        quot_att_mantra = g['quot_att_mantra']
-        squadra_att = g['squadra_att']
-        prestiti_out.append({
-            "nome": nome,
-            "ruolo": ruolo,
-            "quot_att_mantra": quot_att_mantra,
-            "squadra_att": squadra_att
-        })
-    
-    
+    except Exception as e:
+        print("Errore dashboardSquadra:", e)
+        flash("Errore nel caricamento della squadra.", "danger")
+        return redirect(url_for('home'))
 
-    cur.close()
-    conn.close()
-
-    return render_template("dashboardSquadra.html", nome_squadra=nome_squadra, rosa=rosa, primavera=primavera,prestiti_in=prestiti_in, prestiti_in_num=prestiti_in_num, prestiti_out=prestiti_out, stadio=stadio, username=username, crediti=crediti, squadra=squadra, slotOccupati=slotOccupati)
-
+    finally:
+        if conn:
+            release_connection(conn)
 
 
 @app.route("/creditiStadi")
 def creditiStadi():
-    conn = get_connection()
-    cur = conn.cursor()
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
-    # Prendo la quantità di crediti per ogni squadra
-    cur.execute('''SELECT nome, crediti 
-                FROM squadra 
-                WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
-    squadre_raw = cur.fetchall()  # lista di tuple
-    squadre = []
-    for c in squadre_raw:
-        nome = c['nome']
-        crediti = c['crediti']
-        squadre.append({
-            "nome": nome,
-            "crediti": crediti
-        })
+        cur.execute('''SELECT nome, crediti 
+                    FROM squadra 
+                    WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
+        squadre_raw = cur.fetchall()
+        squadre = [{"nome": c['nome'], "crediti": c['crediti']} for c in squadre_raw]
 
+        cur.execute('''SELECT nome, proprietario, livello 
+                    FROM stadio ORDER BY nome ASC;''')
+        stadi_raw = cur.fetchall()
+        stadi = []
+        for s in stadi_raw:
+            livello = s['livello']
+            bonus = [0,4,8,14,18,25,30,39,44][livello] if livello <= 8 else 0
+            stadi.append({
+                "proprietario": s['proprietario'],
+                "nome": s['nome'],
+                "livello": livello,
+                "crediti_annuali": bonus
+            })
 
+        cur.close()
+        return render_template("creditiStadi.html", stadi=stadi, squadre=squadre)
 
-    # Prendi i dati dal database
-    cur.execute('''SELECT nome, proprietario, livello 
-                FROM stadio ORDER BY nome ASC;''')
-    stadi_raw = cur.fetchall()  # lista di tuple
+    except Exception as e:
+        print("Errore creditiStadi:", e)
+        flash("Errore nel caricamento dati stadi.", "danger")
+        return redirect(url_for('home'))
 
-    stadi = []
-    for s in stadi_raw:
-        nome = s['nome']
-        proprietario = s['proprietario']
-        livello = s['livello']
-        
-        if livello == 0:
-            bonus = 0
-        elif livello == 1:
-            bonus = 4
-        elif livello == 2:
-            bonus = 8
-        elif livello == 3:
-            bonus = 14
-        elif livello == 4:
-            bonus = 18
-        elif livello == 5:
-            bonus = 25
-        elif livello == 6:
-            bonus = 30
-        elif livello == 7:
-            bonus = 39
-        elif livello == 8:
-            bonus = 44
-
-
-        stadi.append({
-            "proprietario": proprietario,
-            "nome": nome,
-            "livello": livello,
-            "crediti_annuali": bonus
-        })
-
-    cur.close()
-    conn.close()
-
-    return render_template("creditiStadi.html", stadi=stadi, squadre=squadre)
+    finally:
+        if conn:
+            release_connection(conn)
 
 
 @app.route("/listone")
@@ -303,16 +308,10 @@ def aste():
     return render_template("aste.html")
 
 
-
-
-
-
-
-
-
 @app.route("/scarica_regolamento")
 def vedi_regolamento():
     return send_from_directory('static', 'regolamento.pdf', mimetype='application/pdf', as_attachment=False)
+
 
 @app.route('/cambia_password', methods=['GET', 'POST'])
 def cambia_password():
@@ -326,51 +325,57 @@ def cambia_password():
             flash("Le password non corrispondono.", "danger")
             return redirect(url_for('cambia_password'))
 
-        conn = get_connection()
-        cur = conn.cursor()
+        conn = None
+        try:
+            conn = get_connection()
+            cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        cur.execute('''SELECT hash_password 
-                    FROM squadra 
-                    WHERE username = %s''', (username,))
-        row = cur.fetchone()
+            cur.execute('''SELECT hash_password 
+                        FROM squadra 
+                        WHERE username = %s''', (username,))
+            row = cur.fetchone()
 
-        if row is not None:
-            print(row[0])
-            if check_password_hash(row[0], old_password):
+            if row and check_password_hash(row["hash_password"], old_password):
                 new_hashed_password = generate_password_hash(new_password)
                 cur.execute('''UPDATE squadra 
                             SET hash_password = %s 
                             WHERE username = %s''', (new_hashed_password, username))
                 conn.commit()
-                nome_squadra = cur.execute('''SELECT nome 
-                                           FROM squadra 
-                                           WHERE username = %s''', (username,))
-                nome_squadra = cur.fetchone()[0]
-                cur.close()
-                conn.close()
-                return redirect(url_for('squadraLogin', nome_squadra=nome_squadra))
 
-        cur.close()
-        conn.close()
-        flash("Errore nel cambio password.", "danger")
+                cur.execute('''SELECT nome FROM squadra WHERE username = %s''', (username,))
+                nome_squadra = cur.fetchone()["nome"]
+                cur.close()
+                release_connection(conn)
+                return redirect(url_for('user.squadraLogin', nome_squadra=nome_squadra))
+
+            flash("Errore nel cambio password.", "danger")
+
+        except Exception as e:
+            print("Errore cambio password:", e)
+            flash("Errore durante l'aggiornamento della password.", "danger")
+
+        finally:
+            if conn:
+                release_connection(conn)
+
         return redirect(url_for('cambia_password'))
 
     return render_template("changePassword.html")
 
+
 @app.route("/chat")
 def chat_page():
-    return render_template("chat.html")  # Pagina HTML con la chat
+    return render_template("chat.html")
+
 
 @app.route("/ask", methods=["POST"])
 def ask():
     print("SDROGO")
-    user_question = request.json.get("question")  # <-- così leggi il JSON
-    print("Domanda:", user_question)  # Stampa a terminale
+    user_question = request.json.get("question")
+    print("Domanda:", user_question)
     answer = chatbot.get_answer(user_question)
-    print("Risposta:", answer)       # Stampa a terminale
+    print("Risposta:", answer)
     return jsonify({"answer": answer})
-
-
 
 
 if __name__ == "__main__":
