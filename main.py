@@ -16,7 +16,7 @@ app.secret_key = secrets.token_hex(16)
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
 
-@app.before_first_request
+@app.before_serving
 def init_db_pool():
     init_pool()
 
