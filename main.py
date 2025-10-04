@@ -16,7 +16,7 @@ app.secret_key = secrets.token_hex(16)
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
 
-@app.before_serving
+@app.before_first_request
 def init_db_pool():
     init_pool()
 
@@ -364,7 +364,7 @@ def cambia_password():
 
     return render_template("changePassword.html")
 
-
+'''
 @app.route("/chat")
 def chat_page():
     return render_template("chat.html")
@@ -378,7 +378,10 @@ def ask():
     answer = chatbot.get_answer(user_question)
     print("Risposta:", answer)
     return jsonify({"answer": answer})
-
+'''
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    import os
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port, debug=True)
+
