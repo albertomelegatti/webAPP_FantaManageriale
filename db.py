@@ -25,22 +25,24 @@ def init_pool():
     return pool
 
 
-def get_connection():
-    #Ottiene una connessione attiva dal pool
+def get_connection(max_retries=5, delay=2):
     global pool
     if pool is None:
         raise Exception("Connection pool non inizializzato. Chiama init_pool() prima.")
 
-    conn = pool.getconn()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT 1")  # test connessione
-    except OperationalError:
-        print("⚠️ Connessione scaduta, ne creo una nuova...")
-        # sostituisci la connessione corrotta con una nuova
-        pool.putconn(conn, close=True)
+    retries = 0
+    while retries < max_retries:
         conn = pool.getconn()
-    return conn
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")
+            return conn
+        except OperationalError:
+            print(f"⚠️ Connessione scaduta, tentativo {retries+1}/{max_retries}")
+            pool.putconn(conn, close=True)
+            retries += 1
+            import time; time.sleep(delay)
+    raise OperationalError("Impossibile ottenere una connessione valida dal pool.")
 
 
 
