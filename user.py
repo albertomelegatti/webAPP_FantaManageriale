@@ -22,6 +22,8 @@ def user_aste():
 @user_bp.route("/nuova_asta", methods=["GET", "POST"])
 def nuova_asta():
     conn = None
+    giocatori_disponibili_per_asta = []  # ✅ inizializzata sempre
+
     try:
         conn = get_connection()
         cur = conn.cursor()
@@ -63,7 +65,7 @@ def nuova_asta():
 
     except Exception as e:
         print("Errore nuova_asta:", e)
-        flash("Errore nella creazione dell'asta.", "danger")
+        flash(f"Errore nella creazione dell'asta: {e}", "danger")
 
     finally:
         if conn:
