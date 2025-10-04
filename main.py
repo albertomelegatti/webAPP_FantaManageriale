@@ -20,6 +20,11 @@ app.register_blueprint(user_bp)
 # Pagina principale
 @app.route("/")
 def home():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT 1")
+    cur.close()
+    conn.close()
     return render_template("index.html")
 
 # Rotta per login admin
