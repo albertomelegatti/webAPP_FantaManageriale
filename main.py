@@ -4,7 +4,7 @@ from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 from admin import admin_bp
 from user import user_bp
-from db import get_connection, release_connection, init_pool
+from db import get_connection, release_connection, init_db_pool, init_pool
 # from chatbot import Chatbot
 
 app = Flask(__name__)
@@ -12,11 +12,13 @@ app = Flask(__name__)
 # chatbot = Chatbot()
 app.secret_key = secrets.token_hex(16)
 
-# 🔹 inizializza il pool una sola volta
-init_pool()
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
+
+@app.before_first_request
+def init_db_pool():
+    init_pool()
 
 
 # Pagina principale
