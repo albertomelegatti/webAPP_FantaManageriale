@@ -78,16 +78,15 @@ def print_pool_status():
 
 
 def keep_awake():
-    
-    #Funzione che mantiene viva la connessione al database.
-    #Esegue una semplice query SELECT 1.
-    
+    """
+    Funzione che mantiene la web app e il database attivi.
+    Effettua una query di test e rilascia subito la connessione.
+    """
     conn = None
     try:
         conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT 1")  # Query minimale
-        cur.close()
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1")  # semplice query di test
     except Exception as e:
         print("⚠️ Errore in keep_awake:", e)
     finally:
