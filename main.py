@@ -4,7 +4,7 @@ from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 from admin import admin_bp
 from user import user_bp
-from db import get_connection, release_connection, init_pool
+from db import get_connection, release_connection, init_pool, keep_awake
 # from chatbot import Chatbot
 
 app = Flask(__name__)
