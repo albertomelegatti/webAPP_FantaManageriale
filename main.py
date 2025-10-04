@@ -24,6 +24,7 @@ def init_db_pool():
 # Pagina principale
 @app.route("/")
 def home():
+    keep_awake()
     return render_template("index.html")
 
 

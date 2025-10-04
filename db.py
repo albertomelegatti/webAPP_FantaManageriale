@@ -75,3 +75,21 @@ def print_pool_status():
     used = len(pool._used) if hasattr(pool, "_used") else "?"
     free = len(pool._pool) if hasattr(pool, "_pool") else "?"
     print(f"📊 Pool status → attive: {used}, libere: {free}, totali: {used + free if used != '?' and free != '?' else '?'}")
+
+
+def keep_awake():
+    
+    #Funzione che mantiene viva la connessione al database.
+    #Esegue una semplice query SELECT 1.
+    
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT 1")  # Query minimale
+        cur.close()
+    except Exception as e:
+        print("⚠️ Errore in keep_awake:", e)
+    finally:
+        if conn:
+            release_connection(conn)
