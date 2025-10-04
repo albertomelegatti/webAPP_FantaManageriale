@@ -1,16 +1,17 @@
 import os
+import time
 from psycopg2.extras import DictCursor
 from psycopg2 import OperationalError
 from psycopg2.pool import SimpleConnectionPool
 from dotenv import load_dotenv
 
 load_dotenv()
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 pool = None
 
 
 def init_pool():
-    #Inizializza il connection pool (solo una volta)
     global pool
     if pool is None:
         pool = SimpleConnectionPool(
@@ -23,47 +24,44 @@ def init_pool():
     return pool
 
 
-def log_pool_status(action):
-    #Stampa lo stato corrente del pool
-    global pool
-    if pool:
-        used = len(pool._used)
-        free = len(pool._pool)
-        print(f"📊 [POOL STATUS] {action} | Attive: {used} | Libere: {free}")
-    else:
-        print("⚠️ Pool non inizializzato.")
-
-
 def get_connection():
-    #Ottiene una connessione attiva dal pool
     global pool
+    
     if pool is None:
         raise Exception("Connection pool non inizializzato. Chiama init_pool() prima.")
 
+    print_pool_status()
+    
     conn = pool.getconn()
-    log_pool_status("Connessione ottenuta")
-
     try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT 1")  # test connessione
-    except OperationalError:
-        print("⚠️ Connessione scaduta, ne creo una nuova...")
+        if conn.closed != 0:  # 0 = aperta
+            print("⚠️ Connessione chiusa nel pool, ne creo una nuova...")
+            pool.putconn(conn, close=True)
+            conn = pool._connect()
+
+        else:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1")  # test connessione
+    except Exception as e:
+        print(f"⚠️ Connessione non valida ({e}), ne creo una nuova...")
         pool.putconn(conn, close=True)
-        conn = pool.getconn()
+        conn = pool._connect()
 
     return conn
 
 
+
 def release_connection(conn):
-    #Rilascia la connessione al pool
     global pool
     if pool and conn:
         try:
             pool.putconn(conn)
-            log_pool_status("Connessione rilasciata")
         except Exception as e:
-            print(f"⚠️ Errore nel rilascio connessione: {e}")
-
+            print(f"⚠️ Errore nel rilascio connessione: {e}. Provo a chiuderla.")
+            try:
+                conn.close()
+            except Exception:
+                pass
 
 
 def print_pool_status():
