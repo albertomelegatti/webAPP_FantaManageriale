@@ -20,18 +20,6 @@ app.register_blueprint(user_bp)
 # Pagina principale
 @app.route("/")
 def home():
-    user_agent = request.headers.get("User-Agent", "")
-    # Esegui la query solo se è UptimeRobot o un ping automatico
-    if "UptimeRobot" in user_agent:
-        try:
-            conn = get_connection()
-            cur = conn.cursor()
-            cur.execute("SELECT 1;")
-            cur.close()
-            conn.close()
-            print("Ping al DB eseguito")
-        except Exception as e:
-            print("Ping fallito:", e)
     return render_template("index.html")
 
 # Rotta per login admin
