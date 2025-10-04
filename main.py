@@ -16,9 +16,9 @@ app.secret_key = secrets.token_hex(16)
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
 
-@app.before_request
-def init_db_pool():
-    init_pool()
+
+
+init_pool()
 
 
 # Pagina principale
@@ -26,6 +26,7 @@ def init_db_pool():
 def home():
     keep_awake()
     return render_template("index.html")
+
 
 
 # Rotta per login admin
