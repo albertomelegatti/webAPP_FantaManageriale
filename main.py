@@ -5,7 +5,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from admin import admin_bp
 from user import user_bp
 from db import get_connection, release_connection, init_pool, keep_awake
-import time
 # from chatbot import Chatbot
 
 app = Flask(__name__)
@@ -17,8 +16,8 @@ app.secret_key = secrets.token_hex(16)
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
 
-time.sleep(8)
-init_pool()
+
+#init_pool()
 
 
 # Pagina principale
@@ -76,15 +75,14 @@ def login():
                 else:
                     flash("Username non trovato.", "danger")
 
-            cur.close()
 
         except Exception as e:
             print("Errore login:", e)
             flash("Errore di connessione al database.", "danger")
 
         finally:
-            if conn:
-                release_connection(conn)
+            cur.close()
+            conn.close()
 
         return redirect(url_for('login'))
 
@@ -112,8 +110,8 @@ def squadre():
         return redirect(url_for('home'))
 
     finally:
-        if conn:
-            release_connection(conn)
+        cur.close()
+        conn.close()
 
 
 @app.route("/squadra/<nome_squadra>")
@@ -231,7 +229,6 @@ def dashboardSquadra(nome_squadra):
                 "squadra_att": squadra_att
             })
 
-        cur.close()
         return render_template(
             "dashboardSquadra.html",
             nome_squadra=nome_squadra,
@@ -253,8 +250,8 @@ def dashboardSquadra(nome_squadra):
         return redirect(url_for('home'))
 
     finally:
-        if conn:
-            release_connection(conn)
+        cur.close()
+        conn.close()
 
 
 @app.route("/creditiStadi")
@@ -284,7 +281,6 @@ def creditiStadi():
                 "crediti_annuali": bonus
             })
 
-        cur.close()
         return render_template("creditiStadi.html", stadi=stadi, squadre=squadre)
 
     except Exception as e:
@@ -293,8 +289,8 @@ def creditiStadi():
         return redirect(url_for('home'))
 
     finally:
-        if conn:
-            release_connection(conn)
+        cur.close()
+        conn.close()
 
 
 @app.route("/listone")
@@ -355,8 +351,8 @@ def cambia_password():
             flash("Errore durante l'aggiornamento della password.", "danger")
 
         finally:
-            if conn:
-                release_connection(conn)
+            cur.close()
+            conn.close()
 
         return redirect(url_for('cambia_password'))
 

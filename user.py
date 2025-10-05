@@ -69,7 +69,7 @@ def nuova_asta():
         flash(f"Errore nella creazione dell'asta: {e}", "danger")
 
     finally:
-        if conn:
-            release_connection(conn)
+        cur.close()
+        conn.close()
 
     return render_template("user_nuova_asta.html", giocatori_disponibili_per_asta=giocatori_disponibili_per_asta)

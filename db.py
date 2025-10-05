@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
-pool = None
+#pool = None
 
 
 def init_pool():
@@ -61,7 +61,7 @@ def log_pool_status(action):
     else:
         print("⚠️ Pool non inizializzato.")
 
-
+'''
 def get_connection():
     #Ottiene una connessione attiva dal pool
     global pool
@@ -69,6 +69,11 @@ def get_connection():
         raise Exception("Connection pool non inizializzato. Chiama init_pool() prima.")
 
     return pool.getconn()
+'''
+
+def get_connection():
+    return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
+
 
 def release_connection(conn):
     #Rilascia la connessione al pool
