@@ -29,7 +29,6 @@ def init_pool():
         "host": result.hostname,
         "port": result.port,
         "dbname": "postgres",
-        "application_name": "WebApp_Fanta",
         "sslmode": "require"
     }
     #print(params)
@@ -41,8 +40,10 @@ def init_pool():
             **params
         )
         print("✅ Pool di connessioni Supabase inizializzato con successo!")
+        return pool
     except psycopg2.Error as e:
         print(f"❌ Errore critico nell'inizializzazione del pool: {e}")
+        pool = None
         raise
 
 
