@@ -28,7 +28,8 @@ def init_pool():
         "password": result.password,
         "host": result.hostname,
         "port": result.port,
-        "dbname": "postgres"
+        "dbname": "postgres",
+        "application_name": "WebApp_Fanta"
     }
     #print(params)
 
