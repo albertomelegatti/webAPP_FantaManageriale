@@ -74,7 +74,15 @@ def release_connection(conn):
     #Rilascia la connessione al pool
     global pool
     if pool and conn:
-        pool.putconn(conn)
+        try:
+            conn.rollback()
+            pool.putconn(conn, close=False)
+        except Exception as e:
+            print(f"⚠️ Errore durante il rilascio/reset della connessione: {e}")
+            try:
+                conn.close()
+            except:
+                pass
 
 
 
