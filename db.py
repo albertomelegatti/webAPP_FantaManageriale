@@ -61,7 +61,7 @@ def log_pool_status(action):
     else:
         print("⚠️ Pool non inizializzato.")
 
-'''
+
 def get_connection():
     #Ottiene una connessione attiva dal pool
     global pool
@@ -69,10 +69,10 @@ def get_connection():
         raise Exception("Connection pool non inizializzato. Chiama init_pool() prima.")
 
     return pool.getconn()
-'''
 
-def get_connection():
-    return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
+
+#def get_connection():
+    #return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
 
 
 def release_connection(conn):
