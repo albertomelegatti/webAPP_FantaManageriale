@@ -29,7 +29,10 @@ def init_pool():
         "host": result.hostname,
         "port": result.port,
         "dbname": "postgres",
-        "sslmode": "require"
+        "sslmode": "require",
+        "keepalives": 1,
+        "keepalives_idle": 60,
+        "keepalives_interval": 20
     }
     #print(params)
 
@@ -70,7 +73,7 @@ def release_connection(conn):
     #Rilascia la connessione al pool
     global pool
     if pool and conn:
-        pool.putconn(conn)
+        pool.putconn(conn, close=False, reset=True)
 
 
 
