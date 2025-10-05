@@ -1,6 +1,6 @@
 import os
 import psycopg2
-from psycopg2.extras import DictCursor
+from psycopg2.extras import RealDictCursor
 from psycopg2 import OperationalError
 from psycopg2.pool import SimpleConnectionPool, ThreadedConnectionPool
 from dotenv import load_dotenv
@@ -74,7 +74,7 @@ def release_connection(conn):
     #Rilascia la connessione al pool
     global pool
     if pool and conn:
-        pool.putconn(conn, close=False, reset=True)
+        pool.putconn(conn)
 
 
 

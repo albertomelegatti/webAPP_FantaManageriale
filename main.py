@@ -4,7 +4,7 @@ from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 from admin import admin_bp
 from user import user_bp
-from db import get_connection, release_connection, init_pool, keep_awake, check_connection
+from db import get_connection, release_connection, init_pool, keep_awake
 # from chatbot import Chatbot
 
 app = Flask(__name__)
@@ -17,7 +17,7 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
 
 init_pool()
-check_connection()
+
 
 # Pagina principale
 @app.route("/")
@@ -50,6 +50,7 @@ def login():
                             WHERE username = %s''', (username,))
                 row = cur.fetchone()
                 if row and check_password_hash(row["hash_password"], password):
+
                     session['username'] = username
                     return redirect(url_for('admin.home_admin'))
                 else:

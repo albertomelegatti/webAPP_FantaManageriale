@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from db import get_connection, release_connection
+from psycopg2.extras import RealDictCursor
 import json
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
@@ -26,7 +27,7 @@ def nuova_asta():
 
     try:
         conn = get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Recupera i giocatori disponibili per l'asta
         cur.execute('''
