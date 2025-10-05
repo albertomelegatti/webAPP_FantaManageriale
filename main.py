@@ -16,15 +16,13 @@ app.secret_key = secrets.token_hex(16)
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
 
-
-
 init_pool()
 
 
 # Pagina principale
 @app.route("/")
 def home():
-    keep_awake()
+    #keep_awake()
     return render_template("index.html")
 
 
@@ -107,7 +105,6 @@ def squadre():
                     WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
         squadre = [row["nome"] for row in cur.fetchall()]
 
-        cur.close()
         return render_template("squadre.html", squadre=squadre)
 
     except Exception as e:

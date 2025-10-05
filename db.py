@@ -1,8 +1,10 @@
 import os
+import psycopg2
 from psycopg2.extras import DictCursor
 from psycopg2 import OperationalError
-from psycopg2.pool import SimpleConnectionPool
+from psycopg2.pool import SimpleConnectionPool, ThreadedConnectionPool
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -11,16 +13,36 @@ pool = None
 
 def init_pool():
     #Inizializza il connection pool (solo una volta)
+    
     global pool
-    if pool is None:
-        pool = SimpleConnectionPool(
-            minconn=1,
-            maxconn=5,
-            dsn=DATABASE_URL,
-            cursor_factory=DictCursor
+    if pool is not None:
+        print("Il pool è già inizializzato.")
+
+    if not DATABASE_URL:
+        raise ValueError("Variabile d'ambiente DATABASE_URL non trovata")
+
+    result = urlparse(DATABASE_URL)
+
+    params = {
+        "database": result.path[1:] or "postgres", # Rimuove lo slash iniziale
+        "user": result.username,
+        "password": result.password,
+        "host": result.hostname,
+        "port": result.port,
+        "sslmode": "require", 
+        "connect_timeout": 5
+    }
+
+    try:
+        pool = psycopg2.pool.ThreadedConnectionPool(
+            minconn = 2,
+            maxconn = 20,
+            **params
         )
-        print("✅ Connection pool inizializzato")
-    return pool
+        print("✅ Pool di connessioni Supabase inizializzato con successo!")
+    except psycopg2.Error as e:
+        print(f"❌ Errore critico nell'inizializzazione del pool: {e}")
+        raise
 
 
 def log_pool_status(action):
@@ -40,29 +62,13 @@ def get_connection():
     if pool is None:
         raise Exception("Connection pool non inizializzato. Chiama init_pool() prima.")
 
-    conn = pool.getconn()
-    log_pool_status("Connessione ottenuta")
-
-    try:
-        with conn.cursor() as cur:
-            cur.execute("SELECT 1")  # test connessione
-    except OperationalError:
-        print("⚠️ Connessione scaduta, ne creo una nuova...")
-        pool.putconn(conn, close=True)
-        conn = pool.getconn()
-
-    return conn
-
+    return pool.getconn()
 
 def release_connection(conn):
     #Rilascia la connessione al pool
     global pool
     if pool and conn:
-        try:
-            pool.putconn(conn)
-            log_pool_status("Connessione rilasciata")
-        except Exception as e:
-            print(f"⚠️ Errore nel rilascio connessione: {e}")
+        pool.putconn(conn)
 
 
 
