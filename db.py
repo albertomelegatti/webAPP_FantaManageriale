@@ -24,14 +24,13 @@ def init_pool():
     result = urlparse(DATABASE_URL)
 
     params = {
-        "database": result.path[1:] or "postgres", # Rimuove lo slash iniziale
         "user": result.username,
         "password": result.password,
         "host": result.hostname,
         "port": result.port,
-        "sslmode": "require", 
-        "connect_timeout": 5
+        "dbname": "postgres"
     }
+    print(params)
 
     try:
         pool = psycopg2.pool.ThreadedConnectionPool(
