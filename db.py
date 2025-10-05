@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
-#pool = None
+pool = None
 
 
 def init_pool():
