@@ -29,7 +29,8 @@ def init_pool():
         "host": result.hostname,
         "port": result.port,
         "dbname": "postgres",
-        "application_name": "WebApp_Fanta"
+        "application_name": "WebApp_Fanta",
+        "sslmode": "require"
     }
     #print(params)
 
