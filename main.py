@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from admin import admin_bp
 from user import user_bp
 from db import get_connection, release_connection, init_pool, keep_awake
+import time
 # from chatbot import Chatbot
 
 app = Flask(__name__)
@@ -16,6 +17,7 @@ app.secret_key = secrets.token_hex(16)
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
 
+time.sleep(8)
 init_pool()
 
 
