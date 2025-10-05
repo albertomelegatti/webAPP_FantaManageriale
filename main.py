@@ -50,8 +50,6 @@ def login():
                             WHERE username = %s''', (username,))
                 row = cur.fetchone()
                 if row and check_password_hash(row["hash_password"], password):
-                    cur.close()
-                    release_connection(conn)
                     session['username'] = username
                     return redirect(url_for('admin.home_admin'))
                 else:
@@ -69,8 +67,6 @@ def login():
                     if check_password_hash(hash_password, password):
                         session['username'] = username
                         session["nome_squadra"] = nome_squadra
-                        cur.close()
-                        release_connection(conn)
                         return redirect(url_for('user.squadraLogin', nome_squadra=nome_squadra))
                     else:
                         flash("Password errata.", "danger")
@@ -345,8 +341,8 @@ def cambia_password():
 
                 cur.execute('''SELECT nome FROM squadra WHERE username = %s''', (username,))
                 nome_squadra = cur.fetchone()["nome"]
-                cur.close()
-                release_connection(conn)
+
+
                 return redirect(url_for('user.squadraLogin', nome_squadra=nome_squadra))
 
             flash("Errore nel cambio password.", "danger")
