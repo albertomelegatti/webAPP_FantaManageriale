@@ -22,7 +22,7 @@ init_pool()
 # Pagina principale
 @app.route("/")
 def home():
-    keep_awake()
+    #keep_awake()
     return render_template("index.html")
 
 
