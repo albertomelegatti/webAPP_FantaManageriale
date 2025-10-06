@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from psycopg2.extras import RealDictCursor
-from datetime import datetime
+from datetime import datetime, timedelta
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
@@ -64,7 +64,13 @@ def user_aste():
         aste_attive_row = cur.fetchall()
         
         for a in aste_attive_row:
-            tempo_rimanente = a["tempo_ultima_offerta"] - datetime.now()
+            data_scadenza = a["tempo_ultima_offerta"]
+            data_scadenza = data_scadenza.strftime("%d/%m/%Y %H:%M")
+            if isinstance(data_scadenza, str):
+                data_scadenza = datetime.fromisoformat(data_scadenza.split(".")[0])
+            data_scadenza += timedelta(hours=24)
+
+
             partecipanti = format_partecipanti(a["partecipanti"])
 
             aste_attive.append({
@@ -72,7 +78,7 @@ def user_aste():
                 "giocatore": a["nome"],
                 "ultima_offerta": a["ultima_offerta"],
                 "squadra_vincente": a["squadra_vincente"],
-                "tempo_rimanente": tempo_rimanente,
+                "data_scadenza": data_scadenza,
                 "partecipanti": partecipanti
             })
 
@@ -90,8 +96,13 @@ def user_aste():
                         WHERE a.stato = 'mostra_interesse';''', (nome_squadra,))
         aste_a_cui_iscriversi_row = cur.fetchall()
 
+    
         for a in aste_a_cui_iscriversi_row:
-            tempo_rimanente = a["tempo_fine_mostra_interesse"] - datetime.now()
+            data_scadenza = a["tempo_fine_mostra_interesse"]
+            if isinstance(data_scadenza, str):
+                data_scadenza = datetime.fromisoformat(data_scadenza.split(".")[0])
+            data_scadenza += timedelta(hours=24)
+            data_scadenza = data_scadenza.strftime("%d/%m/%Y %H:%M")
             gia_iscritto_all_asta = False
 
             if nome_squadra in a["partecipanti"]:
@@ -101,7 +112,7 @@ def user_aste():
             aste_a_cui_iscriversi.append({
                 "asta_id": a["id"],
                 "giocatore": a["nome"],
-                "tempo_rimanente": tempo_rimanente,
+                "data_scadenza": data_scadenza,
                 "partecipanti": partecipanti,
                 "gia_iscritto_all_asta": gia_iscritto_all_asta
             })
@@ -116,9 +127,14 @@ def user_aste():
         aste_concluse_raw = cur.fetchall()
 
         for a in aste_concluse_raw:
+            tempo_fine_asta = a["tempo_fine_asta"]
+            if isinstance(tempo_fine_asta, str):
+                tempo_fine_asta = datetime.fromisoformat(data_scadenza.split(".")[0])
+            data_scadenza = data_scadenza.strftime("%d/%m/%Y %H:%M")
+
             aste_concluse.append({
                 "giocatore": a["nome"],
-                "tempo_fine_asta": a["tempo_fine_asta"],
+                "tempo_fine_asta": tempo_fine_asta,
                 "ultima_offerta": a["ultima_offerta"],
                 "squadra_vincente": a["squadra_vincente"]
             })
@@ -209,3 +225,19 @@ def format_partecipanti(partecipanti):
         return partecipanti[0]
     else:
         return ",\n".join(partecipanti)
+    
+
+
+from datetime import datetime
+
+def format_datetime(ts):
+    # Converte un timestamp di Supabase in formato 'gg/mm/aaaa' leggibile.
+    if not ts:
+        return ""
+    if isinstance(ts, str):
+        try:
+            ts = datetime.fromisoformat(ts)  # converte "2025-10-07 13:38:05.44898"
+        except ValueError:
+            return ts  # se non è formattato bene, restituisci com'è
+    return ts.strftime("%d/%m/%Y")  # ✅ giorno/mese/anno
+

@@ -22,7 +22,7 @@
                         <th>Giocatore</th>
                         <th>Ultima offerta</th>
                         <th>Squadra vincente</th>
-                        <th>Tempo rimanente</th>
+                        <th>Scadenza</th>
                         <th>Partecipanti</th>
                         <th></th>
                     </tr>
@@ -33,7 +33,7 @@
                         <td>{{ asta.giocatore }}</td>
                         <td>{{ asta.ultima_offerta }}</td>
                         <td>{{ asta.squadra_vincente }}</td>
-                        <td>{{ asta.tempo_ultima_offerta }}</td>
+                        <td>{{ asta.data_scadenza }}</td>
                         <td>{{ asta.partecipanti }}</td>
                         <td class="text-center">
                             <form method="POST" action="{{ url_for('user.user_aste') }}"
@@ -59,7 +59,7 @@
                 <thead>
                     <tr>
                         <th>Giocatore</th>
-                        <th>Tempo rimanente</th>
+                        <th>Scadenza</th>
                         <th>Iscritti</th>
                         <th></th>
                     </tr>
@@ -68,7 +68,7 @@
                     {% for asta in aste_a_cui_iscriversi %}
                     <tr>
                         <td>{{ asta.giocatore }}</td>
-                        <td>{{ asta.tempo_rimanente }}</td>
+                        <td>{{ asta.data_scadenza }}</td>
                         <td>{{ asta.partecipanti }}</td>
                         <td class="text-center">
                             {% if asta.gia_iscritto_all_asta %}
@@ -111,7 +111,7 @@
                     {% for asta in aste_concluse %}
                     <tr>
                         <td>{{ asta.nome }}</td>
-                        <td>{{ asta.tempo_fine_asta }}</td>
+                        <td>{{ asta.tempo_fine_asta}}</td>
                         <td>{{ asta.ultima_offerta }}</td>
                         <td>{{ asta.squadra_vincente }}</td>
                     </tr>
