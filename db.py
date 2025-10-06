@@ -28,12 +28,7 @@ def init_pool():
         "password": result.password,
         "host": result.hostname,
         "port": result.port,
-        "dbname": "postgres",
-        "sslmode": "require",
-        "connect_timeout": 5,
-        "keepalives": 1,
-        "keepalives_idle": 60,
-        "keepalives_interval": 20
+        "dbname": "postgres"
     }
     #print(params)
 
