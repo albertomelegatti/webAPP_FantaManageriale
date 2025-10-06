@@ -187,7 +187,7 @@ def nuova_asta():
                     cur.execute('''
                         INSERT INTO asta (giocatore, squadra_vincente, ultima_offerta, tempo_ultima_offerta,
                                           tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti)
-                        VALUES (%s, %s, NULL, NULL, NULL, NOW() + INTERVAL '1 day', 'mostra_interesse', %s)
+                        VALUES (%s, %s, NULL, NULL, NULL, CURRENT_TIMESTAMP + INTERVAL '1 day', 'mostra_interesse', %s)
                     ''', (giocatore_id, nome_squadra, [nome_squadra]))
                     conn.commit()
 
