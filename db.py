@@ -63,42 +63,7 @@ def get_connection():
     if pool is None:
         raise Exception("Connection pool non inizializzato. Chiama init_pool() prima.")
 
-    conn = pool.getconn()
-    
-    # Tentativi massimi di riconnessione
-    max_retries = 3
-    retries = 0
-    
-    while retries < max_retries:
-        try:
-            # Esegue una query leggera per testare la connessione (Heartbeat)
-            with conn.cursor() as cur:
-                cur.execute("SELECT 1")
-                cur.fetchone()
-            
-            # Se il test riesce, restituisce la connessione valida
-            return conn 
-
-        except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
-            # Cattura errori di rete, timeout, SSL closure (EOF)
-            print(f"⚠️ Connessione morta rilevata: {e}. Tentativo di riconnessione.")
-            
-            # 1. Rilascia e chiude forzatamente la connessione morta
-            release_connection(conn) 
-            
-            # 2. Ottiene una NUOVA connessione dal pool
-            conn = pool.getconn() 
-            retries += 1
-            
-        except Exception as e:
-            # Cattura altri errori generici che non sono dovuti a connessione morta
-            print(f"Errore inaspettato in get_connection: {e}")
-            release_connection(conn)
-            raise # Rilancia l'errore
-            
-    # Se i tentativi falliscono, solleva un errore
-    raise Exception("Impossibile stabilire una connessione valida al database dopo diversi tentativi.")
-
+    return pool.getconn()
 
 
 #def get_connection():
