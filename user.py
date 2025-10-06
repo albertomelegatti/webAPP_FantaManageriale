@@ -33,7 +33,7 @@ def nuova_asta():
         cur.execute('''
             SELECT nome
             FROM giocatore AS g
-            WHERE tipo_contratto <> 'Svincolato'
+            WHERE tipo_contratto = 'Svincolato'
               AND NOT EXISTS (
                   SELECT 1 FROM asta a WHERE a.giocatore = g.id
               )
