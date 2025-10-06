@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from psycopg2.extras import RealDictCursor
-import json
+from datetime import datetime
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
@@ -13,10 +13,134 @@ def squadraLogin():
 
 
 # Pagina gestione aste utente
-@user_bp.route("/aste")
+@user_bp.route("/aste", methods=["GET", "POST"])
 def user_aste():
     nome_squadra = session.get("nome_squadra")
-    return render_template("user_aste.html", nome_squadra=nome_squadra)
+
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        if request.method == "POST":
+
+            # BOTTONE RINUNCIA
+            asta_id = request.form.get("asta_id_aste_attive")
+            if asta_id:
+                cur.execute('''UPDATE asta
+                        SET partecipanti = array_remove(partecipanti, %s)
+                        WHERE id = %s;''', (nome_squadra, asta_id))
+                conn.commit()
+                flash(f"Hai rinunciato all'asta ID {asta_id}.", "success")
+                return redirect(url_for("user.user_aste"))
+            
+
+            # BOTTONE ISCRIVITI
+            asta_id = request.form.get("asta_id_aste_a_cui_iscriversi")
+            if asta_id:
+                cur.execute('''UPDATE asta
+                        SET partecipanti = array_append(partecipanti, %s)
+                        WHERE id = %s;''', (nome_squadra, asta_id))
+                conn.commit()
+                flash(f"Ti sei iscritto all'asta: {asta_id}.", "success")
+                return redirect(url_for("user.user_aste"))
+            
+
+
+
+
+        # ASTE ATTIVE
+        aste_attive = []
+        cur.execute('''WITH giocatori_svincolati AS (
+                    SELECT id, nome
+                    FROM giocatore
+                    WHERE tipo_contratto = 'Svincolato')
+
+                    SELECT a.id, g.nome, a.ultima_offerta, a.squadra_vincente, a.tempo_ultima_offerta, a.partecipanti
+                    FROM asta a
+                    JOIN giocatori_svincolati g ON a.giocatore = g.id
+                    WHERE a.stato = 'in_corso'
+                    AND %s = ANY(a.partecipanti);''', (nome_squadra,))
+        aste_attive_row = cur.fetchall()
+        
+        for a in aste_attive_row:
+            tempo_rimanente = a["tempo_ultima_offerta"] - datetime.now()
+            partecipanti = format_partecipanti(a["partecipanti"])
+
+            aste_attive.append({
+                "asta_id": a["id"],
+                "giocatore": a["nome"],
+                "ultima_offerta": a["ultima_offerta"],
+                "squadra_vincente": a["squadra_vincente"],
+                "tempo_rimanente": tempo_rimanente,
+                "partecipanti": partecipanti
+            })
+
+
+        # ASTE A CUI ISCRIVERSI
+        aste_a_cui_iscriversi = []
+        cur.execute('''WITH giocatori_svincolati AS (
+                        SELECT id, nome
+                        FROM giocatore
+                        WHERE tipo_contratto = 'Svincolato')
+                    
+                        SELECT a.id, g.nome, a.tempo_fine_mostra_interesse, a.partecipanti
+                        FROM asta a
+                        JOIN giocatori_svincolati g ON a.giocatore = g.id
+                        WHERE a.stato = 'mostra_interesse';''', (nome_squadra,))
+        aste_a_cui_iscriversi_row = cur.fetchall()
+
+        for a in aste_a_cui_iscriversi_row:
+            tempo_rimanente = a["tempo_fine_mostra_interesse"] - datetime.now()
+            gia_iscritto_all_asta = False
+
+            if nome_squadra in a["partecipanti"]:
+                gia_iscritto_all_asta = True
+            partecipanti = format_partecipanti(a["partecipanti"])
+
+            aste_a_cui_iscriversi.append({
+                "asta_id": a["id"],
+                "giocatore": a["nome"],
+                "tempo_rimanente": tempo_rimanente,
+                "partecipanti": partecipanti,
+                "gia_iscritto_all_asta": gia_iscritto_all_asta
+            })
+
+
+        # ASTE CONCLUSE
+        aste_concluse = []
+        cur.execute('''SELECT g.nome, a.tempo_fine_asta, a.ultima_offerta, a.squadra_vincente
+                    FROM asta a
+                    JOIN giocatore g ON a.giocatore = g.id
+                    WHERE a.stato = 'conclusa';''')
+        aste_concluse_raw = cur.fetchall()
+
+        for a in aste_concluse_raw:
+            aste_concluse.append({
+                "giocatore": a["nome"],
+                "tempo_fine_asta": a["tempo_fine_asta"],
+                "ultima_offerta": a["ultima_offerta"],
+                "squadra_vincente": a["squadra_vincente"]
+            })
+
+        
+
+
+
+
+
+
+
+
+    except Exception as e:
+        print("Errore", e)
+        flash("Errore durante il caricamento delle aste.", "danger")
+
+    finally:
+        if conn:
+            release_connection(conn)
+
+    return render_template("user_aste.html", nome_squadra=nome_squadra, aste_attive=aste_attive, aste_a_cui_iscriversi=aste_a_cui_iscriversi, aste_concluse=aste_concluse)
 
 
 # Creazione nuova asta
@@ -50,11 +174,12 @@ def nuova_asta():
                 print(row)
                 if row:
                     giocatore_id = row["id"]
+                    nome_squadra = session.get("nome_squadra")
                     cur.execute('''
                         INSERT INTO asta (giocatore, squadra_vincente, ultima_offerta, tempo_ultima_offerta,
                                           tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti)
-                        VALUES (%s, NULL, NULL, NULL, NULL, NOW() + INTERVAL '1 days', 'mostra_interesse', %s)
-                    ''', (giocatore_id, [session.get("nome_squadra")]))
+                        VALUES (%s, %s, NULL, NULL, NULL, NOW() + INTERVAL '1 days', 'mostra_interesse', %s)
+                    ''', (giocatore_id, nome_squadra, [nome_squadra]))
                     conn.commit()
 
                     flash(f"Asta per {giocatore_scelto} creata con successo!", "success")
@@ -75,3 +200,12 @@ def nuova_asta():
             release_connection(conn)
 
     return render_template("user_nuova_asta.html", giocatori_disponibili_per_asta=giocatori_disponibili_per_asta)
+
+
+def format_partecipanti(partecipanti):
+    if not partecipanti:
+        return ""
+    elif len(partecipanti) == 1:
+        return partecipanti[0]
+    else:
+        return ",\n".join(partecipanti)

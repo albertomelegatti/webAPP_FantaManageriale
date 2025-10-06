@@ -5,10 +5,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from admin import admin_bp
 from user import user_bp
 from db import get_connection, release_connection, init_pool, keep_awake
+from datetime import timedelta
 
 # from chatbot import Chatbot
 
+
 app = Flask(__name__)
+
+#app.permanent_session_lifetime = timedelta(hours=2)
 
 # chatbot = Chatbot()
 app.secret_key = secrets.token_hex(16)
@@ -54,6 +58,7 @@ def login():
                 if row and check_password_hash(row["hash_password"], password):
 
                     session['username'] = username
+                    session.permanent = True
                     return redirect(url_for('admin.home_admin'))
                 else:
                     flash("Credenziali admin errate.", "danger")
@@ -70,6 +75,7 @@ def login():
                     if check_password_hash(hash_password, password):
                         session['username'] = username
                         session["nome_squadra"] = nome_squadra
+                        session.permanent = True
                         return redirect(url_for('user.squadraLogin', nome_squadra=nome_squadra))
                     else:
                         flash("Password errata.", "danger")
@@ -153,17 +159,13 @@ def dashboardSquadra(nome_squadra):
         rosa_raw = cur.fetchall()
 
         for g in rosa_raw:
-            nome = g['nome']
-            tipo_contratto = g['tipo_contratto']
             ruolo = g['ruolo'].strip("{}")
-            quot_att_mantra = g['quot_att_mantra']
-            costo = g['costo']
             rosa.append({
-                "nome": nome,
-                "tipo_contratto": tipo_contratto,
+                "nome": g['nome'],
+                "tipo_contratto": g['tipo_contratto'],
                 "ruolo": ruolo,
-                "quot_att_mantra": quot_att_mantra,
-                "costo": costo
+                "quot_att_mantra": g['quot_att_mantra'],
+                "costo": g['costo']
             })
 
         # PRIMAVERA
@@ -175,13 +177,11 @@ def dashboardSquadra(nome_squadra):
         primavera_raw = cur.fetchall()
 
         for g in primavera_raw:
-            nome = g['nome']
             ruolo = g['ruolo'].strip("{}")
-            quot_att_mantra = g['quot_att_mantra']
             primavera.append({
-                "nome": nome,
+                "nome": g['nome'],
                 "ruolo": ruolo,
-                "quot_att_mantra": quot_att_mantra
+                "quot_att_mantra": g['quot_att_mantra']
             })
 
         # CONTEGGIO PRESTITI IN
@@ -200,15 +200,12 @@ def dashboardSquadra(nome_squadra):
         prestiti_in_raw = cur.fetchall()
 
         for g in prestiti_in_raw:
-            nome = g['nome']
             ruolo = g['ruolo'].strip("{}")
-            quot_att_mantra = g['quot_att_mantra']
-            detentore_cartellino = g["detentore_cartellino"]
             prestiti_in.append({
-                "nome": nome,
+                "nome": g['nome'],
                 "ruolo": ruolo,
-                "quot_att_mantra": quot_att_mantra,
-                "detentore_cartellino": detentore_cartellino
+                "quot_att_mantra": g['quot_att_mantra'],
+                "detentore_cartellino": g["detentore_cartellino"]
             })
 
         # PRESTITI OUT
@@ -220,15 +217,12 @@ def dashboardSquadra(nome_squadra):
         prestiti_out_raw = cur.fetchall()
 
         for g in prestiti_out_raw:
-            nome = g['nome']
             ruolo = g['ruolo'].strip("{}")
-            quot_att_mantra = g['quot_att_mantra']
-            squadra_att = g['squadra_att']
             prestiti_out.append({
-                "nome": nome,
+                "nome": g['nome'],
                 "ruolo": ruolo,
-                "quot_att_mantra": quot_att_mantra,
-                "squadra_att": squadra_att
+                "quot_att_mantra": g['quot_att_mantra'],
+                "squadra_att": g['squadra_att']
             })
 
         cur.close()
