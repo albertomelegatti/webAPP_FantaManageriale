@@ -39,20 +39,22 @@ def nuova_asta():
               )
         ''')
         giocatori_disponibili_per_asta = [row["nome"] for row in cur.fetchall()]
-
+        #print(giocatori_disponibili_per_asta)
         if request.method == "POST":
             giocatore_scelto = request.form.get("giocatore", "").strip()
+            #print(giocatore_scelto)
             if giocatore_scelto in giocatori_disponibili_per_asta:
+                #print("Presente")
                 cur.execute('SELECT id FROM giocatore WHERE nome = %s', (giocatore_scelto,))
                 row = cur.fetchone()
+                print(row)
                 if row:
-                    giocatore_id = row[0]
-
+                    giocatore_id = row["id"]
                     cur.execute('''
                         INSERT INTO asta (giocatore, squadra_vincente, ultima_offerta, tempo_ultima_offerta,
                                           tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti)
                         VALUES (%s, NULL, NULL, NULL, NULL, NOW() + INTERVAL '1 days', 'mostra_interesse', %s)
-                    ''', (giocatore_id, [giocatore_scelto]))
+                    ''', (giocatore_id, [session.get("nome_squadra")]))
                     conn.commit()
 
                     flash(f"Asta per {giocatore_scelto} creata con successo!", "success")
