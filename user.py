@@ -139,15 +139,6 @@ def user_aste():
                 "squadra_vincente": a["squadra_vincente"]
             })
 
-        
-
-
-
-
-
-
-
-
     except Exception as e:
         print("Errore", e)
         flash("Errore durante il caricamento delle aste.", "danger")
@@ -157,6 +148,8 @@ def user_aste():
             release_connection(conn)
 
     return render_template("user_aste.html", nome_squadra=nome_squadra, aste_attive=aste_attive, aste_a_cui_iscriversi=aste_a_cui_iscriversi, aste_concluse=aste_concluse)
+
+
 
 
 # Creazione nuova asta
@@ -194,7 +187,7 @@ def nuova_asta():
                     cur.execute('''
                         INSERT INTO asta (giocatore, squadra_vincente, ultima_offerta, tempo_ultima_offerta,
                                           tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti)
-                        VALUES (%s, %s, NULL, NULL, NULL, NOW() + INTERVAL '1 days', 'mostra_interesse', %s)
+                        VALUES (%s, %s, NULL, NULL, NULL, NOW() + INTERVAL '1 day', 'mostra_interesse', %s)
                     ''', (giocatore_id, nome_squadra, [nome_squadra]))
                     conn.commit()
 
