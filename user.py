@@ -133,11 +133,11 @@ def user_aste():
         for a in aste_concluse_raw:
             tempo_fine_asta = a["tempo_fine_asta"]
             if isinstance(tempo_fine_asta, str):
-                tempo_fine_asta = datetime.fromisoformat(data_scadenza.split(".")[0])
-            data_scadenza = data_scadenza.strftime("%d/%m/%Y %H:%M")
+                tempo_fine_asta = datetime.fromisoformat(tempo_fine_asta.split(".")[0])
+            tempo_fine_asta = tempo_fine_asta.strftime("%d/%m/%Y %H:%M")
 
             aste_concluse.append({
-                "giocatore": a["nome"],
+                "nome": a["nome"],
                 "tempo_fine_asta": tempo_fine_asta,
                 "ultima_offerta": a["ultima_offerta"],
                 "squadra_vincente": a["squadra_vincente"]
