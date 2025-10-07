@@ -24,6 +24,16 @@ def user_aste():
 
         if request.method == "POST":
 
+            # BOTTONE ISCRIVITI
+            asta_id = request.form.get("asta_id_aste_a_cui_iscriversi")
+            if asta_id:
+                cur.execute('''UPDATE asta
+                        SET partecipanti = array_append(partecipanti, %s)
+                        WHERE id = %s;''', (nome_squadra, asta_id))
+                conn.commit()
+                flash(f"Ti sei iscritto all'asta: {asta_id}.", "success")
+                return redirect(url_for("user.user_aste"))
+            
             # BOTTONE RINUNCIA
             asta_id = request.form.get("asta_id_aste_attive")
             if asta_id:
@@ -35,41 +45,35 @@ def user_aste():
                 return redirect(url_for("user.user_aste"))
             
 
-            # BOTTONE ISCRIVITI
-            asta_id = request.form.get("asta_id_aste_a_cui_iscriversi")
-            if asta_id:
-                cur.execute('''UPDATE asta
-                        SET partecipanti = array_append(partecipanti, %s)
-                        WHERE id = %s;''', (nome_squadra, asta_id))
-                conn.commit()
-                flash(f"Ti sei iscritto all'asta: {asta_id}.", "success")
-                return redirect(url_for("user.user_aste"))
-            
-
 
 
 
         # ASTE ATTIVE
         aste_attive = []
         cur.execute('''WITH giocatori_svincolati AS (
-                    SELECT id, nome
-                    FROM giocatore
-                    WHERE tipo_contratto = 'Svincolato')
+                SELECT id, nome
+                FROM giocatore
+                WHERE tipo_contratto = 'Svincolato')
 
-                    SELECT a.id, g.nome, a.ultima_offerta, a.squadra_vincente, a.tempo_ultima_offerta, a.partecipanti
-                    FROM asta a
-                    JOIN giocatori_svincolati g ON a.giocatore = g.id
-                    WHERE a.stato = 'in_corso'
-                    AND %s = ANY(a.partecipanti);''', (nome_squadra,))
+                SELECT a.id, g.nome, a.ultima_offerta, a.squadra_vincente, a.tempo_ultima_offerta, a.partecipanti
+                FROM asta a
+                JOIN giocatori_svincolati g ON a.giocatore = g.id
+                WHERE a.stato = 'in_corso'
+                AND %s = ANY(a.partecipanti);''', (nome_squadra,))
         aste_attive_row = cur.fetchall()
-        
+
         for a in aste_attive_row:
             data_scadenza = a["tempo_ultima_offerta"]
-            data_scadenza = data_scadenza.strftime("%d/%m/%Y %H:%M")
+
+            # Se è una stringa (ad esempio quando viene da Supabase come testo)
             if isinstance(data_scadenza, str):
                 data_scadenza = datetime.fromisoformat(data_scadenza.split(".")[0])
+
+            # Aggiungi 24 ore
             data_scadenza += timedelta(hours=24)
 
+            # Ora formatta per la visualizzazione
+            data_scadenza_str = data_scadenza.strftime("%d/%m/%Y %H:%M")
 
             partecipanti = format_partecipanti(a["partecipanti"])
 
@@ -78,7 +82,7 @@ def user_aste():
                 "giocatore": a["nome"],
                 "ultima_offerta": a["ultima_offerta"],
                 "squadra_vincente": a["squadra_vincente"],
-                "data_scadenza": data_scadenza,
+                "data_scadenza": data_scadenza_str,
                 "partecipanti": partecipanti
             })
 
@@ -151,7 +155,6 @@ def user_aste():
 
 
 
-
 # Creazione nuova asta
 @user_bp.route("/nuova_asta", methods=["GET", "POST"])
 def nuova_asta():
@@ -211,6 +214,114 @@ def nuova_asta():
     return render_template("user_nuova_asta.html", giocatori_disponibili_per_asta=giocatori_disponibili_per_asta)
 
 
+
+
+@user_bp.route("/singola_asta_attiva/<int:asta_id>", methods=["GET", "POST"])
+def singola_asta_attiva(asta_id):
+    nome_squadra = session.get("nome_squadra")
+    asta = None
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        if request.method == "POST":
+
+            # --- RINUNCIA ---
+            asta_id_rinuncia = request.form.get("bottone_rinuncia")
+            if asta_id_rinuncia:
+                cur.execute('''
+                    UPDATE asta
+                    SET partecipanti = array_remove(partecipanti, %s)
+                    WHERE id = %s;
+                ''', (nome_squadra, asta_id_rinuncia))
+                conn.commit()
+                flash("Hai rinunciato all'asta.", "success")
+                return redirect(url_for("user.user_aste"))
+
+            # --- RILANCIA OFFERTA ---
+            nuova_offerta = request.form.get("bottone_rilancia")
+            if nuova_offerta:
+                cur.execute('''
+                    UPDATE asta
+                    SET ultima_offerta = %s,
+                        squadra_vincente = %s,
+                        tempo_ultima_offerta = NOW()
+                    WHERE id = %s;
+                ''', (nuova_offerta, nome_squadra, asta_id))
+                conn.commit()
+                flash(f"Hai rilanciato l'offerta a {nuova_offerta}.", "success")
+                return redirect(url_for("user.singola_asta_attiva", asta_id=asta_id))
+            
+            
+
+        # --- Recupero dati asta ---
+        cur.execute('''
+            WITH giocatori_svincolati AS (
+                SELECT id, nome
+                FROM giocatore
+                WHERE tipo_contratto = 'Svincolato'
+            )
+            SELECT g.nome, a.ultima_offerta, a.squadra_vincente, a.tempo_fine_asta, a.partecipanti
+            FROM asta a
+            JOIN giocatori_svincolati g ON a.giocatore = g.id
+            WHERE a.id = %s;
+        ''', (asta_id,))
+        asta_raw = cur.fetchone()
+
+        if asta_raw:
+            partecipanti = format_partecipanti(asta_raw["partecipanti"])
+            data_scadenza = asta_raw["tempo_fine_asta"]
+
+            if isinstance(data_scadenza, str):
+                data_scadenza = datetime.fromisoformat(data_scadenza.split(".")[0])
+
+            data_scadenza_str = data_scadenza.strftime("%d/%m/%Y %H:%M")
+
+            asta = {
+                "id": asta_id,
+                "giocatore": asta_raw["nome"],
+                "ultima_offerta": asta_raw["ultima_offerta"],
+                "squadra_vincente": asta_raw["squadra_vincente"],
+                "tempo_fine_asta": data_scadenza_str,
+                "partecipanti": partecipanti
+            }
+        else:
+            flash("Asta non trovata.", "warning")
+
+    except Exception as e:
+        print("Errore:", e)
+        flash("Errore durante il caricamento dell'asta.", "danger")
+
+    finally:
+        if conn:
+            release_connection(conn)
+
+    return render_template("singola_asta_attiva.html", asta=asta, nome_squadra=nome_squadra)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def format_partecipanti(partecipanti):
     if not partecipanti:
         return ""
@@ -218,10 +329,7 @@ def format_partecipanti(partecipanti):
         return partecipanti[0]
     else:
         return ",\n".join(partecipanti)
-    
 
-
-from datetime import datetime
 
 def format_datetime(ts):
     # Converte un timestamp di Supabase in formato 'gg/mm/aaaa' leggibile.

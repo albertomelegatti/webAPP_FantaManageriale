@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Titolo -->
+    <h1 class="mb-4 text-center fw-bold">Asta: {{ asta.giocatore }}</h1>
+
+    <!-- Info Asta -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-md-3 mb-3">
+                    <div class="border rounded p-3 bg-light">
+                        <h6 class="text-muted mb-2">Offerta attuale</h6>
+                        <span class="fs-5 fw-semibold">{{ asta.ultima_offerta }}</span>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="border rounded p-3 bg-light">
+                        <h6 class="text-muted mb-2">Squadra vincente</h6>
+                        <span class="fs-5 fw-semibold text-primary">{{ asta.squadra_vincente }}</span>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="border rounded p-3 bg-light">
+                        <h6 class="text-muted mb-2">Data scadenza</h6>
+                        <span class="fs-6 fw-semibold">{{ asta.tempo_fine_asta }}</span>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="border rounded p-3 bg-light">
+                        <h6 class="text-muted mb-2">Partecipanti</h6>
+                        <div class="fs-6" style="line-height: 1.4;">
+                            {{ asta.partecipanti|replace(',', ',<br>')|safe }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center">
+
+        <!-- Bottone RILANCIA -->
+        <form method="POST" action="{{ url_for('user.singola_asta_attiva', asta_id=asta.id) }}" class="d-flex align-items-center gap-2">
+            <input type="number" name="bottone_rilancia"
+                   min="{{ asta.ultima_offerta|default(1)+1 }}"
+                   placeholder="Offerta"
+                   required
+                   class="form-control form-control-sm"
+                   style="width:100px;">
+                <button type="submit" class="btn btn-sm btn-primary px-3 py-1 fw-semibold"> Rilancia </button>
+        </form>
+
+
+        
+        <!-- Bottone RINUNCIA -->
+        <form method="POST"
+            action="{{ url_for('user.user_aste') }}"
+            onsubmit="return confirm('Sei sicuro di voler rinunciare all\'asta per {{ asta.giocatore }}?');">
+            <input type="hidden" name="bottone_rinuncia" value="{{ asta.id }}">
+                <button type="submit"
+                class="btn btn-sm fw-semibold"
+                style="background-color:#dc3545; border-color:#dc3545; color:white; padding:0.25rem 0.75rem;"
+                {% if asta.squadra_vincente == nome_squadra %}disabled{% endif %}> Rinuncia </button>
+        </form>
+    </div>
+
+
+    <!-- Torna indietro -->
+    <div class="text-center mt-4">
+        <a href="{{ url_for('user.user_aste') }}" class="btn btn-secondary btn-sm px-3">← Torna alle aste</a>
+    </div>
+</div>
+{% endblock %}
