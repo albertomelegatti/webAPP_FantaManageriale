@@ -253,7 +253,7 @@ def singola_asta_attiva(asta_id):
                 flash(f"Hai rilanciato l'offerta a {nuova_offerta}.", "success")
                 return redirect(url_for("user.singola_asta_attiva", asta_id=asta_id))
             
-            
+
 
         # --- Recupero dati asta ---
         cur.execute('''
@@ -298,27 +298,6 @@ def singola_asta_attiva(asta_id):
             release_connection(conn)
 
     return render_template("singola_asta_attiva.html", asta=asta, nome_squadra=nome_squadra)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
