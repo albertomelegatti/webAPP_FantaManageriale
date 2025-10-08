@@ -45,7 +45,10 @@ def user_aste():
                     
                     SELECT a.id, g.nome, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
                     FROM asta a
-                    JOIN giocatori_svincolati g ON a.giocatore = g.id;''')
+                    JOIN giocatori_svincolati g ON a.giocatore = g.id
+                    WHERE (a.stato = 'in_corso' AND %s = ANY(a.partecipanti)) 
+                    OR a.stato = 'mostra_interesse'
+                    OR (a.stato = 'conclusa' AND a.squadra_vincente = %s);''', (nome_squadra, nome_squadra))
         aste_raw = cur.fetchall()
 
         for a in aste_raw:
@@ -176,7 +179,7 @@ def singola_asta_attiva(asta_id):
                     UPDATE asta
                     SET ultima_offerta = %s,
                         squadra_vincente = %s,
-                        tempo_fine_asta = NOW()
+                        tempo_fine_asta = NOW() + '1 day'
                     WHERE id = %s;
                 ''', (nuova_offerta, nome_squadra, asta_id))
                 conn.commit()
