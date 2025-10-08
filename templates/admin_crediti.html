@@ -4,45 +4,70 @@
 <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
         <h1>Gestione Crediti Squadre</h1>
+        <!-- Bottone SALVA TUTTO -->
+        <button type="submit" form="form-crediti" 
+                class="btn btn-success fw-semibold"
+                onclick="return confirm('Sei sicuro di voler salvare tutti i crediti aggiornati?');">
+            💾 Salva Tutto
+        </button>
     </div>
 
-    
-    <div class="card-body table-responsive">
-        <table class="table table-striped table-hover align-middle text-center">
-            <thead>
-                <tr>
-                    <th>Nome Squadra</th>
-                    <th>Crediti Attuali</th>
-                    <th>Nuovo Valore</th>
-                    <th>Azioni</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for squadra in squadre %}
-                <tr>
-                    <td class="fw-semibold">{{ squadra.nome }}</td>
-                    <td>{{ squadra.crediti }}</td>
-                    <td style="width: 180px;">
-                        <form method="POST" action="{{ url_for('admin.admin_crediti') }}"
-                            class="d-flex justify-content-center align-items-center flex-wrap gap-2"
-                            onsubmit="return confirm('Sei sicuro di voler aggiornare i crediti di {{ squadra.nome }}?');">
-                            <input type="hidden" name="nome_squadra" value="{{ squadra.nome }}">
-                            <input type="number" step="1" min="0" name="nuovo_credito"
-                                    class="form-control form-control-sm text-center"
-                                    value="{{ squadra.crediti }}" required>
-                    </td>
-                    <td>
-                        <button type="submit"
-                                class="btn btn-sm fw-semibold w-100"
-                                style="background-color:#dc3545; border-color:#dc3545; color:white; padding:0.25rem 0.5rem;">
-                                Salva
+    <!-- Unico form per il SALVA TUTTO -->
+    <form id="form-crediti" method="POST" action="{{ url_for('admin.admin_crediti') }}">
+        <div class="card-body table-responsive">
+            <table class="table table-striped table-hover align-middle text-center">
+                <thead>
+                    <tr>
+                        <th>Nome Squadra</th>
+                        <th>Crediti Attuali</th>
+                        <th>Nuovo Valore</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for squadra in squadre %}
+                    <tr>
+                        <td class="fw-semibold">{{ squadra.nome }}</td>
+                        <td>{{ squadra.crediti }}</td>
+                        <td style="width: 180px;">
+                            <!-- Campi per il form globale -->
+                            <input type="hidden" name="squadre[{{ loop.index0 }}][nome]" value="{{ squadra.nome }}">
+                            <input type="number" step="1" min="0"
+                                   name="squadre[{{ loop.index0 }}][nuovo_credito]"
+                                   class="form-control form-control-sm text-center"
+                                   value="{{ squadra.crediti }}" required>
+                        </td>
+                        <td>
+                            <!-- Form singolo per SALVA -->
+                            <form method="POST" action="{{ url_for('admin.admin_crediti') }}"
+                                  class="d-flex justify-content-center align-items-center flex-wrap gap-2"
+                                  onsubmit="return confirm('Aggiornare i crediti di {{ squadra.nome }}?');">
+                                <input type="hidden" name="nome_squadra" value="{{ squadra.nome }}">
+                                <input type="hidden" name="nuovo_credito" 
+                                       value="{{ squadra.crediti }}" 
+                                       id="credito-{{ loop.index0 }}">
+                                <button type="submit"
+                                        class="btn btn-sm fw-semibold w-100"
+                                        style="background-color:#dc3545; border-color:#dc3545; color:white; padding:0.25rem 0.5rem;">
+                                    Salva
                                 </button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
 </div>
+
+<script>
+// Sincronizza i valori nei form singoli quando si cambia l'input principale
+document.querySelectorAll('input[name^="squadre"]').forEach((input, index) => {
+    input.addEventListener('input', () => {
+        const hiddenInput = document.querySelector(`#credito-${index}`);
+        if (hiddenInput) hiddenInput.value = input.value;
+    });
+});
+</script>
 {% endblock %}
