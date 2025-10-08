@@ -3,7 +3,6 @@
     SET stato = 'in_corso',
         squadra_vincente = partecipanti[1],
         ultima_offerta = 1,
-        tempo_ultima_offerta = NOW(),
         tempo_fine_asta = NOW() + INTERVAL '1 day',
         tempo_fine_mostra_interesse = NULL
     WHERE stato = 'mostra_interesse'
@@ -24,7 +23,7 @@
     UPDATE asta
     SET stato = 'conclusa'
     WHERE stato = 'in_corso'
-        AND tempo_ultima_offerta + INTERVAL '24 hours' <= NOW();
+        AND tempo_fine_asta <= NOW();
 
     
     -- 4️⃣ Assegna il giocatore alla squadra vincente esaminando le aste concluse

@@ -3,9 +3,9 @@ from flask import Flask, render_template, send_from_directory, request, session,
 from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 from admin import admin_bp
-from user import user_bp
-from db import get_connection, release_connection, init_pool, keep_awake
-from datetime import timedelta
+from user import user_bp, format_partecipanti, formatta_data
+from db import get_connection, release_connection, init_pool
+from datetime import datetime
 
 # from chatbot import Chatbot
 
@@ -28,9 +28,7 @@ init_pool()
 # Pagina principale
 @app.route("/")
 def home():
-    #keep_awake()
     return render_template("index.html")
-
 
 
 # Rotta per login admin
@@ -59,7 +57,7 @@ def login():
 
                     session['username'] = username
                     session.permanent = True
-                    return redirect(url_for('admin.home_admin'))
+                    return redirect(url_for('admin.admin_home'))
                 else:
                     flash("Credenziali admin errate.", "danger")
 
@@ -299,7 +297,55 @@ def listone():
 
 @app.route("/aste")
 def aste():
-    return render_template("aste.html")
+
+    conn = None
+    aste = []
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory = RealDictCursor)
+    
+        cur.execute('''WITH giocatori_svincolati AS (
+                        SELECT id, nome
+                        FROM giocatore
+                        WHERE tipo_contratto = 'Svincolato')
+                    
+                        SELECT g.nome, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
+                        FROM asta a
+                        JOIN giocatori_svincolati g ON a.giocatore = g.id;''')
+        aste_raw = cur.fetchall()
+
+        for a in aste_raw:
+
+            data_scadenza = formatta_data(a["tempo_fine_asta"])
+            tempo_fine_mostra_interesse = formatta_data(a["tempo_fine_mostra_interesse"])
+
+            partecipanti = format_partecipanti(a["partecipanti"])
+
+            aste.append({
+                "giocatore": a["nome"],
+                "squadra_vincente": a["squadra_vincente"],
+                "ultima_offerta": a["ultima_offerta"],
+                "tempo_fine_mostra_interesse": tempo_fine_mostra_interesse,
+                "data_scadenza": data_scadenza,
+                "stato": a["stato"],
+                "partecipanti": partecipanti
+            })
+    
+    
+    except Exception as e:
+        print("Errore lista aste generale:", e)
+        flash("Errore nella creazione lista aste.", "danger")
+        return redirect(url_for('home'))
+    
+    finally:
+        if conn:
+            release_connection(conn)
+
+    return render_template("aste.html", aste=aste)
+
+
+
+
 
 
 @app.route("/scarica_regolamento")

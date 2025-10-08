@@ -34,115 +34,45 @@ def user_aste():
                 flash(f"Ti sei iscritto all'asta: {asta_id}.", "success")
                 return redirect(url_for("user.user_aste"))
             
-            # BOTTONE RINUNCIA
-            asta_id = request.form.get("asta_id_aste_attive")
-            if asta_id:
-                cur.execute('''UPDATE asta
-                        SET partecipanti = array_remove(partecipanti, %s)
-                        WHERE id = %s;''', (nome_squadra, asta_id))
-                conn.commit()
-                flash(f"Hai rinunciato all'asta ID {asta_id}.", "success")
-                return redirect(url_for("user.user_aste"))
+
             
-
-
-
-
-        # ASTE ATTIVE
-        aste_attive = []
+        # Lista aste, tutte insieme
+        aste = []
         cur.execute('''WITH giocatori_svincolati AS (
-                SELECT id, nome
-                FROM giocatore
-                WHERE tipo_contratto = 'Svincolato')
-
-                SELECT a.id, g.nome, a.ultima_offerta, a.squadra_vincente, a.tempo_ultima_offerta, a.partecipanti
-                FROM asta a
-                JOIN giocatori_svincolati g ON a.giocatore = g.id
-                WHERE a.stato = 'in_corso'
-                AND %s = ANY(a.partecipanti);''', (nome_squadra,))
-        aste_attive_row = cur.fetchall()
-
-        for a in aste_attive_row:
-            data_scadenza = a["tempo_ultima_offerta"]
-
-            # Se è una stringa (ad esempio quando viene da Supabase come testo)
-            if isinstance(data_scadenza, str):
-                data_scadenza = datetime.fromisoformat(data_scadenza.split(".")[0])
-
-            # Aggiungi 24 ore
-            data_scadenza += timedelta(hours=24)
-
-            # Ora formatta per la visualizzazione
-            data_scadenza_str = data_scadenza.strftime("%d/%m/%Y %H:%M")
-
-            partecipanti = format_partecipanti(a["partecipanti"])
-
-            aste_attive.append({
-                "asta_id": a["id"],
-                "giocatore": a["nome"],
-                "ultima_offerta": a["ultima_offerta"],
-                "squadra_vincente": a["squadra_vincente"],
-                "data_scadenza": data_scadenza_str,
-                "partecipanti": partecipanti
-            })
-
-
-        # ASTE A CUI ISCRIVERSI
-        aste_a_cui_iscriversi = []
-        cur.execute('''WITH giocatori_svincolati AS (
-                        SELECT id, nome
-                        FROM giocatore
-                        WHERE tipo_contratto = 'Svincolato')
+                    SELECT id, nome
+                    FROM giocatore
+                    WHERE tipo_contratto = 'Svincolato')
                     
-                        SELECT a.id, g.nome, a.tempo_fine_mostra_interesse, a.partecipanti
-                        FROM asta a
-                        JOIN giocatori_svincolati g ON a.giocatore = g.id
-                        WHERE a.stato = 'mostra_interesse';''', (nome_squadra,))
-        aste_a_cui_iscriversi_row = cur.fetchall()
+                    SELECT a.id, g.nome, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
+                    FROM asta a
+                    JOIN giocatori_svincolati g ON a.giocatore = g.id;''')
+        aste_raw = cur.fetchall()
 
-    
-        for a in aste_a_cui_iscriversi_row:
-            data_scadenza = a["tempo_fine_mostra_interesse"]
-            if isinstance(data_scadenza, str):
-                data_scadenza = datetime.fromisoformat(data_scadenza.split(".")[0])
-            data_scadenza += timedelta(hours=24)
-            data_scadenza = data_scadenza.strftime("%d/%m/%Y %H:%M")
+        for a in aste_raw:
+
+            data_scadenza = formatta_data(a["tempo_fine_asta"])
+            tempo_fine_mostra_interesse = formatta_data(a["tempo_fine_mostra_interesse"])
+
             gia_iscritto_all_asta = False
-
             if nome_squadra in a["partecipanti"]:
                 gia_iscritto_all_asta = True
+            
             partecipanti = format_partecipanti(a["partecipanti"])
 
-            aste_a_cui_iscriversi.append({
+            aste.append({
                 "asta_id": a["id"],
                 "giocatore": a["nome"],
+                "squadra_vincente": a["squadra_vincente"],
+                "ultima_offerta": a["ultima_offerta"],
+                "tempo_fine_mostra_interesse": tempo_fine_mostra_interesse,
                 "data_scadenza": data_scadenza,
+                "stato": a["stato"],
                 "partecipanti": partecipanti,
                 "gia_iscritto_all_asta": gia_iscritto_all_asta
             })
 
 
-        # ASTE CONCLUSE
-        aste_concluse = []
-        cur.execute('''SELECT g.nome, a.tempo_fine_asta, a.ultima_offerta, a.squadra_vincente
-                    FROM asta a
-                    JOIN giocatore g ON a.giocatore = g.id
-                    WHERE a.stato = 'conclusa';''')
-        aste_concluse_raw = cur.fetchall()
-
-        for a in aste_concluse_raw:
-            tempo_fine_asta = a["tempo_fine_asta"]
-            if isinstance(tempo_fine_asta, str):
-                tempo_fine_asta = datetime.fromisoformat(tempo_fine_asta.split(".")[0])
-            tempo_fine_asta = tempo_fine_asta.strftime("%d/%m/%Y %H:%M")
-
-            aste_concluse.append({
-                "nome": a["nome"],
-                "tempo_fine_asta": tempo_fine_asta,
-                "ultima_offerta": a["ultima_offerta"],
-                "squadra_vincente": a["squadra_vincente"]
-            })
-
+        
     except Exception as e:
         print("Errore", e)
         flash("Errore durante il caricamento delle aste.", "danger")
@@ -151,7 +81,7 @@ def user_aste():
         if conn:
             release_connection(conn)
 
-    return render_template("user_aste.html", nome_squadra=nome_squadra, aste_attive=aste_attive, aste_a_cui_iscriversi=aste_a_cui_iscriversi, aste_concluse=aste_concluse)
+    return render_template("user_aste.html", nome_squadra=nome_squadra, aste=aste)
 
 
 
@@ -188,9 +118,9 @@ def nuova_asta():
                     giocatore_id = row["id"]
                     nome_squadra = session.get("nome_squadra")
                     cur.execute('''
-                        INSERT INTO asta (giocatore, squadra_vincente, ultima_offerta, tempo_ultima_offerta,
+                        INSERT INTO asta (giocatore, squadra_vincente, ultima_offerta,
                                           tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti)
-                        VALUES (%s, %s, NULL, NULL, NULL, NOW() + INTERVAL '1 day' - INTERVAL '22 hours', 'mostra_interesse', %s)
+                        VALUES (%s, %s, NULL, NULL, (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day', 'mostra_interesse', %s)
                     ''', (giocatore_id, nome_squadra, [nome_squadra]))
                     conn.commit()
 
@@ -246,7 +176,7 @@ def singola_asta_attiva(asta_id):
                     UPDATE asta
                     SET ultima_offerta = %s,
                         squadra_vincente = %s,
-                        tempo_ultima_offerta = NOW()
+                        tempo_fine_asta = NOW()
                     WHERE id = %s;
                 ''', (nuova_offerta, nome_squadra, asta_id))
                 conn.commit()
@@ -310,14 +240,28 @@ def format_partecipanti(partecipanti):
         return ",\n".join(partecipanti)
 
 
-def format_datetime(ts):
-    # Converte un timestamp di Supabase in formato 'gg/mm/aaaa' leggibile.
-    if not ts:
-        return ""
-    if isinstance(ts, str):
+def formatta_data(data_input):
+    
+    #Converte una data (stringa o datetime) in formato 'dd/mm/YYYY HH:MM'.
+    #Rimuove automaticamente millisecondi e timezone.
+    
+    if data_input is None:
+        return None
+
+    # Se è una stringa ISO, puliscila
+    if isinstance(data_input, str):
+        # Rimuove millisecondi e timezone se presenti
+        data_input = data_input.split("+")[0].split("Z")[0].split(".")[0]
         try:
-            ts = datetime.fromisoformat(ts)  # converte "2025-10-07 13:38:05.44898"
+            data_input = datetime.fromisoformat(data_input)
         except ValueError:
-            return ts  # se non è formattato bene, restituisci com'è
-    return ts.strftime("%d/%m/%Y")  # ✅ giorno/mese/anno
+            return data_input  # se non è una data ISO valida, restituisci com'è
+
+    # Se è un oggetto datetime, formatta
+    if isinstance(data_input, datetime):
+        return data_input.strftime("%d/%m/%Y %H:%M")
+
+    # In altri casi, restituisci None o la rappresentazione testuale
+    return str(data_input)
+
 

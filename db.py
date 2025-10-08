@@ -30,7 +30,6 @@ def init_pool():
         "port": result.port,
         "dbname": "postgres"
     }
-    #print(params)
 
     try:
         pool = psycopg2.pool.ThreadedConnectionPool(

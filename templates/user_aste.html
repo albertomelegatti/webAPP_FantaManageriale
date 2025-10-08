@@ -27,7 +27,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for asta in aste_attive %}
+                    {% for asta in aste if asta.stato == 'in_corso' %}
                     <tr>
                         <td>{{ asta.giocatore }}</td>
                         <td>{{ asta.ultima_offerta }}</td>
@@ -42,6 +42,8 @@
                             </a>
                         </td>
                     </tr>
+                    {% else %}
+                    <tr><td colspan="6" class="text-center text-muted">Nessuna asta attiva</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -64,10 +66,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for asta in aste_a_cui_iscriversi %}
+                    {% for asta in aste if asta.stato == 'mostra_interesse' %}
                     <tr>
                         <td>{{ asta.giocatore }}</td>
-                        <td>{{ asta.data_scadenza }}</td>
+                        <td>{{ asta.tempo_fine_mostra_interesse }}</td>
                         <td>{{ asta.partecipanti }}</td>
                         <td class="text-center">
                             {% if asta.gia_iscritto_all_asta %}
@@ -85,6 +87,8 @@
                             {% endif %}
                         </td>
                     </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center text-muted">Nessuna asta disponibile</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -107,13 +111,15 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for asta in aste_concluse %}
+                    {% for asta in aste if asta.stato == 'conclusa' %}
                     <tr>
-                        <td>{{ asta.nome }}</td>
-                        <td>{{ asta.tempo_fine_asta }}</td>
+                        <td>{{ asta.giocatore }}</td>
+                        <td>{{ asta.data_scadenza }}</td>
                         <td>{{ asta.ultima_offerta }}</td>
                         <td>{{ asta.squadra_vincente }}</td>
                     </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center text-muted">Nessuna asta conclusa</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
