@@ -179,7 +179,7 @@ def singola_asta_attiva(asta_id):
                     UPDATE asta
                     SET ultima_offerta = %s,
                         squadra_vincente = %s,
-                        tempo_fine_asta = NOW() + '1 day'
+                        tempo_fine_asta = (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day'
                     WHERE id = %s;
                 ''', (nuova_offerta, nome_squadra, asta_id))
                 conn.commit()
