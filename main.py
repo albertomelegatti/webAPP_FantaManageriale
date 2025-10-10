@@ -1,5 +1,7 @@
 import secrets
+import psycopg2
 from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify
+from psycopg2 import extensions
 from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 from admin import admin_bp
@@ -346,8 +348,6 @@ def aste():
 
 
 
-
-
 @app.route("/scarica_regolamento")
 def vedi_regolamento():
     return send_from_directory('static', 'regolamento.pdf', mimetype='application/pdf', as_attachment=False)
@@ -368,6 +368,8 @@ def cambia_password():
         conn = None
         try:
             conn = get_connection()
+            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
+
             cur = conn.cursor(cursor_factory=RealDictCursor)
 
             cur.execute('''SELECT hash_password 

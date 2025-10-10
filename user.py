@@ -1,5 +1,7 @@
+import psycopg2
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from db import get_connection, release_connection
+from psycopg2 import extensions
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta
 
@@ -20,6 +22,7 @@ def user_aste():
 
     try:
         conn = get_connection()
+        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         if request.method == "POST":
@@ -94,8 +97,6 @@ def user_aste():
         if crediti == 0 or offerta_massima_possibile == 0:
             block_button = True
 
-
-        
     except Exception as e:
         print("Errore", e)
         flash("Errore durante il caricamento delle aste.", "danger")
@@ -112,10 +113,11 @@ def user_aste():
 @user_bp.route("/nuova_asta", methods=["GET", "POST"])
 def nuova_asta():
     conn = None
-    giocatori_disponibili_per_asta = []  # ✅ inizializzata sempre
+    giocatori_disponibili_per_asta = []
 
     try:
         conn = get_connection()
+        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Recupera i giocatori disponibili per l'asta
@@ -123,32 +125,49 @@ def nuova_asta():
             SELECT nome
             FROM giocatore AS g
             WHERE tipo_contratto = 'Svincolato'
-            AND priorita = 1
-            AND NOT EXISTS (SELECT 1 FROM asta a WHERE a.giocatore = g.id)''')
-        
+              AND priorita = 1
+              AND NOT EXISTS (
+                  SELECT 1 FROM asta a 
+                  WHERE a.giocatore = g.id 
+                    AND a.stato IN ('mostra_interesse', 'in_corso')
+              )
+        ''')
         giocatori_disponibili_per_asta = [row["nome"] for row in cur.fetchall()]
 
         if request.method == "POST":
             giocatore_scelto = request.form.get("giocatore", "").strip()
-            if giocatore_scelto in giocatori_disponibili_per_asta:
-                cur.execute('SELECT id FROM giocatore WHERE nome = %s', (giocatore_scelto,))
-                row = cur.fetchone()
-                if row:
-                    giocatore_id = row["id"]
-                    nome_squadra = session.get("nome_squadra")
-                    cur.execute('''
-                        INSERT INTO asta (giocatore, squadra_vincente, ultima_offerta,
-                                          tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti)
-                        VALUES (%s, %s, NULL, NULL, (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day', 'mostra_interesse', %s)
-                    ''', (giocatore_id, nome_squadra, [nome_squadra]))
-                    conn.commit()
+            if giocatore_scelto not in giocatori_disponibili_per_asta:
+                flash("Giocatore non valido o già in un'asta.", "danger")
+                return redirect(url_for("user.nuova_asta"))
 
-                    flash(f"Asta per {giocatore_scelto} creata con successo!", "success")
-                    return redirect(url_for("user.user_aste"))
-                else:
+            try:
+                # Locka il giocatore per evitare race condition
+                cur.execute('SELECT id FROM giocatore WHERE nome = %s FOR UPDATE', (giocatore_scelto,))
+                row = cur.fetchone()
+                if not row:
                     flash("Giocatore non trovato nel database.", "danger")
-            else:
-                flash("Giocatore non valido.", "danger")
+                    return redirect(url_for("user.nuova_asta"))
+
+                giocatore_id = row["id"]
+                nome_squadra = session.get("nome_squadra")
+
+                # Inserisci l'asta
+                cur.execute('''
+                    INSERT INTO asta (
+                        giocatore, squadra_vincente, ultima_offerta,
+                        tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti
+                    )
+                    VALUES (%s, %s, NULL, NULL, (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day', 'mostra_interesse', %s)
+                ''', (giocatore_id, nome_squadra, [nome_squadra]))
+                conn.commit()
+
+                flash(f"Asta per {giocatore_scelto} creata con successo!", "success")
+                return redirect(url_for("user.user_aste"))
+
+            except psycopg2.errors.SerializationFailure:
+                conn.rollback()
+                flash("Un altro utente ha appena creato un'asta per questo giocatore. Riprova.", "warning")
+                return redirect(url_for("user.nuova_asta"))
 
         cur.close()
 
@@ -165,6 +184,7 @@ def nuova_asta():
 
 
 
+
 @user_bp.route("/singola_asta_attiva/<int:asta_id>", methods=["GET", "POST"])
 def singola_asta_attiva(asta_id):
     nome_squadra = session.get("nome_squadra")
@@ -172,6 +192,8 @@ def singola_asta_attiva(asta_id):
 
     try:
         conn = get_connection()
+        # Imposto isolamento SERIALIZABLE per transazioni sensibili
+        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         if request.method == "POST":
@@ -191,21 +213,23 @@ def singola_asta_attiva(asta_id):
             # --- RILANCIA OFFERTA ---
             nuova_offerta = request.form.get("bottone_rilancia")
             if nuova_offerta:
-                cur.execute('''
-                    UPDATE asta
-                    SET ultima_offerta = %s,
-                        squadra_vincente = %s,
-                        tempo_fine_asta = (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day'
-                    WHERE id = %s;
-                ''', (nuova_offerta, nome_squadra, asta_id))
-                conn.commit()
-                flash(f"Hai rilanciato l'offerta a {nuova_offerta}.", "success")
-                return redirect(url_for("user.singola_asta_attiva", asta_id=asta_id))
-            
+                # Blocca la riga dell'asta per aggiornamenti concorrenti
+                cur.execute('SELECT ultima_offerta, squadra_vincente FROM asta WHERE id = %s FOR UPDATE', (asta_id,))
+                asta_dati = cur.fetchone()
 
+                if asta_dati:
+                    cur.execute('''
+                        UPDATE asta
+                        SET ultima_offerta = %s,
+                            squadra_vincente = %s,
+                            tempo_fine_asta = (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day'
+                        WHERE id = %s;
+                    ''', (nuova_offerta, nome_squadra, asta_id))
+                    conn.commit()
+                    flash(f"Hai rilanciato l'offerta a {nuova_offerta}.", "success")
+                    return redirect(url_for("user.singola_asta_attiva", asta_id=asta_id))
 
-
-        # Recupero dati asta
+        # --- Recupero dati asta ---
         cur.execute('''
             WITH giocatori_svincolati AS (
                 SELECT id, nome
@@ -219,36 +243,30 @@ def singola_asta_attiva(asta_id):
         ''', (asta_id,))
         asta_raw = cur.fetchone()
 
-
-        # Recupero crediti disponibili
-        cur.execute('''SELECT SUM(ultima_offerta) as somma
-                    FROM asta
-                    WHERE squadra_vincente = %s
-                    AND stato = 'in_corso';''', (nome_squadra,))
-        offerta_totale = cur.fetchone()["somma"] or 0
-
-        cur.execute('''SELECT crediti
-                    FROM squadra
-                    WHERE nome = %s;''', (nome_squadra,))
-        crediti = cur.fetchone()["crediti"]
-
-        # Se una squadra vuole rilanciarsi da sola il limite superiore è diverso
-        if asta_raw["squadra_vincente"] == nome_squadra:
-            offerta_massima_possibile = crediti - (offerta_totale - asta_raw["ultima_offerta"])
-        else:
-            offerta_massima_possibile = crediti - offerta_totale
-
-
         if asta_raw:
+            # Recupero crediti disponibili
+            cur.execute('''SELECT SUM(ultima_offerta) AS somma
+                           FROM asta
+                           WHERE squadra_vincente = %s
+                             AND stato = 'in_corso';''', (nome_squadra,))
+            offerta_totale = cur.fetchone()["somma"] or 0
+
+            cur.execute('''SELECT crediti
+                           FROM squadra
+                           WHERE nome = %s;''', (nome_squadra,))
+            crediti = cur.fetchone()["crediti"]
+
+            # Calcolo offerta massima possibile
+            if asta_raw["squadra_vincente"] == nome_squadra:
+                offerta_massima_possibile = crediti - (offerta_totale - (asta_raw["ultima_offerta"] or 0))
+            else:
+                offerta_massima_possibile = crediti - offerta_totale
+
             partecipanti = format_partecipanti(asta_raw["partecipanti"])
             data_scadenza = asta_raw["tempo_fine_asta"]
-
             if isinstance(data_scadenza, str):
                 data_scadenza = datetime.fromisoformat(data_scadenza.split(".")[0])
-
             data_scadenza_str = data_scadenza.strftime("%d/%m/%Y %H:%M")
-
-
 
             asta = {
                 "id": asta_id,
@@ -271,6 +289,7 @@ def singola_asta_attiva(asta_id):
             release_connection(conn)
 
     return render_template("singola_asta_attiva.html", asta=asta, nome_squadra=nome_squadra)
+
 
 
 

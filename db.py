@@ -86,41 +86,6 @@ def release_connection(conn):
 
 
 def check_connection():
-    """
-    Tenta di ottenere una connessione dal pool ed esegue una query di test.
-    Restituisce True in caso di successo, False altrimenti.
-    """
-    conn = None
-    try:
-        # 1. Ottiene la connessione dal pool
-        conn = get_connection()
-        
-        # 2. Esegue una query banale (SELECT 1) per testare la validità
-        with conn.cursor() as cur:
-            cur.execute("SELECT 1")
-            cur.fetchone()
-        
-        print("✅ Controllo di connessione riuscito. Pool OK.")
-        return True
-        
-    except psycopg2.OperationalError as e:
-        # Cattura gli errori operativi (timeout, rifiuto, SSL EOF)
-        print(f"❌ ERRORE CRITICO DI CONNESSIONE: {e}")
-        return False
-        
-    except Exception as e:
-        # Cattura altri errori generici (es. pool non inizializzato)
-        print(f"❌ Errore generico durante il controllo di connessione: {e}")
-        return False
-        
-    finally:
-        # 3. Rilascia la connessione, SEMPRE
-        if conn:
-            release_connection(conn)
-
-
-
-def check_connection():
     #Tenta di ottenere una connessione dal pool ed esegue una query di test.
     #Restituisce True in caso di successo, False altrimenti.
     conn = None

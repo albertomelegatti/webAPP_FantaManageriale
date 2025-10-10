@@ -1,6 +1,8 @@
+import psycopg2
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from psycopg2.extras import RealDictCursor
+from psycopg2 import extensions
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -14,6 +16,7 @@ def admin_crediti():
     conn = None
     try:
         conn = get_connection()
+        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         if request.method == "POST":
