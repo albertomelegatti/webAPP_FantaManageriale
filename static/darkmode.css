@@ -24,3 +24,22 @@ body.dark-mode .login-box input[type="password"] {
     color: #f1f1f1;            /* testo chiaro */
     border: 1px solid #444;
 }
+
+/* Gestione delle scritte piccole e dei crediti in dark mode */
+body.dark-mode small,
+body.dark-mode .text-muted {
+    color: #bbb !important; /* testo più chiaro */
+}
+
+body.dark-mode .text-success {
+    color: #7CFC00 !important; /* verde chiaro visibile su sfondo scuro */
+}
+
+body.dark-mode .text-warning {
+    color: #FFD700 !important; /* giallo acceso */
+}
+
+body.dark-mode .text-danger {
+    color: #FF6B6B !important; /* rosso chiaro */
+}
+

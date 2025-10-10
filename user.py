@@ -74,6 +74,26 @@ def user_aste():
                 "gia_iscritto_all_asta": gia_iscritto_all_asta
             })
 
+        
+
+        # Ottengo i crediti e i crediti disponibili
+        cur.execute('''SELECT crediti
+                    FROM squadra
+                    WHERE nome = %s;''', (nome_squadra,))
+        crediti = cur.fetchone()["crediti"]
+        
+
+        cur.execute('''SELECT SUM(ultima_offerta) AS somma
+                    FROM asta
+                    WHERE squadra_vincente = %s;''', (nome_squadra,))
+        offerta_totale = cur.fetchone()["somma"] or 0
+        
+        offerta_massima_possibile = crediti - offerta_totale
+
+        block_button = False
+        if crediti == 0 or offerta_massima_possibile == 0:
+            block_button = True
+
 
         
     except Exception as e:
@@ -84,7 +104,7 @@ def user_aste():
         if conn:
             release_connection(conn)
 
-    return render_template("user_aste.html", nome_squadra=nome_squadra, aste=aste)
+    return render_template("user_aste.html", nome_squadra=nome_squadra, aste=aste, block_button=block_button, crediti=crediti, crediti_effettivi=offerta_massima_possibile)
 
 
 
@@ -103,20 +123,16 @@ def nuova_asta():
             SELECT nome
             FROM giocatore AS g
             WHERE tipo_contratto = 'Svincolato'
-              AND NOT EXISTS (
-                  SELECT 1 FROM asta a WHERE a.giocatore = g.id
-              )
-        ''')
+            AND priorita = 1
+            AND NOT EXISTS (SELECT 1 FROM asta a WHERE a.giocatore = g.id)''')
+        
         giocatori_disponibili_per_asta = [row["nome"] for row in cur.fetchall()]
-        #print(giocatori_disponibili_per_asta)
+
         if request.method == "POST":
             giocatore_scelto = request.form.get("giocatore", "").strip()
-            #print(giocatore_scelto)
             if giocatore_scelto in giocatori_disponibili_per_asta:
-                #print("Presente")
                 cur.execute('SELECT id FROM giocatore WHERE nome = %s', (giocatore_scelto,))
                 row = cur.fetchone()
-                print(row)
                 if row:
                     giocatore_id = row["id"]
                     nome_squadra = session.get("nome_squadra")
@@ -188,7 +204,8 @@ def singola_asta_attiva(asta_id):
             
 
 
-        # --- Recupero dati asta ---
+
+        # Recupero dati asta
         cur.execute('''
             WITH giocatori_svincolati AS (
                 SELECT id, nome
@@ -202,6 +219,26 @@ def singola_asta_attiva(asta_id):
         ''', (asta_id,))
         asta_raw = cur.fetchone()
 
+
+        # Recupero crediti disponibili
+        cur.execute('''SELECT SUM(ultima_offerta) as somma
+                    FROM asta
+                    WHERE squadra_vincente = %s
+                    AND stato = 'in_corso';''', (nome_squadra,))
+        offerta_totale = cur.fetchone()["somma"] or 0
+
+        cur.execute('''SELECT crediti
+                    FROM squadra
+                    WHERE nome = %s;''', (nome_squadra,))
+        crediti = cur.fetchone()["crediti"]
+
+        # Se una squadra vuole rilanciarsi da sola il limite superiore è diverso
+        if asta_raw["squadra_vincente"] == nome_squadra:
+            offerta_massima_possibile = crediti - (offerta_totale - asta_raw["ultima_offerta"])
+        else:
+            offerta_massima_possibile = crediti - offerta_totale
+
+
         if asta_raw:
             partecipanti = format_partecipanti(asta_raw["partecipanti"])
             data_scadenza = asta_raw["tempo_fine_asta"]
@@ -211,13 +248,16 @@ def singola_asta_attiva(asta_id):
 
             data_scadenza_str = data_scadenza.strftime("%d/%m/%Y %H:%M")
 
+
+
             asta = {
                 "id": asta_id,
                 "giocatore": asta_raw["nome"],
                 "ultima_offerta": asta_raw["ultima_offerta"],
                 "squadra_vincente": asta_raw["squadra_vincente"],
                 "tempo_fine_asta": data_scadenza_str,
-                "partecipanti": partecipanti
+                "partecipanti": partecipanti,
+                "offerta_massima_possibile": offerta_massima_possibile
             }
         else:
             flash("Asta non trovata.", "warning")

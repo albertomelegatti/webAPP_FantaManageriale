@@ -2,14 +2,39 @@
 
 {% block content %}
 <div class="container mt-5">
+
+    <!-- HEADER CON TITOLO E BOTTONE -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-        <h1>Gestione Aste - {{ nome_squadra }}</h1>
-        <a href="{{ url_for('user.nuova_asta') }}" class="btn btn-success btn-lg mt-2 mt-sm-0">
-             Nuova Asta
+        <div>
+            <h1 class="mb-0">Gestione Aste - {{ nome_squadra }}</h1>
+            <small class="text-muted">
+                Crediti totali: <strong>{{ crediti }}</strong> |
+                Crediti disponibili: 
+                <strong 
+                    {% if crediti_effettivi <= 0 %}
+                        class="text-danger"
+                    {% elif crediti_effettivi < 10 %}
+                        class="text-warning"
+                    {% else %}
+                        class="text-success"
+                    {% endif %}
+                >
+                    {{ crediti_effettivi }}
+                </strong>
+            </small>
+        </div>
+
+        <a href="{{ url_for('user.nuova_asta') }}"
+           class="btn btn-success btn-lg mt-2 mt-sm-0"
+           {% if block_button %}
+               disabled
+               style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+           {% endif %}>
+            Nuova Asta
         </a>
     </div>
 
-    <!-- Le mie aste attive -->
+    <!-- SEZIONE: LE MIE ASTE ATTIVE -->
     <div class="card mb-4">
         <div class="card-header bg-success text-white">
             Le mie aste attive
@@ -35,22 +60,23 @@
                         <td>{{ asta.data_scadenza }}</td>
                         <td>{{ asta.partecipanti }}</td>
                         <td class="text-center">
-                            <a href="{{ url_for('user.singola_asta_attiva', asta_id=asta.asta_id) }}" 
-                               class="btn btn-sm fw-semibold py-1 px-2"
-                               style="background-color:#dc3545; border-color:#dc3545; padding:0.25rem 0.5rem; width:100%; text-align:center;">
+                            <a href="{{ url_for('user.singola_asta_attiva', asta_id=asta.asta_id) }}"
+                               class="btn btn-sm fw-semibold py-1 px-2 btn-danger w-100">
                                 Entra
                             </a>
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="6" class="text-center text-muted">Nessuna asta attiva</td></tr>
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">Nessuna asta attiva</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- Aste a cui posso iscrivermi -->
+    <!-- SEZIONE: ASTE A CUI POSSO ISCRIVERMI -->
     <div class="card mb-4">
         <div class="card-header bg-warning text-dark">
             Aste a cui posso iscrivermi
@@ -78,7 +104,7 @@
                                 </button>
                             {% else %}
                                 <form method="POST" action="{{ url_for('user.user_aste') }}"
-                                      onsubmit="return confirm('Sei sicuro di volerti iscrivere all\'asta per: {{ asta.giocatore }}?');">
+                                      onsubmit="return confirm('Sei sicuro di volerti iscrivere all\'asta per {{ asta.giocatore }}?');">
                                     <input type="hidden" name="asta_id_aste_a_cui_iscriversi" value="{{ asta.asta_id }}">
                                     <button type="submit" class="btn btn-sm btn-success fw-semibold py-1 px-2">
                                         Iscriviti
@@ -88,14 +114,16 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="4" class="text-center text-muted">Nessuna asta disponibile</td></tr>
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Nessuna asta disponibile</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- Le mie aste concluse -->
+    <!-- SEZIONE: LE MIE ASTE CONCLUSE -->
     <div class="card mb-4">
         <div class="card-header bg-secondary text-white">
             Le mie aste concluse
@@ -119,11 +147,14 @@
                         <td>{{ asta.squadra_vincente }}</td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="4" class="text-center text-muted">Nessuna asta conclusa</td></tr>
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Nessuna asta conclusa</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+
 </div>
 {% endblock %}
