@@ -8,6 +8,7 @@ from admin import admin_bp
 from user import user_bp, format_partecipanti, formatta_data
 from db import get_connection, release_connection, init_pool
 from datetime import datetime
+from chatbot import get_answer
 
 # from chatbot import Chatbot
 
@@ -405,19 +406,24 @@ def cambia_password():
     return render_template("changePassword.html")
 
 
-@app.route("/chat")
+chat_history = []
+
+@app.route("/chat", methods=["GET", "POST"])
 def chat_page():
+
+    global chat_history
+
+    if request.method == "POST":
+        data = request.get_json()  # leggi JSON
+        user_msg = data.get("question", "").strip()
+        if user_msg:
+            bot_msg = get_answer(user_msg)
+            chat_history.append((user_msg, bot_msg))
+            return jsonify({"answer": bot_msg})
+        return jsonify({"answer": "⚠️ Inserisci una domanda valida."})
+
     return render_template("chat.html")
 
-
-@app.route("/ask", methods=["POST"])
-def ask():
-    print("SDROGO")
-    user_question = request.json.get("question")
-    print("Domanda:", user_question)
-    answer = chatbot.get_answer(user_question)
-    print("Risposta:", answer)
-    return jsonify({"answer": answer})
 
 
 if __name__ == "__main__":

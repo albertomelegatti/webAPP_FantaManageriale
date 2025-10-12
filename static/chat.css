@@ -1,0 +1,138 @@
+body {
+    font-family: "Inter", sans-serif;
+    background-color: #f4f6f9;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+h1 {
+    color: #2c3e50;
+    margin-top: 20px;
+}
+
+#chat-container {
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#chat-box {
+    flex: 1;
+    padding: 15px;
+    height: 400px;
+    overflow-y: auto;
+    background: #ecf0f3;
+    scroll-behavior: smooth;
+}
+
+.message {
+    margin: 10px 0;
+    padding: 10px 14px;
+    border-radius: 12px;
+    max-width: 75%;
+    line-height: 1.4;
+    font-size: 15px;
+}
+
+.user {
+    background-color: #d1e7dd;
+    color: #1b4332;
+    align-self: flex-end;
+    margin-left: auto;
+    border-bottom-right-radius: 2px;
+}
+
+.bot {
+    background-color: #e7eaf6;
+    color: #1b263b;
+    align-self: flex-start;
+    margin-right: auto;
+    border-bottom-left-radius: 2px;
+}
+
+#chat-form {
+    display: flex;
+    padding: 10px;
+    background: #fff;
+    border-top: 1px solid #ccc;
+}
+
+#user_message {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    outline: none;
+    font-size: 15px;
+    transition: border-color 0.3s;
+}
+
+#user_message:focus {
+    border-color: #3498db;
+}
+
+button {
+    margin-left: 10px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+/* Scrollbar personalizzata */
+#chat-box::-webkit-scrollbar {
+    width: 8px;
+}
+
+#chat-box::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+/* 🌓 Tema scuro automatico */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #1e1e1e;
+        color: #f4f6f9;
+    }
+
+    #chat-container {
+        background: #2a2a2a;
+    }
+
+    #chat-box {
+        background: #1f1f1f;
+    }
+
+    .user {
+        background-color: #0b7285;
+        color: #e0fbfc;
+    }
+
+    .bot {
+        background-color: #343a40;
+        color: #e9ecef;
+    }
+
+    #user_message, button {
+        background-color: #333;
+        color: #fff;
+    }
+
+    button:hover {
+        background-color: #444;
+    }
+}
