@@ -1,8 +1,2 @@
 .env
-faiss.index
-embeddings.npy
-chat.html
-paragraphs.txt
-models
-fromGoogleSheet2Supabase.py
 TelegramBot
