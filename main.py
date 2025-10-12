@@ -423,7 +423,7 @@ def chat_page():
         bot_msg = get_answer(user_msg)
 
         chat_history.append((user_msg, bot_msg))
-        chat_history = chat_history[-5:]
+        chat_history = chat_history[-3:]
 
         return jsonify({"answer": bot_msg})
 
