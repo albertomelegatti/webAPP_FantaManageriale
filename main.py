@@ -408,19 +408,24 @@ def cambia_password():
 
 chat_history = []
 
+
 @app.route("/chat", methods=["GET", "POST"])
 def chat_page():
-
     global chat_history
 
     if request.method == "POST":
-        data = request.get_json()  # leggi JSON
+        data = request.get_json(silent=True) or {}
         user_msg = data.get("question", "").strip()
-        if user_msg:
-            bot_msg = get_answer(user_msg)
-            chat_history.append((user_msg, bot_msg))
-            return jsonify({"answer": bot_msg})
-        return jsonify({"answer": "⚠️ Inserisci una domanda valida."})
+
+        if not user_msg:
+            return jsonify({"answer": "⚠️ Inserisci una domanda valida."})
+
+        bot_msg = get_answer(user_msg)
+
+        chat_history.append((user_msg, bot_msg))
+        chat_history = chat_history[-5:]
+
+        return jsonify({"answer": bot_msg})
 
     return render_template("chat.html")
 
