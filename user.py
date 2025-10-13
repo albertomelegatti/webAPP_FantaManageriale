@@ -85,7 +85,6 @@ def user_aste():
                     WHERE nome = %s;''', (nome_squadra,))
         crediti = cur.fetchone()["crediti"]
         
-
         cur.execute('''SELECT SUM(ultima_offerta) AS somma
                     FROM asta
                     WHERE squadra_vincente = %s;''', (nome_squadra,))
@@ -192,7 +191,6 @@ def singola_asta_attiva(asta_id):
 
     try:
         conn = get_connection()
-        # Imposto isolamento SERIALIZABLE per transazioni sensibili
         conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
@@ -303,7 +301,7 @@ def format_partecipanti(partecipanti):
 
 
 def formatta_data(data_input):
-    
+
     #Converte una data (stringa o datetime) in formato 'dd/mm/YYYY HH:MM'.
     #Rimuove automaticamente millisecondi e timezone.
     
@@ -323,7 +321,6 @@ def formatta_data(data_input):
     if isinstance(data_input, datetime):
         return data_input.strftime("%d/%m/%Y %H:%M")
 
-    # In altri casi, restituisci None o la rappresentazione testuale
     return str(data_input)
 
 

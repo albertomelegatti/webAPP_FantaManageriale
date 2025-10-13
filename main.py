@@ -10,20 +10,15 @@ from db import get_connection, release_connection, init_pool
 from datetime import datetime
 from chatbot import get_answer
 
-# from chatbot import Chatbot
-
 
 app = Flask(__name__)
 
 #app.permanent_session_lifetime = timedelta(hours=2)
 
-# chatbot = Chatbot()
 app.secret_key = secrets.token_hex(16)
-
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
-
 
 init_pool()
 
@@ -408,7 +403,6 @@ def cambia_password():
 
 chat_history = []
 
-
 @app.route("/chat", methods=["GET", "POST"])
 def chat_page():
     global chat_history
@@ -423,7 +417,7 @@ def chat_page():
         bot_msg = get_answer(user_msg)
 
         chat_history.append((user_msg, bot_msg))
-        chat_history = chat_history[-3:]
+        chat_history = chat_history[-2:]
 
         return jsonify({"answer": bot_msg})
 
