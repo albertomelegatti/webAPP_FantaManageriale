@@ -1,4 +1,4 @@
--- 1️⃣ Passa da 'mostra_interesse' a 'in_corso' con più  di 1 iscritto
+    -- 1️⃣ Passa da 'mostra_interesse' a 'in_corso' con più  di 1 iscritto
     UPDATE asta
     SET stato = 'in_corso',
         squadra_vincente = partecipanti[1],
@@ -21,7 +21,8 @@
 
     -- 3️⃣ Passa da 'in_corso' a 'conclusa'
     UPDATE asta
-    SET stato = 'conclusa'
+    SET stato = 'conclusa',
+        gia_elaborata = FALSE
     WHERE stato = 'in_corso'
         AND tempo_fine_asta <= NOW();
 
@@ -33,4 +34,23 @@
         tipo_contratto = 'Indeterminato'
     FROM asta a
     WHERE g.id = a.giocatore
-        AND a.stato = 'conclusa';
+        AND a.stato = 'conclusa'
+        AND a.gia_elaborata = FALSE;
+
+
+    -- 5️⃣ Scala i crediti dalla squadra vincente esaminando le aste concluse
+    UPDATE squadra s
+    SET crediti = crediti - a.ultima_offerta
+    FROM asta a
+    WHERE s.nome = a.squadra_vincente
+        AND a.stato = 'conclusa'
+        AND a.gia_elaborata = FALSE;
+
+
+    -- 6️⃣ Segna l'asta come già elaborata
+    UPDATE asta
+    SET gia_elaborata = TRUE
+    WHERE stato = 'conclusa'
+        AND gia_elaborata = FALSE;
+
+

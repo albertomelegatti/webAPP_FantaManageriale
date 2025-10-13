@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <!-- HEADER CON TITOLO -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+        <div>
+            <h1 class="mb-0">Mercato - {{ nome_squadra }}</h1>
+            <small class="text-muted">
+                Crediti totali: <strong>{{ crediti }}</strong> |
+                Crediti disponibili:
+                <strong 
+                    {% if offerta_massima_possibile <= 0 %}
+                        class="text-danger"
+                    {% elif offerta_massima_possibile < 10 %}
+                        class="text-warning"
+                    {% else %}
+                        class="text-success"
+                    {% endif %}
+                >
+                    {{ offerta_massima_possibile }}
+                </strong>
+            </small>
+        </div>
+
+        <a href="{{ url_for('user.nuovo_scambio', nome_squadra=nome_squadra) }}"
+           class="btn btn-primary btn-lg mt-2 mt-sm-0">
+            Nuova proposta di scambio
+        </a>
+    </div>
+
+    <!-- SEZIONE: SCAMBI PROPOSTI DA ME -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-info text-white">
+            Scambi proposti da me
+        </div>
+        <div class="card-body table-responsive bg-light">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Offerta</th>
+                        <th>Richiesta</th>
+                        <th>Squadra destinataria</th>
+                        <th>Data</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for scambio in scambi if scambio.proponente == nome_squadra and scambio.stato == 'in_attesa' %}
+                    <tr>
+                        <td>
+                            {% if scambio.giocatore_offerto %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatore_offerto }}<br>
+                            {% endif %}
+                            {% if scambio.crediti_offerti %}
+                                <strong>Crediti:</strong> {{ scambio.crediti_offerti }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if scambio.giocatore_richiesto %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatore_richiesto }}<br>
+                            {% endif %}
+                            {% if scambio.crediti_richiesti %}
+                                <strong>Crediti:</strong> {{ scambio.crediti_richiesti }}
+                            {% endif %}
+                        </td>
+                        <td>{{ scambio.destinatario }}</td>
+                        <td>{{ scambio.data_proposta }}</td>
+                        <td class="text-end">
+                            <form method="POST" action="{{ url_for('user.user_mercato') }}">
+                                <input type="hidden" name="annulla_scambio" value="{{ scambio.scambio_id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    Annulla
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Nessuna proposta di scambio attiva</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SEZIONE: SCAMBI RICEVUTI -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-warning text-dark">
+            Scambi ricevuti
+        </div>
+        <div class="card-body table-responsive bg-light">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Offerta</th>
+                        <th>Richiesta</th>
+                        <th>Proponente</th>
+                        <th>Data</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for scambio in scambi if scambio.destinatario == nome_squadra and scambio.stato == 'in_attesa' %}
+                    <tr>
+                        <td>
+                            {% if scambio.giocatore_offerto %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatore_offerto }}<br>
+                            {% endif %}
+                            {% if scambio.crediti_offerti %}
+                                <strong>Crediti:</strong> {{ scambio.crediti_offerti }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if scambio.giocatore_richiesto %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatore_richiesto }}<br>
+                            {% endif %}
+                            {% if scambio.crediti_richiesti %}
+                                <strong>Crediti:</strong> {{ scambio.crediti_richiesti }}
+                            {% endif %}
+                        </td>
+                        <td>{{ scambio.proponente }}</td>
+                        <td>{{ scambio.data_proposta }}</td>
+                        <td class="text-end">
+                            <form method="POST" action="{{ url_for('user.user_mercato') }}" class="d-inline">
+                                <input type="hidden" name="accetta_scambio" value="{{ scambio.scambio_id }}">
+                                <button type="submit" class="btn btn-sm btn-success">Accetta</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('user.user_mercato') }}" class="d-inline">
+                                <input type="hidden" name="rifiuta_scambio" value="{{ scambio.scambio_id }}">
+                                <button type="submit" class="btn btn-sm btn-danger">Rifiuta</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Nessuno scambio ricevuto</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SEZIONE: SCAMBI ANNULLATI -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-light text-dark">
+            Scambi annullati
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Offerta</th>
+                        <th>Richiesta</th>
+                        <th>Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for scambio in scambi if scambio.stato == 'annullato' %}
+                    <tr>
+                        <td>
+                            {% if scambio.giocatore_offerto %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatore_offerto }}<br>
+                            {% endif %}
+                            {% if scambio.crediti_offerti %}
+                                <strong>Crediti:</strong> {{ scambio.crediti_offerti }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if scambio.giocatore_richiesto %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatore_richiesto }}<br>
+                            {% endif %}
+                            {% if scambio.crediti_richiesti %}
+                                <strong>Crediti:</strong> {{ scambio.crediti_richiesti }}
+                            {% endif %}
+                        </td>
+                        <td>{{ scambio.data_proposta }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center text-muted">Nessuno scambio annullato</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SEZIONE: SCAMBI CONCLUSI -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-secondary text-white">
+            Scambi conclusi
+        </div>
+        <div class="card-body table-responsive bg-light">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Offerta</th>
+                        <th>Richiesta</th>
+                        <th>Contro squadra</th>
+                        <th>Data conclusione</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for scambio in scambi if scambio.stato == 'accettato' %}
+                    <tr>
+                        <td>
+                            {% if scambio.giocatore_offerto %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatore_offerto }}<br>
+                            {% endif %}
+                            {% if scambio.crediti_offerti %}
+                                <strong>Crediti:</strong> {{ scambio.crediti_offerti }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if scambio.giocatore_richiesto %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatore_richiesto }}<br>
+                            {% endif %}
+                            {% if scambio.crediti_richiesti %}
+                                <strong>Crediti:</strong> {{ scambio.crediti_richiesti }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if scambio.proponente == nome_squadra %}
+                                {{ scambio.destinatario }}
+                            {% else %}
+                                {{ scambio.proponente }}
+                            {% endif %}
+                        </td>
+                        <td>{{ scambio.data_conclusione }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Nessuno scambio concluso</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+        <div>
+            <h1 class="mb-0">Nuova proposta di scambio</h1>
+            <small class="text-muted">Squadra: <strong>{{ nome_squadra }}</strong></small>
+        </div>
+        <a href="{{ url_for('user.user_mercato', nome_squadra=nome_squadra) }}" class="btn btn-outline-secondary btn-lg mt-2 mt-sm-0">
+            ← Torna al mercato
+        </a>
+    </div>
+
+    <!-- CONTENUTO BASE -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <p class="lead mb-3">
+                Qui potrai creare una nuova proposta di scambio tra giocatori o crediti.
+            </p>
+            <p class="text-muted">
+                In questa sezione potrai selezionare i giocatori o i crediti che vuoi offrire e quelli che vuoi richiedere
+                da un’altra squadra.
+            </p>
+
+            <hr>
+
+            <p class="fst-italic text-secondary">
+                (La pagina è in costruzione — prossimamente verrà aggiunto il modulo completo di creazione scambio.)
+            </p>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

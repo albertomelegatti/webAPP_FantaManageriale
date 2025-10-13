@@ -291,6 +291,95 @@ def singola_asta_attiva(asta_id):
 
 
 
+@user_bp.route("/mercato/<nome_squadra>", methods=["GET", "POST"])
+def user_mercato(nome_squadra):
+
+    if request.method == "POST":
+        print("GAY")
+        # Bottoni accetta e rifiuta
+
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cur.execute('''SELECT crediti
+                    FROM squadra
+                    WHERE nome = %s;''', (nome_squadra,))
+        row = cur.fetchone()
+
+        if row is None:
+            raise ValueError(f"Squadra '{nome_squadra}' non trovata")
+        crediti = row["crediti"]
+
+    
+        cur.execute('''SELECT SUM(ultima_offerta) AS somma
+                           FROM asta
+                           WHERE squadra_vincente = %s
+                             AND stato = 'in_corso';''', (nome_squadra,))
+        row = cur.fetchone()
+        offerta_totale = row["somma"] or 0
+        
+        offerta_massima_possibile = crediti - offerta_totale
+
+        scambi_raw = []
+        scambi = []
+
+    
+    
+    
+    
+    
+    
+    
+    except Exception as e:
+        print("Errore:", e)
+        flash("Errore durante il caricamento degli scambi.", "danger")
+
+    finally:
+        if conn:
+            cur.close()
+            release_connection(conn)
+
+
+
+    return render_template("user_mercato.html", nome_squadra=nome_squadra, crediti=crediti, offerta_massima_possibile=offerta_massima_possibile, scambi=scambi)
+
+
+
+
+@user_bp.route("/nuovo_scambio/<nome_squadra>", methods=["GET", "POST"])
+def nuovo_scambio(nome_squadra):
+
+
+    if request.method == "POST":
+        print("GAY")
+
+    
+
+    return render_template("user_nuovo_scambio.html", nome_squadra=nome_squadra)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def format_partecipanti(partecipanti):
     if not partecipanti:
         return ""
