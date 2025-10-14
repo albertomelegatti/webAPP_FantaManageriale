@@ -47,7 +47,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for scambio in scambi if scambio.proponente == nome_squadra and scambio.stato == 'in_attesa' %}
+                    {% for scambio in scambi if scambio.squadra_proponente == nome_squadra and scambio.stato == 'in_attesa' %}
                     <tr>
                         <td>
                             {% if scambio.giocatore_offerto %}
@@ -65,10 +65,10 @@
                                 <strong>Crediti:</strong> {{ scambio.crediti_richiesti }}
                             {% endif %}
                         </td>
-                        <td>{{ scambio.destinatario }}</td>
+                        <td>{{ scambio.squadra_destinataria }}</td>
                         <td>{{ scambio.data_proposta }}</td>
                         <td class="text-end">
-                            <form method="POST" action="{{ url_for('user.user_mercato') }}">
+                            <form method="POST" action="{{ url_for('user.user_mercato', nome_squadra=nome_squadra) }}">
                                 <input type="hidden" name="annulla_scambio" value="{{ scambio.scambio_id }}">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                     Annulla
@@ -103,7 +103,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for scambio in scambi if scambio.destinatario == nome_squadra and scambio.stato == 'in_attesa' %}
+                    {% for scambio in scambi if scambio.squadra_destinataria == nome_squadra and scambio.stato == 'in_attesa' %}
                     <tr>
                         <td>
                             {% if scambio.giocatore_offerto %}
@@ -121,7 +121,7 @@
                                 <strong>Crediti:</strong> {{ scambio.crediti_richiesti }}
                             {% endif %}
                         </td>
-                        <td>{{ scambio.proponente }}</td>
+                        <td>{{ scambio.squadra_proponente }}</td>
                         <td>{{ scambio.data_proposta }}</td>
                         <td class="text-end">
                             <form method="POST" action="{{ url_for('user.user_mercato') }}" class="d-inline">
@@ -224,10 +224,10 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if scambio.proponente == nome_squadra %}
-                                {{ scambio.destinatario }}
+                            {% if scambio.squadra_proponente == nome_squadra %}
+                                {{ scambio.squadra_destinataria }}
                             {% else %}
-                                {{ scambio.proponente }}
+                                {{ scambio.squadra_proponente }}
                             {% endif %}
                         </td>
                         <td>{{ scambio.data_conclusione }}</td>

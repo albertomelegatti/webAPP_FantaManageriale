@@ -325,12 +325,26 @@ def user_mercato(nome_squadra):
         scambi_raw = []
         scambi = []
 
-    
-    
-    
-    
-    
-    
+        cur.execute('''SELECT *
+                    FROM scambio
+                    WHERE squadra_proponente = %s
+                    OR squadra_destinataria = %s;''', (nome_squadra, nome_squadra))
+        scambi_raw = cur.fetchall()
+
+        for s in scambi_raw:
+            scambi.append({
+                "squadra_proponente": s["squadra_proponente"],
+                "squadra_destinataria": s["squadra_destinataria"],
+                "giocatori_offerti": format_giocatori(s["giocatori_offerti"]),
+                "giocatori_richiesti": format_giocatori(s["giocatori_richiesti"]),
+                "crediti_offerti": s["crediti_offerti"],
+                "crediti_richiesti": s["crediti_richiesti"],
+                "messaggio": s["messaggio"],
+                "stato": s["stato"],
+                "data_proposta": formatta_data(s["data_proposta"]),
+                "data_risposta": formatta_data(s["data_risposta"]),
+            })
+
     
     except Exception as e:
         print("Errore:", e)
@@ -344,6 +358,15 @@ def user_mercato(nome_squadra):
 
 
     return render_template("user_mercato.html", nome_squadra=nome_squadra, crediti=crediti, offerta_massima_possibile=offerta_massima_possibile, scambi=scambi)
+
+
+
+
+
+
+
+
+
 
 
 
@@ -387,6 +410,48 @@ def format_partecipanti(partecipanti):
         return partecipanti[0]
     else:
         return ",\n".join(partecipanti)
+    
+
+
+def format_giocatori(giocatori):
+    if not giocatori:
+        return ""
+
+    nomi = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        for giocatore_id in giocatori:
+            cur.execute("""
+                SELECT nome
+                FROM giocatore
+                WHERE id = %s;
+            """, (giocatore_id,))
+            
+            risultato = cur.fetchone()
+            if risultato and "nome" in risultato:
+                nomi.append(risultato["nome"])
+            else:
+                nomi.append(f"ID {giocatore_id} (non trovato)")
+
+    except Exception as e:
+        print(f"❌ Errore durante il recupero dei nomi giocatori: {e}")
+        return "Errore nel recupero dei giocatori"
+
+    finally:
+        if conn:
+            release_connection(conn)
+
+    # Formattazione pulita dell'output
+    if not nomi:
+        return ""
+    elif len(nomi) == 1:
+        return nomi[0]
+    else:
+        return ", ".join(nomi)
+
 
 
 def formatta_data(data_input):
