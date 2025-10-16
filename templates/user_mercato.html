@@ -50,16 +50,16 @@
                     {% for scambio in scambi if scambio.squadra_proponente == nome_squadra and scambio.stato == 'in_attesa' %}
                     <tr>
                         <td>
-                            {% if scambio.giocatore_offerto %}
-                                <strong>Giocatore:</strong> {{ scambio.giocatore_offerto }}<br>
+                            {% if scambio.giocatori_offerti %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatori_offerti }}<br>
                             {% endif %}
                             {% if scambio.crediti_offerti %}
                                 <strong>Crediti:</strong> {{ scambio.crediti_offerti }}
                             {% endif %}
                         </td>
                         <td>
-                            {% if scambio.giocatore_richiesto %}
-                                <strong>Giocatore:</strong> {{ scambio.giocatore_richiesto }}<br>
+                            {% if scambio.giocatori_richiesti %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatori_richiesti }}<br>
                             {% endif %}
                             {% if scambio.crediti_richiesti %}
                                 <strong>Crediti:</strong> {{ scambio.crediti_richiesti }}
@@ -68,10 +68,11 @@
                         <td>{{ scambio.squadra_destinataria }}</td>
                         <td>{{ scambio.data_proposta }}</td>
                         <td class="text-end">
-                            <form method="POST" action="{{ url_for('user.user_mercato', nome_squadra=nome_squadra) }}">
+                            <form method="POST" action="{{ url_for('user.user_mercato', nome_squadra=nome_squadra) }}" 
+                                onsubmit="return confirm('Sei sicuro di voler annullare questo scambio?');">
                                 <input type="hidden" name="annulla_scambio" value="{{ scambio.scambio_id }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    Annulla
+                                <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-danger w-100" style="background-color: #dc3545; border-color: #dc3545; color: #fff;">
+                                Annulla
                                 </button>
                             </form>
                         </td>
@@ -106,16 +107,16 @@
                     {% for scambio in scambi if scambio.squadra_destinataria == nome_squadra and scambio.stato == 'in_attesa' %}
                     <tr>
                         <td>
-                            {% if scambio.giocatore_offerto %}
-                                <strong>Giocatore:</strong> {{ scambio.giocatore_offerto }}<br>
+                            {% if scambio.giocatori_offerti %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatori_offerti }}<br>
                             {% endif %}
                             {% if scambio.crediti_offerti %}
                                 <strong>Crediti:</strong> {{ scambio.crediti_offerti }}
                             {% endif %}
                         </td>
                         <td>
-                            {% if scambio.giocatore_richiesto %}
-                                <strong>Giocatore:</strong> {{ scambio.giocatore_richiesto }}<br>
+                            {% if scambio.giocatori_richiesti %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatori_richiesti }}<br>
                             {% endif %}
                             {% if scambio.crediti_richiesti %}
                                 <strong>Crediti:</strong> {{ scambio.crediti_richiesti }}
@@ -123,15 +124,26 @@
                         </td>
                         <td>{{ scambio.squadra_proponente }}</td>
                         <td>{{ scambio.data_proposta }}</td>
-                        <td class="text-end">
-                            <form method="POST" action="{{ url_for('user.user_mercato') }}" class="d-inline">
-                                <input type="hidden" name="accetta_scambio" value="{{ scambio.scambio_id }}">
-                                <button type="submit" class="btn btn-sm btn-success">Accetta</button>
-                            </form>
-                            <form method="POST" action="{{ url_for('user.user_mercato') }}" class="d-inline">
-                                <input type="hidden" name="rifiuta_scambio" value="{{ scambio.scambio_id }}">
-                                <button type="submit" class="btn btn-sm btn-danger">Rifiuta</button>
-                            </form>
+                        <td class="text-center">
+                            <div class="d-flex flex-column flex-md-row gap-2 justify-content-center">
+                                <form method="POST" action="{{ url_for('user.user_mercato', nome_squadra=nome_squadra) }}" 
+                                    onsubmit="return confirm('Sei sicuro di voler accettare questo scambio?');">
+                                    <input type="hidden" name="accetta_scambio" value="{{ scambio.scambio_id }}">
+                                    <button type="submit" class="btn btn-sm btn-success py-1 px-2" 
+                                            style="background-color: #28a745; border-color: #28a745;">
+                                        Accetta
+                                    </button>
+                                </form>
+
+                                <form method="POST" action="{{ url_for('user.user_mercato', nome_squadra=nome_squadra) }}"
+                                    onsubmit="return confirm('Sei sicuro di voler rifiutare questo scambio?');">
+                                    <input type="hidden" name="rifiuta_scambio" value="{{ scambio.scambio_id }}">
+                                    <button type="submit" class="btn btn-sm btn-danger py-1 px-2" 
+                                            style="background-color: #dc3545; border-color: #dc3545;">
+                                        Rifiuta
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                     {% else %}
@@ -162,16 +174,16 @@
                     {% for scambio in scambi if scambio.stato == 'annullato' %}
                     <tr>
                         <td>
-                            {% if scambio.giocatore_offerto %}
-                                <strong>Giocatore:</strong> {{ scambio.giocatore_offerto }}<br>
+                            {% if scambio.giocatori_offerti %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatori_offerti }}<br>
                             {% endif %}
                             {% if scambio.crediti_offerti %}
                                 <strong>Crediti:</strong> {{ scambio.crediti_offerti }}
                             {% endif %}
                         </td>
                         <td>
-                            {% if scambio.giocatore_richiesto %}
-                                <strong>Giocatore:</strong> {{ scambio.giocatore_richiesto }}<br>
+                            {% if scambio.giocatori_richiesti %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatori_richiesti }}<br>
                             {% endif %}
                             {% if scambio.crediti_richiesti %}
                                 <strong>Crediti:</strong> {{ scambio.crediti_richiesti }}
@@ -208,16 +220,16 @@
                     {% for scambio in scambi if scambio.stato == 'accettato' %}
                     <tr>
                         <td>
-                            {% if scambio.giocatore_offerto %}
-                                <strong>Giocatore:</strong> {{ scambio.giocatore_offerto }}<br>
+                            {% if scambio.giocatori_offerti %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatori_offerti }}<br>
                             {% endif %}
                             {% if scambio.crediti_offerti %}
                                 <strong>Crediti:</strong> {{ scambio.crediti_offerti }}
                             {% endif %}
                         </td>
                         <td>
-                            {% if scambio.giocatore_richiesto %}
-                                <strong>Giocatore:</strong> {{ scambio.giocatore_richiesto }}<br>
+                            {% if scambio.giocatori_richiesti %}
+                                <strong>Giocatore:</strong> {{ scambio.giocatori_richiesti }}<br>
                             {% endif %}
                             {% if scambio.crediti_richiesti %}
                                 <strong>Crediti:</strong> {{ scambio.crediti_richiesti }}
@@ -230,7 +242,7 @@
                                 {{ scambio.squadra_proponente }}
                             {% endif %}
                         </td>
-                        <td>{{ scambio.data_conclusione }}</td>
+                        <td>{{ scambio.data_risposta }}</td>
                     </tr>
                     {% else %}
                     <tr>

@@ -9,29 +9,126 @@
             <h1 class="mb-0">Nuova proposta di scambio</h1>
             <small class="text-muted">Squadra: <strong>{{ nome_squadra }}</strong></small>
         </div>
-        <a href="{{ url_for('user.user_mercato', nome_squadra=nome_squadra) }}" class="btn btn-outline-secondary btn-lg mt-2 mt-sm-0">
+        <a href="{{ url_for('user.user_mercato', nome_squadra=nome_squadra) }}" 
+           class="btn btn-outline-secondary btn-lg mt-2 mt-sm-0">
             ← Torna al mercato
         </a>
     </div>
 
-    <!-- CONTENUTO BASE -->
+    <!-- FORM SCAMBIO -->
     <div class="card shadow-sm">
         <div class="card-body">
-            <p class="lead mb-3">
-                Qui potrai creare una nuova proposta di scambio tra giocatori o crediti.
-            </p>
-            <p class="text-muted">
-                In questa sezione potrai selezionare i giocatori o i crediti che vuoi offrire e quelli che vuoi richiedere
-                da un’altra squadra.
-            </p>
+            <form method="POST" action="{{ url_for('user.nuovo_scambio', nome_squadra=nome_squadra) }}">
+                
+                <!-- Squadra destinataria -->
+                <div class="mb-3">
+                    <label for="squadra_destinataria" class="form-label fw-semibold">Squadra destinataria</label>
+                    <select id="squadra_destinataria" name="squadra_destinataria" class="form-select" required>
+                        <option value="" selected disabled>Seleziona squadra</option>
+                        {% for s in squadre %}
+                            {% if s.nome != nome_squadra %}
+                                <option value="{{ s.nome }}" data-max-crediti="{{ s.offerta_massima_possibile }}">{{ s.nome }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
 
-            <hr>
+                <!-- Crediti -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="crediti_offerti" class="form-label">Crediti offerti</label>
+                        <input type="number" min="0" name="crediti_offerti" id="crediti_offerti" class="form-control"
+                               max="{{ crediti_effettivi }}" placeholder="Max: {{ crediti_effettivi }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="crediti_richiesti" class="form-label">Crediti richiesti</label>
+                        <input type="number" min="0" name="crediti_richiesti" id="crediti_richiesti" class="form-control" disabled>
+                    </div>
+                </div>
 
-            <p class="fst-italic text-secondary">
-                (La pagina è in costruzione — prossimamente verrà aggiunto il modulo completo di creazione scambio.)
-            </p>
+                <!-- Giocatori -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="giocatori_offerti" class="form-label">Giocatori offerti</label>
+                        <select multiple name="giocatori_offerti" id="giocatori_offerti" class="form-select">
+                            {% for g in miei_giocatori %}
+                                <option value="{{ g.id }}">{{ g.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="giocatori_richiesti" class="form-label">Giocatori richiesti</label>
+                        <select multiple name="giocatori_richiesti" id="giocatori_richiesti" class="form-select" disabled></select>
+                    </div>
+                </div>
+
+                <!-- Messaggio -->
+                <div class="mb-3">
+                    <label for="messaggio" class="form-label">Messaggio (opzionale)</label>
+                    <textarea name="messaggio" id="messaggio" class="form-control" rows="3"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2">Invia proposta di scambio</button>
+            </form>
         </div>
     </div>
 
 </div>
+
+<!-- Tom Select CSS -->
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+
+<!-- Tom Select JS -->
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const selectOfferti = new TomSelect("#giocatori_offerti", {
+        plugins: ['remove_button'],
+        placeholder: "Seleziona giocatori da offrire...",
+        create: false,
+    });
+
+    const selectRichiesti = new TomSelect("#giocatori_richiesti", {
+        plugins: ['remove_button'],
+        placeholder: "Seleziona giocatori da richiedere...",
+        create: false,
+    });
+
+    selectRichiesti.disable();
+
+    const selectSquadra = document.getElementById("squadra_destinataria");
+    const creditiRichiesti = document.getElementById("crediti_richiesti");
+
+    // Usa JSON per generare l'array JS in modo sicuro
+    const allOptions = JSON.parse('{{ giocatori|tojson|safe }}');
+
+    selectSquadra.addEventListener("change", () => {
+        const squadraSelezionata = selectSquadra.value;
+
+        selectRichiesti.clearOptions();
+        if (!squadraSelezionata) {
+            selectRichiesti.disable();
+            creditiRichiesti.disabled = true;
+            return;
+        }
+
+        // Filtra solo i giocatori della squadra selezionata
+        const filtrati = allOptions.filter(g => g.squadra_att === squadraSelezionata);
+        filtrati.forEach(g => selectRichiesti.addOption({value: g.id, text: g.nome}));
+
+        selectRichiesti.enable();
+        selectRichiesti.refreshOptions(false);
+
+        // Imposta max crediti richiesti
+        const maxCrediti = selectSquadra.options[selectSquadra.selectedIndex].dataset.maxCrediti || 0;
+        creditiRichiesti.disabled = false;
+        creditiRichiesti.max = maxCrediti;
+        creditiRichiesti.value = "";
+        creditiRichiesti.placeholder = `Max: ${maxCrediti}`;
+    });
+});
+</script>
+
 {% endblock %}
