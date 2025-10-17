@@ -8,17 +8,14 @@ from datetime import datetime, timedelta
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
 # Sezione squadra DOPO LOGIN
-@user_bp.route("/squadraLogin")
-def squadraLogin():
-    nome_squadra = session.get("nome_squadra")
+@user_bp.route("/squadraLogin/<nome_squadra>")
+def squadraLogin(nome_squadra):
     return render_template("squadraLogin.html", nome_squadra=nome_squadra)
 
 
 # Pagina gestione aste utente
-@user_bp.route("/aste", methods=["GET", "POST"])
-def user_aste():
-    nome_squadra = session.get("nome_squadra")
-
+@user_bp.route("/aste/<nome_squadra>", methods=["GET", "POST"])
+def user_aste(nome_squadra):
 
     try:
         conn = get_connection()
@@ -35,7 +32,7 @@ def user_aste():
                         WHERE id = %s;''', (nome_squadra, asta_id))
                 conn.commit()
                 flash(f"Ti sei iscritto all'asta: {asta_id}.", "success")
-                return redirect(url_for("user.user_aste"))
+                return redirect(url_for("user.user_aste", nome_squadra=nome_squadra))
             
 
             
@@ -109,8 +106,8 @@ def user_aste():
 
 
 # Creazione nuova asta
-@user_bp.route("/nuova_asta", methods=["GET", "POST"])
-def nuova_asta():
+@user_bp.route("/nuova_asta/<nome_squadra>", methods=["GET", "POST"])
+def nuova_asta(nome_squadra):
     conn = None
     giocatori_disponibili_per_asta = []
 
@@ -137,7 +134,7 @@ def nuova_asta():
             giocatore_scelto = request.form.get("giocatore", "").strip()
             if giocatore_scelto not in giocatori_disponibili_per_asta:
                 flash("Giocatore non valido o già in un'asta.", "danger")
-                return redirect(url_for("user.nuova_asta"))
+                return redirect(url_for("user.nuova_asta", nome_squadra=nome_squadra))
 
             try:
                 # Locka il giocatore per evitare race condition
@@ -145,10 +142,9 @@ def nuova_asta():
                 row = cur.fetchone()
                 if not row:
                     flash("Giocatore non trovato nel database.", "danger")
-                    return redirect(url_for("user.nuova_asta"))
+                    return redirect(url_for("user.nuova_asta", nome_squadra=nome_squadra))
 
                 giocatore_id = row["id"]
-                nome_squadra = session.get("nome_squadra")
 
                 # Inserisci l'asta
                 cur.execute('''
@@ -161,12 +157,12 @@ def nuova_asta():
                 conn.commit()
 
                 flash(f"Asta per {giocatore_scelto} creata con successo!", "success")
-                return redirect(url_for("user.user_aste"))
+                return redirect(url_for("user.user_aste", nome_squadra=nome_squadra))
 
             except psycopg2.errors.SerializationFailure:
                 conn.rollback()
                 flash("Un altro utente ha appena creato un'asta per questo giocatore. Riprova.", "warning")
-                return redirect(url_for("user.nuova_asta"))
+                return redirect(url_for("user.nuova_asta", nome_squadra=nome_squadra))
 
         cur.close()
 
@@ -184,9 +180,8 @@ def nuova_asta():
 
 
 
-@user_bp.route("/singola_asta_attiva/<int:asta_id>", methods=["GET", "POST"])
-def singola_asta_attiva(asta_id):
-    nome_squadra = session.get("nome_squadra")
+@user_bp.route("/singola_asta_attiva/<int:asta_id>/<nome_squadra>", methods=["GET", "POST"])
+def singola_asta_attiva(asta_id, nome_squadra):
     asta = None
 
     try:
@@ -206,7 +201,7 @@ def singola_asta_attiva(asta_id):
                 ''', (nome_squadra, asta_id_rinuncia))
                 conn.commit()
                 flash("Hai rinunciato all'asta.", "success")
-                return redirect(url_for("user.user_aste"))
+                return redirect(url_for("user.user_aste", nome_squadra=nome_squadra))
 
             # --- RILANCIA OFFERTA ---
             nuova_offerta = request.form.get("bottone_rilancia")
@@ -225,7 +220,7 @@ def singola_asta_attiva(asta_id):
                     ''', (nuova_offerta, nome_squadra, asta_id))
                     conn.commit()
                     flash(f"Hai rilanciato l'offerta a {nuova_offerta}.", "success")
-                    return redirect(url_for("user.singola_asta_attiva", asta_id=asta_id))
+                    return redirect(url_for("user.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
 
         # --- Recupero dati asta ---
         cur.execute('''
@@ -381,7 +376,7 @@ def user_mercato(nome_squadra):
 
 
 
-@user_bp.route("/<nome_squadra>/scambi/nuovo", methods=["GET", "POST"])
+@user_bp.route("/nuovo_scambio/<nome_squadra>", methods=["GET", "POST"])
 def nuovo_scambio(nome_squadra):
     conn = None
     cur = None
@@ -486,8 +481,6 @@ def nuovo_scambio(nome_squadra):
             cur.close()
         if conn:
             release_connection(conn)
-
-
 
 
 
@@ -603,6 +596,126 @@ def effettua_scambio(id):
         if conn:
             cur.close()
             release_connection(conn)
+
+
+
+
+
+
+@user_bp.route("/prestiti/<nome_squadra>", methods=["GET", "POST"])
+def user_prestiti(nome_squadra):
+
+    conn = None
+    cur = None
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("SELECT crediti FROM squadra WHERE nome = %s;", (nome_squadra,))
+        crediti = cur.fetchone()["crediti"]
+
+        cur.execute('''SELECT SUM(ultima_offerta) AS somma
+                        FROM asta
+                        WHERE squadra_vincente = %s
+                            AND stato = 'in_corso';''', (nome_squadra,))
+        offerta_totale = cur.fetchone()["somma"] or 0
+        crediti_disponibili = crediti - offerta_totale
+
+
+
+
+    except Exception as e:
+        print(f"❌ Errore durante il caricamento della pagina 'prestiti': {e}")
+        return render_template("user_prestiti.html", nome_squadra=nome_squadra)
+    
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            release_connection(conn)
+
+    return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=crediti, crediti_disponibili=crediti_disponibili)
+
+
+
+
+
+
+
+
+@user_bp.route("/nuovo_prestito/<nome_squadra>", methods=["GET", "POST"])
+def nuovo_prestito(nome_squadra):
+
+    conn = None
+    cur = None
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("SELECT crediti FROM squadra WHERE nome = %s;", (nome_squadra,))
+        crediti = cur.fetchone()["crediti"]
+
+        cur.execute('''SELECT SUM(ultima_offerta) AS somma
+                        FROM asta
+                        WHERE squadra_vincente = %s
+                            AND stato = 'in_corso';''', (nome_squadra,))
+        offerta_totale = cur.fetchone()["somma"] or 0
+        crediti_disponibili = crediti - offerta_totale
+
+
+
+
+    except Exception as e:
+        print(f"❌ Errore durante il caricamento della pagina 'nuovo_prestito': {e}")
+        return render_template("user_prestiti.html", nome_squadra=nome_squadra)
+    
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            release_connection(conn)
+
+
+
+
+
+
+
+
+
+
+
+    return render_template("user_nuovo_prestito.html", nome_squadra=nome_squadra, crediti=crediti, crediti_disponibili=crediti_disponibili)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

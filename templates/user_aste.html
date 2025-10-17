@@ -24,7 +24,7 @@
             </small>
         </div>
 
-        <a href="{{ url_for('user.nuova_asta') }}"
+        <a href="{{ url_for('user.nuova_asta', nome_squadra=nome_squadra) }}"
            class="btn btn-success btn-lg mt-2 mt-sm-0"
            {% if block_button %}
                disabled
@@ -60,7 +60,7 @@
                         <td>{{ asta.data_scadenza }}</td>
                         <td>{{ asta.partecipanti }}</td>
                         <td class="text-center">
-                            <a href="{{ url_for('user.singola_asta_attiva', asta_id=asta.asta_id) }}"
+                            <a href="{{ url_for('user.singola_asta_attiva', asta_id=asta.asta_id, nome_squadra=nome_squadra) }}"
                                class="btn btn-sm fw-semibold py-1 px-2 btn-danger w-100"        
                                style="background-color: #dc3545; border-color: #dc3545; color: #fff;">
                                 Entra
@@ -104,7 +104,7 @@
                                     Già iscritto
                                 </button>
                             {% else %}
-                                <form method="POST" action="{{ url_for('user.user_aste') }}"
+                                <form method="POST" action="{{ url_for('user.user_aste', nome_squadra=nome_squadra) }}"
                                       onsubmit="return confirm('Sei sicuro di volerti iscrivere all\'asta per {{ asta.giocatore }}?');">
                                     <input type="hidden" name="asta_id_aste_a_cui_iscriversi" value="{{ asta.asta_id }}">
                                     <button type="submit" class="btn btn-sm btn-success fw-semibold py-1 px-2">

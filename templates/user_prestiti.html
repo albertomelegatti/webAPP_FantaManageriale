@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <!-- HEADER CON TITOLO E BOTTONE -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+        <div>
+            <h1 class="mb-0">Sezione Prestiti - {{ nome_squadra }}</h1>
+            <small class="text-muted">
+                Crediti totali: <strong>{{ crediti }}</strong> |
+                Crediti disponibili: 
+                <strong 
+                    {% if crediti_disponibili <= 0 %}
+                        class="text-danger"
+                    {% elif crediti_disponibili < 10 %}
+                        class="text-warning"
+                    {% else %}
+                        class="text-success"
+                    {% endif %}
+                >
+                    {{ crediti_disponibili }}
+                </strong>
+            </small>
+        </div>
+
+        <a href="{{ url_for('user.nuovo_prestito', nome_squadra=nome_squadra) }}"
+           class="btn btn-primary btn-lg mt-2 mt-sm-0 shadow-sm"
+           {% if block_button %}
+               disabled
+               style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
+           {% endif %}>
+            <i class="bi bi-plus-circle me-1"></i> Nuovo Prestito
+        </a>
+    </div>
+
+    <!-- SEZIONE: RICHIESTE IN USCITA -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            Richieste di prestito inviate
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Giocatore</th>
+                        <th>Squadra destinataria</th>
+                        <th>Scadenza</th>
+                        <th class="text-center">Azione</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prestito in prestiti if prestito.squadra_proponente == nome_squadra and prestito.stato == 'in_attesa' %}
+                    <tr>
+                        <td>{{ prestito.giocatore }}</td>
+                        <td>{{ prestito.destinatario }}</td>
+                        <td>{{ prestito.scadenza }}</td>
+                        <td class="text-center">
+                            <form method="POST" 
+                                  action="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" 
+                                  onsubmit="return confirm('Vuoi davvero annullare la richiesta per {{ prestito.giocatore }}?');">
+                                <input type="hidden" name="prestito_id" value="{{ prestito.prestito_id }}">
+                                <button name="azione" value="annulla" class="btn btn-sm btn-outline-danger fw-semibold py-1 px-3">
+                                    <i class="bi bi-x-circle me-1"></i> Annulla
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Nessuna richiesta di prestito inviata</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SEZIONE: RICHIESTE IN ENTRATA -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-warning text-dark">
+            Richieste di prestito ricevute
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Giocatore</th>
+                        <th>Squadra proponente</th>
+                        <th>Scadenza</th>
+                        <th class="text-center">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prestito in prestiti if prestito.squadra_destinataria == nome_squadra and prestito.stato == 'in_attesa' %}
+                    <tr>
+                        <td>{{ prestito.giocatore }}</td>
+                        <td>{{ prestito.proponente }}</td>
+                        <td>{{ prestito.scadenza }}</td>
+                        <td class="text-center">
+                            <form method="POST" 
+                                  action="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" 
+                                  class="d-flex justify-content-center gap-2">
+                                <input type="hidden" name="prestito_id" value="{{ prestito.prestito_id }}">
+                                <button name="azione" value="accetta" class="btn btn-sm btn-success fw-semibold py-1 px-3">
+                                    <i class="bi bi-check-circle me-1"></i> Accetta
+                                </button>
+                                <button name="azione" value="rifiuta" class="btn btn-sm btn-danger fw-semibold py-1 px-3">
+                                    <i class="bi bi-x-circle me-1"></i> Rifiuta
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Nessuna richiesta in entrata</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

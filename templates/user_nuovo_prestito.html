@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+
+    <!-- HEADER -->
+    <h1 class="mb-3">Nuovo Prestito - {{ nome_squadra }}</h1>
+    <p class="text-muted">
+        Crediti totali: <strong>{{ crediti }}</strong> |
+        Crediti disponibili: 
+        <strong 
+            {% if crediti_disponibili <= 0 %}
+                class="text-danger"
+            {% elif crediti_disponibili < 10 %}
+                class="text-warning"
+            {% else %}
+                class="text-success"
+            {% endif %}
+        >
+            {{ crediti_disponibili }}
+        </strong>
+    </p>
+
+    <!-- CONTENUTO IN COSTRUZIONE -->
+    <div class="card shadow-sm mx-auto" style="max-width: 600px;">
+        <div class="card-body py-5">
+            <h3 class="text-primary mb-3">
+                <i class="bi bi-tools"></i> Pagina in costruzione
+            </h3>
+            <p class="text-muted mb-4">
+                La sezione per proporre nuovi prestiti sarà disponibile a breve.
+            </p>
+            <a href="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i> Torna ai Prestiti
+            </a>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
