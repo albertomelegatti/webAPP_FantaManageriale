@@ -151,7 +151,8 @@ def dashboardSquadra(nome_squadra):
         cur.execute('''SELECT nome, tipo_contratto, ruolo, quot_att_mantra, costo 
                     FROM giocatore 
                     WHERE squadra_att = %s 
-                        AND tipo_contratto <> 'Primavera';''' , (nome_squadra,))
+                        AND tipo_contratto <> 'Primavera'
+                    ORDER BY nome;''' , (nome_squadra,))
         rosa_raw = cur.fetchall()
 
         for g in rosa_raw:
@@ -248,7 +249,7 @@ def dashboardSquadra(nome_squadra):
 
 
 @app.route("/creditiStadi")
-def creditiStadi():
+def creditiStadiSlot():
     conn = None
     try:
         conn = get_connection()
@@ -274,8 +275,21 @@ def creditiStadi():
                 "crediti_annuali": bonus
             })
 
-        cur.close()
-        return render_template("creditiStadi.html", stadi=stadi, squadre=squadre)
+
+        # Conteggio slot occupati per squadra
+        cur.execute('''SELECT squadra_att, COUNT(id) AS slot_occupati
+                        FROM giocatore
+                        WHERE tipo_contratto IN ('Hold', 'Indeterminato')
+                        GROUP BY squadra_att;''')
+        slot_raw = cur.fetchall()
+        slot = []
+        for s in slot_raw:
+            slot.append({
+                "squadra_att": s["squadra_att"],
+                "slot_occupati": s["slot_occupati"]
+            })
+
+        return render_template("creditiStadiSlot.html", stadi=stadi, squadre=squadre, slot=slot)
 
     except Exception as e:
         print("Errore creditiStadi:", e)
@@ -283,6 +297,8 @@ def creditiStadi():
         return redirect(url_for('home'))
 
     finally:
+        if cur:
+            cur.close()
         if conn:
             release_connection(conn)
 

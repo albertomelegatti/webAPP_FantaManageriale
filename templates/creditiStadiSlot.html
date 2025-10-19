@@ -53,5 +53,30 @@
             </div>
         </div>
     </div>
+
+    <!-- Tabella Slot -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <h2>Slot Occupati</h2>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped small">
+                    <thead>
+                        <tr>
+                            <th>Squadra</th>
+                            <th>Slot Occupati</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for slot_riga in slot %}
+                        <tr>
+                            <td>{{ slot_riga.squadra_att }}</td>
+                            <td>{{ slot_riga.slot_occupati }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

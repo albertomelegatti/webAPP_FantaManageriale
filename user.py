@@ -1,6 +1,7 @@
 import psycopg2
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from db import get_connection, release_connection
+from queries import get_crediti_squadra, get_offerta_totale
 from psycopg2 import extensions
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta
@@ -27,12 +28,21 @@ def user_aste(nome_squadra):
             # BOTTONE ISCRIVITI
             asta_id = request.form.get("asta_id_aste_a_cui_iscriversi")
             if asta_id:
-                cur.execute('''UPDATE asta
-                        SET partecipanti = array_append(partecipanti, %s)
-                        WHERE id = %s;''', (nome_squadra, asta_id))
-                conn.commit()
-                flash(f"Ti sei iscritto all'asta: {asta_id}.", "success")
-                return redirect(url_for("user.user_aste", nome_squadra=nome_squadra))
+
+                # Controllo se l'utente loggato è già iscritto all'asta, a volte capita che un utente possa iscriversi due volte.
+                cur.execute('''SELECT %s = ANY(partecipanti) AS gia_iscritto
+                            FROM asta
+                            WHERE id = %s;''', (nome_squadra, asta_id))
+                gia_iscritto = cur.fetchone()["gia_iscritto"]
+                
+                # Se non gia iscritto, iscriviti
+                if not gia_iscritto:
+                    cur.execute('''UPDATE asta
+                            SET partecipanti = array_append(partecipanti, %s)
+                            WHERE id = %s;''', (nome_squadra, asta_id))
+                    conn.commit()
+                    flash(f"Ti sei iscritto all'asta: {asta_id}.", "success")
+                    return redirect(url_for("user.user_aste", nome_squadra=nome_squadra))
             
 
             
@@ -77,16 +87,8 @@ def user_aste(nome_squadra):
         
 
         # Ottengo i crediti e i crediti disponibili
-        cur.execute('''SELECT crediti
-                    FROM squadra
-                    WHERE nome = %s;''', (nome_squadra,))
-        crediti = cur.fetchone()["crediti"]
-        
-        cur.execute('''SELECT SUM(ultima_offerta) AS somma
-                    FROM asta
-                    WHERE squadra_vincente = %s;''', (nome_squadra,))
-        offerta_totale = cur.fetchone()["somma"] or 0
-        
+        crediti = get_crediti_squadra(conn, nome_squadra)
+        offerta_totale = get_offerta_totale(conn, nome_squadra)
         offerta_massima_possibile = crediti - offerta_totale
 
         block_button = False
@@ -98,8 +100,11 @@ def user_aste(nome_squadra):
         flash("Errore durante il caricamento delle aste.", "danger")
 
     finally:
+        if cur:
+            cur.close()
         if conn:
             release_connection(conn)
+
 
     return render_template("user_aste.html", nome_squadra=nome_squadra, aste=aste, block_button=block_button, crediti=crediti, crediti_effettivi=offerta_massima_possibile)
 
@@ -171,6 +176,8 @@ def nuova_asta(nome_squadra):
         flash(f"Errore nella creazione dell'asta: {e}", "danger")
 
     finally:
+        if cur:
+            cur.close()
         if conn:
             release_connection(conn)
 
@@ -238,16 +245,9 @@ def singola_asta_attiva(asta_id, nome_squadra):
 
         if asta_raw:
             # Recupero crediti disponibili
-            cur.execute('''SELECT SUM(ultima_offerta) AS somma
-                           FROM asta
-                           WHERE squadra_vincente = %s
-                             AND stato = 'in_corso';''', (nome_squadra,))
-            offerta_totale = cur.fetchone()["somma"] or 0
-
-            cur.execute('''SELECT crediti
-                           FROM squadra
-                           WHERE nome = %s;''', (nome_squadra,))
-            crediti = cur.fetchone()["crediti"]
+            crediti = get_crediti_squadra(conn, nome_squadra)
+            offerta_totale = get_offerta_totale(conn, nome_squadra)
+            
 
             # Calcolo offerta massima possibile
             if asta_raw["squadra_vincente"] == nome_squadra:
@@ -278,6 +278,8 @@ def singola_asta_attiva(asta_id, nome_squadra):
         flash("Errore durante il caricamento dell'asta.", "danger")
 
     finally:
+        if cur:
+            cur.close()
         if conn:
             release_connection(conn)
 
@@ -323,19 +325,8 @@ def user_mercato(nome_squadra):
 
 
         
-        cur.execute('''SELECT crediti
-                    FROM squadra
-                    WHERE nome = %s;''', (nome_squadra,))
-        crediti = cur.fetchone()["crediti"]
-
-    
-        cur.execute('''SELECT SUM(ultima_offerta) AS somma
-                           FROM asta
-                           WHERE squadra_vincente = %s
-                             AND stato = 'in_corso';''', (nome_squadra,))
-        row = cur.fetchone()
-        offerta_totale = row["somma"] or 0
-        
+        crediti = get_crediti_squadra(conn, nome_squadra)
+        offerta_totale = get_offerta_totale(conn, nome_squadra)
         offerta_massima_possibile = crediti - offerta_totale
 
         scambi_raw = []
@@ -367,8 +358,9 @@ def user_mercato(nome_squadra):
         flash("Errore durante il caricamento degli scambi.", "danger")
 
     finally:
-        if conn:
+        if cur:
             cur.close()
+        if conn:
             release_connection(conn)
 
     return render_template("user_mercato.html", nome_squadra=nome_squadra, crediti=crediti, offerta_massima_possibile=offerta_massima_possibile, scambi=scambi)
@@ -437,10 +429,7 @@ def nuovo_scambio(nome_squadra):
 
         for s in squadre_raw:
 
-            cur.execute('''SELECT SUM(ultima_offerta) AS somma
-                        FROM asta
-                        WHERE squadra_vincente = %s;''', (s["nome"],))
-            offerta_totale = cur.fetchone()["somma"] or 0
+            offerta_totale = get_offerta_totale(conn, nome_squadra)
             offerta_massima_possibile = s["crediti"] - offerta_totale
 
             squadre.append({
@@ -513,19 +502,15 @@ def effettua_scambio(id):
         # Controllo che le squadre abbiano abbastanza crediti per effettuare lo scambio
         cur.execute("SELECT crediti FROM squadra WHERE nome = %s FOR UPDATE;", (squadra_proponente,))
         crediti_prop = cur.fetchone()["crediti"]
-        cur.execute('''SELECT SUM(ultima_offerta) as crediti
-                    FROM asta
-                    WHERE squadra_vincente = %s;''', (squadra_proponente,))
-        offerta_tot_prop = cur.fetchone()["crediti"] or 0
+        
+        offerta_tot_prop = get_offerta_totale(conn, squadra_proponente)
         crediti_disp_prop = crediti_prop - offerta_tot_prop
         
 
         cur.execute("SELECT crediti FROM squadra WHERE nome = %s FOR UPDATE;", (squadra_destinataria,))
         crediti_dest = cur.fetchone()["crediti"]
-        cur.execute('''SELECT SUM(ultima_offerta) as crediti
-                    FROM asta
-                    WHERE squadra_vincente = %s;''', (squadra_destinataria,))
-        offerta_tot_dest = cur.fetchone()["crediti"] or 0
+        
+        offerta_tot_dest = get_offerta_totale(conn, squadra_destinataria)
         crediti_disp_dest = crediti_dest - offerta_tot_dest
 
         if crediti_disp_prop < crediti_offerti:
@@ -593,8 +578,9 @@ def effettua_scambio(id):
         return False
     
     finally:
-        if conn:
+        if cur:
             cur.close()
+        if conn:
             release_connection(conn)
 
 
@@ -612,17 +598,9 @@ def user_prestiti(nome_squadra):
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        cur.execute("SELECT crediti FROM squadra WHERE nome = %s;", (nome_squadra,))
-        crediti = cur.fetchone()["crediti"]
-
-        cur.execute('''SELECT SUM(ultima_offerta) AS somma
-                        FROM asta
-                        WHERE squadra_vincente = %s
-                            AND stato = 'in_corso';''', (nome_squadra,))
-        offerta_totale = cur.fetchone()["somma"] or 0
+        crediti = get_crediti_squadra(conn, nome_squadra)
+        offerta_totale = get_offerta_totale(conn, nome_squadra)
         crediti_disponibili = crediti - offerta_totale
-
-
 
 
     except Exception as e:
@@ -654,14 +632,8 @@ def nuovo_prestito(nome_squadra):
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        cur.execute("SELECT crediti FROM squadra WHERE nome = %s;", (nome_squadra,))
-        crediti = cur.fetchone()["crediti"]
-
-        cur.execute('''SELECT SUM(ultima_offerta) AS somma
-                        FROM asta
-                        WHERE squadra_vincente = %s
-                            AND stato = 'in_corso';''', (nome_squadra,))
-        offerta_totale = cur.fetchone()["somma"] or 0
+        crediti = get_crediti_squadra(conn, nome_squadra)
+        offerta_totale = get_offerta_totale(conn, nome_squadra)
         crediti_disponibili = crediti - offerta_totale
 
 
@@ -760,6 +732,8 @@ def format_giocatori(giocatori):
         return "Errore nel recupero dei giocatori"
 
     finally:
+        if cur:
+            cur.close()
         if conn:
             release_connection(conn)
 
