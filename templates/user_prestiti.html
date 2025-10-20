@@ -30,7 +30,7 @@
                disabled
                style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
            {% endif %}>
-            <i class="bi bi-plus-circle me-1"></i> Nuovo Prestito
+            <i class="bi bi-plus-circle me-1" ></i> Nuovo Prestito
         </a>
     </div>
 
@@ -44,24 +44,24 @@
                 <thead>
                     <tr>
                         <th>Giocatore</th>
-                        <th>Squadra destinataria</th>
-                        <th>Scadenza</th>
+                        <th>Verso</th>
+                        <th>Fino a</th>
                         <th class="text-center">Azione</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for prestito in prestiti if prestito.squadra_proponente == nome_squadra and prestito.stato == 'in_attesa' %}
+                    {% for prestito in prestiti if prestito.squadra_ricevente == nome_squadra and prestito.stato == 'in_attesa' %}
                     <tr>
                         <td>{{ prestito.giocatore }}</td>
-                        <td>{{ prestito.destinatario }}</td>
-                        <td>{{ prestito.scadenza }}</td>
+                        <td>{{ prestito.squadra_prestante }}</td>
+                        <td>{{ prestito.data_fine }}</td>
                         <td class="text-center">
                             <form method="POST" 
                                   action="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" 
                                   onsubmit="return confirm('Vuoi davvero annullare la richiesta per {{ prestito.giocatore }}?');">
-                                <input type="hidden" name="prestito_id" value="{{ prestito.prestito_id }}">
-                                <button name="azione" value="annulla" class="btn btn-sm btn-outline-danger fw-semibold py-1 px-3">
-                                    <i class="bi bi-x-circle me-1"></i> Annulla
+                                <input type="hidden" name="annulla_prestito" value="{{ prestito.prestito_id }}">
+                                <button name="azione" value="annulla" class="btn btn-sm danger btn-outline-danger fw-semibold py-1 px-3" style="background-color: #dc3545; border-color: #dc3545; color: #fff;">
+                                    Annulla
                                 </button>
                             </form>
                         </td>
@@ -86,26 +86,26 @@
                 <thead>
                     <tr>
                         <th>Giocatore</th>
-                        <th>Squadra proponente</th>
-                        <th>Scadenza</th>
+                        <th>Da</th>
+                        <th>Fino a</th>
                         <th class="text-center">Azioni</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for prestito in prestiti if prestito.squadra_destinataria == nome_squadra and prestito.stato == 'in_attesa' %}
+                    {% for prestito in prestiti if prestito.squadra_prestante == nome_squadra and prestito.stato == 'in_attesa' %}
                     <tr>
                         <td>{{ prestito.giocatore }}</td>
-                        <td>{{ prestito.proponente }}</td>
-                        <td>{{ prestito.scadenza }}</td>
+                        <td>{{ prestito.squadra_ricevente }}</td>
+                        <td>{{ prestito.data_fine }}</td>
                         <td class="text-center">
                             <form method="POST" 
                                   action="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" 
                                   class="d-flex justify-content-center gap-2">
                                 <input type="hidden" name="prestito_id" value="{{ prestito.prestito_id }}">
-                                <button name="azione" value="accetta" class="btn btn-sm btn-success fw-semibold py-1 px-3">
+                                <button name="accetta_prestito" value="{{ prestito.prestito_id }}" class="btn btn-sm btn-success fw-semibold py-1 px-3" style="background-color: #28a745; border-color: #28a745;">
                                     <i class="bi bi-check-circle me-1"></i> Accetta
                                 </button>
-                                <button name="azione" value="rifiuta" class="btn btn-sm btn-danger fw-semibold py-1 px-3">
+                                <button name="rifiuta_prestito" value="{{ prestito.prestito_id }}" class="btn btn-sm btn-danger fw-semibold py-1 px-3" style="background-color: #dc3545; border-color: #dc3545; color: #fff;">
                                     <i class="bi bi-x-circle me-1"></i> Rifiuta
                                 </button>
                             </form>

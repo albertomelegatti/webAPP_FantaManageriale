@@ -4,7 +4,7 @@ from db import get_connection, release_connection
 from queries import get_crediti_squadra, get_offerta_totale
 from psycopg2 import extensions
 from psycopg2.extras import RealDictCursor
-from datetime import datetime, timedelta
+from datetime import datetime, time
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
@@ -598,9 +598,73 @@ def user_prestiti(nome_squadra):
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
+        if request.method == "POST":
+
+            # Bottone ANNULLA prestito
+            id_prestito_da_annullare = request.form.get("annulla_prestito")
+            if id_prestito_da_annullare:
+                cur.execute('''UPDATE prestito
+                            SET stato = 'annullato'
+                            WHERE id = %s;''', (id_prestito_da_annullare))
+                conn.commit()
+                flash("Annullata con successo la richiesta di prestito", "success")
+
+
+            # Bottone ACCETTA prestito
+            id_prestito_da_accettare = request.form.get("accetta_prestito")
+            if id_prestito_da_accettare:
+                attiva_prestito(id_prestito_da_accettare)
+
+            
+            # Bottone RIFIUTA prestito
+            id_prestito_da_rifiutare = request.form.get("rifiuta_prestito")
+            if id_prestito_da_rifiutare:
+                cur.execute('''UPDATE prestito
+                            SET stato = 'rifiutato'
+                            WHERE id = %s;''', (id_prestito_da_rifiutare,))
+                conn.commit()
+                flash("Prestito rifiutato con successo.", "success")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         crediti = get_crediti_squadra(conn, nome_squadra)
         offerta_totale = get_offerta_totale(conn, nome_squadra)
         crediti_disponibili = crediti - offerta_totale
+
+
+        cur.execute('''SELECT *
+                    FROM prestito
+                    WHERE (squadra_prestante = %s
+                    OR squadra_ricevente = %s)
+                    AND stato = 'in_attesa';''', (nome_squadra, nome_squadra))
+        prestiti_raw = cur.fetchall()
+
+        prestiti = []
+        for p in prestiti_raw:
+            prestiti.append({
+                "prestito_id": p["id"],
+                "giocatore": format_giocatori(p["giocatore"]),
+                "squadra_prestante": p["squadra_prestante"],
+                "squadra_ricevente": p["squadra_ricevente"],
+                "stato": p["stato"],
+                "data_inizio": formatta_data(p["data_inizio"]),
+                "data_fine": formatta_data(p["data_fine"])
+            })
+
 
 
     except Exception as e:
@@ -613,7 +677,7 @@ def user_prestiti(nome_squadra):
         if conn:
             release_connection(conn)
 
-    return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=crediti, crediti_disponibili=crediti_disponibili)
+    return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=crediti, crediti_disponibili=crediti_disponibili, prestiti=prestiti)
 
 
 
@@ -632,11 +696,59 @@ def nuovo_prestito(nome_squadra):
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
+        if request.method == "POST":
+            squadra_prestante = request.form.get("squadra_prestante")
+            giocatore_richiesto = request.form.get("giocatore_richiesto")
+            data_fine = request.form.get("data_fine")
+            messaggio = request.form.get("messaggio", "").strip()
+
+            if not squadra_prestante or not giocatore_richiesto or not data_fine:
+                flash("Errore: seleziona una squadra, un giocatore e una data di fine prestito.", "danger")
+                return redirect(url_for("user.nuovo_prestito", nome_squadra=nome_squadra))
+            
+            data_fine = datetime.strptime(data_fine, "%Y-%m-%d")
+            data_fine = datetime.combine(data_fine.date(), time(hour=12, minute=0, second=0))
+
+            cur.execute('''INSERT INTO prestito (
+                        giocatore, squadra_prestante, squadra_ricevente, stato, data_inizio, data_fine)
+                        VALUES(%s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s)
+                        RETURNING id; ''', (giocatore_richiesto, squadra_prestante, nome_squadra, 'in_attesa', data_fine))
+            conn.commit()
+            flash("Richiesta inviata correttamente!", "success")
+            
+
+
         crediti = get_crediti_squadra(conn, nome_squadra)
         offerta_totale = get_offerta_totale(conn, nome_squadra)
         crediti_disponibili = crediti - offerta_totale
 
+        # Selezione dei giocatori
+        cur.execute('''SELECT id, nome, squadra_att
+                    FROM giocatore
+                    WHERE tipo_contratto <> 'Fanta-Prestito'
+                    AND squadra_att <> 'Svincolato';''')
+        giocatori_raw = cur.fetchall()
 
+        giocatori = []
+        for g in giocatori_raw:
+            giocatori.append({
+                "id": g["id"],
+                "nome": g["nome"],
+                "squadra_att": g["squadra_att"]
+            })
+
+        # Selezione dei nomi delle squadre, tranne la squadra loggata e Svincolato
+        cur.execute('''SELECT nome
+                    FROM squadra
+                    WHERE nome <> %s
+                    AND nome <> 'Svincolato';''', (nome_squadra,))
+        squadre_raw = cur.fetchall()
+
+        squadre = []
+        for s in squadre_raw:
+            squadre.append({
+                "nome": s["nome"]
+            })
 
 
     except Exception as e:
@@ -649,6 +761,7 @@ def nuovo_prestito(nome_squadra):
         if conn:
             release_connection(conn)
 
+    return render_template("user_nuovo_prestito.html", nome_squadra=nome_squadra, crediti=crediti, crediti_disponibili=crediti_disponibili, giocatori=giocatori, squadre=squadre)
 
 
 
@@ -659,18 +772,8 @@ def nuovo_prestito(nome_squadra):
 
 
 
-    return render_template("user_nuovo_prestito.html", nome_squadra=nome_squadra, crediti=crediti, crediti_disponibili=crediti_disponibili)
-
-
-
-
-
-
-
-
-
-
-
+def attiva_prestito(id_prestito_da_attivare):
+    print("")
 
 
 
@@ -707,6 +810,10 @@ def format_partecipanti(partecipanti):
 def format_giocatori(giocatori):
     if not giocatori:
         return ""
+    
+    if isinstance(giocatori, int):
+        giocatori = [giocatori]
+
 
     nomi = []
 

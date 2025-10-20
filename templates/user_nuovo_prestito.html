@@ -1,40 +1,137 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5 text-center">
+<div class="container mt-5">
 
     <!-- HEADER -->
-    <h1 class="mb-3">Nuovo Prestito - {{ nome_squadra }}</h1>
-    <p class="text-muted">
-        Crediti totali: <strong>{{ crediti }}</strong> |
-        Crediti disponibili: 
-        <strong 
-            {% if crediti_disponibili <= 0 %}
-                class="text-danger"
-            {% elif crediti_disponibili < 10 %}
-                class="text-warning"
-            {% else %}
-                class="text-success"
-            {% endif %}
-        >
-            {{ crediti_disponibili }}
-        </strong>
-    </p>
+    <div class="text-center mb-4">
+        <h1 class="mb-3">Nuovo Prestito - {{ nome_squadra }}</h1>
+        <p class="text-muted">
+            Crediti totali: <strong>{{ crediti }}</strong> |
+            Crediti disponibili:
+            <strong 
+                {% if crediti_disponibili <= 0 %}
+                    class="text-danger"
+                {% elif crediti_disponibili < 10 %}
+                    class="text-warning"
+                {% else %}
+                    class="text-success"
+                {% endif %}
+            >
+                {{ crediti_disponibili }}
+            </strong>
+        </p>
+    </div>
 
-    <!-- CONTENUTO IN COSTRUZIONE -->
-    <div class="card shadow-sm mx-auto" style="max-width: 600px;">
-        <div class="card-body py-5">
-            <h3 class="text-primary mb-3">
-                <i class="bi bi-tools"></i> Pagina in costruzione
-            </h3>
-            <p class="text-muted mb-4">
-                La sezione per proporre nuovi prestiti sarà disponibile a breve.
-            </p>
-            <a href="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" class="btn btn-outline-primary">
-                <i class="bi bi-arrow-left"></i> Torna ai Prestiti
-            </a>
+    <!-- FORM PRESTITO -->
+    <div class="card shadow-sm mx-auto" style="max-width: 700px;">
+        <div class="card-body">
+
+            <form method="POST" action="{{ url_for('user.nuovo_prestito', nome_squadra=nome_squadra) }}">
+                
+                <!-- Squadra da cui richiedere il prestito -->
+                <div class="mb-3">
+                    <label for="squadra_prestante" class="form-label fw-semibold">Squadra da cui richiedere il prestito</label>
+                    <select id="squadra_prestante" name="squadra_prestante" class="form-select" required>
+                        <option value="" disabled selected>Seleziona squadra</option>
+                        {% for s in squadre %}
+                            <option value="{{ s.nome }}">{{ s.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Giocatore da richiedere -->
+                <div class="mb-3">
+                    <label for="giocatore_richiesto" class="form-label fw-semibold">Giocatore richiesto</label>
+                    <select id="giocatore_richiesto" name="giocatore_richiesto" class="form-select"required>
+                        <option value="">Seleziona prima una squadra</option>
+                    </select>
+                </div>
+
+                <!-- Data di scadenza -->
+                <div class="mb-3">
+                    <label for="data_fine" class="form-label fw-semibold">Data di scadenza del prestito</label>
+                    <input 
+                        type="date" 
+                        id="data_fine" 
+                        name="data_fine" 
+                        class="form-control" 
+                        required
+                        min="{{ current_date }}"
+                    >
+                    <div class="form-text">Seleziona la data entro cui il prestito dovrà terminare.<br>
+                            L'orario di scadenza sarà impostato per default alle 12:00 del giorno selezionato.
+                    </div>
+                </div>
+
+                <!-- Messaggio opzionale -->
+                <div class="mb-3">
+                    <label for="messaggio" class="form-label">Messaggio (opzionale)</label>
+                    <textarea name="messaggio" id="messaggio" class="form-control" rows="3"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2">Invia richiesta di prestito</button>
+            </form>
+
         </div>
     </div>
 
 </div>
+
+<!-- Tom Select CSS -->
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+
+<!-- Tom Select JS -->
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const selectSquadra = new TomSelect("#squadra_prestante", {
+        placeholder: "Seleziona squadra...",
+        create: false,
+        plugins: ['dropdown_input']
+    });
+
+    const selectGiocatore = new TomSelect("#giocatore_richiesto", {
+        placeholder: "Seleziona giocatore...",
+        create: false,
+        plugins: ['dropdown_input']
+    });
+
+    selectGiocatore.clearOptions();
+
+    const allGiocatori = JSON.parse('{{ giocatori|tojson|safe }}'); 
+    // giocatori: lista completa [{id, nome, squadra_att}, ...]
+
+    selectSquadra.on('change', (squadraSelezionata) => {
+        selectGiocatore.clearOptions();
+
+        if (!squadraSelezionata) {
+            selectGiocatore.disable();
+            return;
+        }
+
+        // Filtra i giocatori della squadra selezionata
+        const filtrati = allGiocatori.filter(g => g.squadra_att === squadraSelezionata);
+        filtrati.forEach(g => selectGiocatore.addOption({ value: g.id, text: g.nome }));
+
+        selectGiocatore.enable();
+        selectGiocatore.refreshOptions(false);
+    });
+
+    // Imposta la data minima (domani) per il campo data_scadenza
+    const oggi = new Date();
+    const domani = new Date(oggi);
+    domani.setDate(domani.getDate() + 1); // aggiunge 1 giorno
+
+    // Formatta in YYYY-MM-DD
+    const yyyy = domani.getFullYear();
+    const mm = String(domani.getMonth() + 1).padStart(2, '0');
+    const dd = String(domani.getDate()).padStart(2, '0');
+    const domaniStr = `${yyyy}-${mm}-${dd}`;
+
+    document.getElementById('data_scadenza').setAttribute('min', domaniStr);
+});
+</script>
+
 {% endblock %}

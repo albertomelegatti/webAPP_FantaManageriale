@@ -5,15 +5,6 @@
     <div class="login-box">
         <h2>Login</h2>
 
-        <!-- Messaggi flash -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category }} mt-2">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-
         <form method="POST" action="/login">
             <input type="text" name="username" placeholder="Username" required>
             <div class="password-container">
