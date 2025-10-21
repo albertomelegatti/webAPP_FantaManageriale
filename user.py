@@ -613,7 +613,7 @@ def user_prestiti(nome_squadra):
             # Bottone ACCETTA prestito
             id_prestito_da_accettare = request.form.get("accetta_prestito")
             if id_prestito_da_accettare:
-                attiva_prestito(id_prestito_da_accettare)
+                attiva_prestito(id_prestito_da_accettare, nome_squadra)
 
             
             # Bottone RIFIUTA prestito
@@ -624,19 +624,6 @@ def user_prestiti(nome_squadra):
                             WHERE id = %s;''', (id_prestito_da_rifiutare,))
                 conn.commit()
                 flash("Prestito rifiutato con successo.", "success")
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -664,7 +651,6 @@ def user_prestiti(nome_squadra):
                 "data_inizio": formatta_data(p["data_inizio"]),
                 "data_fine": formatta_data(p["data_fine"])
             })
-
 
 
     except Exception as e:
@@ -767,21 +753,48 @@ def nuovo_prestito(nome_squadra):
 
 
 
+def attiva_prestito(id_prestito_da_attivare, nome_squadra):
+
+    if not id_prestito_da_attivare:
+        flash("❌ Prestito non trovato.", "danger")
+        return redirect(url_for("user.user_prestiti", nome_squadra=nome_squadra))
+    
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        conn.autocommit = False
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Recupero info prestito
+        cur.execute('''SELECT *
+                    FROM prestito
+                    WHERE id = %s;''', (id_prestito_da_attivare,))
+        prestito = cur.fetchone()
+
+        # Cambio di stato
+        cur.execute('''UPDATE prestito
+                    SET stato = 'in_corso'
+                    WHERE id = %s;''', (id_prestito_da_attivare,))
+        
+        # Modifica info giocatore
+        cur.execute('''UPDATE giocatore
+                    SET squadra_att = %s,
+                    tipo_contratto = 'Fanta-Prestito'
+                    WHERE id = %s;''', (prestito["squadra_ricevente"], prestito["giocatore"]))
+        conn.commit()
+        flash("✅ Prestito avviato correttamente.", "success")
 
 
-
-
-
-def attiva_prestito(id_prestito_da_attivare):
-    print("")
-
-
-
-
-
-
-
-
+    except Exception as e:
+        print(f"❌ Errore durante l'attivazione del prestito: {e}")
+        return render_template("user_prestiti.html", nome_squadra=nome_squadra)
+    
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            release_connection(conn)
 
 
 
