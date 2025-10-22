@@ -1,10 +1,11 @@
 import psycopg2
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from db import get_connection, release_connection
-from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati
+from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati, get_quotazione_attuale
 from psycopg2 import extensions
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, time
+import math
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
@@ -814,16 +815,13 @@ def user_primavera(nome_squadra):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         if request.method == "POST":
-            giocatore_id = request.form.get("giocatore_id")
-            if giocatore_id:
+            id_giocatore_da_promuovere = request.form.get("id_giocatore_da_promuovere")
+            if id_giocatore_da_promuovere:
                 cur.execute('''UPDATE giocatore
                             SET tipo_contratto = 'Indeterminato'
-                            WHERE id = %s;''', (giocatore_id,))
+                            WHERE id = %s;''', (id_giocatore_da_promuovere,))
                 conn.commit()
                 flash("✅ Giocatore promosso in prima squadra con successo.", "success")
-
-
-
 
 
         # Selezione dei giocatori in primavera
@@ -843,7 +841,6 @@ def user_primavera(nome_squadra):
                 "quot_att_mantra": p['quot_att_mantra']
             })
 
-
     except Exception as e:
         print(f"❌ Errore durante il caricamento della primavera.")
         flash("Errore durante il caricamento della primavera.", "danger")
@@ -856,6 +853,93 @@ def user_primavera(nome_squadra):
 
     return render_template("user_primavera.html", nome_squadra=nome_squadra, primavera=primavera)
 
+
+
+
+
+@user_bp.route("/user_tagli/<nome_squadra>", methods=["GET", "POST"])
+def user_tagli(nome_squadra):
+
+    conn = None
+    cur = None
+    rosa = []
+
+    try:
+        conn = get_connection()
+        conn.autocommit = False
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        crediti = get_crediti_squadra(conn, nome_squadra)
+        crediti_disponibili = crediti - get_offerta_totale(conn, nome_squadra)
+
+        if request.method == "POST":
+            id_giocatore_da_tagliare = request.form.get("id_giocatore_da_tagliare")
+            if id_giocatore_da_tagliare:
+
+                # Ottieni la quotazione attuale del giocatore
+                quotazione_attuale = get_quotazione_attuale(conn, id_giocatore_da_tagliare)
+                costo_taglio = math.ceil(quotazione_attuale / 2)
+
+                if crediti_disponibili < costo_taglio:
+                    flash("❌ Non hai abbastanza crediti per tagliare questo giocatore.", "danger")
+                    conn.rollback()
+                    return redirect(url_for("user.user_tagli", nome_squadra=nome_squadra))
+
+                # Aggiorna il giocatore a svincolato
+                cur.execute('''
+                    UPDATE giocatore
+                    SET squadra_att = 'Svincolato',
+                        detentore_cartellino = 'Svincolato',
+                        tipo_contratto = 'Svincolato'
+                    WHERE id = %s;
+                ''', (id_giocatore_da_tagliare,))
+
+                # Aggiorna i crediti della squadra
+                cur.execute('''
+                    UPDATE squadra
+                    SET crediti = crediti - %s
+                    WHERE nome = %s;
+                ''', (costo_taglio, nome_squadra))
+
+                conn.commit()
+                flash(f"✅ Giocatore tagliato con successo! Costo: {costo_taglio} crediti.", "success")
+                return redirect(url_for("user.user_tagli", nome_squadra=nome_squadra))
+            
+
+
+
+
+        cur.execute('''
+            SELECT id, nome, ruolo, quot_att_mantra
+            FROM giocatore
+            WHERE squadra_att = %s
+              AND tipo_contratto = 'Indeterminato'
+            ORDER BY ruolo, nome;''', (nome_squadra,))
+        rosa_raw = cur.fetchall()
+
+        for r in rosa_raw:
+            ruolo = r['ruolo'].strip("{}")
+            rosa.append({
+                "id": r['id'],
+                "nome": r['nome'],
+                "ruolo": ruolo,
+                "quot_att_mantra": r["quot_att_mantra"]
+            })
+
+    except Exception as e:
+        print(f"❌ Errore durante il caricamento o il taglio dei giocatori: {e}")
+        flash("Errore durante il caricamento o il taglio dei giocatori.", "danger")
+        if conn:
+            conn.rollback()
+
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            release_connection(conn)
+
+    return render_template(
+        "user_tagli.html", nome_squadra=nome_squadra, rosa=rosa, crediti=crediti, crediti_disponibili=crediti_disponibili)
 
 
 

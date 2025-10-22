@@ -25,7 +25,7 @@
                     <td>
                         <form method="POST" action="{{ url_for('user.user_primavera', nome_squadra=nome_squadra) }}"
                             onsubmit="return confirm('Vuoi davvero promuovere {{ giocatore.nome }} in prima squadra?');">
-                            <input type="hidden" name="giocatore_id" value="{{ giocatore.id }}">
+                            <input type="hidden" name="id_giocatore_da_promuovere" value="{{ giocatore.id }}">
                             <button type="submit" 
                                     class="btn btn-sm fw-semibold w-100 py-1">
                                     Promuovi

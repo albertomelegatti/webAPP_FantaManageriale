@@ -34,3 +34,12 @@ def get_slot_occupati(conn, nome_squadra):
     slot_occupati = cur.fetchone()["slot_occupati"]
     cur.close()
     return slot_occupati
+
+
+def get_quotazione_attuale(conn, id_giocatore):
+    
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT quot_att_mantra FROM giocatore WHERE id = %s;", (id_giocatore,))
+    quotazione_attuale = cur.fetchone()["quot_att_mantra"]
+    quotazione_attuale = int(quotazione_attuale)
+    return quotazione_attuale
