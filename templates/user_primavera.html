@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center mb-4">👥 Promozione Giocatori dalla Primavera</h2>
+    <p class="text-center text-muted">Seleziona i giocatori che vuoi promuovere nella prima squadra.</p>
+
+    {% if primavera %}
+    <div class="table-responsive">
+        <table class="table table-striped align-middle text-center shadow-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>Nome</th>
+                    <th>Ruolo</th>
+                    <th>QA</th>
+                    <th>Promuovi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for giocatore in primavera %}
+                <tr>
+                    <td>{{ giocatore.nome }}</td>
+                    <td>{{ giocatore.ruolo }}</td>
+                    <td>{{ giocatore.quot_att_mantra }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('user.user_primavera', nome_squadra=nome_squadra) }}"
+                            onsubmit="return confirm('Vuoi davvero promuovere {{ giocatore.nome }} in prima squadra?');">
+                            <input type="hidden" name="giocatore_id" value="{{ giocatore.id }}">
+                            <button type="submit" 
+                                    class="btn btn-sm fw-semibold w-100 py-1">
+                                    Promuovi
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <div class="alert alert-info text-center mt-4">
+            Nessun giocatore disponibile nella primavera.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

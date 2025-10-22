@@ -9,6 +9,7 @@ from user import user_bp, format_partecipanti, formatta_data
 from db import get_connection, release_connection, init_pool
 from datetime import datetime
 from chatbot import get_answer
+from queries import get_slot_occupati
 
 
 app = Flask(__name__)
@@ -140,11 +141,7 @@ def dashboardSquadra(nome_squadra):
         crediti = squadra_raw["crediti"]
 
         # CONTEGGIO SLOT OCCUPATI
-        cur.execute('''SELECT COUNT(id) AS slot_occupati 
-                    FROM giocatore 
-                    WHERE squadra_att = %s 
-                        AND tipo_contratto IN ('Hold', 'Indeterminato');''', (nome_squadra,))
-        slotOccupati = cur.fetchone()["slot_occupati"]
+        slot_occupati = get_slot_occupati(conn, nome_squadra)
 
         # ROSA
         rosa = []
@@ -235,7 +232,7 @@ def dashboardSquadra(nome_squadra):
             username=username,
             crediti=crediti,
             squadra=[],
-            slotOccupati=slotOccupati
+            slot_occupati=slot_occupati
         )
 
     except Exception as e:

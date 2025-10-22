@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+    <h1 class="mb-4">Gestione rosa di {{ nome_squadra }}</h1>
+    <p class="lead">Gestisci la rosa da qui.</p>
+
+    <div class="d-flex justify-content-center gap-3">
+        <a href="{{ url_for('user.user_primavera', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg">
+            Primavera
+        </a>
+        <a href="#" class="btn btn-secondary btn-lg">
+            Tagli
+        </a>
+    </div>
+</div>
+{% endblock %}

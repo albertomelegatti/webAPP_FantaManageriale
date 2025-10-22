@@ -20,4 +20,17 @@ def get_offerta_totale(conn, nome_squadra):
                     WHERE squadra_vincente = %s
                     AND stato = 'in_corso';''', (nome_squadra,))
     offerta_totale = cur.fetchone()["offerta_totale"] or 0
+    cur.close()
     return offerta_totale
+
+
+def get_slot_occupati(conn, nome_squadra):
+
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute('''SELECT COUNT(id) AS slot_occupati 
+                    FROM giocatore 
+                    WHERE squadra_att = %s 
+                        AND tipo_contratto IN ('Hold', 'Indeterminato');''', (nome_squadra,))
+    slot_occupati = cur.fetchone()["slot_occupati"]
+    cur.close()
+    return slot_occupati

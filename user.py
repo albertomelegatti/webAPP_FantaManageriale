@@ -1,7 +1,7 @@
 import psycopg2
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from db import get_connection, release_connection
-from queries import get_crediti_squadra, get_offerta_totale
+from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati
 from psycopg2 import extensions
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, time
@@ -104,7 +104,6 @@ def user_aste(nome_squadra):
             cur.close()
         if conn:
             release_connection(conn)
-
 
     return render_template("user_aste.html", nome_squadra=nome_squadra, aste=aste, block_button=block_button, crediti=crediti, crediti_effettivi=offerta_massima_possibile)
 
@@ -293,6 +292,7 @@ def user_mercato(nome_squadra):
 
     try:
         conn = get_connection()
+        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         if request.method == "POST":
@@ -519,21 +519,13 @@ def effettua_scambio(id):
             raise ValueError(f"La squadra {squadra_destinataria} non ha abbastanza crediti ({crediti_disp_dest}).")
         
         # Controllo che le squadre abbiano abbastanza slot giocatori disponibili per effettuare gli scambi
-        cur.execute('''SELECT COUNT(id) AS slot_occupati 
-                    FROM giocatore 
-                    WHERE squadra_att = %s 
-                        AND tipo_contratto IN ('Hold', 'Indeterminato');''', (squadra_proponente,))
-        slot_squadra_proponente = cur.fetchone()["slot_occupati"]
+        slot_squadra_proponente = get_slot_occupati(conn, squadra_proponente)
         num_giocatori_in_entrata = len(giocatori_richiesti)
         if slot_squadra_proponente + num_giocatori_in_entrata > 32:
             raise ValueError(f"La squadra {squadra_proponente} non ha abbastanza slot giocatori liberi.")
         
 
-        cur.execute('''SELECT COUNT(id) AS slot_occupati 
-                    FROM giocatore 
-                    WHERE squadra_att = %s 
-                        AND tipo_contratto IN ('Hold', 'Indeterminato');''', (squadra_destinataria,))
-        slot_squadra_destinataria = cur.fetchone()["slot_occupati"]
+        slot_squadra_destinataria = get_slot_occupati(conn, squadra_destinataria)
         num_giocatori_in_uscita = len(giocatori_offerti)
         if slot_squadra_destinataria + num_giocatori_in_uscita > 32:
             raise ValueError(f"La squadra {squadra_destinataria} non ha abbastanza slot giocatori liberi.")
@@ -586,8 +578,6 @@ def effettua_scambio(id):
 
 
 
-
-
 @user_bp.route("/prestiti/<nome_squadra>", methods=["GET", "POST"])
 def user_prestiti(nome_squadra):
 
@@ -596,6 +586,7 @@ def user_prestiti(nome_squadra):
 
     try:
         conn = get_connection()
+        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         if request.method == "POST":
@@ -669,9 +660,6 @@ def user_prestiti(nome_squadra):
 
 
 
-
-
-
 @user_bp.route("/nuovo_prestito/<nome_squadra>", methods=["GET", "POST"])
 def nuovo_prestito(nome_squadra):
 
@@ -710,9 +698,14 @@ def nuovo_prestito(nome_squadra):
 
         # Selezione dei giocatori
         cur.execute('''SELECT id, nome, squadra_att
-                    FROM giocatore
-                    WHERE tipo_contratto <> 'Fanta-Prestito'
-                    AND squadra_att <> 'Svincolato';''')
+                    FROM giocatore g
+                    WHERE g.tipo_contratto <> 'Fanta-Prestito'
+                    AND g.squadra_att <> 'Svincolato'
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM prestito p
+                        WHERE p.giocatore = g.id
+                        AND p.stato = 'in_attesa');''')
         giocatori_raw = cur.fetchall()
 
         giocatori = []
@@ -735,7 +728,6 @@ def nuovo_prestito(nome_squadra):
             squadre.append({
                 "nome": s["nome"]
             })
-
 
     except Exception as e:
         print(f"❌ Errore durante il caricamento della pagina 'nuovo_prestito': {e}")
@@ -795,6 +787,79 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
             cur.close()
         if conn:
             release_connection(conn)
+
+
+
+
+
+
+
+
+
+
+@user_bp.route("/gestione_rosa/<nome_squadra>")
+def user_gestione_rosa(nome_squadra):
+    return render_template("user_gestione_rosa.html", nome_squadra=nome_squadra)
+
+
+@user_bp.route("/user_primavera/<nome_squadra>", methods=["GET", "POST"])
+def user_primavera(nome_squadra):
+
+    conn = None
+    cur = None
+    primavera = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        if request.method == "POST":
+            giocatore_id = request.form.get("giocatore_id")
+            if giocatore_id:
+                cur.execute('''UPDATE giocatore
+                            SET tipo_contratto = 'Indeterminato'
+                            WHERE id = %s;''', (giocatore_id,))
+                conn.commit()
+                flash("✅ Giocatore promosso in prima squadra con successo.", "success")
+
+
+
+
+
+        # Selezione dei giocatori in primavera
+        cur.execute('''SELECT id, nome, ruolo, quot_att_mantra
+                    FROM giocatore
+                    WHERE squadra_att = %s
+                    AND tipo_contratto = 'Primavera';''', (nome_squadra,))
+        primavera_raw = cur.fetchall()
+
+        primavera = []
+        for p in primavera_raw:
+            ruolo = p['ruolo'].strip("{}")
+            primavera.append({
+                "id": p['id'],
+                "nome": p['nome'],
+                "ruolo": ruolo,
+                "quot_att_mantra": p['quot_att_mantra']
+            })
+
+
+    except Exception as e:
+        print(f"❌ Errore durante il caricamento della primavera.")
+        flash("Errore durante il caricamento della primavera.", "danger")
+
+    finally:
+        if cur:
+            cur.close()
+        if conn:
+            release_connection(conn)
+
+    return render_template("user_primavera.html", nome_squadra=nome_squadra, primavera=primavera)
+
+
+
+
+
 
 
 
