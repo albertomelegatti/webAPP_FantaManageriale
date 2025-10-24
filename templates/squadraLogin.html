@@ -6,25 +6,34 @@
         <h1 class="mb-4">Sezione riservata di {{ nome_squadra }}</h1>
         <p class="lead">Gestisci gli aspetti della tua squadra da qui.</p>
 
-        <a href="{{ url_for('user.user_aste', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
-            💰 Aste
-        </a>
+        <div class="text-center">
 
-        <a href="{{ url_for('user.user_mercato', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
-            📈 Mercato
-        </a>
+    <a href="{{ url_for('user.user_aste', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
+        💰 Aste
+    </a>
+    <a href="{{ url_for('user.user_mercato', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
+        📈 Mercato
+    </a>
+    <a href="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
+        🤝 Prestiti
+    </a>
+    <a href="{{ url_for('user.user_gestione_rosa', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
+        👥 Rosa
+    </a>
 
-        <a href="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
-            🤝 Prestiti
-        </a>
-
-        <a href="{{ url_for('user.user_gestione_rosa', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
-            👥 Rosa
-        </a>
-
-        <a href="/cambia_password" class="btn btn-warning btn-lg mb-3">
+    <div class="mt-3">
+        <a href="/cambia_password" class="btn btn-lg mb-3" 
+           style="background-color: #6f42c1; border-color: #6f42c1; color: white;">
             🔒 Cambia Password
         </a>
+        <a href="/logout" class="btn btn-lg mb-3" 
+           style="background-color: #6f42c1; border-color: #6f42c1; color: white;">
+            <i class="bi bi-box-arrow-right"></i> Logout
+        </a>
+    </div>
+</div>
+
+
     </div>
 </div>
 {% endblock %}

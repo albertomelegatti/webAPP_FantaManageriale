@@ -1,6 +1,7 @@
 import secrets
 import psycopg2
 from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify
+from flask_session import Session
 from psycopg2 import extensions
 from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -14,9 +15,12 @@ from queries import get_slot_occupati
 
 app = Flask(__name__)
 
-#app.permanent_session_lifetime = timedelta(hours=2)
-
 app.secret_key = secrets.token_hex(16)
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 7
+
+Session(app)
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
@@ -33,7 +37,18 @@ def home():
 # Rotta per login admin
 @app.route("/login", methods=["GET", "POST"])
 def login():
+
+    # Se l'utente è già loggato, viene mandato alla schermata giusta
+    if session.get("logged_in"):
+        if session.get("is_admin"):
+            return redirect(url_for('admin.admin_home'))
+        elif session.get("nome_squadra"):
+            return redirect(url_for('user.squadraLogin', nome_squadra=session["nome_squadra"]))
+        return redirect(url_for('home'))
+    
     error = None
+
+
     if request.method == "POST":
         username = request.form.get("username")
         password = request.form.get("password")
@@ -48,19 +63,24 @@ def login():
             cur = conn.cursor(cursor_factory=RealDictCursor)
 
             if username == "admin":
+                # Login admin
                 cur.execute('''SELECT hash_password 
                             FROM admin 
                             WHERE username = %s''', (username,))
                 row = cur.fetchone()
-                if row and check_password_hash(row["hash_password"], password):
 
-                    session['username'] = username
+                if row and check_password_hash(row["hash_password"], password):
+                    session.cler()
+                    session["logged_in"] = True
+                    session["is_admin"] = True
                     session.permanent = True
                     return redirect(url_for('admin.admin_home'))
+                
                 else:
                     flash("Credenziali admin errate.", "danger")
 
             else:
+                # Login squadra
                 cur.execute('''SELECT hash_password, nome 
                             FROM squadra 
                             WHERE username = %s''', (username,))
@@ -70,8 +90,10 @@ def login():
                     hash_password = row["hash_password"]
                     nome_squadra = row["nome"]
                     if check_password_hash(hash_password, password):
-                        session['username'] = username
-                        session["nome_squadra"] = nome_squadra
+                        session.clear()
+                        session["logged_in"] = True
+                        session["nome_squadra"] = row["nome"]
+                        session["is_admin"] = False
                         session.permanent = True
                         return redirect(url_for('user.squadraLogin', nome_squadra=nome_squadra))
                     else:
@@ -92,6 +114,14 @@ def login():
         return redirect(url_for('login'))
 
     return render_template("login.html", error=error)
+
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("Hai effettuato il logout.", "success")
+    return redirect(url_for("login"))
 
 
 # Schermata squadre con bottoni
@@ -121,6 +151,11 @@ def squadre():
 
 @app.route("/squadra/<nome_squadra>")
 def dashboardSquadra(nome_squadra):
+
+    if not session.get("logged_in"):
+        return redirect(url_for("login"))
+
+
     conn = None
     try:
         conn = get_connection()
