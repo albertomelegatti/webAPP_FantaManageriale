@@ -1,5 +1,6 @@
 import os
 import psycopg2
+import time
 from psycopg2.extras import RealDictCursor
 from psycopg2 import OperationalError
 from psycopg2.pool import SimpleConnectionPool, ThreadedConnectionPool
@@ -57,12 +58,32 @@ def log_pool_status(action):
 
 
 def get_connection():
-    #Ottiene una connessione attiva dal pool
+    
+    max_retries = 3
+    cooldown = 2
     global pool
+
     if pool is None:
         raise Exception("Connection pool non inizializzato. Chiama init_pool() prima.")
+    
+    retries = 0
 
-    return pool.getconn()
+    while retries < max_retries:
+        try:
+            conn = pool.getconn()
+            return conn
+        
+        except OperationalError as e:
+            retries += 1
+            print(f"[DB] Tentativo {retries}/{max_retries} fallito: {e}")
+
+            if retries < max_retries:
+                print(f"[DB] Ritento tra {cooldown} secondi...")
+                time.sleep(cooldown)
+
+            else:
+                print("[DB] ❌ Impossibile connettersi al database dopo ripetuti tentativi.")
+                raise
 
 
 #def get_connection():
