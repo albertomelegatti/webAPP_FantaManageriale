@@ -62,15 +62,15 @@ def login():
             conn = get_connection()
             cur = conn.cursor(cursor_factory=RealDictCursor)
 
+            # Login admin
             if username == "admin":
-                # Login admin
                 cur.execute('''SELECT hash_password 
                             FROM admin 
                             WHERE username = %s''', (username,))
                 row = cur.fetchone()
 
                 if row and check_password_hash(row["hash_password"], password):
-                    session.cler()
+                    session.clear()
                     session["logged_in"] = True
                     session["is_admin"] = True
                     session.permanent = True
@@ -79,8 +79,8 @@ def login():
                 else:
                     flash("Credenziali admin errate.", "danger")
 
+            # Login squadra
             else:
-                # Login squadra
                 cur.execute('''SELECT hash_password, nome 
                             FROM squadra 
                             WHERE username = %s''', (username,))
@@ -101,15 +101,12 @@ def login():
                 else:
                     flash("Username non trovato.", "danger")
 
-            cur.close()
-
         except Exception as e:
             print("Errore login:", e)
             flash("Errore di connessione al database.", "danger")
 
         finally:
-            if conn:
-                release_connection(conn)
+                release_connection(conn, cur)
 
         return redirect(url_for('login'))
 
@@ -145,8 +142,7 @@ def squadre():
         return redirect(url_for('home'))
 
     finally:
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
 
 @app.route("/squadra/<nome_squadra>")
@@ -254,7 +250,6 @@ def dashboardSquadra(nome_squadra):
                 "squadra_att": g['squadra_att']
             })
 
-        cur.close()
         return render_template(
             "dashboardSquadra.html",
             nome_squadra=nome_squadra,
@@ -276,23 +271,25 @@ def dashboardSquadra(nome_squadra):
         return redirect(url_for('home'))
 
     finally:
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
 
 @app.route("/creditiStadi")
 def creditiStadiSlot():
+
     conn = None
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
+        # CREDITI
         cur.execute('''SELECT nome, crediti 
                     FROM squadra 
                     WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
         squadre_raw = cur.fetchall()
         squadre = [{"nome": c['nome'], "crediti": c['crediti']} for c in squadre_raw]
 
+        # STADIO
         cur.execute('''SELECT nome, proprietario, livello 
                     FROM stadio ORDER BY nome ASC;''')
         stadi_raw = cur.fetchall()
@@ -307,12 +304,11 @@ def creditiStadiSlot():
                 "crediti_annuali": bonus
             })
 
-
-        # Conteggio slot occupati per squadra
+        # CONTEGGIO SLOT OCCUPATI
         cur.execute('''SELECT squadra_att, COUNT(id) AS slot_occupati
-                        FROM giocatore
-                        WHERE tipo_contratto IN ('Hold', 'Indeterminato')
-                        GROUP BY squadra_att;''')
+                    FROM giocatore
+                    WHERE tipo_contratto IN ('Hold', 'Indeterminato')
+                    GROUP BY squadra_att;''')
         slot_raw = cur.fetchall()
         slot = []
         for s in slot_raw:
@@ -320,6 +316,7 @@ def creditiStadiSlot():
                 "squadra_att": s["squadra_att"],
                 "slot_occupati": s["slot_occupati"]
             })
+
 
         return render_template("creditiStadiSlot.html", stadi=stadi, squadre=squadre, slot=slot)
 
@@ -329,10 +326,7 @@ def creditiStadiSlot():
         return redirect(url_for('home'))
 
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
 
 @app.route("/listone")
@@ -384,8 +378,7 @@ def aste():
         return redirect(url_for('home'))
     
     finally:
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
     return render_template("aste.html", aste=aste)
 
@@ -399,6 +392,7 @@ def vedi_regolamento():
 
 @app.route('/cambia_password', methods=['GET', 'POST'])
 def cambia_password():
+
     if request.method == 'POST':
         username = session.get('username')
         old_password = request.form.get('old_password')
@@ -413,7 +407,6 @@ def cambia_password():
         try:
             conn = get_connection()
             conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
-
             cur = conn.cursor(cursor_factory=RealDictCursor)
 
             cur.execute('''SELECT hash_password 
@@ -441,8 +434,7 @@ def cambia_password():
             flash("Errore durante l'aggiornamento della password.", "danger")
 
         finally:
-            if conn:
-                release_connection(conn)
+            release_connection(conn, cur)
 
         return redirect(url_for('cambia_password'))
 

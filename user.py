@@ -105,10 +105,7 @@ def user_aste(nome_squadra):
         flash("Errore durante il caricamento delle aste.", "danger")
 
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
     return render_template("user_aste.html", nome_squadra=nome_squadra, aste=aste, block_button=block_button, crediti=crediti, crediti_effettivi=offerta_massima_possibile)
 
@@ -180,10 +177,7 @@ def nuova_asta(nome_squadra):
         flash(f"Errore nella creazione dell'asta: {e}", "danger")
 
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
     return render_template("user_nuova_asta.html", giocatori_disponibili_per_asta=giocatori_disponibili_per_asta)
 
@@ -282,10 +276,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
         flash("Errore durante il caricamento dell'asta.", "danger")
 
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
     return render_template("singola_asta_attiva.html", asta=asta, nome_squadra=nome_squadra)
 
@@ -363,10 +354,7 @@ def user_mercato(nome_squadra):
         flash("Errore durante il caricamento degli scambi.", "danger")
 
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
     return render_template("user_mercato.html", nome_squadra=nome_squadra, crediti=crediti, offerta_massima_possibile=offerta_massima_possibile, scambi=scambi)
 
@@ -471,10 +459,7 @@ def nuovo_scambio(nome_squadra):
         return render_template("user_mercato.html", nome_squadra=nome_squadra)
 
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
 
 
@@ -575,10 +560,7 @@ def effettua_scambio(id):
         return False
     
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
 
 
@@ -654,10 +636,7 @@ def user_prestiti(nome_squadra):
         return render_template("user_prestiti.html", nome_squadra=nome_squadra)
     
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
     return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=crediti, crediti_disponibili=crediti_disponibili, prestiti=prestiti)
 
@@ -741,10 +720,7 @@ def nuovo_prestito(nome_squadra):
         return render_template("user_prestiti.html", nome_squadra=nome_squadra)
     
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
     return render_template("user_nuovo_prestito.html", nome_squadra=nome_squadra, crediti=crediti, crediti_disponibili=crediti_disponibili, giocatori=giocatori, squadre=squadre)
 
@@ -798,10 +774,7 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
         return render_template("user_prestiti.html", nome_squadra=nome_squadra)
     
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
 
 
@@ -860,10 +833,7 @@ def user_primavera(nome_squadra):
         flash("Errore durante il caricamento della primavera.", "danger")
 
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
     return render_template("user_primavera.html", nome_squadra=nome_squadra, primavera=primavera)
 
@@ -947,10 +917,7 @@ def user_tagli(nome_squadra):
             conn.rollback()
 
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
     return render_template(
         "user_tagli.html", nome_squadra=nome_squadra, rosa=rosa, crediti=crediti, crediti_disponibili=crediti_disponibili)
@@ -1015,10 +982,7 @@ def format_giocatori(giocatori):
         return "Errore nel recupero dei giocatori"
 
     finally:
-        if cur:
-            cur.close()
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
     # Formattazione pulita dell'output
     if not nomi:

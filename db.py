@@ -90,19 +90,37 @@ def get_connection():
     #return psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
 
 
-def release_connection(conn):
-    #Rilascia la connessione al pool
+def release_connection(conn=None, cur=None):
+
     global pool
-    if pool and conn:
+    if not pool or not conn:
+        return
+
+    try:
+        if cur:
+            try:
+                cur.close()
+            except Exception as e:
+                print(f"⚠️ Impossibile chiudere il cursore: {e}")
+
         try:
-            conn.rollback()
-            pool.putconn(conn, close=False)
+            if not conn.closed:
+                conn.rollback()
+                pool.putconn(conn, close=False)
         except Exception as e:
-            print(f"⚠️ Errore durante il rilascio/reset della connessione: {e}")
+            print(f"⚠️ Errore durante il rilascio connessione al pool: {e}")
             try:
                 conn.close()
-            except:
+            except Exception:
                 pass
+
+    except Exception as e:
+        print(f"⚠️ Errore imprevisto durante release_connection: {e}")
+        try:
+            conn.close()
+        except Exception:
+            pass
+
 
 
 

@@ -52,7 +52,6 @@ def admin_crediti():
         flash("Errore durante il caricamento o l'aggiornamento dei crediti.", "danger")
 
     finally:
-        if conn:
-            release_connection(conn)
+        release_connection(conn, cur)
 
     return render_template("admin_crediti.html", squadre=squadre)
