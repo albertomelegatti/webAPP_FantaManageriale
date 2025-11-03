@@ -31,21 +31,30 @@ def user_aste(nome_squadra):
             if asta_id:
 
                 # Controllo se l'utente loggato è già iscritto all'asta, a volte capita che un utente possa iscriversi due volte.
-                cur.execute('''SELECT %s = ANY(partecipanti) AS gia_iscritto
+                cur.execute('''
+                            SELECT %s = ANY(partecipanti) AS gia_iscritto
                             FROM asta
-                            WHERE id = %s;''', (nome_squadra, asta_id))
+                            WHERE id = %s;
+                ''', (nome_squadra, asta_id))
                 gia_iscritto = cur.fetchone()["gia_iscritto"]
                 
                 # Se non gia iscritto, iscriviti
                 if not gia_iscritto:
-                    cur.execute('''UPDATE asta
-                            SET partecipanti = array_append(partecipanti, %s)
-                            WHERE id = %s;''', (nome_squadra, asta_id))
+                    cur.execute('''
+                                UPDATE asta
+                                SET partecipanti = array_append(partecipanti, %s)
+                                WHERE id = %s;
+                    ''', (nome_squadra, asta_id))
                     conn.commit()
 
                     # Recupero info giocatore dell'asta
-                    cur.execute("SELECT giocatore FROM asta WHERE id = %s;", (asta_id))
+                    cur.execute('''
+                                SELECT giocatore 
+                                FROM asta 
+                                WHERE id = %s;
+                    ''', (asta_id))
                     nome_giocatore = cur.fetchone()['giocatore']
+
                     flash(f"Ti sei iscritto all'asta per { nome_giocatore }.", "success")
                     return redirect(url_for("user.user_aste", nome_squadra=nome_squadra))
             
@@ -53,7 +62,8 @@ def user_aste(nome_squadra):
             
         # Lista aste, tutte insieme
         aste = []
-        cur.execute('''WITH giocatori_svincolati AS (
+        cur.execute('''
+                    WITH giocatori_svincolati AS (
                     SELECT id, nome
                     FROM giocatore
                     WHERE tipo_contratto = 'Svincolato')
@@ -63,7 +73,8 @@ def user_aste(nome_squadra):
                     JOIN giocatori_svincolati g ON a.giocatore = g.id
                     WHERE (a.stato = 'in_corso' AND %s = ANY(a.partecipanti)) 
                     OR a.stato = 'mostra_interesse'
-                    OR (a.stato = 'conclusa' AND a.squadra_vincente = %s);''', (nome_squadra, nome_squadra))
+                    OR (a.stato = 'conclusa' AND a.squadra_vincente = %s);
+        ''', (nome_squadra, nome_squadra))
         aste_raw = cur.fetchall()
 
         for a in aste_raw:
@@ -144,13 +155,18 @@ def nuova_asta(nome_squadra):
 
             try:
                 # Locka il giocatore per evitare race condition
-                cur.execute('SELECT id FROM giocatore WHERE nome = %s FOR UPDATE', (giocatore_scelto,))
-                row = cur.fetchone()
-                if not row:
+                cur.execute('''
+                            SELECT id 
+                            FROM giocatore 
+                            WHERE nome = %s FOR UPDATE;
+                ''', (giocatore_scelto,))
+                giocatore_raw = cur.fetchone()
+
+                if not giocatore_raw:
                     flash("Giocatore non trovato nel database.", "danger")
                     return redirect(url_for("user.nuova_asta", nome_squadra=nome_squadra))
 
-                giocatore_id = row["id"]
+                giocatore_id = giocatore_raw["id"]
 
                 # Inserisci l'asta
                 cur.execute('''
@@ -169,8 +185,6 @@ def nuova_asta(nome_squadra):
                 conn.rollback()
                 flash("Un altro utente ha appena creato un'asta per questo giocatore. Riprova.", "warning")
                 return redirect(url_for("user.nuova_asta", nome_squadra=nome_squadra))
-
-        cur.close()
 
     except Exception as e:
         print("Errore nuova_asta:", e)
@@ -200,9 +214,9 @@ def singola_asta_attiva(asta_id, nome_squadra):
             asta_id_rinuncia = request.form.get("bottone_rinuncia")
             if asta_id_rinuncia:
                 cur.execute('''
-                    UPDATE asta
-                    SET partecipanti = array_remove(partecipanti, %s)
-                    WHERE id = %s;
+                            UPDATE asta
+                            SET partecipanti = array_remove(partecipanti, %s)
+                            WHERE id = %s;
                 ''', (nome_squadra, asta_id_rinuncia))
                 conn.commit()
                 flash("Hai rinunciato all'asta.", "success")
@@ -212,7 +226,11 @@ def singola_asta_attiva(asta_id, nome_squadra):
             nuova_offerta = request.form.get("bottone_rilancia")
             if nuova_offerta:
                 # Blocca la riga dell'asta per aggiornamenti concorrenti
-                cur.execute('SELECT ultima_offerta, squadra_vincente FROM asta WHERE id = %s FOR UPDATE', (asta_id,))
+                cur.execute('''
+                            SELECT ultima_offerta, squadra_vincente 
+                            FROM asta 
+                            WHERE id = %s FOR UPDATE;
+                ''', (asta_id,))
                 asta_dati = cur.fetchone()
 
                 if asta_dati:
@@ -227,7 +245,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
                     flash(f"Hai rilanciato l'offerta a {nuova_offerta}.", "success")
                     return redirect(url_for("user.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
 
-        # --- Recupero dati asta ---
+        # Recupero dati asta
         cur.execute('''
             WITH giocatori_svincolati AS (
                 SELECT id, nome
@@ -296,9 +314,11 @@ def user_mercato(nome_squadra):
             # Bottone ANNULLA scambio
             scambio_id = request.form.get("annulla_scambio")
             if scambio_id:
-                cur.execute('''UPDATE scambio
+                cur.execute('''
+                            UPDATE scambio
                             SET stato = 'annullato' 
-                            WHERE id = %s;''', (scambio_id,))
+                            WHERE id = %s;
+                ''', (scambio_id,))
                 conn.commit()
 
 
@@ -311,10 +331,12 @@ def user_mercato(nome_squadra):
             # Bottone RIFIUTA scambio
             scambio_id = request.form.get("rifiuta_scambio")
             if scambio_id:
-                cur.execute('''UPDATE scambio
+                cur.execute('''
+                            UPDATE scambio
                             SET stato= 'rifiutato',
                                 data_risposta = NOW() AT TIME ZONE 'Europe/Rome'
-                            WHERE id = %s; ''', (scambio_id,))
+                            WHERE id = %s;
+                ''', (scambio_id,))
                 conn.commit()
 
 
@@ -328,10 +350,13 @@ def user_mercato(nome_squadra):
         scambi_raw = []
         scambi = []
 
-        cur.execute('''SELECT *
+        # Scarico le informazioni sugli scambi della squadra loggata
+        cur.execute('''
+                    SELECT *
                     FROM scambio
                     WHERE squadra_proponente = %s
-                    OR squadra_destinataria = %s;''', (nome_squadra, nome_squadra))
+                    OR squadra_destinataria = %s;
+        ''', (nome_squadra, nome_squadra))
         scambi_raw = cur.fetchall()
 
         for s in scambi_raw:
@@ -363,14 +388,11 @@ def user_mercato(nome_squadra):
 
 @user_bp.route("/nuovo_scambio/<nome_squadra>", methods=["GET", "POST"])
 def nuovo_scambio(nome_squadra):
-    conn = None
-    cur = None
 
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        
         if request.method == "POST":
             squadra_destinataria = request.form.get("squadra_destinataria")
             crediti_offerti = int(request.form.get("crediti_offerti", 0))
@@ -393,7 +415,8 @@ def nuovo_scambio(nome_squadra):
             
 
             # Inserimento nuova proposta di scambio
-            cur.execute('''INSERT INTO scambio (
+            cur.execute('''
+                        INSERT INTO scambio (
                         squadra_proponente, squadra_destinataria, crediti_offerti, crediti_richiesti, giocatori_offerti, giocatori_richiesti, messaggio, stato, data_proposta)
                         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome')
                         RETURNING id;''', (
@@ -415,7 +438,10 @@ def nuovo_scambio(nome_squadra):
 
 
         # Recupero tutte le squadre
-        cur.execute("SELECT nome, crediti FROM squadra WHERE nome <> 'Svincolato' ORDER BY nome;")
+        cur.execute('''
+                    SELECT nome, crediti 
+                    FROM squadra 
+                    WHERE nome <> 'Svincolato' ORDER BY nome;''')
         squadre_raw = cur.fetchall()
         squadre = []
         crediti_effettivi = 0
@@ -436,12 +462,12 @@ def nuovo_scambio(nome_squadra):
 
         # Recupero tutti i giocatori validi (non svincolati, non in prestito, non in hold)
         cur.execute("""
-            SELECT id, nome, squadra_att
-            FROM giocatore
-            WHERE squadra_att IS NOT NULL
-              AND squadra_att != 'Svincolati'
-              AND tipo_contratto NOT IN ('Fanta-Prestito', 'Hold')
-            ORDER BY squadra_att, nome;""")
+                    SELECT id, nome, squadra_att
+                    FROM giocatore
+                    WHERE squadra_att IS NOT NULL
+                        AND squadra_att != 'Svincolati'
+                        AND tipo_contratto NOT IN ('Fanta-Prestito', 'Hold')
+                    ORDER BY squadra_att, nome;""")
         giocatori_raw = cur.fetchall()
 
         # Filtra i giocatori appartenenti alla squadra loggata
@@ -471,11 +497,13 @@ def effettua_scambio(id):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Recupero dati dello scambio
-        cur.execute('''SELECT *
+        cur.execute('''
+                    SELECT *
                     FROM scambio
                     WHERE id = %s
-                    AND stato = 'in_attesa'
+                        AND stato = 'in_attesa'
                     FOR UPDATE;''', (id,))
+        
         scambio = cur.fetchone()
 
         if not scambio:
@@ -490,14 +518,23 @@ def effettua_scambio(id):
 
 
         # Controllo che le squadre abbiano abbastanza crediti per effettuare lo scambio
-        cur.execute("SELECT crediti FROM squadra WHERE nome = %s FOR UPDATE;", (squadra_proponente,))
+        cur.execute('''
+                    SELECT crediti 
+                    FROM squadra 
+                    WHERE nome = %s FOR UPDATE;
+        ''', (squadra_proponente,))
+
         crediti_prop = cur.fetchone()["crediti"]
         
         offerta_tot_prop = get_offerta_totale(conn, squadra_proponente)
         crediti_disp_prop = crediti_prop - offerta_tot_prop
         
 
-        cur.execute("SELECT crediti FROM squadra WHERE nome = %s FOR UPDATE;", (squadra_destinataria,))
+        cur.execute('''
+                    SELECT crediti 
+                    FROM squadra 
+                    WHERE nome = %s FOR UPDATE;
+        ''', (squadra_destinataria,))
         crediti_dest = cur.fetchone()["crediti"]
         
         offerta_tot_dest = get_offerta_totale(conn, squadra_destinataria)
@@ -523,31 +560,41 @@ def effettua_scambio(id):
 
         # Eseguo il trasferimento dei giocatori
         for giocatore_id in giocatori_offerti:
-            cur.execute('''UPDATE giocatore
+            cur.execute('''
+                        UPDATE giocatore
                         SET detentore_cartellino = %s
-                        WHERE id = %s;''', (squadra_destinataria, giocatore_id))
+                        WHERE id = %s;
+            ''', (squadra_destinataria, giocatore_id))
             
         for giocatore_id in giocatori_richiesti:
-            cur.execute('''UPDATE giocatore
+            cur.execute('''
+                        UPDATE giocatore
                         SET detentore_cartellino = %s
-                        WHERE id = %s;''', (squadra_proponente, giocatore_id))
+                        WHERE id = %s;
+            ''', (squadra_proponente, giocatore_id))
             
         
         # Aggiorno i crediti delle due squadre
-        cur.execute('''UPDATE squadra
+        cur.execute('''
+                    UPDATE squadra
                     SET crediti = crediti - %s + %s
-                    WHERE nome = %s;''', (crediti_offerti, crediti_richiesti, squadra_proponente))
+                    WHERE nome = %s;
+        ''', (crediti_offerti, crediti_richiesti, squadra_proponente))
         
-        cur.execute('''UPDATE squadra
+        cur.execute('''
+                    UPDATE squadra
                     SET crediti = crediti - %s + %s
-                    WHERE nome = %s;''', (crediti_richiesti, crediti_offerti, squadra_destinataria))
+                    WHERE nome = %s;
+        ''', (crediti_richiesti, crediti_offerti, squadra_destinataria))
         
         
         # Aggiorno lo stato dello scambio
-        cur.execute('''UPDATE scambio
+        cur.execute('''
+                    UPDATE scambio
                     SET stato = 'accettato',
                     data_risposta = NOW() AT TIME ZONE 'Europe/Rome'
-                    WHERE id = %s;''', (id,))
+                    WHERE id = %s;
+        ''', (id,))
         
         conn.commit()
         print(f"✅ Scambio completato con successo tra {squadra_proponente} e {squadra_destinataria}")
@@ -568,9 +615,6 @@ def effettua_scambio(id):
 @user_bp.route("/prestiti/<nome_squadra>", methods=["GET", "POST"])
 def user_prestiti(nome_squadra):
 
-    conn = None
-    cur = None
-
     try:
         conn = get_connection()
         conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
@@ -581,9 +625,11 @@ def user_prestiti(nome_squadra):
             # Bottone ANNULLA prestito
             id_prestito_da_annullare = request.form.get("annulla_prestito")
             if id_prestito_da_annullare:
-                cur.execute('''UPDATE prestito
+                cur.execute('''
+                            UPDATE prestito
                             SET stato = 'annullato'
-                            WHERE id = %s;''', (id_prestito_da_annullare))
+                            WHERE id = %s;
+                ''', (id_prestito_da_annullare))
                 conn.commit()
                 flash("Annullata con successo la richiesta di prestito", "success")
 
@@ -597,9 +643,11 @@ def user_prestiti(nome_squadra):
             # Bottone RIFIUTA prestito
             id_prestito_da_rifiutare = request.form.get("rifiuta_prestito")
             if id_prestito_da_rifiutare:
-                cur.execute('''UPDATE prestito
+                cur.execute('''
+                            UPDATE prestito
                             SET stato = 'rifiutato'
-                            WHERE id = %s;''', (id_prestito_da_rifiutare,))
+                            WHERE id = %s;
+                ''', (id_prestito_da_rifiutare,))
                 conn.commit()
                 flash("Prestito rifiutato con successo.", "success")
 
@@ -611,14 +659,16 @@ def user_prestiti(nome_squadra):
         crediti_disponibili = crediti - offerta_totale
 
 
-        cur.execute('''SELECT *
+        cur.execute('''
+                    SELECT *
                     FROM prestito
-                    WHERE (squadra_prestante = %s
-                    OR squadra_ricevente = %s)
-                    AND stato = 'in_attesa';''', (nome_squadra, nome_squadra))
+                    WHERE (squadra_prestante = %s OR squadra_ricevente = %s)
+                    AND stato = 'in_attesa';
+        ''', (nome_squadra, nome_squadra))
         prestiti_raw = cur.fetchall()
 
         prestiti = []
+
         for p in prestiti_raw:
             prestiti.append({
                 "prestito_id": p["id"],
@@ -647,9 +697,6 @@ def user_prestiti(nome_squadra):
 @user_bp.route("/nuovo_prestito/<nome_squadra>", methods=["GET", "POST"])
 def nuovo_prestito(nome_squadra):
 
-    conn = None
-    cur = None
-
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -667,10 +714,12 @@ def nuovo_prestito(nome_squadra):
             data_fine = datetime.strptime(data_fine, "%Y-%m-%d")
             data_fine = datetime.combine(data_fine.date(), time(hour=12, minute=0, second=0))
 
-            cur.execute('''INSERT INTO prestito (
+            cur.execute('''
+                        INSERT INTO prestito (
                         giocatore, squadra_prestante, squadra_ricevente, stato, data_inizio, data_fine)
                         VALUES(%s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s)
-                        RETURNING id; ''', (giocatore_richiesto, squadra_prestante, nome_squadra, 'in_attesa', data_fine))
+                        RETURNING id;
+            ''', (giocatore_richiesto, squadra_prestante, nome_squadra, 'in_attesa', data_fine))
             conn.commit()
             flash("Richiesta inviata correttamente!", "success")
             redirect(url_for("user.user_prestiti", nome_squadra=nome_squadra))
@@ -682,7 +731,8 @@ def nuovo_prestito(nome_squadra):
         crediti_disponibili = crediti - offerta_totale
 
         # Selezione dei giocatori
-        cur.execute('''SELECT id, nome, squadra_att
+        cur.execute('''
+                    SELECT id, nome, squadra_att
                     FROM giocatore g
                     WHERE g.tipo_contratto <> 'Fanta-Prestito'
                     AND g.squadra_att <> 'Svincolato'
@@ -691,7 +741,8 @@ def nuovo_prestito(nome_squadra):
                         FROM prestito p
                         WHERE p.giocatore = g.id
                         AND p.stato = 'in_attesa'
-                        AND p.squadra_ricevente = %s);''', (nome_squadra,))
+                        AND p.squadra_ricevente = %s);
+        ''', (nome_squadra,))
         giocatori_raw = cur.fetchall()
 
         giocatori = []
@@ -703,10 +754,12 @@ def nuovo_prestito(nome_squadra):
             })
 
         # Selezione dei nomi delle squadre, tranne la squadra loggata e Svincolato
-        cur.execute('''SELECT nome
+        cur.execute('''
+                    SELECT nome
                     FROM squadra
                     WHERE nome <> %s
-                    AND nome <> 'Svincolato';''', (nome_squadra,))
+                    AND nome <> 'Svincolato';
+        ''', (nome_squadra,))
         squadre_raw = cur.fetchall()
 
         squadre = []
@@ -734,36 +787,42 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
         flash("❌ Prestito non trovato.", "danger")
         return redirect(url_for("user.user_prestiti", nome_squadra=nome_squadra))
     
-    conn = None
-    cur = None
     try:
         conn = get_connection()
         conn.autocommit = False
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Recupero info prestito
-        cur.execute('''SELECT *
+        cur.execute('''
+                    SELECT *
                     FROM prestito
-                    WHERE id = %s;''', (id_prestito_da_attivare,))
+                    WHERE id = %s;
+        ''', (id_prestito_da_attivare,))
         prestito = cur.fetchone()
 
         # Cambio di stato
-        cur.execute('''UPDATE prestito
+        cur.execute('''
+                    UPDATE prestito
                     SET stato = 'in_corso'
-                    WHERE id = %s;''', (id_prestito_da_attivare,))
+                    WHERE id = %s;
+        ''', (id_prestito_da_attivare,))
         
         # Modifica info giocatore
-        cur.execute('''UPDATE giocatore
+        cur.execute('''
+                    UPDATE giocatore
                     SET squadra_att = %s,
                     tipo_contratto = 'Fanta-Prestito'
-                    WHERE id = %s;''', (prestito['squadra_ricevente'], prestito['giocatore']))
+                    WHERE id = %s;
+        ''', (prestito['squadra_ricevente'], prestito['giocatore']))
         
         # Cancellare altri prestiti per lo stesso giocatore fatti da altre squadre
-        cur.execute('''UPDATE prestito
+        cur.execute('''
+                    UPDATE prestito
                     SET stato = 'rifiutato'
                     WHERE squadra_prestante = %s
                     AND giocatore = %s
-                    AND stato = 'in_attesa';''', (prestito['squadra_prestante'], prestito['giocatore']))
+                    AND stato = 'in_attesa';
+        ''', (prestito['squadra_prestante'], prestito['giocatore']))
 
         conn.commit()
         flash("✅ Prestito avviato correttamente.", "success")
@@ -780,11 +839,6 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
 
 
 
-
-
-
-
-
 @user_bp.route("/gestione_rosa/<nome_squadra>")
 def user_gestione_rosa(nome_squadra):
     return render_template("user_gestione_rosa.html", nome_squadra=nome_squadra)
@@ -793,29 +847,31 @@ def user_gestione_rosa(nome_squadra):
 @user_bp.route("/user_primavera/<nome_squadra>", methods=["GET", "POST"])
 def user_primavera(nome_squadra):
 
-    conn = None
-    cur = None
-    primavera = []
-
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         if request.method == "POST":
+
+            # Promuovi un giocatore in prima squadra
             id_giocatore_da_promuovere = request.form.get("id_giocatore_da_promuovere")
             if id_giocatore_da_promuovere:
-                cur.execute('''UPDATE giocatore
+                cur.execute('''
+                            UPDATE giocatore
                             SET tipo_contratto = 'Indeterminato'
-                            WHERE id = %s;''', (id_giocatore_da_promuovere,))
+                            WHERE id = %s;
+                ''', (id_giocatore_da_promuovere,))
                 conn.commit()
                 flash("✅ Giocatore promosso in prima squadra con successo.", "success")
 
 
         # Selezione dei giocatori in primavera
-        cur.execute('''SELECT id, nome, ruolo, quot_att_mantra
+        cur.execute('''
+                    SELECT id, nome, ruolo, quot_att_mantra
                     FROM giocatore
                     WHERE squadra_att = %s
-                    AND tipo_contratto = 'Primavera';''', (nome_squadra,))
+                    AND tipo_contratto = 'Primavera';
+        ''', (nome_squadra,))
         primavera_raw = cur.fetchall()
 
         primavera = []
@@ -843,10 +899,6 @@ def user_primavera(nome_squadra):
 
 @user_bp.route("/user_tagli/<nome_squadra>", methods=["GET", "POST"])
 def user_tagli(nome_squadra):
-
-    conn = None
-    cur = None
-    rosa = []
 
     try:
         conn = get_connection()
@@ -894,13 +946,15 @@ def user_tagli(nome_squadra):
 
 
         cur.execute('''
-            SELECT id, nome, ruolo, quot_att_mantra
-            FROM giocatore
-            WHERE squadra_att = %s
-              AND tipo_contratto = 'Indeterminato'
-            ORDER BY ruolo, nome;''', (nome_squadra,))
+                    SELECT id, nome, ruolo, quot_att_mantra
+                    FROM giocatore
+                    WHERE squadra_att = %s 
+                        AND tipo_contratto = 'Indeterminato'
+                    ORDER BY ruolo, nome;
+        ''', (nome_squadra,))
         rosa_raw = cur.fetchall()
 
+        rosa = []
         for r in rosa_raw:
             ruolo = r['ruolo'].strip("{}")
             rosa.append({
@@ -919,8 +973,7 @@ def user_tagli(nome_squadra):
     finally:
         release_connection(conn, cur)
 
-    return render_template(
-        "user_tagli.html", nome_squadra=nome_squadra, rosa=rosa, crediti=crediti, crediti_disponibili=crediti_disponibili)
+    return render_template("user_tagli.html", nome_squadra=nome_squadra, rosa=rosa, crediti=crediti, crediti_disponibili=crediti_disponibili)
 
 
 
@@ -956,7 +1009,6 @@ def format_giocatori(giocatori):
     
     if isinstance(giocatori, int):
         giocatori = [giocatori]
-
 
     nomi = []
 

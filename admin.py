@@ -25,25 +25,22 @@ def admin_crediti():
                 nome = request.form.get(f"squadre[{i}][nome]")
                 nuovo_credito = request.form.get(f"squadre[{i}][nuovo_credito]")
                 if nome and nuovo_credito:
-                    cur.execute(
-                        '''UPDATE squadra
-                            SET crediti = %s
-                            WHERE nome = %s;''',
-                        (nuovo_credito, nome)
-                    )
+                    cur.execute('''
+                                UPDATE squadra
+                                SET crediti = %s
+                                WHERE nome = %s;
+                    ''',(nuovo_credito, nome))
                 i += 1
             conn.commit()
             flash("Tutti i crediti sono stati aggiornati con successo!", "success")
             return redirect(url_for("admin.admin_crediti"))
 
 
-        # --- GET (Popolamento tabella) ---
         cur.execute('''
-            SELECT nome, crediti
-            FROM squadra
-            WHERE nome <> 'Svincolato'
-            ORDER BY nome ASC;
-        ''')
+                    SELECT nome, crediti
+                    FROM squadra
+                    WHERE nome <> 'Svincolato'
+                    ORDER BY nome ASC;''')
         squadre_raw = cur.fetchall()
         squadre = [{"nome": s["nome"], "crediti": s["crediti"]} for s in squadre_raw]
 

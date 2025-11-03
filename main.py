@@ -64,9 +64,11 @@ def login():
 
             # Login admin
             if username == "admin":
-                cur.execute('''SELECT hash_password 
+                cur.execute('''
+                            SELECT hash_password 
                             FROM admin 
-                            WHERE username = %s''', (username,))
+                            WHERE username = %s;
+                ''', (username,))
                 row = cur.fetchone()
 
                 if row and check_password_hash(row["hash_password"], password):
@@ -81,9 +83,11 @@ def login():
 
             # Login squadra
             else:
-                cur.execute('''SELECT hash_password, nome 
+                cur.execute('''
+                            SELECT hash_password, nome 
                             FROM squadra 
-                            WHERE username = %s''', (username,))
+                            WHERE username = %s;
+                ''', (username,))
                 row = cur.fetchone()
 
                 if row is not None:
@@ -129,7 +133,8 @@ def squadre():
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        cur.execute('''SELECT nome 
+        cur.execute('''
+                    SELECT nome 
                     FROM squadra 
                     WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
         squadre = [row["nome"] for row in cur.fetchall()]
@@ -158,15 +163,19 @@ def dashboardSquadra(nome_squadra):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # STADIO
-        cur.execute('''SELECT nome, proprietario, livello 
+        cur.execute('''
+                    SELECT nome, proprietario, livello 
                     FROM stadio 
-                    WHERE proprietario = %s;''', (nome_squadra,))
+                    WHERE proprietario = %s;
+        ''', (nome_squadra,))
         stadio = cur.fetchone()
 
         # CREDITI
-        cur.execute('''SELECT username, crediti 
+        cur.execute('''
+                    SELECT username, crediti 
                     FROM squadra 
-                    WHERE nome = %s;''', (nome_squadra,))
+                    WHERE nome = %s;
+        ''', (nome_squadra,))
         squadra_raw = cur.fetchone()
         username = squadra_raw["username"]
         crediti = squadra_raw["crediti"]
@@ -176,11 +185,13 @@ def dashboardSquadra(nome_squadra):
 
         # ROSA
         rosa = []
-        cur.execute('''SELECT nome, tipo_contratto, ruolo, quot_att_mantra, costo 
+        cur.execute('''
+                    SELECT nome, tipo_contratto, ruolo, quot_att_mantra, costo 
                     FROM giocatore 
                     WHERE squadra_att = %s 
                         AND tipo_contratto <> 'Primavera'
-                    ORDER BY nome;''' , (nome_squadra,))
+                    ORDER BY nome;
+        ''' , (nome_squadra,))
         rosa_raw = cur.fetchall()
 
         for g in rosa_raw:
@@ -195,10 +206,12 @@ def dashboardSquadra(nome_squadra):
 
         # PRIMAVERA
         primavera = []
-        cur.execute('''SELECT nome, tipo_contratto, ruolo, quot_att_mantra 
+        cur.execute('''
+                    SELECT nome, tipo_contratto, ruolo, quot_att_mantra 
                     FROM giocatore 
                     WHERE squadra_att = %s 
-                        AND tipo_contratto = 'Primavera';''' , (nome_squadra,))
+                        AND tipo_contratto = 'Primavera';
+        ''' , (nome_squadra,))
         primavera_raw = cur.fetchall()
 
         for g in primavera_raw:
@@ -210,18 +223,22 @@ def dashboardSquadra(nome_squadra):
             })
 
         # CONTEGGIO PRESTITI IN
-        cur.execute('''SELECT COUNT(id) AS prestiti_in_num
+        cur.execute('''
+                    SELECT COUNT(id) AS prestiti_in_num
                     FROM giocatore
                     WHERE squadra_att = %s 
-                        AND tipo_contratto = 'Fanta-Prestito';''', (nome_squadra,))
+                        AND tipo_contratto = 'Fanta-Prestito';
+        ''', (nome_squadra,))
         prestiti_in_num = cur.fetchone()["prestiti_in_num"]
 
         # PRESTITI IN
         prestiti_in = []
-        cur.execute('''SELECT nome, ruolo, quot_att_mantra, detentore_cartellino
+        cur.execute('''
+                    SELECT nome, ruolo, quot_att_mantra, detentore_cartellino
                     FROM giocatore 
                     WHERE squadra_att = %s 
-                        AND tipo_contratto = 'Fanta-Prestito';''', (nome_squadra,))
+                        AND tipo_contratto = 'Fanta-Prestito';
+        ''', (nome_squadra,))
         prestiti_in_raw = cur.fetchall()
 
         for g in prestiti_in_raw:
@@ -235,10 +252,12 @@ def dashboardSquadra(nome_squadra):
 
         # PRESTITI OUT
         prestiti_out = []
-        cur.execute('''SELECT nome, ruolo, quot_att_mantra, squadra_att
+        cur.execute('''
+                    SELECT nome, ruolo, quot_att_mantra, squadra_att
                     FROM giocatore 
                     WHERE detentore_cartellino = %s 
-                        AND tipo_contratto = 'Fanta-Prestito';''', (nome_squadra,))
+                        AND tipo_contratto = 'Fanta-Prestito';
+        ''', (nome_squadra,))
         prestiti_out_raw = cur.fetchall()
 
         for g in prestiti_out_raw:
@@ -283,14 +302,16 @@ def creditiStadiSlot():
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # CREDITI
-        cur.execute('''SELECT nome, crediti 
+        cur.execute('''
+                    SELECT nome, crediti 
                     FROM squadra 
                     WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
         squadre_raw = cur.fetchall()
         squadre = [{"nome": c['nome'], "crediti": c['crediti']} for c in squadre_raw]
 
         # STADIO
-        cur.execute('''SELECT nome, proprietario, livello 
+        cur.execute('''
+                    SELECT nome, proprietario, livello 
                     FROM stadio ORDER BY nome ASC;''')
         stadi_raw = cur.fetchall()
         stadi = []
@@ -305,7 +326,8 @@ def creditiStadiSlot():
             })
 
         # CONTEGGIO SLOT OCCUPATI
-        cur.execute('''SELECT squadra_att, COUNT(id) AS slot_occupati
+        cur.execute('''
+                    SELECT squadra_att, COUNT(id) AS slot_occupati
                     FROM giocatore
                     WHERE tipo_contratto IN ('Hold', 'Indeterminato')
                     GROUP BY squadra_att;''')
@@ -344,14 +366,15 @@ def aste():
         conn = get_connection()
         cur = conn.cursor(cursor_factory = RealDictCursor)
     
-        cur.execute('''WITH giocatori_svincolati AS (
+        cur.execute('''
+                    WITH giocatori_svincolati AS (
                         SELECT id, nome
                         FROM giocatore
                         WHERE tipo_contratto = 'Svincolato')
                     
-                        SELECT g.nome, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
-                        FROM asta a
-                        JOIN giocatori_svincolati g ON a.giocatore = g.id;''')
+                    SELECT g.nome, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
+                    FROM asta a
+                    JOIN giocatori_svincolati g ON a.giocatore = g.id;''')
         aste_raw = cur.fetchall()
 
         for a in aste_raw:
@@ -409,19 +432,28 @@ def cambia_password():
             conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
             cur = conn.cursor(cursor_factory=RealDictCursor)
 
-            cur.execute('''SELECT hash_password 
+            cur.execute('''
+                        SELECT hash_password 
                         FROM squadra 
-                        WHERE username = %s''', (username,))
+                        WHERE username = %s;
+            ''', (username,))
             row = cur.fetchone()
 
             if row and check_password_hash(row["hash_password"], old_password):
                 new_hashed_password = generate_password_hash(new_password)
-                cur.execute('''UPDATE squadra 
+
+                cur.execute('''
+                            UPDATE squadra 
                             SET hash_password = %s 
-                            WHERE username = %s''', (new_hashed_password, username))
+                            WHERE username = %s;
+                ''', (new_hashed_password, username))
                 conn.commit()
 
-                cur.execute('''SELECT nome FROM squadra WHERE username = %s''', (username,))
+                cur.execute('''
+                            SELECT nome 
+                            FROM squadra 
+                            WHERE username = %s;
+                ''', (username,))
                 nome_squadra = cur.fetchone()["nome"]
 
 
