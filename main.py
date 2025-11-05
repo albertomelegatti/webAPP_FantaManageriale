@@ -153,10 +153,6 @@ def squadre():
 @app.route("/squadra/<nome_squadra>")
 def dashboardSquadra(nome_squadra):
 
-    if not session.get("logged_in"):
-        return redirect(url_for("login"))
-
-
     conn = None
     try:
         conn = get_connection()
