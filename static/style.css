@@ -9,8 +9,9 @@
 :root {
     --bg: #f8f9fa;             /* colore sfondo principale */
     --text: #333;              /* colore testo base */
-    --primary: #007bff;        /* colore primario (blu) */
-    --primary-dark: #0056b3;   /* colore primario scuro per hover */
+    --primary: #198754;        /* verde principale (ricco e bilanciato) */
+    --primary-dark: #146c43;   /* per hover, leggermente più profondo */
+
     --muted: #6c757d;          /* colore grigio neutro */
     --white: #ffffff;          /* colore bianco */
 
@@ -19,7 +20,7 @@
     --col-centro: #fff9db;     /* sfondo riga centrocampista */
     --col-attaccante: #ffe7e7; /* sfondo riga attaccante */
 
-    --table-head: #007bff;     /* sfondo intestazione tabella */
+    --table-head: #198754;     /* sfondo intestazione tabella */
 }
 
 /* Body - imposta font, colori e spaziatura globale */

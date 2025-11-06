@@ -1,5 +1,6 @@
 import secrets
 import psycopg2
+import time
 from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify
 from flask_session import Session
 from psycopg2 import extensions
@@ -110,7 +111,7 @@ def login():
             flash("Errore di connessione al database.", "danger")
 
         finally:
-                release_connection(conn, cur)
+            release_connection(conn, cur)
 
         return redirect(url_for('login'))
 

@@ -1,2 +1,5 @@
 .env
 TelegramBot
+__pycache__/
+flask_session/
+*.pyc

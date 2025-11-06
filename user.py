@@ -30,47 +30,64 @@ def user_aste(nome_squadra):
             asta_id = request.form.get("asta_id_aste_a_cui_iscriversi")
             if asta_id:
 
-                # Controllo se l'utente loggato è già iscritto all'asta, a volte capita che un utente possa iscriversi due volte.
+                tempo_scaduto = False
                 cur.execute('''
-                            SELECT %s = ANY(partecipanti) AS gia_iscritto
+                            SELECT stato
                             FROM asta
                             WHERE id = %s;
-                ''', (nome_squadra, asta_id))
-                gia_iscritto = cur.fetchone()["gia_iscritto"]
+                ''', (asta_id,))
+                stato = cur.fetchone()['stato']
+
+                if stato == 'in_corso':
+                    tempo_scaduto = True
+                    flash("Iscrizione fallita, tempo scaduto.", "danger")
+
                 
-                # Se non gia iscritto, iscriviti
-                if not gia_iscritto:
+                if tempo_scaduto == False:
+                    # Controllo se l'utente loggato è già iscritto all'asta, a volte capita che un utente possa iscriversi due volte.
                     cur.execute('''
-                                UPDATE asta
-                                SET partecipanti = array_append(partecipanti, %s)
+                                SELECT %s = ANY(partecipanti) AS gia_iscritto
+                                FROM asta
                                 WHERE id = %s;
                     ''', (nome_squadra, asta_id))
-                    conn.commit()
+                    gia_iscritto = cur.fetchone()["gia_iscritto"]
+                
+                    # Se non gia iscritto, iscriviti
+                    if not gia_iscritto:
+                        cur.execute('''
+                                    UPDATE asta
+                                    SET partecipanti = array_append(partecipanti, %s)
+                                    WHERE id = %s;
+                        ''', (nome_squadra, asta_id))
+                        conn.commit()
 
-                    # Recupero info giocatore dell'asta
-                    cur.execute('''
-                                SELECT giocatore 
-                                FROM asta 
-                                WHERE id = %s;
-                    ''', (asta_id))
-                    nome_giocatore = cur.fetchone()['giocatore']
+                        # Recupero info id giocatore dell'asta
+                        cur.execute('''
+                                    SELECT giocatore 
+                                    FROM asta 
+                                    WHERE id = %s;
+                        ''', (asta_id))
+                        id_giocatore = cur.fetchone()['giocatore']
 
-                    flash(f"Ti sei iscritto all'asta per { nome_giocatore }.", "success")
-                    return redirect(url_for("user.user_aste", nome_squadra=nome_squadra))
+                        # Recupero info sul nome del giocatore
+                        cur.execute('''
+                                    SELECT nome
+                                    FROM giocatore
+                                    WHERE id = %s;
+                        ''', (id_giocatore,))
+                        nome_giocatore = cur.fetchone()['nome']
+
+                        flash(f"Ti sei iscritto all'asta per { nome_giocatore }.", "success")
+                        return redirect(url_for("user.user_aste", nome_squadra=nome_squadra))
             
 
             
         # Lista aste, tutte insieme
         aste = []
         cur.execute('''
-                    WITH giocatori_svincolati AS (
-                    SELECT id, nome
-                    FROM giocatore
-                    WHERE tipo_contratto = 'Svincolato')
-                    
                     SELECT a.id, g.nome, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
                     FROM asta a
-                    JOIN giocatori_svincolati g ON a.giocatore = g.id
+                    JOIN giocatore g ON a.giocatore = g.id
                     WHERE (a.stato = 'in_corso' AND %s = ANY(a.partecipanti)) 
                     OR a.stato = 'mostra_interesse'
                     OR (a.stato = 'conclusa' AND a.squadra_vincente = %s);
@@ -140,9 +157,10 @@ def nuova_asta(nome_squadra):
             WHERE tipo_contratto = 'Svincolato'
               AND priorita = 1
               AND NOT EXISTS (
-                  SELECT 1 FROM asta a 
-                  WHERE a.giocatore = g.id 
-                    AND a.stato IN ('mostra_interesse', 'in_corso')
+                    SELECT 1 
+                    FROM asta a 
+                    WHERE a.giocatore = g.id 
+                        AND a.stato IN ('mostra_interesse', 'in_corso')
               )
         ''')
         giocatori_disponibili_per_asta = [row["nome"] for row in cur.fetchall()]
@@ -172,9 +190,9 @@ def nuova_asta(nome_squadra):
                 cur.execute('''
                     INSERT INTO asta (
                         giocatore, squadra_vincente, ultima_offerta,
-                        tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti
+                        tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti, gia_elaborata
                     )
-                    VALUES (%s, %s, NULL, NULL, (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day', 'mostra_interesse', %s)
+                    VALUES (%s, %s, NULL, NULL, (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day', 'mostra_interesse', %s, FALSE)
                 ''', (giocatore_id, nome_squadra, [nome_squadra]))
                 conn.commit()
 
@@ -233,7 +251,8 @@ def singola_asta_attiva(asta_id, nome_squadra):
                 ''', (asta_id,))
                 asta_dati = cur.fetchone()
 
-                if asta_dati:
+                # Controllo sui valori dell'asta prima di rilanciare
+                if asta_dati['ultima_offerta'] < int(nuova_offerta) and asta_dati['squadra_vincente']:
                     cur.execute('''
                         UPDATE asta
                         SET ultima_offerta = %s,
@@ -244,6 +263,10 @@ def singola_asta_attiva(asta_id, nome_squadra):
                     conn.commit()
                     flash(f"Hai rilanciato l'offerta a {nuova_offerta}.", "success")
                     return redirect(url_for("user.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
+                
+                flash("Attenzione, valori non aggiornati, verrai reindirizzato alla pagina aggiornata.", "danger")
+                time.sleep(3)
+                return redirect(url_for("user.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
 
         # Recupero dati asta
         cur.execute('''
@@ -548,13 +571,13 @@ def effettua_scambio(id):
         # Controllo che le squadre abbiano abbastanza slot giocatori disponibili per effettuare gli scambi
         slot_squadra_proponente = get_slot_occupati(conn, squadra_proponente)
         num_giocatori_in_entrata = len(giocatori_richiesti)
-        if slot_squadra_proponente + num_giocatori_in_entrata > 32:
+        if slot_squadra_proponente + num_giocatori_in_entrata > 30:
             raise ValueError(f"La squadra {squadra_proponente} non ha abbastanza slot giocatori liberi.")
         
 
         slot_squadra_destinataria = get_slot_occupati(conn, squadra_destinataria)
         num_giocatori_in_uscita = len(giocatori_offerti)
-        if slot_squadra_destinataria + num_giocatori_in_uscita > 32:
+        if slot_squadra_destinataria + num_giocatori_in_uscita > 30:
             raise ValueError(f"La squadra {squadra_destinataria} non ha abbastanza slot giocatori liberi.")
         
 
@@ -604,6 +627,7 @@ def effettua_scambio(id):
         if conn:
             conn.rollback()
         print(f"❌ Errore durante l'esecuzione dello scambio: {e}")
+        flash("Errore nell'esecuzione dello scambio. Rivedere i valori dello scambio.", "danger")
         return False
     
     finally:

@@ -50,7 +50,7 @@
                             <td>
                                 <form method="POST" 
                                       action="{{ url_for('user.user_tagli', nome_squadra=nome_squadra) }}"
-                                      onsubmit="return confirm('Vuoi davvero tagliare {{ giocatore.nome }}? Verranno restituiti metà dei suoi crediti.');">
+                                      onsubmit="return confirm('Vuoi davvero tagliare {{ giocatore.nome }}? Dovrai pagare metà della sua quotazione attuale.');">
                                     <input type="hidden" name="id_giocatore_da_tagliare" value="{{ giocatore.id }}">
                                     {% set costo_taglio = ((giocatore.quot_att_mantra / 2) | round(0, 'ceil')) %}
                                     <button type="submit" 

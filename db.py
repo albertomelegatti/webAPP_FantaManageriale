@@ -59,7 +59,7 @@ def log_pool_status(action):
 
 def get_connection():
     
-    max_retries = 3
+    max_retries = 5
     cooldown = 2
     global pool
 
@@ -71,6 +71,9 @@ def get_connection():
     while retries < max_retries:
         try:
             conn = pool.getconn()
+            # Verifica che la connessione sia ancora viva
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1;")
             return conn
         
         except OperationalError as e:
