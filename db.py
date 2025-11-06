@@ -71,6 +71,8 @@ def get_connection():
     while retries < max_retries:
         try:
             conn = pool.getconn()
+            conn.rollback()
+            conn.autocommit = False
             # Verifica che la connessione sia ancora viva
             with conn.cursor() as cur:
                 cur.execute("SELECT 1;")
@@ -108,7 +110,10 @@ def release_connection(conn=None, cur=None):
 
         try:
             if not conn.closed:
-                conn.rollback()
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
                 pool.putconn(conn, close=False)
         except Exception as e:
             print(f"⚠️ Errore durante il rilascio connessione al pool: {e}")

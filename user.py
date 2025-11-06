@@ -348,7 +348,7 @@ def user_mercato(nome_squadra):
             # Bottone ACCETTA scambio
             scambio_id = request.form.get("accetta_scambio")
             if scambio_id:
-                effettua_scambio(scambio_id)
+                effettua_scambio(scambio_id, conn)
 
             
             # Bottone RIFIUTA scambio
@@ -384,17 +384,18 @@ def user_mercato(nome_squadra):
 
         for s in scambi_raw:
             scambi.append({
-                "scambio_id": s["id"],
-                "squadra_proponente": s["squadra_proponente"],
-                "squadra_destinataria": s["squadra_destinataria"],
-                "giocatori_offerti": format_giocatori(s["giocatori_offerti"]),
-                "giocatori_richiesti": format_giocatori(s["giocatori_richiesti"]),
-                "crediti_offerti": s["crediti_offerti"],
-                "crediti_richiesti": s["crediti_richiesti"],
-                "messaggio": s["messaggio"],
-                "stato": s["stato"],
-                "data_proposta": formatta_data(s["data_proposta"]),
-                "data_risposta": formatta_data(s["data_risposta"]),
+                "scambio_id": s['id'],
+                "squadra_proponente": s['squadra_proponente'],
+                "squadra_destinataria": s['squadra_destinataria'],
+                "giocatori_offerti": format_giocatori(s['giocatori_offerti']),
+                "giocatori_richiesti": format_giocatori(s['giocatori_richiesti']),
+                "crediti_offerti": s['crediti_offerti'],
+                "crediti_richiesti": s['crediti_richiesti'],
+                "messaggio": s['messaggio'],
+                "stato": s['stato'],
+                "data_proposta": formatta_data(s['data_proposta']),
+                "data_risposta": formatta_data(s['data_risposta']),
+                "valido": controlla_scambio(s['id'], conn)
             })
         
     except Exception as e:
@@ -411,6 +412,8 @@ def user_mercato(nome_squadra):
 
 @user_bp.route("/nuovo_scambio/<nome_squadra>", methods=["GET", "POST"])
 def nuovo_scambio(nome_squadra):
+    conn = None
+    cur = None
 
     try:
         conn = get_connection()
@@ -418,107 +421,122 @@ def nuovo_scambio(nome_squadra):
 
         if request.method == "POST":
             squadra_destinataria = request.form.get("squadra_destinataria")
-            crediti_offerti = int(request.form.get("crediti_offerti", 0))
-            crediti_richiesti = int(request.form.get("crediti_richiesti", 0))
-            giocatori_offerti = [int(g) for g in request.form.getlist("giocatori_offerti")]
-            giocatori_richiesti = [int(g) for g in request.form.getlist("giocatori_richiesti")]
-            messaggio = request.form.get("messaggio", "").strip()
+            crediti_offerti = int(request.form.get("crediti_offerti") or 0)
+            crediti_richiesti = int(request.form.get("crediti_richiesti") or 0)
+            giocatori_offerti = [int(g) for g in request.form.getlist("giocatori_offerti") if g.isdigit()]
+            giocatori_richiesti = [int(g) for g in request.form.getlist("giocatori_richiesti") if g.isdigit()]
+            messaggio = (request.form.get("messaggio") or "").strip()
 
+            # Validazioni base
             if not squadra_destinataria:
                 flash("Seleziona una squadra destinataria.", "warning")
-                return redirect(nuovo_scambio(nome_squadra))
-            
+                return redirect(url_for("user.nuovo_scambio", nome_squadra=nome_squadra))
+
             if not giocatori_offerti and crediti_offerti == 0:
                 flash("Devi offrire almeno un giocatore o dei crediti.", "warning")
-                return redirect(nuovo_scambio(nome_squadra))
-            
+                return redirect(url_for("user.nuovo_scambio", nome_squadra=nome_squadra))
+
             if not giocatori_richiesti and crediti_richiesti == 0:
                 flash("Devi richiedere almeno un giocatore o dei crediti.", "warning")
-                return redirect(request.url)
-            
+                return redirect(url_for("user.nuovo_scambio", nome_squadra=nome_squadra))
 
-            # Inserimento nuova proposta di scambio
+            # Inserisci la proposta di scambio
             cur.execute('''
-                        INSERT INTO scambio (
-                        squadra_proponente, squadra_destinataria, crediti_offerti, crediti_richiesti, giocatori_offerti, giocatori_richiesti, messaggio, stato, data_proposta)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome')
-                        RETURNING id;''', (
-                            nome_squadra,
-                            squadra_destinataria,
-                            crediti_offerti,
-                            crediti_richiesti,
-                            giocatori_offerti,
-                            giocatori_richiesti,
-                            messaggio,
-                            'in_attesa'
-                        ))
-            
+                INSERT INTO scambio (
+                    squadra_proponente, squadra_destinataria, 
+                    crediti_offerti, crediti_richiesti, 
+                    giocatori_offerti, giocatori_richiesti, 
+                    messaggio, stato, data_proposta
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome')
+                RETURNING id;
+            ''', (
+                nome_squadra,
+                squadra_destinataria,
+                crediti_offerti,
+                crediti_richiesti,
+                giocatori_offerti,
+                giocatori_richiesti,
+                messaggio
+            ))
+
             conn.commit()
             flash("✅ Proposta di scambio inviata con successo!", "success")
             return redirect(url_for("user.user_mercato", nome_squadra=nome_squadra))
 
+        # --- GET: caricamento pagina ---
 
-
-
-        # Recupero tutte le squadre
+        # Recupera tutte le squadre (tranne "Svincolato")
         cur.execute('''
-                    SELECT nome, crediti 
-                    FROM squadra 
-                    WHERE nome <> 'Svincolato' ORDER BY nome;''')
+            SELECT nome, crediti 
+            FROM squadra 
+            WHERE nome <> 'Svincolato'
+            ORDER BY nome;
+        ''')
         squadre_raw = cur.fetchall()
+
         squadre = []
         crediti_effettivi = 0
+        offerta_totale = get_offerta_totale(conn, nome_squadra)
 
         for s in squadre_raw:
-
-            offerta_totale = get_offerta_totale(conn, nome_squadra)
-            offerta_massima_possibile = s["crediti"] - offerta_totale
+            slot_occupati = int(get_slot_occupati(conn, s["nome"]))
+            offerta_massima_possibile = max(s["crediti"] - offerta_totale, 0)
 
             squadre.append({
                 "nome": s["nome"],
-                "offerta_massima_possibile": offerta_massima_possibile
+                "offerta_massima_possibile": offerta_massima_possibile,
+                "slot_liberi": max(30 - slot_occupati, 0)
             })
 
             if s["nome"] == nome_squadra:
                 crediti_effettivi = offerta_massima_possibile
-        
 
-        # Recupero tutti i giocatori validi (non svincolati, non in prestito, non in hold)
-        cur.execute("""
-                    SELECT id, nome, squadra_att
-                    FROM giocatore
-                    WHERE squadra_att IS NOT NULL
-                        AND squadra_att != 'Svincolati'
-                        AND tipo_contratto NOT IN ('Fanta-Prestito', 'Hold')
-                    ORDER BY squadra_att, nome;""")
+        # Slot liberi della squadra loggata
+        slot_liberi_miei = max(30 - int(get_slot_occupati(conn, nome_squadra)), 0)
+
+        # Recupera tutti i giocatori validi (non svincolati, non prestiti, non hold)
+        cur.execute('''
+            SELECT id, nome, squadra_att
+            FROM giocatore
+            WHERE squadra_att IS NOT NULL
+              AND squadra_att != 'Svincolati'
+              AND tipo_contratto NOT IN ('Fanta-Prestito', 'Hold')
+            ORDER BY squadra_att, nome;
+        ''')
         giocatori_raw = cur.fetchall()
 
-        # Filtra i giocatori appartenenti alla squadra loggata
         miei_giocatori = [g for g in giocatori_raw if g["squadra_att"] == nome_squadra]
-
-         # Trasformo la lista di giocatori in dizionari puliti per JSON
-        giocatori = [{"id": g["id"], "nome": g["nome"], "squadra_att": g["squadra_att"]} for g in giocatori_raw]
+        giocatori = [
+            {"id": g["id"], "nome": g["nome"], "squadra_att": g["squadra_att"]}
+            for g in giocatori_raw
+        ]
 
         return render_template(
-            "user_nuovo_scambio.html", nome_squadra=nome_squadra, squadre=squadre, giocatori=giocatori, miei_giocatori=miei_giocatori, crediti_effettivi=crediti_effettivi)
+            "user_nuovo_scambio.html",
+            nome_squadra=nome_squadra,
+            squadre=squadre,
+            giocatori=giocatori,
+            miei_giocatori=miei_giocatori,
+            crediti_effettivi=crediti_effettivi,
+            slot_liberi_miei=slot_liberi_miei
+        )
 
     except Exception as e:
-        print(f"❌ Errore durante il caricamento della pagina 'nuovo scambio': {e}")
+        print(f"❌ Errore durante il caricamento di 'nuovo_scambio': {e}")
         flash("Si è verificato un errore nel caricamento della pagina.", "danger")
-        return render_template("user_mercato.html", nome_squadra=nome_squadra)
+        return redirect(url_for("user.user_mercato", nome_squadra=nome_squadra))
 
     finally:
         release_connection(conn, cur)
 
 
 
-def effettua_scambio(id):
-    
-    try:
-        conn = get_connection()
-        conn.autocommit = False
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+def controlla_scambio(id, conn):
 
+    valido = True
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         # Recupero dati dello scambio
         cur.execute('''
                     SELECT *
@@ -538,7 +556,6 @@ def effettua_scambio(id):
         crediti_richiesti = scambio["crediti_richiesti"] or 0
         giocatori_offerti = scambio["giocatori_offerti"] or []
         giocatori_richiesti = scambio["giocatori_richiesti"] or []
-
 
         # Controllo che le squadre abbiano abbastanza crediti per effettuare lo scambio
         cur.execute('''
@@ -564,23 +581,66 @@ def effettua_scambio(id):
         crediti_disp_dest = crediti_dest - offerta_tot_dest
 
         if crediti_disp_prop < crediti_offerti:
-            raise ValueError(f"La squadra {squadra_proponente} non ha abbastanza crediti ({crediti_disp_prop}).")
+            valido = False
+        
         if crediti_disp_dest < crediti_richiesti:
-            raise ValueError(f"La squadra {squadra_destinataria} non ha abbastanza crediti ({crediti_disp_dest}).")
+            valido = False
         
         # Controllo che le squadre abbiano abbastanza slot giocatori disponibili per effettuare gli scambi
         slot_squadra_proponente = get_slot_occupati(conn, squadra_proponente)
         num_giocatori_in_entrata = len(giocatori_richiesti)
         if slot_squadra_proponente + num_giocatori_in_entrata > 30:
-            raise ValueError(f"La squadra {squadra_proponente} non ha abbastanza slot giocatori liberi.")
+            valido = False
         
 
         slot_squadra_destinataria = get_slot_occupati(conn, squadra_destinataria)
         num_giocatori_in_uscita = len(giocatori_offerti)
         if slot_squadra_destinataria + num_giocatori_in_uscita > 30:
-            raise ValueError(f"La squadra {squadra_destinataria} non ha abbastanza slot giocatori liberi.")
-        
+            valido = False
 
+        return valido
+
+    except Exception as e:
+        print(f"Errore nella valutazione dello scambio: {e}")
+
+    finally:
+        release_connection(None, cur)
+
+
+
+
+
+def effettua_scambio(id, conn):
+
+    # Se lo scambio non è valido non fare niente
+    if controlla_scambio(id, conn) == False:
+        return
+    
+    # Se lo scambio è valido, esegui tutti i passaggi.
+    try:
+        conn.autocommit = False
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Recupero dati dello scambio
+        cur.execute('''
+                    SELECT *
+                    FROM scambio
+                    WHERE id = %s
+                        AND stato = 'in_attesa'
+                    FOR UPDATE;''', (id,))
+        
+        scambio = cur.fetchone()
+
+        if not scambio:
+            raise ValueError(f"Nessuno scambio valido trovato con id:", id)
+        
+        squadra_proponente = scambio["squadra_proponente"]
+        squadra_destinataria = scambio["squadra_destinataria"]
+        crediti_offerti = scambio["crediti_offerti"] or 0
+        crediti_richiesti = scambio["crediti_richiesti"] or 0
+        giocatori_offerti = scambio["giocatori_offerti"] or []
+        giocatori_richiesti = scambio["giocatori_richiesti"] or []
+        
         # Eseguo il trasferimento dei giocatori
         for giocatore_id in giocatori_offerti:
             cur.execute('''
@@ -631,7 +691,8 @@ def effettua_scambio(id):
         return False
     
     finally:
-        release_connection(conn, cur)
+        # La connessione è None perchè viene rilasciata dalla pagina del mercato
+        release_connection(None, cur)
 
 
 
@@ -924,9 +985,11 @@ def user_primavera(nome_squadra):
 @user_bp.route("/user_tagli/<nome_squadra>", methods=["GET", "POST"])
 def user_tagli(nome_squadra):
 
+    conn = None
+    cur = None
+
     try:
         conn = get_connection()
-        conn.autocommit = False
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         crediti = get_crediti_squadra(conn, nome_squadra)
@@ -985,7 +1048,7 @@ def user_tagli(nome_squadra):
                 "id": r['id'],
                 "nome": r['nome'],
                 "ruolo": ruolo,
-                "quot_att_mantra": r["quot_att_mantra"]
+                "quot_att_mantra": r['quot_att_mantra']
             })
 
     except Exception as e:

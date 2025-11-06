@@ -3,7 +3,6 @@
 {% block content %}
 <div class="container mt-5">
 
-    <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
         <div>
             <h1 class="mb-0">Nuova proposta di scambio</h1>
@@ -15,30 +14,30 @@
         </a>
     </div>
 
-    <!-- FORM SCAMBIO -->
     <div class="card shadow-sm">
         <div class="card-body">
-            <form method="POST" action="{{ url_for('user.nuovo_scambio', nome_squadra=nome_squadra) }}">
-                
-                <!-- Squadra destinataria -->
-                <div class="mb-3">
+            <form method="POST" action="{{ url_for('user.nuovo_scambio', nome_squadra=nome_squadra) }}" 
+                  data-slot-liberi-miei="{{ slot_liberi_miei }}"> <div class="mb-3">
                     <label for="squadra_destinataria" class="form-label fw-semibold">Squadra destinataria</label>
                     <select id="squadra_destinataria" name="squadra_destinataria" class="form-select" required>
                         <option value="" selected disabled>Seleziona squadra</option>
                         {% for s in squadre %}
                             {% if s.nome != nome_squadra %}
-                                <option value="{{ s.nome }}" data-max-crediti="{{ s.offerta_massima_possibile }}">{{ s.nome }}</option>
+                                <option value="{{ s.nome }}" 
+                                        data-max-crediti="{{ s.offerta_massima_possibile }}"
+                                        data-slot-liberi="{{ s.slot_liberi }}">
+                                    {{ s.nome }}
+                                </option>
                             {% endif %}
                         {% endfor %}
                     </select>
                 </div>
 
-                <!-- Crediti -->
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label for="crediti_offerti" class="form-label">Crediti offerti</label>
                         <input type="number" min="0" name="crediti_offerti" id="crediti_offerti" class="form-control"
-                               max="{{ crediti_effettivi }}" placeholder="Max: {{ crediti_effettivi }}">
+                                 max="{{ crediti_effettivi }}" placeholder="Max: {{ crediti_effettivi }}">
                     </div>
                     <div class="col-md-6 mb-3">
                         <label for="crediti_richiesti" class="form-label">Crediti richiesti</label>
@@ -46,11 +45,9 @@
                     </div>
                 </div>
 
-                <!-- Giocatori -->
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label for="giocatori_offerti" class="form-label">Giocatori offerti</label>
-                        <select multiple name="giocatori_offerti" id="giocatori_offerti" class="form-select">
+                        <label for="giocatori_offerti" class="form-label">Giocatori offerti (Max: <span id="max_offerti">{{ miei_giocatori|length }}</span>)</label> <select multiple name="giocatori_offerti" id="giocatori_offerti" class="form-select">
                             {% for g in miei_giocatori %}
                                 <option value="{{ g.id }}">{{ g.nome }}</option>
                             {% endfor %}
@@ -58,12 +55,10 @@
                     </div>
 
                     <div class="col-md-6 mb-3">
-                        <label for="giocatori_richiesti" class="form-label">Giocatori richiesti</label>
-                        <select multiple name="giocatori_richiesti" id="giocatori_richiesti" class="form-select" disabled></select>
+                        <label for="giocatori_richiesti" class="form-label">Giocatori richiesti (Max: <span id="max_richiesti">0</span>)</label> <select multiple name="giocatori_richiesti" id="giocatori_richiesti" class="form-select" disabled></select>
                     </div>
                 </div>
 
-                <!-- Messaggio -->
                 <div class="mb-3">
                     <label for="messaggio" class="form-label">Messaggio (opzionale)</label>
                     <textarea name="messaggio" id="messaggio" class="form-control" rows="3"></textarea>
@@ -73,27 +68,40 @@
             </form>
         </div>
     </div>
-
 </div>
 
-<!-- Tom Select CSS -->
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
-
-<!-- Tom Select JS -->
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector('form');
+    const myFreeSlots = parseInt(form.dataset.slotLibriMiei) || 0;
+    
+    // Elementi per aggiornare la UI
+    const maxOffertiSpan = document.getElementById('max_offerti');
+    const maxRichiestiSpan = document.getElementById('max_richiesti');
+    
+    // Aggiorna l'etichetta per i giocatori offerti (la squadra otterrà N giocatori e cederà M. La differenza M-N deve essere <= myFreeSlots)
+    // Per semplicità, inizialmente limitiamo le offerte al numero di giocatori che POTREI ricevere, ovvero myFreeSlots
+    // Un controllo più preciso avverrà alla selezione. Il max iniziale è il numero massimo di giocatori che la mia squadra è disposta ad accettare.
+    maxOffertiSpan.textContent = myFreeSlots;
+
     const selectOfferti = new TomSelect("#giocatori_offerti", {
         plugins: ['remove_button'],
         placeholder: "Seleziona giocatori da offrire...",
         create: false,
+        // Limita il numero di selezioni che POTREBBERO essere offerte.
+        // La validazione vera è sulla combinazione offerti/richiesti. Qui è un limite di usabilità.
+        maxItems: 30, // Impostiamo un limite alto di default, la validazione avviene al change/submit
     });
 
     const selectRichiesti = new TomSelect("#giocatori_richiesti", {
         plugins: ['remove_button'],
         placeholder: "Seleziona giocatori da richiedere...",
         create: false,
+        maxItems: 0, // Inizialmente 0, verrà aggiornato
     });
 
     selectRichiesti.disable();
@@ -104,13 +112,68 @@ document.addEventListener("DOMContentLoaded", () => {
     // Usa JSON per generare l'array JS in modo sicuro
     const allOptions = JSON.parse('{{ giocatori|tojson|safe }}');
 
+    // Funzione di validazione per i maxItems
+    function updateMaxItems() {
+        const selectedOfferti = selectOfferti.items.length;
+        const selectedRichiesti = selectRichiesti.items.length;
+        
+        // 1. Validazione Squadra Proponente (io):
+        // Numero di giocatori dopo lo scambio: (Miei Attuali - Offerti) + Richiesti
+        // Il limite è 30.
+        // Numero di slot occupati attuali: 30 - myFreeSlots
+        // Numero di slot occupati dopo: (30 - myFreeSlots) - selectedOfferti + selectedRichiesti
+        // Requisito: (30 - myFreeSlots) - selectedOfferti + selectedRichiesti <= 30
+        // Semplificando: selectedRichiesti - selectedOfferti <= myFreeSlots
+
+        // Max Giocatori Richiesti consentiti: selectedOfferti + myFreeSlots
+        const maxRichiestiAllowed = selectedOfferti + myFreeSlots;
+        
+        // Aggiorna TomSelect e l'etichetta per i Giocatori Richiesti
+        const destFreeSlots = parseInt(selectSquadra.options[selectSquadra.selectedIndex].dataset.slotLiberi) || 0;
+        const finalMaxRichiesti = Math.min(maxRichiestiAllowed, destFreeSlots + selectedRichiesti); // Non posso superare gli slot liberi della squadra destinataria + i giocatori che ricevo
+        
+        // Aggiorna i maxItems per i giocatori richiesti
+        selectRichiesti.settings.maxItems = finalMaxRichiesti;
+
+        // 2. Validazione Squadra Destinataria:
+        // Numero di slot occupati dopo: (Dest. Attuali - Richiesti) + Offerti
+        // Requisito: Offerti - Richiesti <= DestFreeSlots
+        // Max Giocatori Offerti consentiti: selectedRichiesti + destFreeSlots
+        const maxOffertiAllowed = selectedRichiesti + destFreeSlots;
+
+        // Aggiorna TomSelect e l'etichetta per i Giocatori Offerti
+        selectOfferti.settings.maxItems = maxOffertiAllowed;
+
+        // Aggiorna le etichette con il limite attuale (utile solo se cambio l'ordine di selezione)
+        maxOffertiSpan.textContent = maxOffertiAllowed;
+        maxRichiestiSpan.textContent = finalMaxRichiesti;
+    }
+    
+    // Ascoltatori per il cambiamento delle selezioni
+    selectOfferti.on('change', updateMaxItems);
+    selectRichiesti.on('change', updateMaxItems);
+    
+    // Inizializza con i miei slot liberi come limite iniziale massimo
+    // Il limite è sul *saldo* dei giocatori. L'utente non può richiedere più di (giocatori offerti + miei slot liberi)
+    selectOfferti.settings.maxItems = 30; // Max tutti i miei giocatori
+    selectRichiesti.settings.maxItems = myFreeSlots;
+    maxOffertiSpan.textContent = selectOfferti.options.length; // Max tutti i miei giocatori
+    maxRichiestiSpan.textContent = myFreeSlots; // Max iniziali (se offro 0)
+
+
     selectSquadra.addEventListener("change", () => {
         const squadraSelezionata = selectSquadra.value;
+        const selectedOption = selectSquadra.options[selectSquadra.selectedIndex];
+        const destFreeSlots = parseInt(selectedOption.dataset.slotLibri) || 0;
 
         selectRichiesti.clearOptions();
+        selectRichiesti.clear(); // Pulisce i valori selezionati
+        
         if (!squadraSelezionata) {
             selectRichiesti.disable();
             creditiRichiesti.disabled = true;
+            maxRichiestiSpan.textContent = 0;
+            updateMaxItems();
             return;
         }
 
@@ -122,13 +185,22 @@ document.addEventListener("DOMContentLoaded", () => {
         selectRichiesti.refreshOptions(false);
 
         // Imposta max crediti richiesti
-        const maxCrediti = selectSquadra.options[selectSquadra.selectedIndex].dataset.maxCrediti || 0;
+        const maxCrediti = selectedOption.dataset.maxCrediti || 0;
         creditiRichiesti.disabled = false;
         creditiRichiesti.max = maxCrediti;
         creditiRichiesti.value = "";
         creditiRichiesti.placeholder = `Max: ${maxCrediti}`;
+
+        // Aggiorna il limite per i giocatori richiesti basato sui nuovi slot liberi della squadra destinataria
+        // e ricalcola il limite anche per i giocatori offerti.
+        updateMaxItems();
     });
+    
+    // Chiamata iniziale per impostare i limiti e le etichette
+    updateMaxItems(); 
 });
 </script>
+
+<script src="{{ url_for('static', filename='js/refresh.js') }}"></script>
 
 {% endblock %}

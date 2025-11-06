@@ -42,8 +42,10 @@
 
         <div class="d-flex justify-content-between align-items-center">
             <!-- Bottone RILANCIA -->
-            <form method="POST" action="{{ url_for('user.singola_asta_attiva', asta_id=asta.id, nome_squadra=nome_squadra) }}" 
-                onsubmit="return confirm('Sei sicuro di voler rilanciare?');" class="d-flex align-items-center gap-2">
+            <form method="POST" 
+                    action="{{ url_for('user.singola_asta_attiva', asta_id=asta.id, nome_squadra=nome_squadra) }}" 
+                    onsubmit="return confirm('Sei sicuro di voler rilanciare?');" 
+                    class="d-flex align-items-center gap-2">
                 <input type="number" name="bottone_rilancia"
                     min="{{ asta.ultima_offerta|default(1)+1 }}"
                     max ="{{ asta.offerta_massima_possibile }}"
@@ -51,7 +53,8 @@
                     required
                     class="form-control form-control-sm"
                     style="width:100px;">
-                <button type="submit" class="btn btn-sm btn-primary px-3 py-1 fw-semibold">Rilancia</button>
+                <button type="submit" class="btn btn-sm btn-primary px-3 py-1 fw-semibold" 
+                    {% if asta.ultima_offerta|float > asta.offerta_massima_possibile|float %}disabled{% endif %}>Rilancia</button>
             </form>
 
             <!-- Bottone RINUNCIA -->
@@ -82,4 +85,7 @@
         </div>
     {% endif %}
 </div>
+
+<script src="{{ url_for('static', filename='js/refresh.js') }}"></script>
+
 {% endblock %}
