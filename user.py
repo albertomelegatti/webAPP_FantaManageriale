@@ -601,7 +601,7 @@ def controlla_scambio(id, conn):
         return valido
 
     except Exception as e:
-        print(f"Errore nella valutazione dello scambio: {e}")
+        print(f"Errore: {e}")
 
     finally:
         release_connection(None, cur)

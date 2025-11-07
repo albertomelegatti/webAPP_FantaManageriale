@@ -186,8 +186,7 @@ def dashboardSquadra(nome_squadra):
                     SELECT nome, tipo_contratto, ruolo, quot_att_mantra, costo 
                     FROM giocatore 
                     WHERE squadra_att = %s 
-                        AND tipo_contratto <> 'Primavera'
-                    ORDER BY nome;
+                        AND tipo_contratto <> 'Primavera';
         ''' , (nome_squadra,))
         rosa_raw = cur.fetchall()
 
