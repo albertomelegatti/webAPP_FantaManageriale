@@ -383,6 +383,11 @@ def user_mercato(nome_squadra):
         scambi_raw = cur.fetchall()
 
         for s in scambi_raw:
+
+            valido = None
+            if s['squadra_destinataria'] == nome_squadra and s['stato'] == 'in_attesa':
+                valido = controlla_scambio(s['id'], conn)
+
             scambi.append({
                 "scambio_id": s['id'],
                 "squadra_proponente": s['squadra_proponente'],
@@ -395,7 +400,7 @@ def user_mercato(nome_squadra):
                 "stato": s['stato'],
                 "data_proposta": formatta_data(s['data_proposta']),
                 "data_risposta": formatta_data(s['data_risposta']),
-                "valido": controlla_scambio(s['id'], conn)
+                "valido": valido
             })
         
     except Exception as e:
@@ -534,6 +539,8 @@ def nuovo_scambio(nome_squadra):
 
 def controlla_scambio(id, conn):
 
+    print(f"Controllo scambio: {id}")
+
     valido = True
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -542,13 +549,9 @@ def controlla_scambio(id, conn):
                     SELECT *
                     FROM scambio
                     WHERE id = %s
-                        AND stato = 'in_attesa'
                     FOR UPDATE;''', (id,))
-        
         scambio = cur.fetchone()
-
-        if not scambio:
-            raise ValueError(f"Nessuno scambio valido trovato con id:", id)
+ 
         
         squadra_proponente = scambio["squadra_proponente"]
         squadra_destinataria = scambio["squadra_destinataria"]
@@ -616,9 +619,9 @@ def effettua_scambio(id, conn):
     if controlla_scambio(id, conn) == False:
         return
     
+
     # Se lo scambio è valido, esegui tutti i passaggi.
     try:
-        conn.autocommit = False
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Recupero dati dello scambio
@@ -640,23 +643,26 @@ def effettua_scambio(id, conn):
         crediti_richiesti = scambio["crediti_richiesti"] or 0
         giocatori_offerti = scambio["giocatori_offerti"] or []
         giocatori_richiesti = scambio["giocatori_richiesti"] or []
+
         
         # Eseguo il trasferimento dei giocatori
+        # Posso modificare sia squadra_att che detentore cartellino perchè non possono essere proposti scambi per giocatori in prestito o in hold.
         for giocatore_id in giocatori_offerti:
             cur.execute('''
                         UPDATE giocatore
-                        SET detentore_cartellino = %s
+                        SET detentore_cartellino = %s,
+                            squadra_att = %s
                         WHERE id = %s;
-            ''', (squadra_destinataria, giocatore_id))
+            ''', (squadra_destinataria, squadra_destinataria, giocatore_id))
             
         for giocatore_id in giocatori_richiesti:
             cur.execute('''
                         UPDATE giocatore
-                        SET detentore_cartellino = %s
+                        SET detentore_cartellino = %s,
+                            squadra_att = %s
                         WHERE id = %s;
-            ''', (squadra_proponente, giocatore_id))
+            ''', (squadra_proponente, squadra_proponente, giocatore_id))
             
-        
         # Aggiorno i crediti delle due squadre
         cur.execute('''
                     UPDATE squadra
