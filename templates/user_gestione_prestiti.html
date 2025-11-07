@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+
+    <!-- HEADER CON TITOLO -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+        <h1 class="mb-0">Gestione Prestiti - {{ nome_squadra }}</h1>
+    </div>
+
+    <!-- RIEPILOGO PRESTITI -->
+    <div class="mb-4 text-center">
+        <h5>
+            Prestiti in entrata: <strong>{{ prestiti_in|length }}</strong> |
+            Prestiti in uscita: <strong>{{ prestiti_out|length }}</strong>
+        </h5>
+    </div>
+
+    <!-- PRESTITI IN ENTRATA -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header text-white" style="background-color: #17a2b8;">
+            Prestiti in entrata
+        </div>
+        <div class="card-body table-responsive bg-light">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Giocatore</th>
+                        <th>Squadra prestante</th>
+                        <th>Data inizio</th>
+                        <th>Data fine</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in prestiti_in %}
+                    <tr>
+                        <td>{{ p.giocatori }}</td>
+                        <td>{{ p.squadra_prestante }}</td>
+                        <td>{{ p.data_inizio }}</td>
+                        <td>{{ p.data_fine }}</td>
+                        <td class="text-center">
+                            {% if p.stato == 'in_corso' %}
+                                <form method="POST" 
+                                      action="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" 
+                                      onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
+                                    <input type="hidden" name="richiedi_terminazione" value="{{ p.id }}">
+                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-warning w-100" disabled>
+                                        Chiedi terminazione anticipata
+                                    </button>
+                                </form>
+                            {% elif p.stato == 'richiesta_di_terminazione' and p.richiedente_terminazione != nome_squadra %}
+                                <form method="POST" 
+                                      action="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" 
+                                      onsubmit="return confirm('Vuoi accettare la terminazione anticipata del prestito per {{ p.giocatori }}?');">
+                                    <input type="hidden" name="accetta_terminazione" value="{{ p.id }}">
+                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-success w-100" disabled>
+                                        Accetta terminazione anticipata
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span class="text-muted small">In attesa</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Nessun prestito in entrata</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PRESTITI IN USCITA -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            Prestiti in uscita
+        </div>
+        <div class="card-body table-responsive bg-light">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Giocatore</th>
+                        <th>Squadra ricevente</th>
+                        <th>Data inizio</th>
+                        <th>Data fine</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in prestiti_out %}
+                    <tr>
+                        <td>{{ p.giocatori }}</td>
+                        <td>{{ p.squadra_ricevente }}</td>
+                        <td>{{ p.data_inizio }}</td>
+                        <td>{{ p.data_fine }}</td>
+                        <td class="text-center">
+                            {% if p.stato == 'in_corso' %}
+                                <form method="POST" 
+                                      action="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" 
+                                      onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
+                                    <input type="hidden" name="richiedi_terminazione" value="{{ p.id }}">
+                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-warning w-100">
+                                        Chiedi terminazione anticipata
+                                    </button>
+                                </form>
+                            {% elif p.stato == 'richiesta_di_terminazione' and p.richiedente_terminazione != nome_squadra %}
+                                <form method="POST" 
+                                      action="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" 
+                                      onsubmit="return confirm('Vuoi accettare la terminazione anticipata del prestito per {{ p.giocatori }}?');">
+                                    <input type="hidden" name="accetta_terminazione" value="{{ p.id }}">
+                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-success w-100">
+                                        Accetta terminazione anticipata
+                                    </button>
+                                </form>
+                            {% else %}
+                                <span class="text-muted small">In attesa</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Nessun prestito in uscita</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/refresh.js') }}"></script>
+{% endblock %}

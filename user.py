@@ -880,7 +880,6 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
     
     try:
         conn = get_connection()
-        conn.autocommit = False
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Recupero info prestito
@@ -1077,6 +1076,104 @@ def user_tagli(nome_squadra):
 
 
 
+@user_bp.route("/user_gestione_prestiti/<nome_squadra>", methods=["GET", "POST"])
+def user_gestione_prestiti(nome_squadra):
+
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        if request.method == "POST":
+            print("")
+
+
+
+
+
+
+
+        
+
+
+        # Ottengo i dati sui giocatori in prestito IN
+        cur.execute('''
+                    SELECT *
+                    FROM prestito
+                    WHERE squadra_ricevente = %s
+                        AND stato IN ('in_corso', 'richiesta_di_terminazione');
+        ''', (nome_squadra,))
+        prestiti_in_raw = cur.fetchall()
+
+        prestiti_in = []
+
+        for p in prestiti_in_raw:
+            prestiti_in.append({
+                "id": p['id'],
+                "giocatori": format_giocatori(p['giocatore']),
+                "squadra_prestante": p['squadra_prestante'],
+                "squadra_ricevente": p['squadra_ricevente'],
+                "stato": p['stato'],
+                "data_inizio": formatta_data(p['data_inizio']),
+                "data_fine": formatta_data(p['data_fine']),
+                "richiedente_terminazione": p['richiedente_terminazione']
+            })
+        
+
+
+        # Ottengo i dati sui giocatori in prestito OUT
+        cur.execute('''
+                    SELECT *
+                    FROM prestito
+                    WHERE squadra_prestante = %s
+                        AND stato IN ('in_corso', 'richiesta_di_terminazione');
+        ''', (nome_squadra,))
+        prestiti_out_raw = cur.fetchall()
+
+        prestiti_out = []
+
+        for p in prestiti_out_raw:
+            prestiti_in.append({
+                "id": p['id'],
+                "giocatori": format_giocatori(p['giocatore']),
+                "squadra_prestante": p['squadra_prestante'],
+                "squadra_ricevente": p['squadra_ricevente'],
+                "stato": p['stato'],
+                "data_inizio": formatta_data(p['data_inizio']),
+                "data_fine": formatta_data(p['data_fine']),
+                "richiedente_terminazione": p['richiedente_terminazione']
+            })
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    except Exception as e:
+        print(f"Errore: {e}")
+        flash("Si è verificato un errore. Ricaricare la pagina.", "danger")
+
+    finally:
+        release_connection(conn, cur)
+
+    return render_template("user_gestione_prestiti.html", nome_squadra=nome_squadra, prestiti_in=prestiti_in, prestiti_out=prestiti_out)
+
+
+
+
+
+
 
 
 
@@ -1110,11 +1207,11 @@ def format_giocatori(giocatori):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         for giocatore_id in giocatori:
-            cur.execute("""
+            cur.execute('''
                 SELECT nome
                 FROM giocatore
                 WHERE id = %s;
-            """, (giocatore_id,))
+            ''', (giocatore_id,))
             
             risultato = cur.fetchone()
             if risultato and "nome" in risultato:
