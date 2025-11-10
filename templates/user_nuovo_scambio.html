@@ -8,7 +8,7 @@
             <h1 class="mb-0">Nuova proposta di scambio</h1>
             <small class="text-muted">Squadra: <strong>{{ nome_squadra }}</strong></small>
         </div>
-        <a href="{{ url_for('user.user_mercato', nome_squadra=nome_squadra) }}" 
+        <a href="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}" 
            class="btn btn-outline-secondary btn-lg mt-2 mt-sm-0">
             ← Torna al mercato
         </a>
@@ -16,7 +16,7 @@
 
     <div class="card shadow-sm">
         <div class="card-body">
-            <form method="POST" action="{{ url_for('user.nuovo_scambio', nome_squadra=nome_squadra) }}" 
+            <form method="POST" action="{{ url_for('mercato.nuovo_scambio', nome_squadra=nome_squadra) }}" 
                   data-slot-liberi-miei="{{ slot_liberi_miei }}"> <div class="mb-3">
                     <label for="squadra_destinataria" class="form-label fw-semibold">Squadra destinataria</label>
                     <select id="squadra_destinataria" name="squadra_destinataria" class="form-select" required>

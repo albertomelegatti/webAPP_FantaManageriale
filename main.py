@@ -8,6 +8,10 @@ from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 from admin import admin_bp
 from user import user_bp, format_partecipanti, formatta_data
+from user_aste import aste_bp
+from user_mercato import mercato_bp
+from user_prestiti import prestiti_bp
+from user_rosa import rosa_bp
 from db import get_connection, release_connection, init_pool
 from datetime import datetime
 from chatbot import get_answer
@@ -25,6 +29,10 @@ Session(app)
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
+app.register_blueprint(aste_bp)
+app.register_blueprint(mercato_bp)
+app.register_blueprint(prestiti_bp)
+app.register_blueprint(rosa_bp)
 
 init_pool()
 

@@ -24,7 +24,7 @@
             </small>
         </div>
 
-        <a href="{{ url_for('user.nuovo_scambio', nome_squadra=nome_squadra) }}"
+        <a href="{{ url_for('mercato.nuovo_scambio', nome_squadra=nome_squadra) }}"
            class="btn btn-primary btn-lg mt-2 mt-sm-0">
             Nuova proposta di scambio
         </a>
@@ -68,7 +68,7 @@
                         <td>{{ scambio.squadra_destinataria }}</td>
                         <td>{{ scambio.data_proposta }}</td>
                         <td class="text-end">
-                            <form method="POST" action="{{ url_for('user.user_mercato', nome_squadra=nome_squadra) }}" 
+                            <form method="POST" action="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}" 
                                 onsubmit="return confirm('Sei sicuro di voler annullare questo scambio?');">
                                 <input type="hidden" name="annulla_scambio" value="{{ scambio.scambio_id }}">
                                 <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-danger w-100" style="background-color: #dc3545; border-color: #dc3545; color: #fff;">
@@ -126,7 +126,7 @@
                         <td>{{ scambio.data_proposta }}</td>
                         <td class="text-center">
                             <div class="d-flex flex-column flex-md-row gap-2 justify-content-center">
-                                <form method="POST" action="{{ url_for('user.user_mercato', nome_squadra=nome_squadra) }}" 
+                                <form method="POST" action="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}" 
                                     onsubmit="return confirm('Sei sicuro di voler accettare questo scambio?');">
                                     <input type="hidden" name="accetta_scambio" value="{{ scambio.scambio_id }}">
                                     <button type="submit" class="btn btn-sm btn-success py-1 px-2" 
@@ -136,7 +136,7 @@
                                     </button>
                                 </form>
 
-                                <form method="POST" action="{{ url_for('user.user_mercato', nome_squadra=nome_squadra) }}"
+                                <form method="POST" action="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}"
                                     onsubmit="return confirm('Sei sicuro di voler rifiutare questo scambio?');">
                                     <input type="hidden" name="rifiuta_scambio" value="{{ scambio.scambio_id }}">
                                     <button type="submit" class="btn btn-sm btn-danger py-1 px-2" 

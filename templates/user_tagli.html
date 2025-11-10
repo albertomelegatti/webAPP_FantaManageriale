@@ -49,7 +49,7 @@
                             <td>{{ giocatore.quot_att_mantra }}</td>
                             <td>
                                 <form method="POST" 
-                                      action="{{ url_for('user.user_tagli', nome_squadra=nome_squadra) }}"
+                                      action="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}"
                                       onsubmit="return confirm('Vuoi davvero tagliare {{ giocatore.nome }}? Dovrai pagare metà della sua quotazione attuale.');">
                                     <input type="hidden" name="id_giocatore_da_tagliare" value="{{ giocatore.id }}">
                                     {% set costo_taglio = ((giocatore.quot_att_mantra / 2) | round(0, 'ceil')) %}

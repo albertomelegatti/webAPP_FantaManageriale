@@ -6,13 +6,13 @@
     <p class="lead">Gestisci la rosa da qui.</p>
 
     <div class="d-flex justify-content-center gap-3">
-        <a href="{{ url_for('user.user_primavera', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg">
+        <a href="{{ url_for('rosa.user_primavera', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg">
             Primavera
         </a>
-        <a href="{{ url_for('user.user_tagli', nome_squadra=nome_squadra) }}" class="btn btn-secondary btn-lg">
+        <a href="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}" class="btn btn-secondary btn-lg">
             Tagli
         </a>
-        <a href="{{ url_for('user.user_gestione_prestiti', nome_squadra=nome_squadra) }}" class="btn btn-secondary btn-lg">
+        <a href="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" class="btn btn-secondary btn-lg">
             Prestiti
         </a>
     </div>

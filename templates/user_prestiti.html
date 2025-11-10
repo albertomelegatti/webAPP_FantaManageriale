@@ -24,7 +24,7 @@
             </small>
         </div>
 
-        <a href="{{ url_for('user.nuovo_prestito', nome_squadra=nome_squadra) }}"
+        <a href="{{ url_for('prestiti.nuovo_prestito', nome_squadra=nome_squadra) }}"
            class="btn btn-primary btn-lg mt-2 mt-sm-0 shadow-sm"
            {% if block_button %}
                disabled
@@ -57,7 +57,7 @@
                         <td>{{ prestito.data_fine }}</td>
                         <td class="text-center">
                             <form method="POST" 
-                                  action="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" 
+                                  action="{{ url_for('prestiti.user_prestiti', nome_squadra=nome_squadra) }}" 
                                   onsubmit="return confirm('Vuoi davvero annullare la richiesta per {{ prestito.giocatore }}?');">
                                 <input type="hidden" name="annulla_prestito" value="{{ prestito.prestito_id }}">
                                 <button name="azione" value="annulla" class="btn btn-sm danger btn-outline-danger fw-semibold py-1 px-3" style="background-color: #dc3545; border-color: #dc3545; color: #fff;">
@@ -99,7 +99,7 @@
                         <td>{{ prestito.data_fine }}</td>
                         <td class="text-center">
                             <form method="POST" 
-                                  action="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" 
+                                  action="{{ url_for('prestiti.user_prestiti', nome_squadra=nome_squadra) }}" 
                                   class="d-flex justify-content-center gap-2">
                                 <input type="hidden" name="prestito_id" value="{{ prestito.prestito_id }}">
                                 <button name="accetta_prestito" value="{{ prestito.prestito_id }}" class="btn btn-sm btn-success fw-semibold py-1 px-3" style="background-color: #28a745; border-color: #28a745;">

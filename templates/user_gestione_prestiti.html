@@ -42,19 +42,19 @@
                         <td class="text-center">
                             {% if p.stato == 'in_corso' %}
                                 <form method="POST" 
-                                      action="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" 
+                                      action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
                                       onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
                                     <input type="hidden" name="richiedi_terminazione" value="{{ p.id }}">
-                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-warning w-100" disabled>
+                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-outline-warning w-100">
                                         Chiedi terminazione anticipata
                                     </button>
                                 </form>
                             {% elif p.stato == 'richiesta_di_terminazione' and p.richiedente_terminazione != nome_squadra %}
                                 <form method="POST" 
-                                      action="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" 
+                                      action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
                                       onsubmit="return confirm('Vuoi accettare la terminazione anticipata del prestito per {{ p.giocatori }}?');">
                                     <input type="hidden" name="accetta_terminazione" value="{{ p.id }}">
-                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-success w-100" disabled>
+                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-success w-100">
                                         Accetta terminazione anticipata
                                     </button>
                                 </form>
@@ -99,7 +99,7 @@
                         <td class="text-center">
                             {% if p.stato == 'in_corso' %}
                                 <form method="POST" 
-                                      action="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" 
+                                      action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
                                       onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
                                     <input type="hidden" name="richiedi_terminazione" value="{{ p.id }}">
                                     <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-warning w-100">
@@ -108,7 +108,7 @@
                                 </form>
                             {% elif p.stato == 'richiesta_di_terminazione' and p.richiedente_terminazione != nome_squadra %}
                                 <form method="POST" 
-                                      action="{{ url_for('user.user_prestiti', nome_squadra=nome_squadra) }}" 
+                                      action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
                                       onsubmit="return confirm('Vuoi accettare la terminazione anticipata del prestito per {{ p.giocatori }}?');">
                                     <input type="hidden" name="accetta_terminazione" value="{{ p.id }}">
                                     <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-success w-100">

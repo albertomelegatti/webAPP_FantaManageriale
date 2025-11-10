@@ -1,5 +1,5 @@
 // Tempo di inattività prima dell'aggiornamento (in millisecondi).
-const tempoInattivitaNecessario = 30000; 
+const tempoInattivitaNecessario = 30000000; 
 
 // Variabile che conterrà l'ID del timer
 let aggiornaTimer;
