@@ -90,7 +90,8 @@ def user_mercato(nome_squadra):
         
     except Exception as e:
         print("Errore:", e)
-        flash("Errore durante il caricamento degli scambi.", "danger")
+        flash("❌ Errore durante il caricamento degli scambi.", "danger")
+        return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
 
     finally:
         release_connection(conn, cur)
@@ -102,8 +103,6 @@ def user_mercato(nome_squadra):
 
 @mercato_bp.route("/nuovo_scambio/<nome_squadra>", methods=["GET", "POST"])
 def nuovo_scambio(nome_squadra):
-    conn = None
-    cur = None
 
     try:
         conn = get_connection()
@@ -154,7 +153,7 @@ def nuovo_scambio(nome_squadra):
             flash("✅ Proposta di scambio inviata con successo!", "success")
             return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
 
-        # --- GET: caricamento pagina ---
+
 
         # Recupera tutte le squadre (tranne "Svincolato")
         cur.execute('''
@@ -213,8 +212,8 @@ def nuovo_scambio(nome_squadra):
         )
 
     except Exception as e:
-        print(f"❌ Errore durante il caricamento di 'nuovo_scambio': {e}")
-        flash("Si è verificato un errore nel caricamento della pagina.", "danger")
+        print(f"Errore durante il caricamento di 'nuovo_scambio': {e}")
+        flash("❌ Si è verificato un errore nel caricamento della pagina.", "danger")
         return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
 
     finally:
@@ -302,6 +301,7 @@ def effettua_scambio(id, conn):
 
     # Se lo scambio non è valido non fare niente
     if controlla_scambio(id, conn) == False:
+        flash("❌ Non è possibile avviare questo scambio.", "danger")
         return
     
 
@@ -377,8 +377,8 @@ def effettua_scambio(id, conn):
     except Exception as e:
         if conn:
             conn.rollback()
-        print(f"❌ Errore durante l'esecuzione dello scambio: {e}")
-        flash("Errore nell'esecuzione dello scambio. Rivedere i valori dello scambio.", "danger")
+        print(f"Errore durante l'esecuzione dello scambio: {e}")
+        flash("❌ Errore nell'esecuzione dello scambio. Rivedere i valori dello scambio.", "danger")
         return False
     
     finally:

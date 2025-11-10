@@ -1,4 +1,6 @@
 import math
+import pytz
+from datetime import datetime, timezone
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
@@ -53,8 +55,8 @@ def user_primavera(nome_squadra):
             })
 
     except Exception as e:
-        print(f"❌ Errore durante il caricamento della primavera.")
-        flash("Errore durante il caricamento della primavera.", "danger")
+        print(f"Errore durante il caricamento della primavera.")
+        flash("❌ Errore durante il caricamento della primavera.", "danger")
 
     finally:
         release_connection(conn, cur)
@@ -67,9 +69,6 @@ def user_primavera(nome_squadra):
 
 @rosa_bp.route("/user_tagli/<nome_squadra>", methods=["GET", "POST"])
 def user_tagli(nome_squadra):
-
-    conn = None
-    cur = None
 
     try:
         conn = get_connection()
@@ -135,8 +134,8 @@ def user_tagli(nome_squadra):
             })
 
     except Exception as e:
-        print(f"❌ Errore durante il caricamento o il taglio dei giocatori: {e}")
-        flash("Errore durante il caricamento o il taglio dei giocatori.", "danger")
+        print(f"Errore durante il caricamento o il taglio dei giocatori: {e}")
+        flash("❌ Errore durante il caricamento o il taglio dei giocatori.", "danger")
         if conn:
             conn.rollback()
 
@@ -163,14 +162,22 @@ def user_gestione_prestiti(nome_squadra):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         if request.method == "POST":
+
+            # Bottone RICHIESTA DI TERMINAZIONE ANTICIPATA
             id_prestito_per_cui_richiedere_terminazione = request.form.get("richiedi_terminazione")
             if id_prestito_per_cui_richiedere_terminazione:
-                cur.execute('''
-                            UPDATE prestito
-                            SET stato = 'richiesta_di_terminazione',
-                                richiedente_terminazione = %s
-                            WHERE id = %s;
-                ''', (nome_squadra, nome_squadra))
+                richiedi_terminazione_prestito(conn, id_prestito_per_cui_richiedere_terminazione, nome_squadra)
+
+            # Bottone ACCETTA TERMINAZIONE ANTICIPATA
+            id_prestito_da_terminare_ACCETTA = request.form.get("accetta_terminazione")
+            if id_prestito_da_terminare_ACCETTA:
+                accetta_terminazione(conn, id_prestito_da_terminare_ACCETTA)
+
+            # Bottone RIFIUTA TERMINAZIONE ANTICIPATA
+            id_prestito_da_terminare_RIFIUTA = request.form.get("rifiuta_terminazione")
+            if id_prestito_da_terminare_RIFIUTA:
+                rifiuta_terminazione(conn, id_prestito_da_terminare_RIFIUTA)
+
 
 
 
@@ -234,9 +241,164 @@ def user_gestione_prestiti(nome_squadra):
 
     except Exception as e:
         print(f"Errore: {e}")
-        flash("Si è verificato un errore. Ricaricare la pagina.", "danger")
+        flash("❌ Si è verificato un errore. Ricaricare la pagina.", "danger")
 
     finally:
         release_connection(conn, cur)
 
     return render_template("user_gestione_prestiti.html", nome_squadra=nome_squadra, prestiti_in=prestiti_in, prestiti_out=prestiti_out)
+
+
+
+
+
+
+def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
+
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Prima controllo che l'altra squadra non abbia già effettuato una richiesta di terminazione
+        cur.execute('''
+                    SELECT stato
+                    FROM prestito
+                    WHERE id = %s;
+        ''', (id_prestito,))
+        stato_prestito = cur.fetchone()
+
+        if stato_prestito == 'richiesta_di_terminazione':
+            flash("❌ L'altra squadra ha già richiesto una terminazione anticipata per questo giocatore. Aggiornare la pagina", "danger")
+            return              # Il finally viene eseguito comunque
+
+        # Se lo stato è 'in_corso' allora cambialo in 'richiesta_di_terminazione'
+        cur.execute('''
+                    UPDATE prestito
+                    SET stato = 'richiesta_di_terminazione',
+                        richiedente_terminazione = %s
+                    WHERE id = %s;
+        ''', (nome_squadra, id_prestito))
+        conn.commit()
+        flash("✅ Richiesta di terminazione anticipata inviata con successo.", "success")
+
+
+
+    except Exception as e:
+        print(f"Errore: {e}")
+        flash("❌ Errore nel controllo del prestito, riprovare.", "danger")
+
+    finally:
+        release_connection(None, cur)
+
+
+
+
+def accetta_terminazione(conn, id_prestito):
+
+    rome_tz = pytz.timezone("Europe/Rome")
+
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Controllo che il prestito non sia terminato mentre la pagina era aperta
+        cur.execute('''
+                    SELECT data_fine
+                    FROM prestito
+                    WHERE id = %s;
+        ''', (id_prestito,))
+        data_fine = cur.fetchone()
+
+        if not data_fine:
+            flash("❌ Prestito non trovato.", "danger")
+            return
+        
+        data_fine = data_fine['data_fine']
+
+        now = datetime.now(rome_tz)
+
+        if data_fine and data_fine < now:
+            flash("Il prestito è già terminato.", "warning")
+            return
+
+        # Modifico lo stato del prestito e imposto la data di fine prestito
+        cur.execute('''
+                    UPDATE prestito
+                    SET stato = 'terminato',
+                        richiedente_terminazione = NULL,
+                        data_fine = (NOW() AT TIME ZONE 'Europe/Rome')
+                    WHERE id = %s;
+        ''', (id_prestito,))
+
+        # Prima di modificare le imformazioni sul giocatore coinvolto, recupero le info sulle squadre coinvolte nel prestito
+        cur.execute('''
+                    SELECT giocatore, squadra_prestante
+                    FROM prestito
+                    WHERE id = %s; 
+        ''', (id_prestito,))
+        row = cur.fetchone()
+        
+        # Modifico le info sul giocatore
+        cur.execute('''
+                    UPDATE giocatore
+                    SET squadra_att = %s,
+                        tipo_contratto = 'Indeterminato'
+                    WHERE id = %s;
+        ''', (row['squadra_prestante'], row['giocatore']))
+
+        conn.commit()
+        flash("✅ Prestito terminato con successo.", "success")
+
+
+
+    except Exception as e:
+        print(f"Errore: {e}")
+        flash("❌ Si è verificato un errore. Ricaricare la pagina.", "danger")
+
+    finally:
+        release_connection(None, cur)
+
+
+
+
+
+
+def rifiuta_terminazione(conn, id_prestito):
+
+    rome_tz = pytz.timezone("Europe/Rome")
+
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Controllo che il prestito non sia terminato mentre la pagina era aperta
+        cur.execute('''
+                    SELECT data_fine
+                    FROM prestito
+                    WHERE id = %s;
+        ''', (id_prestito,))
+        data_fine = cur.fetchone()
+
+        if not data_fine:
+            flash("❌ Prestito non trovato.", "danger")
+            return
+        
+        data_fine = data_fine['data_fine']
+
+        now = datetime.now(rome_tz)
+
+        if data_fine and data_fine < now:
+            flash("Il prestito è già terminato.", "warning")
+            return
+
+
+
+
+
+
+
+
+
+    except Exception as e:
+        print(f"Errore: {e}")
+        flash("❌ Si è verificato un errore. Ricaricare la pagina.", "danger")
+
+    finally:
+        release_connection(None, cur)

@@ -28,7 +28,7 @@ def user_prestiti(nome_squadra):
                             WHERE id = %s;
                 ''', (id_prestito_da_annullare))
                 conn.commit()
-                flash("Annullata con successo la richiesta di prestito", "success")
+                flash("✅ Annullata con successo la richiesta di prestito", "success")
 
 
             # Bottone ACCETTA prestito
@@ -46,7 +46,7 @@ def user_prestiti(nome_squadra):
                             WHERE id = %s;
                 ''', (id_prestito_da_rifiutare,))
                 conn.commit()
-                flash("Prestito rifiutato con successo.", "success")
+                flash("✅ Prestito rifiutato con successo.", "success")
 
 
 
@@ -105,7 +105,7 @@ def nuovo_prestito(nome_squadra):
             messaggio = request.form.get("messaggio", "").strip()
 
             if not squadra_prestante or not giocatore_richiesto or not data_fine:
-                flash("Errore: seleziona una squadra, un giocatore e una data di fine prestito.", "danger")
+                flash("❌ Errore: seleziona una squadra, un giocatore e una data di fine prestito.", "danger")
                 return redirect(url_for("user.nuovo_prestito", nome_squadra=nome_squadra))
             
             data_fine = datetime.strptime(data_fine, "%Y-%m-%d")
@@ -118,7 +118,7 @@ def nuovo_prestito(nome_squadra):
                         RETURNING id;
             ''', (giocatore_richiesto, squadra_prestante, nome_squadra, 'in_attesa', data_fine))
             conn.commit()
-            flash("Richiesta inviata correttamente!", "success")
+            flash("✅ Richiesta inviata correttamente!", "success")
             redirect(url_for("prestiti.user_prestiti", nome_squadra=nome_squadra))
             
 

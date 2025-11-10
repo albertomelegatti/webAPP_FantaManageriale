@@ -26,6 +26,7 @@ def user_aste(nome_squadra):
             asta_id = request.form.get("asta_id_aste_a_cui_iscriversi")
             if asta_id:
 
+                # Controllo che l'asta non sia scaduta nel mentre che la pagina era aperta
                 tempo_scaduto = False
                 cur.execute('''
                             SELECT stato
@@ -36,7 +37,8 @@ def user_aste(nome_squadra):
 
                 if stato == 'in_corso':
                     tempo_scaduto = True
-                    flash("Iscrizione fallita, tempo scaduto.", "danger")
+                    flash("❌ Iscrizione fallita, tempo scaduto.", "danger")
+                    return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
 
                 
                 if tempo_scaduto == False:
@@ -73,7 +75,7 @@ def user_aste(nome_squadra):
                         ''', (id_giocatore,))
                         nome_giocatore = cur.fetchone()['nome']
 
-                        flash(f"Ti sei iscritto all'asta per { nome_giocatore }.", "success")
+                        flash(f"✅ Ti sei iscritto all'asta per { nome_giocatore }.", "success")
                         return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
             
 
@@ -126,7 +128,8 @@ def user_aste(nome_squadra):
 
     except Exception as e:
         print("Errore", e)
-        flash("Errore durante il caricamento delle aste.", "danger")
+        flash("❌ Errore durante il caricamento delle aste.", "danger")
+        return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
 
     finally:
         release_connection(conn, cur)
@@ -164,14 +167,15 @@ def nuova_asta(nome_squadra):
                     FROM asta a 
                     WHERE a.giocatore = g.id 
                         AND a.stato IN ('mostra_interesse', 'in_corso')
-              )
+              );
         ''')
         giocatori_disponibili_per_asta = [row["nome"] for row in cur.fetchall()]
+
 
         if request.method == "POST":
             giocatore_scelto = request.form.get("giocatore", "").strip()
             if giocatore_scelto not in giocatori_disponibili_per_asta:
-                flash("Giocatore non valido o già in un'asta.", "danger")
+                flash("❌ Giocatore non valido o già in un'asta.", "danger")
                 return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
 
             try:
@@ -184,7 +188,7 @@ def nuova_asta(nome_squadra):
                 giocatore_raw = cur.fetchone()
 
                 if not giocatore_raw:
-                    flash("Giocatore non trovato nel database.", "danger")
+                    flash("❌ Giocatore non trovato nel database.", "danger")
                     return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
 
                 giocatore_id = giocatore_raw["id"]
@@ -199,7 +203,7 @@ def nuova_asta(nome_squadra):
                 ''', (giocatore_id, nome_squadra, [nome_squadra]))
                 conn.commit()
 
-                flash(f"Asta per {giocatore_scelto} creata con successo!", "success")
+                flash(f"✅ Asta per {giocatore_scelto} creata con successo!", "success")
                 return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
 
             except psycopg2.errors.SerializationFailure:
@@ -209,7 +213,7 @@ def nuova_asta(nome_squadra):
 
     except Exception as e:
         print("Errore nuova_asta:", e)
-        flash(f"Errore nella creazione dell'asta: {e}", "danger")
+        flash(f"❌ Errore nella creazione dell'asta: {e}", "danger")
 
     finally:
         release_connection(conn, cur)
@@ -240,7 +244,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
                             WHERE id = %s;
                 ''', (nome_squadra, asta_id_rinuncia))
                 conn.commit()
-                flash("Hai rinunciato all'asta.", "success")
+                flash("✅ Hai rinunciato all'asta.", "success")
                 return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
 
             # Bottone RILANCIA OFFERTA
@@ -264,11 +268,12 @@ def singola_asta_attiva(asta_id, nome_squadra):
                         WHERE id = %s;
                     ''', (nuova_offerta, nome_squadra, asta_id))
                     conn.commit()
-                    flash(f"Hai rilanciato l'offerta a {nuova_offerta}.", "success")
+                    flash(f"✅ Hai rilanciato l'offerta a {nuova_offerta}.", "success")
                     return redirect(url_for("aste.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
                 
-                flash("Attenzione, valori non aggiornati, verrai reindirizzato alla pagina aggiornata.", "danger")
+                flash("❌ Attenzione, valori non aggiornati, verrai reindirizzato alla pagina aggiornata.", "danger")
                 return redirect(url_for("aste.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
+
 
         # Recupero dati asta
         cur.execute('''
@@ -313,10 +318,11 @@ def singola_asta_attiva(asta_id, nome_squadra):
             }
         else:
             flash("Asta non trovata.", "warning")
+            return redirect(url_for("aste.singola_asta_attiva", nome_squadra=nome_squadra))
 
     except Exception as e:
         print("Errore:", e)
-        flash("Errore durante il caricamento dell'asta.", "danger")
+        flash("❌ Errore durante il caricamento dell'asta.", "danger")
 
     finally:
         release_connection(conn, cur)

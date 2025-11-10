@@ -63,7 +63,7 @@ def login():
         password = request.form.get("password")
 
         if not username or not password:
-            flash("Compila tutti i campi.", "danger")
+            flash("❌ Compila tutti i campi.", "danger")
             return redirect(url_for('login'))
 
         conn = None
@@ -88,7 +88,7 @@ def login():
                     return redirect(url_for('admin.admin_home'))
                 
                 else:
-                    flash("Credenziali admin errate.", "danger")
+                    flash("❌ Credenziali admin errate.", "danger")
 
             # Login squadra
             else:
@@ -110,13 +110,13 @@ def login():
                         session.permanent = True
                         return redirect(url_for('user.squadraLogin', nome_squadra=nome_squadra))
                     else:
-                        flash("Password errata.", "danger")
+                        flash("❌ Password errata.", "danger")
                 else:
-                    flash("Username non trovato.", "danger")
+                    flash("❌ Username non trovato.", "danger")
 
         except Exception as e:
             print("Errore login:", e)
-            flash("Errore di connessione al database.", "danger")
+            flash("❌ Errore di connessione al database.", "danger")
 
         finally:
             release_connection(conn, cur)
@@ -130,7 +130,7 @@ def login():
 @app.route("/logout")
 def logout():
     session.clear()
-    flash("Hai effettuato il logout.", "success")
+    flash("✅ Hai effettuato il logout.", "success")
     return redirect(url_for("login"))
 
 
@@ -152,7 +152,7 @@ def squadre():
 
     except Exception as e:
         print("Errore squadre:", e)
-        flash("Errore nel recupero squadre.", "danger")
+        flash("❌ Errore nel recupero squadre.", "danger")
         return redirect(url_for('home'))
 
     finally:
@@ -290,7 +290,7 @@ def dashboardSquadra(nome_squadra):
 
     except Exception as e:
         print("Errore dashboardSquadra:", e)
-        flash("Errore nel caricamento della squadra.", "danger")
+        flash("❌ Errore nel caricamento della squadra.", "danger")
         return redirect(url_for('home'))
 
     finally:
@@ -348,7 +348,7 @@ def creditiStadiSlot():
 
     except Exception as e:
         print("Errore creditiStadi:", e)
-        flash("Errore nel caricamento dati stadi.", "danger")
+        flash("❌ Errore nel caricamento dati stadi.", "danger")
         return redirect(url_for('home'))
 
     finally:
@@ -401,7 +401,7 @@ def aste():
     
     except Exception as e:
         print("Errore lista aste generale:", e)
-        flash("Errore nella creazione lista aste.", "danger")
+        flash("❌ Errore nella creazione lista aste.", "danger")
         return redirect(url_for('home'))
     
     finally:
@@ -427,7 +427,7 @@ def cambia_password():
         confirm_password = request.form.get('confirm_password')
 
         if new_password != confirm_password:
-            flash("Le password non corrispondono.", "danger")
+            flash("❌ Le password non corrispondono.", "danger")
             return redirect(url_for('cambia_password'))
 
         conn = None
@@ -463,11 +463,11 @@ def cambia_password():
 
                 return redirect(url_for('user.squadraLogin', nome_squadra=nome_squadra))
 
-            flash("Errore nel cambio password.", "danger")
+            flash("❌ Errore nel cambio password.", "danger")
 
         except Exception as e:
             print("Errore cambio password:", e)
-            flash("Errore durante l'aggiornamento della password.", "danger")
+            flash("❌ Errore durante l'aggiornamento della password.", "danger")
 
         finally:
             release_connection(conn, cur)

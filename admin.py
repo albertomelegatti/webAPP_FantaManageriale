@@ -13,7 +13,7 @@ def admin_home():
 
 @admin_bp.route("/crediti", methods=["GET", "POST"])
 def admin_crediti():
-    conn = None
+    
     try:
         conn = get_connection()
         conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
@@ -32,7 +32,7 @@ def admin_crediti():
                     ''',(nuovo_credito, nome))
                 i += 1
             conn.commit()
-            flash("Tutti i crediti sono stati aggiornati con successo!", "success")
+            flash("✅ Tutti i crediti sono stati aggiornati con successo!", "success")
             return redirect(url_for("admin.admin_crediti"))
 
 
@@ -46,7 +46,7 @@ def admin_crediti():
 
     except Exception as e:
         print("Errore", e)
-        flash("Errore durante il caricamento o l'aggiornamento dei crediti.", "danger")
+        flash("❌ Errore durante il caricamento o l'aggiornamento dei crediti.", "danger")
 
     finally:
         release_connection(conn, cur)
