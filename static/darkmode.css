@@ -1,45 +1,289 @@
+:root {
+    /* Variabili del Tema LIGHT Mode (Default) */
+    --color-text-primary: #212529; /* Tipico testo scuro */
+    --color-background-body: #ffffff; /* Sfondo chiaro principale */
+    --color-background-card: #ffffff; /* Sfondo card chiaro */
+    --color-background-card-header: #f8f9fa; /* Sfondo header card chiaro */
+    
+    /* Colori di Bootstrap Light Mode (Mantenuti in Dark Mode per bottoni/header) */
+    --bs-info: #0dcaf0;
+    --bs-warning: #ffc107;
+    --bs-light: #f8f9fa;
+    --bs-secondary: #6c757d;
+    --bs-danger: #dc3545;
+    --bs-success: #198754;
+    --bs-primary: #0d6efd;
+
+    --color-background-table-head: #40b478; /* Intestazione tabella */
+    --color-text-table-head: #ffffff; 
+    --color-border-primary: #dee2e6;
+}
+
+/* 🌙 === Dark Mode: Sovrascrivi le variabili con tonalità più chiare === */
 body.dark-mode {
-    background-color: #121212;
-    color: #f1f1f1;
+    --color-text-primary: #f1f1f1;
+    --color-text-muted: #ccc; /* SCHIARITO */
+    
+    /* SFONDO GENERALE MANTENUTO SCURO */
+    --color-background-body: #121212; 
+    
+    /* SCHIARITI: Card, Navbar, Header */
+    --color-background-card: #282828; /* SCHIARITO */
+    --color-background-card-header: #333333; /* SCHIARITO */
+    --color-background-navbar: #333333; /* SCHIARITO */
+    
+    /* Sfondi Tabella (Striped) */
+    --color-background-table-base: #282828; /* SCHIARITO */
+    --color-background-table-odd: #333333; /* SCHIARITO */
+    --color-background-table-even: #282828; /* SCHIARITO */
+    
+    /* Intestazione Tabella (Mantenuta come da richiesta) */
+    --color-background-table-head: #40b478; 
+    --color-text-table-head: #ffffff;
+    
+    /* Bordi */
+    --color-border-primary: #555; /* SCHIARITO */
+    --color-border-table-dark: #444; /* Leggermente schiarito */
+    --color-border-table-head: #555; /* SCHIARITO */
 }
 
+/* === Stili Applicati (Usando le Variabili) === */
+
+body.dark-mode {
+    background-color: var(--color-background-body);
+    color: var(--color-text-primary);
+}
+
+/* CORREZIONE: Forza il colore del testo primario su etichette e testo generale */
+body.dark-mode label,
+body.dark-mode .form-label,
+body.dark-mode .lead,
+body.dark-mode strong {
+    color: var(--color-text-primary) !important;
+}
+
+/* Navbar */
 body.dark-mode .custom-navbar {
-    background-color: #222;
-    color: #f1f1f1;
+    background-color: var(--color-background-navbar);
 }
 
-body.dark-mode a {
-    color: #ffffff;
+/* Link e icone */
+body.dark-mode a,
+body.dark-mode i {
+    color: var(--color-text-primary); /* Usiamo il testo primario per i link/icone */
 }
 
-body.dark-mode .login-box {
-    background-color: #1e1e1e;
-    color: #f1f1f1;
-    border: 1px solid #333;
+/* Card */
+body.dark-mode .card {
+    background-color: var(--color-background-card);
+    border: 1px solid var(--color-border-primary);
 }
 
-body.dark-mode .login-box input[type="text"],
-body.dark-mode .login-box input[type="password"] {
-    background-color: #121212; /* stesso colore dello sfondo della pagina */
-    color: #f1f1f1;            /* testo chiaro */
-    border: 1px solid #444;
+/* Card header - STILE BASE */
+body.dark-mode .card-header {
+    background-color: var(--color-background-card-header);
+    color: var(--color-text-primary);
+    border-bottom: 1px solid var(--color-border-primary);
 }
 
-/* Gestione delle scritte piccole e dei crediti in dark mode */
+/* Override: Gestione dei Card Header con colori Bootstrap */
+body.dark-mode .card-header.bg-info {
+    background-color: var(--bs-info) !important;
+    color: #000000 !important; 
+}
+body.dark-mode .card-header.bg-warning {
+    background-color: var(--bs-warning) !important;
+    color: #000000 !important; 
+}
+
+/* CORREZIONE: Gestione bg-light in Dark Mode, usato nei riquadri informativi e altrove */
+body.dark-mode .bg-light,
+body.dark-mode .card-header.bg-light {
+    /* Usiamo il colore schiarito della card header per contrasto */
+    background-color: var(--color-background-card-header) !important;
+    color: var(--color-text-primary) !important;
+    border-color: var(--color-border-primary) !important;
+}
+
+body.dark-mode .card-header.bg-secondary {
+    background-color: var(--bs-secondary) !important;
+    color: #ffffff !important; 
+}
+body.dark-mode .card-header.bg-success {
+    background-color: var(--bs-success) !important;
+    color: #ffffff !important; 
+}
+
+
+/* Heading (H1, H2, H3, H4, H5, H6) */
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5,
+body.dark-mode h6 {
+    color: var(--color-text-primary); 
+}
+
+/* --- Tabelle --- */
+
+/* Sfondo base della tabella (corpo) */
+body.dark-mode table,
+body.dark-mode .table {
+    background-color: var(--color-background-table-base) !important;
+    color: var(--color-text-primary);
+    border-color: var(--color-border-primary);
+}
+
+/* Correggi lo sfondo dei card-body che usano bg-light */
+body.dark-mode .card-body.bg-light {
+    background-color: var(--color-background-card) !important;
+}
+
+
+/* ✅ REGOLA CHIAVE AGGIORNATA: Intestazioni tabella (Thead) */
+body.dark-mode .table thead, 
+body.dark-mode .table thead.table-light,
+body.dark-mode .table thead th { 
+    background-color: var(--color-background-table-head) !important; 
+    color: var(--color-text-table-head) !important; 
+    border-bottom: 1px solid var(--color-border-table-head);
+}
+
+/* Celle e bordi interni tabella (corpo) */
+body.dark-mode .table th,
+body.dark-mode .table td {
+    border-top: 1px solid var(--color-border-table-dark);
+    color: var(--color-text-primary); 
+    background-color: transparent !important; 
+}
+
+/* Righe alternate per table-striped */
+body.dark-mode .table-striped tbody tr:nth-of-type(odd) {
+    background-color: var(--color-background-table-odd) !important;
+}
+
+body.dark-mode .table-striped tbody tr:nth-of-type(even) {
+    background-color: var(--color-background-table-even) !important;
+}
+
+/* Hover sulle righe */
+body.dark-mode .table-hover tbody tr:hover {
+    background-color: #444444 !important; /* SCHIARITO */
+}
+
+/* Testo e Varianti */
 body.dark-mode small,
 body.dark-mode .text-muted {
-    color: #bbb !important; /* testo più chiaro */
+    color: var(--color-text-muted) !important;
 }
 
+/* Colori testo specifici */
 body.dark-mode .text-success {
-    color: #7CFC00 !important; /* verde chiaro visibile su sfondo scuro */
+    color: #7CFC00 !important;
 }
-
 body.dark-mode .text-warning {
-    color: #FFD700 !important; /* giallo acceso */
+    color: #FFD700 !important;
 }
-
 body.dark-mode .text-danger {
-    color: #FF6B6B !important; /* rosso chiaro */
+    color: #FF6B6B !important;
 }
 
+/* --- Gestione Formulari, Input e Tom Select --- */
+
+/* Input e Form generici (copre form-control, form-select, textarea) */
+body.dark-mode input[type="text"],
+body.dark-mode input[type="number"],
+body.dark-mode input[type="email"],
+body.dark-mode textarea,
+body.dark-mode select,
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+    background-color: var(--color-background-card); 
+    border: 1px solid var(--color-border-primary); 
+    color: var(--color-text-primary); 
+}
+
+/* Stile per i campi disabilitati */
+body.dark-mode input:disabled,
+body.dark-mode select:disabled {
+    background-color: #333333; 
+    opacity: 0.8;
+}
+
+/* Login box */
+body.dark-mode .login-box {
+    background-color: var(--color-background-card); 
+    border: 1px solid var(--color-border-primary);
+}
+body.dark-mode .login-box input[type="text"],
+body.dark-mode .login-box input[type="password"] {
+    background-color: var(--color-background-body); /* Mantiene lo sfondo più scuro per l'input */
+    border: 1px solid var(--color-border-primary); 
+    color: var(--color-text-primary);
+}
+
+
+/* --- Gestione del menu a tendina dei suggerimenti (.list-group) --- */
+body.dark-mode .list-group {
+    background-color: var(--color-background-card); 
+    border: 1px solid var(--color-border-primary); 
+}
+
+body.dark-mode .list-group-item {
+    background-color: var(--color-background-card);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-primary);
+}
+
+body.dark-mode .list-group-item-action:hover,
+body.dark-mode .list-group-item-action:focus {
+    background-color: #444444; /* SCHIARITO */
+    color: var(--color-text-primary);
+}
+
+
+/* --- Gestione specifica del plugin Tom Select --- */
+
+/* Il contenitore principale di Tom Select */
+body.dark-mode .ts-wrapper {
+    background-color: var(--color-background-card);
+    border-color: var(--color-border-primary) !important;
+}
+
+/* L'input fittizio all'interno di Tom Select */
+body.dark-mode .ts-control {
+    background-color: var(--color-background-card);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-primary);
+}
+
+/* Testo inserito (non tag) */
+body.dark-mode .ts-control input {
+    background-color: transparent !important;
+    color: var(--color-text-primary);
+}
+
+/* Menu a tendina delle opzioni */
+body.dark-mode .ts-dropdown {
+    background-color: var(--color-background-card);
+    border-color: var(--color-border-primary) !important;
+}
+
+/* Opzioni nel menu a tendina */
+body.dark-mode .ts-dropdown .option {
+    color: var(--color-text-primary);
+}
+
+/* Opzione evidenziata (hover) */
+body.dark-mode .ts-dropdown .active {
+    background-color: #444444 !important; /* SCHIARITO */
+    color: var(--color-text-primary) !important;
+}
+
+/* Tag (elementi già selezionati) */
+body.dark-mode .item {
+    background-color: var(--bs-primary) !important; 
+    color: #ffffff !important;
+    border-color: var(--bs-primary) !important;
+}

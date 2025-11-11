@@ -1,26 +1,29 @@
 /* =====================================================
-   style.css - versione completa con tabelle integrate
-   ===================================================== */
+    style.css - versione completa con tabelle integrate
+    ===================================================== */
 
 /* Reset di margini, padding e box-sizing per uniformità */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 /* Variabili CSS per colori e stili */
 :root {
-    --bg: #f8f9fa;             /* colore sfondo principale */
-    --text: #333;              /* colore testo base */
-    --primary: #40b478;        /* verde principale (ricco e bilanciato) */
-    --primary-dark: #208050;   /* per hover, leggermente più profondo */
+    --bg: #f8f9fa;               /* colore sfondo principale */
+    --text: #333;                /* colore testo base */
+    --primary: #40b478;          /* verde principale (ricco e bilanciato) */
+    --primary-dark: #208050;     /* per hover, leggermente più profondo */
 
-    --muted: #6c757d;          /* colore grigio neutro */
-    --white: #ffffff;          /* colore bianco */
+    --muted: #6c757d;            /* colore grigio neutro */
+    --white: #ffffff;            /* colore bianco */
 
-    --col-portiere: #e6f3ff;   /* sfondo riga portiere */
-    --col-difensore: #e9fef0;  /* sfondo riga difensore */
-    --col-centro: #fff9db;     /* sfondo riga centrocampista */
-    --col-attaccante: #ffe7e7; /* sfondo riga attaccante */
+    --col-portiere: #e6f3ff;     /* sfondo riga portiere */
+    --col-difensore: #e9fef0;    /* sfondo riga difensore */
+    --col-centro: #fff9db;       /* sfondo riga centrocampista */
+    --col-attaccante: #ffe7e7;   /* sfondo riga attaccante */
 
-    --table-head: #40b478;     /* sfondo intestazione tabella */
+    --table-head: #40b478;       /* sfondo intestazione tabella */
+
+    /* Variabile per il raggio degli angoli delle tabelle */
+    --table-border-radius: 0.5em; /* Puoi modificare questo valore */
 }
 
 /* Body - imposta font, colori e spaziatura globale */
@@ -99,9 +102,9 @@ h1 {
 
 
 .buttons .btn {
-    width: 9em;              /* larghezza fissa per tutti i bottoni */
-    text-align: center;        /* testo centrato */
-    white-space: nowrap;       /* evita l'andare a capo */
+    width: 9em;             /* larghezza fissa per tutti i bottoni */
+    text-align: center;     /* testo centrato */
+    white-space: nowrap;    /* evita l'andare a capo */
 }
 
 
@@ -212,13 +215,16 @@ h1 {
 
 /* Tabelle principali */
 .table {
-    width: 90%;               /* larghezza proporzionale al container */
+    width: 90%;             /* larghezza proporzionale al container */
     max-width: 1200px;
     border-collapse: collapse;
-    margin: 0 auto;           /* centrata */
+    margin: 0 auto;         /* centrata */
     font-size: 0.8rem;
     background: var(--white);
-    border-radius: 0.5em;
+    /* Solo questo è stato aggiunto */
+    border-radius: var(--table-border-radius);
+    overflow: hidden; /* Nasconde ciò che esce dagli angoli arrotondati */
+    /* Fine aggiunta */
     box-shadow: 0 0.4em 1em rgba(0,0,0,0.05);
 }
 
@@ -233,7 +239,22 @@ h1 {
 .table thead th {
     background-color: var(--table-head);
     color: #fff;
+    /* Solo questo è stato aggiunto */
+    border-bottom: none; /* Rimuovi il bordo inferiore per unire con il corpo */
+    /* Fine aggiunta */
 }
+
+/* Smussatura angoli testata della tabella */
+/* Solo questo è stato aggiunto */
+.table thead tr:first-child th:first-child {
+    border-top-left-radius: var(--table-border-radius);
+}
+
+.table thead tr:first-child th:last-child {
+    border-top-right-radius: var(--table-border-radius);
+}
+/* Fine aggiunta */
+
 
 /* Riga alternata (zebratura) */
 .table tbody tr:nth-child(even) {
@@ -248,12 +269,12 @@ h1 {
 
 /* Classe unica per immagini responsive e ridimensionabili */
 .img-responsive {
-    width: 40%;            /* dimensione base dell'immagine */
-    max-width: none;      /* non supera mai questa larghezza */
-    height: auto;          /* mantiene le proporzioni */
-    display: block;        /* elimina spazi bianchi indesiderati */
-    margin: 0 auto;        /* centra l'immagine orizzontalmente */
-    border-radius: 8px;    /* angoli arrotondati */
+    width: 40%;             /* dimensione base dell'immagine */
+    max-width: none;        /* non supera mai questa larghezza */
+    height: auto;           /* mantiene le proporzioni */
+    display: block;         /* elimina spazi bianchi indesiderati */
+    margin: 0 auto;         /* centra l'immagine orizzontalmente */
+    border-radius: 8px;     /* angoli arrotondati */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* ombra leggera */
 }
 

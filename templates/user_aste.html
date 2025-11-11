@@ -3,7 +3,6 @@
 {% block content %}
 <div class="container mt-5">
 
-    <!-- HEADER CON TITOLO E BOTTONE -->
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
         <div>
             <h1 class="mb-0">Gestione Aste - {{ nome_squadra }}</h1>
@@ -34,14 +33,13 @@
         </a>
     </div>
 
-    <!-- SEZIONE: LE MIE ASTE ATTIVE -->
     <div class="card mb-4">
-        <div class="card-header bg-success text-white">
+        <div class="card-header bg-primary text-white">
             Le mie aste attive
         </div>
         <div class="card-body table-responsive">
             <table class="table table-striped table-hover">
-                <thead>
+                <thead class="table-light"> 
                     <tr>
                         <th>Giocatore</th>
                         <th>Ultima offerta</th>
@@ -61,8 +59,7 @@
                         <td>{{ asta.partecipanti }}</td>
                         <td class="text-center">
                             <a href="{{ url_for('aste.singola_asta_attiva', asta_id=asta.asta_id, nome_squadra=nome_squadra) }}"
-                               class="btn btn-sm fw-semibold py-1 px-2 btn-danger w-100"        
-                               style="background-color: #dc3545; border-color: #dc3545; color: #fff;">
+                               class="btn btn-sm fw-semibold py-1 px-2 btn-danger w-100">
                                 Entra
                             </a>
                         </td>
@@ -77,14 +74,13 @@
         </div>
     </div>
 
-    <!-- SEZIONE: ASTE A CUI POSSO ISCRIVERMI -->
     <div class="card mb-4">
         <div class="card-header bg-warning text-dark">
             Aste a cui posso iscrivermi
         </div>
         <div class="card-body table-responsive">
             <table class="table table-striped table-hover">
-                <thead>
+                <thead class="table-light"> 
                     <tr>
                         <th>Giocatore</th>
                         <th>Scadenza</th>
@@ -105,7 +101,7 @@
                                 </button>
                             {% else %}
                                 <form method="POST" action="{{ url_for('aste.user_aste', nome_squadra=nome_squadra) }}"
-                                      onsubmit="return confirm('Sei sicuro di volerti iscrivere all\'asta per {{ asta.giocatore }}?');">
+                                        onsubmit="return confirm('Sei sicuro di volerti iscrivere all\'asta per {{ asta.giocatore }}?');">
                                     <input type="hidden" name="asta_id_aste_a_cui_iscriversi" value="{{ asta.asta_id }}">
                                     <button type="submit" class="btn btn-sm btn-success fw-semibold py-1 px-2">
                                         Iscriviti
@@ -124,14 +120,13 @@
         </div>
     </div>
 
-    <!-- SEZIONE: LE MIE ASTE CONCLUSE -->
     <div class="card mb-4">
         <div class="card-header bg-secondary text-white">
             Le mie aste concluse
         </div>
         <div class="card-body table-responsive">
             <table class="table table-striped table-hover">
-                <thead>
+                <thead class="table-light">
                     <tr>
                         <th>Giocatore</th>
                         <th>Termine</th>

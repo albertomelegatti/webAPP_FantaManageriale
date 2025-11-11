@@ -3,7 +3,6 @@
 {% block content %}
 <div class="container my-4">
 
-    <!-- Logo, Nome Squadra e Statistiche -->
     <div class="row mb-4 align-items-center">
         <div class="col-12 col-md-2 text-center mb-2 mb-md-0">
             <img src="{{ url_for('static', filename='loghi/' ~ username ~ '.png') }}" 
@@ -32,15 +31,13 @@
         </div>
     </div>
 
-    <!-- Rosa + Colonna Destra -->
     <div class="row mb-4">
-        <!-- Rosa (sx) -->
         <div class="col-12 col-md-6 mb-3 mb-md-0">
             <div class="card shadow p-3 h-100">
                 <h4>Rosa</h4>
                 <div class="table-responsive">
                     <table class="table table-sm table-striped mb-0 smart-table">
-                        <thead>
+                        <thead class="table-light">
                             <tr>
                                 <th>Calciatore</th>
                                 <th>Tipo Contratto</th>
@@ -65,14 +62,12 @@
             </div>
         </div>
 
-        <!-- Colonna destra: Primavera, Prestiti OUT, Prestiti IN, Movimenti -->
         <div class="col-12 col-md-6">
-            <!-- Primavera -->
             <div class="card shadow p-3 mb-3">
                 <h4>Primavera</h4>
                 <div class="table-responsive">
                     <table class="table table-sm mb-0 table-striped">
-                        <thead>
+                        <thead class="table-light">
                             <tr>
                                 <th>Calciatore</th>
                                 <th>Ruolo</th>
@@ -92,12 +87,11 @@
                 </div>
             </div>
 
-            <!-- Prestiti OUT -->
             <div class="card shadow p-3 mb-3">
                 <h4>Prestiti OUT</h4>
                 <div class="table-responsive">
                     <table class="table table-sm mb-0 table-striped">
-                        <thead>
+                        <thead class="table-light">
                             <tr>
                                 <th>Calciatore</th>
                                 <th>Ruolo</th>
@@ -119,12 +113,11 @@
                 </div>
             </div>
 
-            <!-- Prestiti IN -->
             <div class="card shadow p-3 mb-3">
                 <h4>Prestiti IN</h4>
                 <div class="table-responsive">
                     <table class="table table-sm mb-0 table-striped">
-                        <thead>
+                        <thead class="table-light">
                             <tr>
                                 <th>Calciatore</th>
                                 <th>Ruolo</th>
@@ -146,12 +139,11 @@
                 </div>
             </div>
 
-            <!-- Movimenti di mercato -->
             <div class="card shadow p-3">
                 <h4>Movimenti di mercato</h4>
                 <div class="table-responsive">
                     <table class="table table-sm mb-0 table-striped">
-                        <thead>
+                        <thead class="table-light">
                             <tr>
                                 <th>Data</th>
                                 <th>Evento</th>

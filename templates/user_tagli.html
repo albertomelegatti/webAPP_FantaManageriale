@@ -3,7 +3,6 @@
 {% block content %}
 <div class="container mt-5">
 
-    <!-- Titolo -->
     <div class="text-center mb-4">
         <h1 class="mb-3">Gestione Tagli - {{ nome_squadra }}</h1>
         <p class="text-muted">
@@ -27,13 +26,12 @@
         </small>
     </div>
 
-    <!-- Tabella giocatori -->
     <div class="card shadow-sm mx-auto" style="max-width: 900px;">
         <div class="card-body">
             {% if rosa and rosa|length > 0 %}
             <div class="table-responsive">
                 <table class="table table-striped align-middle text-center">
-                    <thead class="table-dark">
+                    <thead class="table-light">
                         <tr>
                             <th>Nome</th>
                             <th>Ruolo</th>
@@ -43,25 +41,25 @@
                     </thead>
                     <tbody>
                         {% for giocatore in rosa %}
+                        {% set costo_taglio = ((giocatore.quot_att_mantra / 2) | round(0, 'ceil')) %}
                         <tr>
                             <td>{{ giocatore.nome }}</td>
                             <td>{{ giocatore.ruolo }}</td>
                             <td>{{ giocatore.quot_att_mantra }}</td>
                             <td>
                                 <form method="POST" 
-                                      action="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}"
-                                      onsubmit="return confirm('Vuoi davvero tagliare {{ giocatore.nome }}? Dovrai pagare metà della sua quotazione attuale.');">
+                                        action="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}"
+                                        onsubmit="return confirm('Vuoi davvero tagliare {{ giocatore.nome }}? Dovrai pagare metà della sua quotazione attuale.');">
                                     <input type="hidden" name="id_giocatore_da_tagliare" value="{{ giocatore.id }}">
-                                    {% set costo_taglio = ((giocatore.quot_att_mantra / 2) | round(0, 'ceil')) %}
                                     <button type="submit" 
-                                            class="btn btn-sm fw-semibold w-100 py-1"
-                                            style="background-color: #c1121f; border-color: #c1121f; color: white;"
+                                            class="btn btn-sm fw-semibold w-100 py-1 {% if crediti_disponibili < costo_taglio %}btn-secondary{% else %}btn-danger{% endif %}"
                                             {% if crediti_disponibili < costo_taglio %}disabled{% endif %}>
-                                            {% if crediti_disponibili < costo_taglio %}
-                                                🚫 Non disponibile
-                                            {% else %}
-                                                ✂️ Taglia
-                                            {% endif %}
+                                        
+                                        {% if crediti_disponibili < costo_taglio %}
+                                            🚫 Non disponibile
+                                        {% else %}
+                                            ✂️ Taglia
+                                        {% endif %}
                                     </button>
                                 </form>
                             </td>

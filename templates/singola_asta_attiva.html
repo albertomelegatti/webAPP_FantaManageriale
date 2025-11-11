@@ -43,7 +43,7 @@
         <div class="d-flex justify-content-between align-items-center">
             <!-- Bottone RILANCIA -->
             <form method="POST" 
-                    action="{{ url_for('user.singola_asta_attiva', asta_id=asta.id, nome_squadra=nome_squadra) }}" 
+                    action="{{ url_for('aste.singola_asta_attiva', asta_id=asta.id, nome_squadra=nome_squadra) }}" 
                     onsubmit="return confirm('Sei sicuro di voler rilanciare?');" 
                     class="d-flex align-items-center gap-2">
                 <input type="number" name="bottone_rilancia"
@@ -58,7 +58,7 @@
             </form>
 
             <!-- Bottone RINUNCIA -->
-            <form method="POST" action="{{ url_for('user.singola_asta_attiva', asta_id=asta.id, nome_squadra=nome_squadra) }}"
+            <form method="POST" action="{{ url_for('aste.singola_asta_attiva', asta_id=asta.id, nome_squadra=nome_squadra) }}"
                 onsubmit="return confirm('Sei sicuro di voler rinunciare all\'asta per {{ asta.giocatore }}?');">
                 <input type="hidden" name="bottone_rinuncia" value="{{ asta.id }}">
                 <button type="submit"
@@ -72,7 +72,7 @@
 
         <!-- Torna indietro -->
         <div class="text-center mt-4">
-            <a href="{{ url_for('user.user_aste', nome_squadra=nome_squadra) }}" class="btn btn-secondary btn-sm px-3">← Torna alle aste</a>
+            <a href="{{ url_for('aste.user_aste', nome_squadra=nome_squadra) }}" class="btn btn-secondary btn-sm px-3">← Torna alle aste</a>
         </div>
 
     {% else %}
