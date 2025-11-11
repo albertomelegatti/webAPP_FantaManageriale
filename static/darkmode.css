@@ -28,23 +28,23 @@ body.dark-mode {
     --color-background-body: #121212; 
     
     /* SCHIARITI: Card, Navbar, Header */
-    --color-background-card: #282828; /* SCHIARITO */
-    --color-background-card-header: #333333; /* SCHIARITO */
-    --color-background-navbar: #333333; /* SCHIARITO */
+    --color-background-card: #282828;
+    --color-background-card-header: #333333;
+    --color-background-navbar: #333333;
     
     /* Sfondi Tabella (Striped) */
-    --color-background-table-base: #282828; /* SCHIARITO */
-    --color-background-table-odd: #333333; /* SCHIARITO */
-    --color-background-table-even: #282828; /* SCHIARITO */
+    --color-background-table-base: #282828;
+    --color-background-table-odd: #333333;
+    --color-background-table-even: #282828;
     
-    /* Intestazione Tabella (Mantenuta come da richiesta) */
+    /* Intestazione Tabella
     --color-background-table-head: #40b478; 
     --color-text-table-head: #ffffff;
     
     /* Bordi */
-    --color-border-primary: #555; /* SCHIARITO */
-    --color-border-table-dark: #444; /* Leggermente schiarito */
-    --color-border-table-head: #555; /* SCHIARITO */
+    --color-border-primary: #555;
+    --color-border-table-dark: #444;
+    --color-border-table-head: #555;
 }
 
 /* === Stili Applicati (Usando le Variabili) === */
@@ -169,7 +169,7 @@ body.dark-mode .table-striped tbody tr:nth-of-type(even) {
 
 /* Hover sulle righe */
 body.dark-mode .table-hover tbody tr:hover {
-    background-color: #444444 !important; /* SCHIARITO */
+    background-color: #444444 !important;
 }
 
 /* Testo e Varianti */
@@ -277,7 +277,7 @@ body.dark-mode .ts-dropdown .option {
 
 /* Opzione evidenziata (hover) */
 body.dark-mode .ts-dropdown .active {
-    background-color: #444444 !important; /* SCHIARITO */
+    background-color: #444444 !important;
     color: var(--color-text-primary) !important;
 }
 
