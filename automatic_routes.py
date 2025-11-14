@@ -1,4 +1,5 @@
-from flask import Blueprint, requests
+import requests
+from flask import Blueprint
 from telegram_utils import asta_iniziata
 from db import get_connection, release_connection
 
