@@ -1,4 +1,5 @@
 import psycopg2
+import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
@@ -148,9 +149,11 @@ def nuovo_scambio(nome_squadra):
                 giocatori_richiesti,
                 messaggio
             ))
+            id_scambio = cur.fetchone()['id']
 
             conn.commit()
             flash("✅ Proposta di scambio inviata con successo!", "success")
+            # telegram_utils.nuovo_scambio(conn, id_scambio)
             return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
 
 

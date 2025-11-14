@@ -1,11 +1,11 @@
 import requests
 import os
-import psycopg2
-import json
+import textwrap
 from flask import current_app
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from db import get_connection, release_connection
+from user import format_giocatori, formatta_data
 
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 
@@ -43,11 +43,11 @@ def asta_rilanciata(conn, id_asta, squadra_da_notificare):
         squadra_che_ha_rilanciato = info_asta['squadra_vincente']
         ultima_offerta = info_asta['ultima_offerta']
 
-        text_to_send = (
-            f"🏷️ ASTA: {giocatore}\n"
-            f"La squadra {squadra_che_ha_rilanciato} ha rilanciato la tua offerta!\n"
-            f"💰 Offerta attuale: {ultima_offerta} crediti."
-        )
+        text_to_send = textwrap.dedent(f'''
+            🏷️ ASTA: {giocatore}
+            La squadra {squadra_che_ha_rilanciato} ha rilanciato la tua offerta!
+            💰 Offerta attuale: {ultima_offerta} crediti.
+        ''')
 
         send_message(squadra_da_notificare, text_to_send)
 
@@ -60,13 +60,328 @@ def asta_rilanciata(conn, id_asta, squadra_da_notificare):
 
 
 def asta_iniziata(id_asta):
-    print("Messaggio intercettato correttamente da supabase!")
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute('''
+                    SELECT g.nome, a.partecipanti
+                    FROM asta a
+                    JOIN giocatore g
+                        ON a.giocatore = g.id
+                    WHERE a.id = %s;
+        ''', (id_asta,))
+        info_asta = cur.fetchone()
+
+        if not info_asta:
+            print(f"Nessuna asta trovata con id {id_asta}")
+            return
+
+        giocatore = info_asta['nome']
+        partecipanti = info_asta['partecipanti']
+
+        text_to_send = textwrap.dedent(f'''
+            🏷️ ASTA: {giocatore}
+            L'asta è iniziata.
+        ''')
+
+
+        for p in partecipanti:
+            send_message(p, text_to_send)
+
+    except Exception as e:
+        print(f"Errore: {e}")
+
+    finally:
+        release_connection(conn, cur)
     
             
 
 
 
+def nuovo_scambio(conn, id_scambio):
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
+        cur.execute('''
+                    SELECT squadra_proponente, squadra_destinataria, giocatori_offerti, giocatori_richiesti, crediti_offerti, crediti_richiesti, messaggio
+                    FROM scambio
+                    WHERE id = %s;
+        ''', (id_scambio,))
+        info_scambio = cur.fetchone()
+
+        if not info_scambio:
+            print(f"Nessuno scambio trovato con id: {id_scambio}")
+            return
+
+        squadra_proponente = info_scambio['squadra_proponente']
+        squadra_destinataria = info_scambio['squadra_destinataria']
+        giocatori_offerti = format_giocatori(info_scambio['giocatori_offerti']) or []
+        giocatori_richiesti = format_giocatori(info_scambio['giocatori_richiesti']) or []
+        crediti_offerti = info_scambio['crediti_offerti'] or 0
+        crediti_richiesti = info_scambio['crediti_richiesti'] or 0
+        messaggio = info_scambio['messaggio'] or ""
+
+        text_to_send = textwrap.dedent(f'''
+            🟢 NUOVA PROPOSTA DI SCAMBIO
+            La squadra {squadra_proponente} ti ha inviato una proposta di scambio
+
+            ⚽ Offerta:
+            {giocatori_offerti}
+            💰 Crediti offerti: {crediti_offerti}
+
+            ⚽ Richiesta:
+            {giocatori_richiesti}
+            💰 Crediti richiesti: {crediti_richiesti}
+
+            ✉️ Messaggio: {messaggio}
+        ''')
+
+        send_message(squadra_destinataria, text_to_send)
+
+    except Exception as e:
+        print(f"Errore: {e}")
+
+    finally:
+        release_connection(None, cur)
+
+
+
+
+def scambio_risposta(conn, id_scambio, risposta):
+
+    if not risposta or (risposta != "Accettato" and risposta != "Rifiutato"):
+        print("Errore, il terzo parametro deve essere 'Accettato' o 'Rifiutato'")
+        return
+
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute('''
+                    SELECT squadra_proponente, squadra_destinataria, giocatori_offerti, giocatori_richiesti, crediti_offerti, crediti_richiesti
+                    FROM scambio
+                    WHERE id = %s;
+        ''', (id_scambio,))
+        info_scambio = cur.fetchone()
+
+        if not info_scambio:
+            print(f"Nessuno scambio trovato con id: {id_scambio}")
+            return
+
+        squadra_proponente = info_scambio['squadra_proponente']
+        squadra_destinataria = info_scambio['squadra_destinataria']
+        giocatori_offerti = format_giocatori(info_scambio['giocatori_offerti']) or []
+        giocatori_richiesti = format_giocatori(info_scambio['giocatori_richiesti']) or []
+        crediti_offerti = info_scambio['crediti_offerti'] or 0
+        crediti_richiesti = info_scambio['crediti_richiesti'] or 0
+
+        if risposta == "Accettato":
+            text_to_send = textwrap.dedent(f'''
+                SCAMBIO ACCETTATO
+                La squadra {squadra_destinataria} ha accettato la tua offerta di scambio.
+
+                ⚽ Offerta:
+                {giocatori_offerti}
+                💰 Crediti offerti: {crediti_offerti}
+
+                ⚽ Richiesta:
+                {giocatori_richiesti}
+                💰 Crediti richiesti: {crediti_richiesti}
+            ''')
+        
+        else:
+            text_to_send = textwrap.dedent(f'''
+                SCAMBIO RIFIUTATO
+                La squadra {squadra_destinataria} ha rifiutato la tua offerta di scambio.
+
+                ⚽ Offerta:
+                {giocatori_offerti}
+                💰 Crediti offerti: {crediti_offerti}
+
+                ⚽ Richiesta:
+                {giocatori_richiesti}
+                💰 Crediti richiesti: {crediti_richiesti}
+        ''')
+
+        send_message(squadra_proponente, text_to_send)
+
+    except Exception as e:
+        print(f"Errore: {e}")
+
+    finally:
+        release_connection(None, cur)
+
+
+
+
+
+
+def nuovo_prestito(conn, id_prestito):
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute('''
+                    SELECT p.giocatore, p.squadra_prestante, p.squadra_ricevente, p.data_fine
+                    FROM prestito p
+                    JOIN giocatore g
+                    ON p.giocatore = g.id
+                    WHERE p.id = %s;
+        ''', (id_prestito,))
+        info_prestito = cur.fetchone()
+
+        giocatore = info_prestito['nome']
+        squadra_prestante = info_prestito['squadra_prestante']
+        squadra_ricevente = info_prestito['squadra_ricevente']
+        data_fine = formatta_data(info_prestito['data_fine'])
+
+        text_to_send = textwrap.dedent(f'''
+            🟢 NUOVA PROPOSTA DI PRESTITO
+            La squadra {squadra_ricevente} ti ha inviato una proposta di prestito:
+            ⚽ Giocatore: {giocatore}
+            📆 Fino a: {data_fine}
+        ''')
+
+        send_message(squadra_prestante, text_to_send)
+
+    except Exception as e:
+        print(f"Errore: {e}")
+
+    finally:
+        release_connection(None, cur)
+
+
+
+
+
+def prestito_risposta(conn, id_prestito, risposta):
+
+    if not risposta or (risposta != "Accettato" and risposta != "Rifiutato"):
+        print("Errore, il terzo parametro deve essere 'Accettato' o 'Rifiutato'")
+        return
+    
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute('''
+                    SELECT p.giocatore, p.squadra_prestante, p.squadra_ricevente, p.data_fine
+                    FROM prestito p
+                    JOIN giocatore g
+                    ON p.giocatore = g.id
+                    WHERE p.id = %s;
+        ''', (id_prestito,))
+        info_prestito = cur.fetchone()
+
+        giocatore = info_prestito['nome']
+        squadra_prestante = info_prestito['squadra_prestante']
+        squadra_ricevente = info_prestito['squadra_ricevente']
+        data_fine = formatta_data(info_prestito['data_fine'])
+
+        if risposta == "Accettato":
+            text_to_send = textwrap.dedent(f'''
+                PRESTITO ACCETTATO
+                La squadra {squadra_prestante} ha accettato la tua richiesta di prestito:
+                ⚽ Giocatore: {giocatore}
+                📆 Fino a: {data_fine}
+            ''')
+        else:
+            text_to_send = textwrap.dedent(f'''
+                PRESTITO RIFIUTATO
+                La squadra {squadra_prestante} ha rifiutato la tua richiesta di prestito:
+                ⚽ Giocatore: {giocatore}
+                📆 Fino a: {data_fine}
+            ''')
+
+        send_message(squadra_ricevente, text_to_send)
+
+    except Exception as e:
+        print(f"Errore: {e}")
+
+    finally:
+        release_connection(None, cur)
+
+
+
+
+def richiesta_terminazione_prestito(conn, id_prestito):
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute('''
+                    SELECT p.giocatore, p.squadra_prestante, p.squadra_ricevente, p.data_fine, p.richiedente_terminazione
+                    FROM prestito p
+                    JOIN giocatore g
+                    ON p.giocatore = g.id
+                    WHERE p.id = %s;
+        ''', (id_prestito,))
+        info_prestito = cur.fetchone()
+
+        giocatore = info_prestito['nome']
+        squadra_prestante = info_prestito['squadra_prestante']
+        squadra_ricevente = info_prestito['squadra_ricevente']
+        data_fine = formatta_data(info_prestito['data_fine'])
+        richiedente_terminazione = info_prestito['richiedente_terminazione']
+
+       
+        text_to_send = textwrap.dedent(f'''
+            RICHIESTA DI TERMINAZIONE PRESTITO ANTICIPATA
+            La squadra {richiedente_terminazione} ha proposto di terminare in anticipo il seguente prestito:
+            ⚽ Giocatore: {giocatore}
+            📆 Fino a: {data_fine}
+        ''')
+        
+        if richiedente_terminazione == squadra_prestante:
+            send_message(squadra_ricevente, text_to_send)
+        else:
+            send_message(squadra_prestante, text_to_send)
+
+    except Exception as e:
+        print(f"Errore: {e}")
+
+    finally:
+        release_connection(None, cur)
+
+
+
+
+def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
+
+    if not risposta or (risposta != "Accettato" and risposta != "Rifiutato"):
+        print("Errore, il terzo parametro deve essere 'Accettato' o 'Rifiutato'")
+        return
+    
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute('''
+                    SELECT p.giocatore, p.richiedente_terminazione
+                    FROM prestito p
+                    JOIN giocatore g
+                    ON p.giocatore = g.id
+                    WHERE p.id = %s;
+        ''', (id_prestito,))
+        info_prestito = cur.fetchone()
+
+        giocatore = info_prestito['nome']
+        richiedente_terminazione = info_prestito['richiedente_terminazione']
+
+        if risposta == "Accettato":
+            text_to_send = textwrap.dedent(f'''
+                RICHIESTA DI TERMINAZIONE PRESTITO ANTICIPATA ACCETTATA
+                La tua richiesta di terminare in anticipo il prestito del giocatore: {giocatore} è stata accettata.
+            ''')
+        else:
+            text_to_send = textwrap.dedent(f'''
+                RICHIESTA DI TERMINAZIONE PRESTITO ANTICIPATA RIFIUTATA
+                La tua richiesta di terminare in anticipo il prestito del giocatore: {giocatore} è stata rifiutata.
+            ''')
+        
+        send_message(richiedente_terminazione, text_to_send)
+
+    except Exception as e:
+        print(f"Errore: {e}")
+
+    finally:
+        release_connection(None, cur)
 
 
 

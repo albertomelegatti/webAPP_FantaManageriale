@@ -1,9 +1,10 @@
 import psycopg2
+import telegram_utils
 from datetime import datetime, time
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
-from user import format_giocatori, formatta_data
+from user import formatta_data
 from queries import get_crediti_squadra, get_offerta_totale
 
 prestiti_bp = Blueprint('prestiti', __name__, url_prefix='/prestiti')
@@ -47,6 +48,7 @@ def user_prestiti(nome_squadra):
                 ''', (id_prestito_da_rifiutare,))
                 conn.commit()
                 flash("✅ Prestito rifiutato con successo.", "success")
+                # telegram_utils.prestito_risposta(conn, id_prestito_da_rifiutare, "Rifiutato")
 
 
 
@@ -58,9 +60,11 @@ def user_prestiti(nome_squadra):
 
         cur.execute('''
                     SELECT *
-                    FROM prestito
-                    WHERE (squadra_prestante = %s OR squadra_ricevente = %s)
-                    AND stato = 'in_attesa';
+                    FROM prestito p
+                    JOIN giocatore g
+                    ON p.giocatore = g.id
+                    WHERE (p.squadra_prestante = %s OR p.squadra_ricevente = %s)
+                    AND p.stato = 'in_attesa';
         ''', (nome_squadra, nome_squadra))
         prestiti_raw = cur.fetchall()
 
@@ -69,7 +73,7 @@ def user_prestiti(nome_squadra):
         for p in prestiti_raw:
             prestiti.append({
                 "prestito_id": p["id"],
-                "giocatore": format_giocatori(p["giocatore"]),
+                "giocatore": p["nome"],
                 "squadra_prestante": p["squadra_prestante"],
                 "squadra_ricevente": p["squadra_ricevente"],
                 "stato": p["stato"],
@@ -117,8 +121,10 @@ def nuovo_prestito(nome_squadra):
                         VALUES(%s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s)
                         RETURNING id;
             ''', (giocatore_richiesto, squadra_prestante, nome_squadra, 'in_attesa', data_fine))
+            id_prestito = cur.fetchone()['id']
             conn.commit()
             flash("✅ Richiesta inviata correttamente!", "success")
+            # telegram_utils.nuovo_prestito(conn, id_prestito)
             redirect(url_for("prestiti.user_prestiti", nome_squadra=nome_squadra))
             
 
@@ -222,6 +228,7 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
 
         conn.commit()
         flash("✅ Prestito avviato correttamente.", "success")
+        # telegram_utils.prestito_risposta(conn, id_prestito_da_attivare, "Accettato")
 
 
     except Exception as e:

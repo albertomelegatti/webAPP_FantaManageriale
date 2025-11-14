@@ -1,10 +1,11 @@
 import math
 import pytz
-from datetime import datetime, timezone
+import telegram_utils
+from datetime import datetime
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
-from user import format_giocatori, formatta_data
+from user import formatta_data
 from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale
 
 rosa_bp = Blueprint('rosa', __name__, url_prefix='/rosa')
@@ -168,6 +169,7 @@ def user_gestione_prestiti(nome_squadra):
             if id_prestito_per_cui_richiedere_terminazione:
                 richiedi_terminazione_prestito(conn, id_prestito_per_cui_richiedere_terminazione, nome_squadra)
 
+
             # Bottone ACCETTA TERMINAZIONE ANTICIPATA
             id_prestito_da_terminare_ACCETTA = request.form.get("accetta_terminazione")
             if id_prestito_da_terminare_ACCETTA:
@@ -183,17 +185,14 @@ def user_gestione_prestiti(nome_squadra):
 
 
 
-
-
-        
-
-
         # Ottengo i dati sui giocatori in prestito IN
         cur.execute('''
                     SELECT *
-                    FROM prestito
-                    WHERE squadra_ricevente = %s
-                        AND stato IN ('in_corso', 'richiesta_di_terminazione');
+                    FROM prestito p
+                    JOIN giocatore g
+                    ON p.giocatore = g.id
+                    WHERE p.squadra_ricevente = %s
+                        AND p.stato IN ('in_corso', 'richiesta_di_terminazione');
         ''', (nome_squadra,))
         prestiti_in_raw = cur.fetchall()
         
@@ -203,7 +202,7 @@ def user_gestione_prestiti(nome_squadra):
         for p in prestiti_in_raw:
             prestiti_in.append({
                 "id": p['id'],
-                "giocatori": format_giocatori(p['giocatore']),
+                "giocatori": p['nome'],
                 "squadra_prestante": p['squadra_prestante'],
                 "squadra_ricevente": p['squadra_ricevente'],
                 "stato": p['stato'],
@@ -217,8 +216,10 @@ def user_gestione_prestiti(nome_squadra):
         # Ottengo i dati sui giocatori in prestito OUT
         cur.execute('''
                     SELECT *
-                    FROM prestito
-                    WHERE squadra_prestante = %s
+                    FROM prestito p
+                    JOIN giocatore g
+                    ON p.giocatore = g.id
+                    WHERE p.squadra_prestante = %s
                         AND stato IN ('in_corso', 'richiesta_di_terminazione');
         ''', (nome_squadra,))
         prestiti_out_raw = cur.fetchall()
@@ -228,7 +229,7 @@ def user_gestione_prestiti(nome_squadra):
         for p in prestiti_out_raw:
             prestiti_out.append({
                 "id": p['id'],
-                "giocatori": format_giocatori(p['giocatore']),
+                "giocatori": p['nome'],
                 "squadra_prestante": p['squadra_prestante'],
                 "squadra_ricevente": p['squadra_ricevente'],
                 "stato": p['stato'],
@@ -279,6 +280,7 @@ def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
         ''', (nome_squadra, id_prestito))
         conn.commit()
         flash("✅ Richiesta di terminazione anticipata inviata con successo.", "success")
+        # telegram_utils.richiesta_terminazione_prestito(conn, id_prestito_per_cui_richiedere_terminazione)
 
 
 
@@ -346,6 +348,7 @@ def accetta_terminazione(conn, id_prestito):
 
         conn.commit()
         flash("✅ Prestito terminato con successo.", "success")
+        # telegram_utils.richiesta_terminazione_prestito_risposta(conn, id_prestito, "Accettato")
 
 
 
@@ -387,13 +390,19 @@ def rifiuta_terminazione(conn, id_prestito):
         if data_fine and data_fine < now:
             flash("Il prestito è già terminato.", "warning")
             return
+        
 
+        # Rimetto il prestito nel suo stato 'in_corso'
+        cur.execute('''
+                    UPDATE prestito
+                    SET stato = 'in_corso',
+                        richiedente_terminazione = NULL
+                    WHERE id = %s;
+        ''', (id_prestito,))
+        conn.commit()
 
-
-
-
-
-
+        flash("✅ Richiesta di terminazione anticipata rifiutata con successo.", "success")
+        # telegram_utils.richiesta_terminazione_prestito_risposta(conn, id_prestito, "Rifiutato")
 
 
     except Exception as e:

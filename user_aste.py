@@ -275,7 +275,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
                     ''', (nuova_offerta, nome_squadra, asta_id))
                     conn.commit()
                     flash(f"✅ Hai rilanciato l'offerta a {nuova_offerta}.", "success")
-                    # telegram_utils.asta_rilanciata(id_asta, squadra_vincente_prima_del_rilancio)
+                    # telegram_utils.asta_rilanciata(conn, asta_id, squadra_vincente_prima_del_rilancio)
                     return redirect(url_for("aste.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
                 
                 flash("❌ Attenzione, valori non aggiornati, verrai reindirizzato alla pagina aggiornata.", "danger")
