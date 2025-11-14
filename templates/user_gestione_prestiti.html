@@ -45,7 +45,7 @@
                                 <form method="POST" 
                                       action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
                                       onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
-                                    <input type="hidden" name="richiedi_terminazione" value="{{ p.id }}">
+                                    <input type="hidden" name="richiedi_terminazione" value="{{ p.id_prestito }}">
                                     <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-outline-warning w-100">
                                         Chiedi terminazione anticipata
                                     </button>
@@ -56,7 +56,7 @@
                                     <form method="POST" 
                                           action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
                                           onsubmit="return confirm('Vuoi accettare la terminazione anticipata del prestito per {{ p.giocatori }}?');">
-                                        <input type="hidden" name="accetta_terminazione" value="{{ p.id }}">
+                                        <input type="hidden" name="accetta_terminazione" value="{{ p.id_prestito }}">
                                         <button type="submit" class="btn btn-sm btn-success py-1 px-2 fw-semibold w-100"
                                                 style="background-color: #28a745; border-color: #28a745;">
                                             ✅ Accetta
@@ -67,7 +67,7 @@
                                     <form method="POST" 
                                           action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
                                           onsubmit="return confirm('Vuoi rifiutare la terminazione anticipata del prestito per {{ p.giocatori }}?');">
-                                        <input type="hidden" name="rifiuta_terminazione" value="{{ p.id }}">
+                                        <input type="hidden" name="rifiuta_terminazione" value="{{ p.id_prestito }}">
                                         <button type="submit" class="btn btn-sm btn-danger py-1 px-2 fw-semibold w-100"
                                                 style="background-color: #dc3545; border-color: #dc3545;">
                                             ❌ Rifiuta
@@ -120,7 +120,7 @@
                                 <form method="POST" 
                                       action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
                                       onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
-                                    <input type="hidden" name="richiedi_terminazione" value="{{ p.id }}">
+                                    <input type="hidden" name="richiedi_terminazione" value="{{ p.id_prestito }}">
                                     <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-warning w-100">
                                         Chiedi terminazione anticipata
                                     </button>
@@ -129,7 +129,7 @@
                                 <form method="POST" 
                                       action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
                                       onsubmit="return confirm('Vuoi accettare la terminazione anticipata del prestito per {{ p.giocatori }}?');">
-                                    <input type="hidden" name="accetta_terminazione" value="{{ p.id }}">
+                                    <input type="hidden" name="accetta_terminazione" value="{{ p.id_prestito }}">
                                     <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-success w-100">
                                         Accetta terminazione anticipata
                                     </button>

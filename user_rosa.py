@@ -187,7 +187,10 @@ def user_gestione_prestiti(nome_squadra):
 
         # Ottengo i dati sui giocatori in prestito IN
         cur.execute('''
-                    SELECT *
+                    SELECT 
+                        p.id AS id_prestito,
+                        g.id AS id_giocatore,
+                    *
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -201,7 +204,7 @@ def user_gestione_prestiti(nome_squadra):
 
         for p in prestiti_in_raw:
             prestiti_in.append({
-                "id": p['id'],
+                "id_prestito": p['id_prestito'],
                 "giocatori": p['nome'],
                 "squadra_prestante": p['squadra_prestante'],
                 "squadra_ricevente": p['squadra_ricevente'],
@@ -215,7 +218,10 @@ def user_gestione_prestiti(nome_squadra):
 
         # Ottengo i dati sui giocatori in prestito OUT
         cur.execute('''
-                    SELECT *
+                    SELECT 
+                        p.id AS id_prestito,
+                        g.id AS id_giocatore,
+                    *
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -228,7 +234,7 @@ def user_gestione_prestiti(nome_squadra):
 
         for p in prestiti_out_raw:
             prestiti_out.append({
-                "id": p['id'],
+                "id_prestito": p['id_prestito'],
                 "giocatori": p['nome'],
                 "squadra_prestante": p['squadra_prestante'],
                 "squadra_ricevente": p['squadra_ricevente'],
@@ -237,7 +243,6 @@ def user_gestione_prestiti(nome_squadra):
                 "data_fine": formatta_data(p['data_fine']),
                 "richiedente_terminazione": p['richiedente_terminazione']
             })
-
 
 
     except Exception as e:
@@ -297,6 +302,7 @@ def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
 def accetta_terminazione(conn, id_prestito):
 
     rome_tz = pytz.timezone("Europe/Rome")
+    print(id_prestito)
 
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -307,13 +313,13 @@ def accetta_terminazione(conn, id_prestito):
                     FROM prestito
                     WHERE id = %s;
         ''', (id_prestito,))
-        data_fine = cur.fetchone()
+        row = cur.fetchone()
 
-        if not data_fine:
+        if row is None:
             flash("❌ Prestito non trovato.", "danger")
             return
-        
-        data_fine = data_fine['data_fine']
+
+        data_fine = row['data_fine']
 
         now = datetime.now(rome_tz)
 
@@ -377,13 +383,13 @@ def rifiuta_terminazione(conn, id_prestito):
                     FROM prestito
                     WHERE id = %s;
         ''', (id_prestito,))
-        data_fine = cur.fetchone()
+        row = cur.fetchone()
 
-        if not data_fine:
+        if row is None:
             flash("❌ Prestito non trovato.", "danger")
             return
-        
-        data_fine = data_fine['data_fine']
+
+        data_fine = row['data_fine']
 
         now = datetime.now(rome_tz)
 
