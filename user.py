@@ -13,11 +13,6 @@ def squadraLogin(nome_squadra):
 
 
 
-
-
-
-
-
 def format_partecipanti(partecipanti):
     if not partecipanti:
         return ""
@@ -34,25 +29,32 @@ def format_giocatori(giocatori):
     
     if isinstance(giocatori, int):
         giocatori = [giocatori]
-
-    nomi = []
+    
+    conn = None
+    cur = None
+    nomi_ordinati = []
 
     try:
         conn = get_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur = conn.cursor() 
 
+        cur.execute('''
+            SELECT id, nome
+            FROM giocatore
+            WHERE id IN %s;
+        ''', (tuple(giocatori),)) # Passa la lista come una tupla
+        
+        # Mappa i risultati {id: nome}
+        # row[0] è l'ID, row[1] è il nome
+        risultati_map = {row[0]: row[1] for row in cur.fetchall()} 
+        
+        # 3. Formattazione e Mantenimento dell'Ordine (Cruciale)
         for giocatore_id in giocatori:
-            cur.execute('''
-                SELECT nome
-                FROM giocatore
-                WHERE id = %s;
-            ''', (giocatore_id,))
-            
-            risultato = cur.fetchone()
-            if risultato and "nome" in risultato:
-                nomi.append(risultato["nome"])
+            nome = risultati_map.get(giocatore_id)
+            if nome:
+                nomi_ordinati.append(nome)
             else:
-                nomi.append(f"ID {giocatore_id} (non trovato)")
+                nomi_ordinati.append(f"ID {giocatore_id} (non trovato)")
 
     except Exception as e:
         print(f"❌ Errore durante il recupero dei nomi giocatori: {e}")
@@ -60,14 +62,14 @@ def format_giocatori(giocatori):
 
     finally:
         release_connection(conn, cur)
-
-    # Formattazione pulita dell'output
-    if not nomi:
+    
+    if not nomi_ordinati:
         return ""
-    elif len(nomi) == 1:
-        return nomi[0]
+    elif len(nomi_ordinati) == 1:
+        return nomi_ordinati[0]
     else:
-        return ", ".join(nomi)
+        # Ritorna la lista formattata (es: "Nome1, Nome2, Nome3")
+        return ", ".join(nomi_ordinati)
 
 
 

@@ -3,3 +3,4 @@ TelegramBot
 __pycache__/
 flask_session/
 *.pyc
+notes.txt

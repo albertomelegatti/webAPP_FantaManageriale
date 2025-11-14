@@ -1,10 +1,12 @@
 import psycopg2
 import datetime
+import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from user import format_partecipanti, formatta_data
 from queries import get_crediti_squadra, get_offerta_totale
+
 
 
 aste_bp = Blueprint('aste', __name__, url_prefix='/aste')
@@ -260,6 +262,10 @@ def singola_asta_attiva(asta_id, nome_squadra):
 
                 # Controllo sui valori dell'asta prima di rilanciare
                 if asta_dati['ultima_offerta'] < int(nuova_offerta) and asta_dati['squadra_vincente']:
+
+                    # Salvo l'informazione per il messaggio telegram
+                    squadra_vincente_prima_del_rilancio = asta_dati['squadra_vincente']
+
                     cur.execute('''
                         UPDATE asta
                         SET ultima_offerta = %s,
@@ -269,6 +275,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
                     ''', (nuova_offerta, nome_squadra, asta_id))
                     conn.commit()
                     flash(f"✅ Hai rilanciato l'offerta a {nuova_offerta}.", "success")
+                    # telegram_utils.asta_rilanciata(id_asta, squadra_vincente_prima_del_rilancio)
                     return redirect(url_for("aste.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
                 
                 flash("❌ Attenzione, valori non aggiornati, verrai reindirizzato alla pagina aggiornata.", "danger")
