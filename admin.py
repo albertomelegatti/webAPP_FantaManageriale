@@ -1,6 +1,7 @@
 import psycopg2
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from db import get_connection, release_connection
+from telegram_utils import send_message
 from psycopg2.extras import RealDictCursor
 from psycopg2 import extensions
 
@@ -52,3 +53,44 @@ def admin_crediti():
         release_connection(conn, cur)
 
     return render_template("admin_crediti.html", squadre=squadre)
+
+
+
+
+@admin_bp.route("/invia_comunicazione", methods=["GET", "POST"])
+def invia_comunicazione():
+
+    squadre = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        if request.method == "POST":
+            text_to_send = request.form.get("text_to_send")
+
+            cur.execute('''
+                    SELECT nome
+                    FROM squadra
+                    WHERE nome <> 'Svincolato';
+            ''')
+            squadre_raw = cur.fetchall()
+            squadre = [{"nome": s["nome"]} for s in squadre_raw]
+
+            if text_to_send:
+                for s in squadre:
+                    send_message(s['nome'], text_to_send)
+
+                flash("✅ Messaggi inviati con successo.", "success")
+
+
+    except Exception as e:
+        print(f"Errore: {e}")
+
+    finally:
+        release_connection(conn, cur)
+
+    return render_template("admin_comunicazione.html", squadre=squadre)
+        
+
+

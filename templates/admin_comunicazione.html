@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}
+Admin - Invio messaggio
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            
+            <h2 class="mb-4">📧 Invia un Messaggio alle squadre</h2>
+            <p class="text-muted">Utilizza questo modulo per inviare notifiche, comandi o dati specifici a tutte le squadre.</p>
+
+            <hr>
+
+            <form method="POST" action="{{ url_for('admin.invia_comunicazione') }}">
+
+                <div class="mb-3">
+                    <textarea class="form-control" 
+                              id="message_body" 
+                              name="text_to_send" 
+                              rows="6" 
+                              placeholder="Inserisci qui il testo completo del messaggio." 
+                              required></textarea>
+                </div>
+                
+                <input type="hidden" name="sender" value="AdminUser">
+                {% if csrf_token %}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% endif %}
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg mt-3">
+                        <i class="fas fa-paper-plane me-2"></i> Invia
+                    </button>
+                </div>
+
+            </form>
+            
+        </div>
+    </div>
+</div>
+{% endblock %}
