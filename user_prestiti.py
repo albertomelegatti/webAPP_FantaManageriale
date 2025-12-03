@@ -59,7 +59,7 @@ def user_prestiti(nome_squadra):
 
 
         cur.execute('''
-                    SELECT *
+                    SELECT *, p.id AS prestito_id
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -67,12 +67,13 @@ def user_prestiti(nome_squadra):
                     AND p.stato = 'in_attesa';
         ''', (nome_squadra, nome_squadra))
         prestiti_raw = cur.fetchall()
+        print(prestiti_raw)
 
         prestiti = []
 
         for p in prestiti_raw:
             prestiti.append({
-                "prestito_id": p["id"],
+                "prestito_id": p["prestito_id"],
                 "giocatore": p["nome"],
                 "squadra_prestante": p["squadra_prestante"],
                 "squadra_ricevente": p["squadra_ricevente"],
@@ -186,6 +187,8 @@ def nuovo_prestito(nome_squadra):
 
 def attiva_prestito(id_prestito_da_attivare, nome_squadra):
 
+    print(id_prestito_da_attivare)
+
     if not id_prestito_da_attivare:
         flash("❌ Prestito non trovato.", "danger")
         return redirect(url_for("prestiti.user_prestiti", nome_squadra=nome_squadra))
@@ -201,6 +204,7 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
                     WHERE id = %s;
         ''', (id_prestito_da_attivare,))
         prestito = cur.fetchone()
+        print(prestito)
 
         # Cambio di stato
         cur.execute('''
