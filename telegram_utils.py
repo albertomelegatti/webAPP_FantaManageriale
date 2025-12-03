@@ -392,10 +392,6 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
 
 
 
-
-
-
-
 def send_message(nome_squadra, text_to_send):
 
     # Recupero degli id telegram
@@ -452,6 +448,7 @@ def get_all_telegram_ids():
         for s in squadre_raw:
             nome_squadra = s['nome']
             telegram_ids = s['id_telegram']
+        
 
             if nome_squadra and isinstance(telegram_ids, list):
                 SQUADRE_IDS[nome_squadra] = telegram_ids

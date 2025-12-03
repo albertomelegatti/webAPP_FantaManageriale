@@ -68,6 +68,7 @@ def invia_comunicazione():
 
         if request.method == "POST":
             text_to_send = request.form.get("text_to_send")
+            print(text_to_send)
 
             cur.execute('''
                     SELECT nome
@@ -80,6 +81,7 @@ def invia_comunicazione():
             if text_to_send:
                 for s in squadre:
                     send_message(s['nome'], text_to_send)
+                    print("")
 
                 flash("✅ Messaggi inviati con successo.", "success")
 
