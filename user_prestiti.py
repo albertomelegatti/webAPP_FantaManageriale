@@ -187,8 +187,6 @@ def nuovo_prestito(nome_squadra):
 
 def attiva_prestito(id_prestito_da_attivare, nome_squadra):
 
-    print(id_prestito_da_attivare)
-
     if not id_prestito_da_attivare:
         flash("❌ Prestito non trovato.", "danger")
         return redirect(url_for("prestiti.user_prestiti", nome_squadra=nome_squadra))

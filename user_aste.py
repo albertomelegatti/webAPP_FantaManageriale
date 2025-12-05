@@ -254,11 +254,17 @@ def singola_asta_attiva(asta_id, nome_squadra):
             if nuova_offerta:
                 # Blocca la riga dell'asta per aggiornamenti concorrenti
                 cur.execute('''
-                            SELECT ultima_offerta, squadra_vincente 
+                            SELECT ultima_offerta, squadra_vincente, stato
                             FROM asta 
                             WHERE id = %s FOR UPDATE;
                 ''', (asta_id,))
                 asta_dati = cur.fetchone()
+
+                # Controllo sullo stato dell'asta prima del rilancio
+                if asta_dati['stato'] != 'in_corso':
+                    flash("Tempo scaduto, asta terminata.", "danger")
+                    return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
+
 
                 # Controllo sui valori dell'asta prima di rilanciare
                 if asta_dati['ultima_offerta'] < int(nuova_offerta) and asta_dati['squadra_vincente']:

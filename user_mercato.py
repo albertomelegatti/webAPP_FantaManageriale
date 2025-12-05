@@ -34,7 +34,7 @@ def user_mercato(nome_squadra):
             # Bottone ACCETTA scambio
             scambio_id = request.form.get("accetta_scambio")
             if scambio_id:
-                effettua_scambio(scambio_id, conn)
+                effettua_scambio(scambio_id, conn, nome_squadra)
 
             
             # Bottone RIFIUTA scambio
@@ -238,6 +238,9 @@ def controlla_scambio(id, conn):
                     WHERE id = %s
                     FOR UPDATE;''', (id,))
         scambio = cur.fetchone()
+
+        if scambio['stato'] != 'in_attesa':
+            return False
  
         
         squadra_proponente = scambio["squadra_proponente"]
@@ -271,24 +274,24 @@ def controlla_scambio(id, conn):
         crediti_disp_dest = crediti_dest - offerta_tot_dest
 
         if crediti_disp_prop < crediti_offerti:
-            valido = False
+            return False
         
         if crediti_disp_dest < crediti_richiesti:
-            valido = False
+            return False
         
         # Controllo che le squadre abbiano abbastanza slot giocatori disponibili per effettuare gli scambi
         slot_squadra_proponente = get_slot_occupati(conn, squadra_proponente)
         num_giocatori_in_entrata = len(giocatori_richiesti)
         if slot_squadra_proponente + num_giocatori_in_entrata > 30:
-            valido = False
+            return False
         
 
         slot_squadra_destinataria = get_slot_occupati(conn, squadra_destinataria)
         num_giocatori_in_uscita = len(giocatori_offerti)
         if slot_squadra_destinataria + num_giocatori_in_uscita > 30:
-            valido = False
+            return False
 
-        return valido
+        return True
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -300,7 +303,7 @@ def controlla_scambio(id, conn):
 
 
 
-def effettua_scambio(id, conn):
+def effettua_scambio(id, conn, nome_squadra):
 
     # Se lo scambio non è valido non fare niente
     if controlla_scambio(id, conn) == False:
@@ -325,6 +328,12 @@ def effettua_scambio(id, conn):
         if not scambio:
             raise ValueError(f"Nessuno scambio valido trovato con id:", id)
         
+        # Controllo se lo scambio è stato annullato nel mentre che la pagina era aperta
+        if scambio['stato'] != 'in_attesa':
+            flash("Lo scambio non è più valido.", "danger")
+            return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
+
+        
         squadra_proponente = scambio["squadra_proponente"]
         squadra_destinataria = scambio["squadra_destinataria"]
         crediti_offerti = scambio["crediti_offerti"] or 0
@@ -342,6 +351,15 @@ def effettua_scambio(id, conn):
                             squadra_att = %s
                         WHERE id = %s;
             ''', (squadra_destinataria, squadra_destinataria, giocatore_id))
+
+            # Annullo gli altri scambi in cui il giocatore è coinvolto
+            cur.execute('''
+                        UPDATE scambio
+                        SET stato = 'annullato'
+                        WHERE (%s IN giocatori_offerti OR %s IN giocatori_richiesti)
+                            AND stato = 'in_attesa'
+                            AND id <> %s;
+            ''', (giocatore_id, giocatore_id, id))
             
         for giocatore_id in giocatori_richiesti:
             cur.execute('''
@@ -350,6 +368,15 @@ def effettua_scambio(id, conn):
                             squadra_att = %s
                         WHERE id = %s;
             ''', (squadra_proponente, squadra_proponente, giocatore_id))
+
+            # Annullo gli altri scambi in cui il giocatore è coinvolto
+            cur.execute('''
+                        UPDATE scambio
+                        SET stato = 'annullato'
+                        WHERE (%s IN giocatori_offerti OR %s IN giocatori_richiesti)
+                            AND stato = 'in_attesa'
+                            AND id <> %s;
+            ''', (giocatore_id, giocatore_id, id))
             
         # Aggiorno i crediti delle due squadre
         cur.execute('''
