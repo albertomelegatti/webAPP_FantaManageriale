@@ -392,7 +392,25 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
 
 
 
-def send_message(nome_squadra, text_to_send):
+def send_message(id=None, nome_squadra=None, text_to_send=None):
+
+    if id is not None:
+        chat_id = id
+        text_to_send = "Messaggio di routine per non far bannare il bot da Telegram."
+        payload = {"chat_id": chat_id, "text": text_to_send}
+
+        try:
+            r = requests.post(url, json=payload)
+            if r.status_code == 200:
+                print(f"✅ Messaggio inviato a {chat_id}")
+            else:
+                print(f"❌ Errore per {chat_id}: {r.text}")
+
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Errore di Rete per {chat_id}: {e}")
+
+        return
+
 
     # Recupero degli id telegram
     try:

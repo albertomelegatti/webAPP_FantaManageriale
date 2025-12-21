@@ -1,6 +1,7 @@
 import secrets
 import psycopg2
 import time
+import telegram_utils
 from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify, current_app
 from flask_session import Session
 from psycopg2 import extensions
@@ -481,6 +482,14 @@ def cambia_password():
         return redirect(url_for('cambia_password'))
 
     return render_template("changePassword.html")
+
+
+@app.route("/keepalive", methods=["GET", "POST"])
+def keepalive():
+        telegram_utils.send_message(903944311)
+        return render_template("index.html")
+
+
 
 
 chat_history = []
