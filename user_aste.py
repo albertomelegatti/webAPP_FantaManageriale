@@ -179,9 +179,7 @@ def nuova_asta(nome_squadra):
 
 
         if request.method == "POST":
-            # ============================================================
-            # GESTIONE CREAZIONE NUOVO GIOCATORE
-            # ============================================================
+            # Aggiunta nuovo giocatore
             enable_player_creation = os.getenv("ENABLE_PLAYER_CREATION", "false").lower() == "true"
             crea_nuovo = request.form.get("crea_nuovo")
             
@@ -246,9 +244,7 @@ def nuova_asta(nome_squadra):
                 flash(f"✅ Giocatore {nome_nuovo} creato e asta avviata con successo!", "success")
                 return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
             
-            # ============================================================
-            # GESTIONE ASTA PER GIOCATORE ESISTENTE
-            # ============================================================
+            # Asta per giocatore già presente nel database
             giocatore_scelto = request.form.get("giocatore", "").strip()
             if giocatore_scelto and giocatore_scelto not in giocatori_disponibili_per_asta:
                 flash("❌ Giocatore non valido o già in un'asta.", "danger")
