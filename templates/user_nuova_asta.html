@@ -4,10 +4,10 @@
 <div class="container mt-5">
     <div class="text-center mb-4">
         <h1>Inserimento nuova asta</h1>
-        <p class="lead">Seleziona un giocatore per iniziare una nuova asta.</p>
+        <p class="lead">Cerca un giocatore per iniziare una nuova asta.</p>
     </div>
 
-    <!-- Form di selezione giocatore -->
+    <!-- Form di ricerca giocatore -->
     <form id="nuovaAstaForm" method="POST">
         <div class="mb-4 position-relative">
             <label for="giocatore" class="form-label">Cerca Giocatore</label>
@@ -17,58 +17,132 @@
             <!-- Messaggi dinamici -->
             <div id="erroreGiocatore" class="text-danger mt-2" style="display:none;">Seleziona un giocatore valido dalla lista.</div>
             <div id="confermaGiocatore" class="text-success mt-2" style="display:none;">Giocatore selezionato correttamente!</div>
+            
+            {% if enable_player_creation %}
+            <div id="creaGiocatore" class="mt-2" style="display:none;">
+                <span class="text-muted" style="font-size: 0.9rem;"><i class="fas fa-info-circle"></i> Giocatore non trovato.</span> 
+                <button type="button" class="btn btn-success btn-sm" id="btnApriModal">
+                    <i class="fas fa-plus"></i> Crea Giocatore
+                </button>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Bottone di conferma -->
         <div class="text-center">
-            <button type="submit" class="btn btn-primary btn-lg">Avvia Asta</button>
+            <button type="submit" class="btn btn-success btn-lg" id="btnAvviaAsta" disabled>Avvia Asta</button>
         </div>
     </form>
 </div>
 
+{% if enable_player_creation %}
+<!-- Overlay personalizzato per creazione giocatore -->
+<div id="overlayCreazione" class="custom-overlay" style="display:none;">
+    <div id="popupCreazione" class="custom-popup">
+        <div class="custom-popup-header">
+            <h5>Crea Nuovo Giocatore</h5>
+            <button type="button" class="custom-popup-close" id="btnChiudiPopup">&times;</button>
+        </div>
+        <form id="formCreaGiocatore" method="POST" action="">
+            <div class="custom-popup-body">
+                <input type="hidden" name="crea_nuovo" value="1">
+                
+                <div class="mb-3">
+                    <label for="nome_nuovo" class="form-label">Nome Giocatore <span class="text-danger">*</span></label>
+                    <input type="text" id="nome_nuovo" name="nome_nuovo" class="form-control" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="club_nuovo" class="form-label">Squadra di Appartenenza <span class="text-danger">*</span></label>
+                    <input type="text" id="club_nuovo" name="club_nuovo" class="form-control" placeholder="Es: Juventus" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Quotazione</label>
+                    <div class="form-control custom-readonly-field">
+                        666
+                    </div>
+                    <small class="text-muted">Quotazione di default</small>
+                </div>
+            </div>
+            <div class="custom-popup-footer">
+                <button type="button" class="btn btn-secondary" id="btnAnnulla">Annulla</button>
+                <button type="submit" class="btn btn-success">Crea e Avvia Asta</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+// Usa window.onload per assicurarsi che Bootstrap sia caricato
+window.addEventListener("load", function() {
     const input = document.getElementById("giocatore");
     const suggerimenti = document.getElementById("suggerimenti");
     const form = document.getElementById("nuovaAstaForm");
     const erroreMsg = document.getElementById("erroreGiocatore");
     const confermaMsg = document.getElementById("confermaGiocatore");
+    const creaMsg = document.getElementById("creaGiocatore");
+    const btnAvviaAsta = document.getElementById("btnAvviaAsta");
 
     // Lista di giocatori passata dal server
     const giocatori = JSON.parse('{{ giocatori_disponibili_per_asta|tojson|safe }}');
+    const enableCreation = {{ enable_player_creation|tojson|safe }};
+
+    let giocatoreTrovato = false;
+    let nomeRicercato = "";
 
     input.addEventListener("input", function() {
-        const query = this.value.toLowerCase();
+        const query = this.value.toLowerCase().trim();
+        nomeRicercato = this.value.trim();
+        
         suggerimenti.innerHTML = "";
         erroreMsg.style.display = "none";
         confermaMsg.style.display = "none";
+        if (creaMsg) creaMsg.style.display = "none";
+        
+        giocatoreTrovato = false;
+        btnAvviaAsta.disabled = true;
 
         if (query.length < 2) return;
 
         const filtrati = giocatori.filter(g => g.toLowerCase().includes(query));
 
-        filtrati.forEach(g => {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.classList.add("list-group-item", "list-group-item-action");
-            button.textContent = g;
-            button.onclick = () => {
-                input.value = g;
-                suggerimenti.innerHTML = "";
-                erroreMsg.style.display = "none";
-                confermaMsg.style.display = "block"; // Mostra messaggio di conferma
-            };
-            suggerimenti.appendChild(button);
-        });
+        if (filtrati.length > 0) {
+            // Mostra suggerimenti se trovati
+            filtrati.forEach(g => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.classList.add("list-group-item", "list-group-item-action");
+                button.textContent = g;
+                button.onclick = () => {
+                    input.value = g;
+                    nomeRicercato = g;
+                    suggerimenti.innerHTML = "";
+                    erroreMsg.style.display = "none";
+                    if (creaMsg) creaMsg.style.display = "none";
+                    confermaMsg.style.display = "block";
+                    giocatoreTrovato = true;
+                    btnAvviaAsta.disabled = false;
+                };
+                suggerimenti.appendChild(button);
+            });
+        } else {
+            // Nessun giocatore trovato - mostra opzione creazione se abilitata
+            if (enableCreation && query.length >= 2) {
+                if (creaMsg) creaMsg.style.display = "block";
+            }
+        }
     });
 
+    // Chiudi suggerimenti cliccando fuori
     document.addEventListener("click", function(e) {
-        if (!input.contains(e.target)) {
+        if (!input.contains(e.target) && !suggerimenti.contains(e.target)) {
             suggerimenti.innerHTML = "";
         }
     });
 
-    // Controllo sul submit con conferma
+    // Controllo submit form principale
     form.addEventListener("submit", function(e) {
         const valore = input.value.trim();
         if (!giocatori.includes(valore)) {
@@ -76,15 +150,76 @@ document.addEventListener("DOMContentLoaded", function() {
             confermaMsg.style.display = "none";
             erroreMsg.style.display = "block";
         } else {
-            erroreMsg.style.display = "none";
-            confermaMsg.style.display = "block";
-
-            // Chiedo conferma prima di inviare
             if (!confirm(`Vuoi davvero avviare un'asta per ${valore}?`)) {
-                e.preventDefault(); // blocca l'invio se l'utente annulla
+                e.preventDefault();
             }
         }
     });
+
+    // Gestione form creazione giocatore
+    const formCrea = document.getElementById("formCreaGiocatore");
+    if (formCrea) {
+        formCrea.addEventListener("submit", function(e) {
+            const nome = document.getElementById("nome_nuovo").value.trim();
+            const club = document.getElementById("club_nuovo").value.trim();
+            
+            if (!nome) {
+                e.preventDefault();
+                alert("Il nome del giocatore è obbligatorio.");
+                return;
+            }
+            
+            if (!club) {
+                e.preventDefault();
+                alert("La squadra di appartenenza è obbligatoria.");
+                return;
+            }
+            
+            if (!confirm(`Vuoi davvero creare il giocatore "${nome}" (${club}) e avviare l'asta?`)) {
+                e.preventDefault();
+            }
+        });
+    }
+    
+    // Gestione apertura/chiusura overlay personalizzato
+    const btnApriModal = document.getElementById('btnApriModal');
+    const overlayCreazione = document.getElementById('overlayCreazione');
+    const btnChiudiPopup = document.getElementById('btnChiudiPopup');
+    const btnAnnulla = document.getElementById('btnAnnulla');
+    
+    if (btnApriModal && overlayCreazione) {
+        // Apri overlay
+        btnApriModal.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Precompila il nome
+            const nomeNuovo = document.getElementById("nome_nuovo");
+            if (nomeNuovo && input) {
+                nomeNuovo.value = input.value.trim();
+            }
+            overlayCreazione.style.display = 'flex';
+        });
+        
+        // Chiudi overlay con X
+        if (btnChiudiPopup) {
+            btnChiudiPopup.addEventListener('click', function() {
+                overlayCreazione.style.display = 'none';
+            });
+        }
+        
+        // Chiudi overlay con bottone Annulla
+        if (btnAnnulla) {
+            btnAnnulla.addEventListener('click', function() {
+                overlayCreazione.style.display = 'none';
+            });
+        }
+        
+        // Chiudi overlay cliccando fuori dal popup
+        overlayCreazione.addEventListener('click', function(e) {
+            if (e.target === overlayCreazione) {
+                overlayCreazione.style.display = 'none';
+            }
+        });
+    }
 });
 </script>
 

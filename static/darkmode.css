@@ -287,3 +287,55 @@ body.dark-mode .item {
     color: #ffffff !important;
     border-color: var(--bs-primary) !important;
 }
+
+/* =====================================================
+    POPUP PERSONALIZZATO - Dark Mode
+    ===================================================== */
+
+body.dark-mode .custom-popup {
+    background-color: #282828;
+    color: #f1f1f1;
+}
+
+body.dark-mode .custom-popup-header {
+    background-color: #333333;
+    border-color: #555;
+}
+
+body.dark-mode .custom-popup-header h5 {
+    color: #f1f1f1;
+}
+
+body.dark-mode .custom-popup-close {
+    color: #f1f1f1;
+}
+
+body.dark-mode .custom-popup-footer {
+    border-color: #555;
+}
+
+body.dark-mode .custom-readonly-field {
+    background-color: #3a3a3a;
+    color: #e0e0e0;
+    border-color: #555;
+}
+
+body.dark-mode .form-label {
+    color: #f1f1f1;
+}
+
+body.dark-mode .form-control {
+    background-color: #3a3a3a;
+    color: #e0e0e0;
+    border-color: #555;
+}
+
+body.dark-mode .form-control:focus {
+    background-color: #444;
+    color: #fff;
+    border-color: #0d6efd;
+}
+
+body.dark-mode .text-muted {
+    color: #aaa !important;
+}

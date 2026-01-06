@@ -1,11 +1,15 @@
 import psycopg2
 import datetime
+import os
 import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from user import format_partecipanti, formatta_data
 from queries import get_crediti_squadra, get_offerta_totale
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 
@@ -175,43 +179,116 @@ def nuova_asta(nome_squadra):
 
 
         if request.method == "POST":
-            giocatore_scelto = request.form.get("giocatore", "").strip()
-            if giocatore_scelto not in giocatori_disponibili_per_asta:
-                flash("❌ Giocatore non valido o già in un'asta.", "danger")
-                return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
-
-            try:
-                # Locka il giocatore per evitare race condition
-                cur.execute('''
-                            SELECT id 
-                            FROM giocatore 
-                            WHERE nome = %s FOR UPDATE;
-                ''', (giocatore_scelto,))
-                giocatore_raw = cur.fetchone()
-
-                if not giocatore_raw:
-                    flash("❌ Giocatore non trovato nel database.", "danger")
+            # ============================================================
+            # GESTIONE CREAZIONE NUOVO GIOCATORE
+            # ============================================================
+            enable_player_creation = os.getenv("ENABLE_PLAYER_CREATION", "false").lower() == "true"
+            crea_nuovo = request.form.get("crea_nuovo")
+            
+            if crea_nuovo:
+                # Verifica che la funzionalità sia abilitata
+                if not enable_player_creation:
+                    flash("❌ La creazione di nuovi giocatori è attualmente disabilitata.", "danger")
                     return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
-
-                giocatore_id = giocatore_raw["id"]
-
-                # Inserisci l'asta
+                
+                # Recupera e formatta i dati del form
+                nome_nuovo = request.form.get("nome_nuovo", "").strip()
+                club_nuovo = request.form.get("club_nuovo", "").strip()
+                
+                # Formatta nomi: prima lettera di ogni parola in maiuscolo
+                # Esempi: "lucca" -> "Lucca", "de bruyne" -> "De Bruyne"
+                nome_nuovo = nome_nuovo.title()
+                club_nuovo = club_nuovo.title() if club_nuovo else ""
+                
+                # Validazione: nome obbligatorio
+                if not nome_nuovo:
+                    flash("❌ Il nome del giocatore è obbligatorio.", "danger")
+                    return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
+                
+                # Verifica che il giocatore non esista già nel database
+                cur.execute('''
+                    SELECT COUNT(*) as count
+                    FROM giocatore 
+                    WHERE LOWER(nome) = LOWER(%s);
+                ''', (nome_nuovo,))
+                
+                if cur.fetchone()["count"] > 0:
+                    flash("❌ Un giocatore con questo nome esiste già.", "danger")
+                    return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
+                
+                # Crea il nuovo giocatore nel database
+                # - Ruolo: PlaceHolderRole (sarà aggiornato successivamente)
+                # - Quotazione: 666 (default)
+                # - Tipo contratto: Svincolato
+                cur.execute('''
+                    INSERT INTO giocatore (
+                        nome, ruolo, tipo_contratto, squadra_att, detentore_cartellino, 
+                        quot_att_mantra, costo, priorita, club
+                    )
+                    VALUES (%s, ARRAY['PlaceHolderRole']::ruolo_mantra[], 'Svincolato', 'Svincolato', 'Svincolato', 666, 0, 1, %s)
+                    RETURNING id;
+                ''', (nome_nuovo, club_nuovo or "N/A"))
+                nuovo_giocatore_id = cur.fetchone()["id"]
+                
+                # Crea automaticamente l'asta per il giocatore appena creato
+                # - Stato: mostra_interesse
+                # - Durata: 1 giorno
+                # - Partecipante iniziale: squadra corrente
                 cur.execute('''
                     INSERT INTO asta (
                         giocatore, squadra_vincente, ultima_offerta,
                         tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti, gia_elaborata
                     )
                     VALUES (%s, %s, NULL, NULL, (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day', 'mostra_interesse', %s, FALSE)
-                ''', (giocatore_id, nome_squadra, [nome_squadra]))
+                ''', (nuovo_giocatore_id, nome_squadra, [nome_squadra]))
+                
                 conn.commit()
-
-                flash(f"✅ Asta per {giocatore_scelto} creata con successo!", "success")
+                flash(f"✅ Giocatore {nome_nuovo} creato e asta avviata con successo!", "success")
                 return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
-
-            except psycopg2.errors.SerializationFailure:
-                conn.rollback()
-                flash("Un altro utente ha appena creato un'asta per questo giocatore. Riprova.", "warning")
+            
+            # ============================================================
+            # GESTIONE ASTA PER GIOCATORE ESISTENTE
+            # ============================================================
+            giocatore_scelto = request.form.get("giocatore", "").strip()
+            if giocatore_scelto and giocatore_scelto not in giocatori_disponibili_per_asta:
+                flash("❌ Giocatore non valido o già in un'asta.", "danger")
                 return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
+
+            
+            # Gestione asta per giocatore esistente - continua solo se c'è un giocatore selezionato
+            if giocatore_scelto:
+                try:
+                    # Locka il giocatore per evitare race condition
+                    cur.execute('''
+                                SELECT id 
+                                FROM giocatore 
+                                WHERE nome = %s FOR UPDATE;
+                    ''', (giocatore_scelto,))
+                    giocatore_raw = cur.fetchone()
+
+                    if not giocatore_raw:
+                        flash("❌ Giocatore non trovato nel database.", "danger")
+                        return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
+
+                    giocatore_id = giocatore_raw["id"]
+
+                    # Inserisci l'asta
+                    cur.execute('''
+                        INSERT INTO asta (
+                            giocatore, squadra_vincente, ultima_offerta,
+                            tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti, gia_elaborata
+                        )
+                        VALUES (%s, %s, NULL, NULL, (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day', 'mostra_interesse', %s, FALSE)
+                    ''', (giocatore_id, nome_squadra, [nome_squadra]))
+                    conn.commit()
+
+                    flash(f"✅ Asta per {giocatore_scelto} creata con successo!", "success")
+                    return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
+
+                except psycopg2.errors.SerializationFailure:
+                    conn.rollback()
+                    flash("Un altro utente ha appena creato un'asta per questo giocatore. Riprova.", "warning")
+                    return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
 
     except Exception as e:
         print("Errore nuova_asta:", e)
@@ -220,7 +297,13 @@ def nuova_asta(nome_squadra):
     finally:
         release_connection(conn, cur)
 
-    return render_template("user_nuova_asta.html", giocatori_disponibili_per_asta=giocatori_disponibili_per_asta)
+    # Controlla se la creazione di giocatori è abilitata per il template
+    enable_player_creation = os.getenv("ENABLE_PLAYER_CREATION", "false").lower() == "true"
+
+    return render_template("user_nuova_asta.html", 
+                         nome_squadra=nome_squadra,
+                         giocatori_disponibili_per_asta=giocatori_disponibili_per_asta,
+                         enable_player_creation=enable_player_creation)
 
 
 
