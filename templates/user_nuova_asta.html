@@ -21,7 +21,7 @@
             {% if enable_player_creation %}
             <div id="creaGiocatore" class="mt-2" style="display:none;">
                 <span class="text-muted" style="font-size: 0.9rem;"><i class="fas fa-info-circle"></i> Giocatore non trovato.</span> 
-                <button type="button" class="btn btn-success btn-sm" id="btnApriModal">
+                <button type="button" class="btn btn-success btn-sm" id="btnApriModal" style="padding: 0.25rem 0.5rem; font-size: 0.9rem;">
                     <i class="fas fa-plus"></i> Crea Giocatore
                 </button>
             </div>
@@ -87,7 +87,8 @@ window.addEventListener("load", function() {
 
     // Lista di giocatori passata dal server
     const giocatori = JSON.parse('{{ giocatori_disponibili_per_asta|tojson|safe }}');
-    const enableCreation = {{ enable_player_creation|tojson|safe }};
+    // @ts-ignore
+    const enableCreation = '{{ enable_player_creation|tojson|safe }}' === 'true' || '{{ enable_player_creation|tojson|safe }}' === 'True';
 
     let giocatoreTrovato = false;
     let nomeRicercato = "";

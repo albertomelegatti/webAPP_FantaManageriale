@@ -336,6 +336,11 @@ body.dark-mode .form-control:focus {
     border-color: #0d6efd;
 }
 
+body.dark-mode .form-control::placeholder {
+    color: #aaa;
+    opacity: 1;
+}
+
 body.dark-mode .text-muted {
     color: #aaa !important;
 }
