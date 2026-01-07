@@ -74,6 +74,7 @@ def login():
             return redirect(url_for('login'))
 
         conn = None
+        cur = None
         try:
             conn = get_connection()
             cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -91,6 +92,7 @@ def login():
                     session.clear()
                     session["logged_in"] = True
                     session["is_admin"] = True
+                    session["username"] = username
                     session.permanent = True
                     return redirect(url_for('admin.admin_home'))
                 
@@ -114,6 +116,7 @@ def login():
                         session["logged_in"] = True
                         session["nome_squadra"] = row["nome"]
                         session["is_admin"] = False
+                        session["username"] = username
                         session.permanent = True
                         return redirect(url_for('user.squadraLogin', nome_squadra=nome_squadra))
                     else:
@@ -170,6 +173,7 @@ def squadre():
 def dashboardSquadra(nome_squadra):
 
     conn = None
+    cur = None
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -308,6 +312,7 @@ def dashboardSquadra(nome_squadra):
 def creditiStadiSlot():
 
     conn = None
+    cur = None
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -372,6 +377,7 @@ def listone():
 def aste():
 
     conn = None
+    cur = None
     aste = []
     try:
         conn = get_connection()
@@ -438,6 +444,7 @@ def cambia_password():
             return redirect(url_for('cambia_password'))
 
         conn = None
+        cur = None
         try:
             conn = get_connection()
             conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
