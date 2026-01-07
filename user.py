@@ -36,19 +36,18 @@ def format_giocatori(giocatori):
 
     try:
         conn = get_connection()
-        cur = conn.cursor() 
+        cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
             SELECT id, nome
             FROM giocatore
-            WHERE id IN %s;
-        ''', (tuple(giocatori),)) # Passa la lista come una tupla
+            WHERE id = ANY(%s);
+        ''', (giocatori,))
         
         # Mappa i risultati {id: nome}
-        # row[0] è l'ID, row[1] è il nome
-        risultati_map = {row[0]: row[1] for row in cur.fetchall()} 
+        risultati_map = {row['id']: row['nome'] for row in cur.fetchall()} 
         
-        # 3. Formattazione e Mantenimento dell'Ordine (Cruciale)
+        # Formattazione e Mantenimento dell'Ordine (Cruciale)
         for giocatore_id in giocatori:
             nome = risultati_map.get(giocatore_id)
             if nome:
@@ -68,7 +67,7 @@ def format_giocatori(giocatori):
     elif len(nomi_ordinati) == 1:
         return nomi_ordinati[0]
     else:
-        # Ritorna la lista formattata (es: "Nome1, Nome2, Nome3")
+        # Ritorna i nomi formattati (es: "Nome1, Nome2, Nome3")
         return ", ".join(nomi_ordinati)
 
 

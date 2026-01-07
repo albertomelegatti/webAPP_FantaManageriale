@@ -12,6 +12,11 @@ prestiti_bp = Blueprint('prestiti', __name__, url_prefix='/prestiti')
 
 @prestiti_bp.route("/prestiti/<nome_squadra>", methods=["GET", "POST"])
 def user_prestiti(nome_squadra):
+    conn = None
+    cur = None
+    crediti = 0
+    crediti_disponibili = 0
+    prestiti = []
 
     try:
         conn = get_connection()
@@ -27,7 +32,7 @@ def user_prestiti(nome_squadra):
                             UPDATE prestito
                             SET stato = 'annullato'
                             WHERE id = %s;
-                ''', (id_prestito_da_annullare))
+                ''', (id_prestito_da_annullare,))
                 conn.commit()
                 flash("✅ Annullata con successo la richiesta di prestito", "success")
 
@@ -98,6 +103,12 @@ def user_prestiti(nome_squadra):
 
 @prestiti_bp.route("/nuovo_prestito/<nome_squadra>", methods=["GET", "POST"])
 def nuovo_prestito(nome_squadra):
+    conn = None
+    cur = None
+    crediti = 0
+    crediti_disponibili = 0
+    giocatori = []
+    squadre = []
 
     try:
         conn = get_connection()
@@ -126,7 +137,7 @@ def nuovo_prestito(nome_squadra):
             conn.commit()
             flash("✅ Richiesta inviata correttamente!", "success")
             # telegram_utils.nuovo_prestito(conn, id_prestito)
-            redirect(url_for("prestiti.user_prestiti", nome_squadra=nome_squadra))
+            return redirect(url_for("prestiti.user_prestiti", nome_squadra=nome_squadra))
             
 
 
@@ -191,6 +202,8 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
         flash("❌ Prestito non trovato.", "danger")
         return redirect(url_for("prestiti.user_prestiti", nome_squadra=nome_squadra))
     
+    conn = None
+    cur = None
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)

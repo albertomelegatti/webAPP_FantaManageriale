@@ -17,6 +17,9 @@ def user_gestione_rosa(nome_squadra):
 
 @rosa_bp.route("/user_primavera/<nome_squadra>", methods=["GET", "POST"])
 def user_primavera(nome_squadra):
+    conn = None
+    cur = None
+    primavera = []
 
     try:
         conn = get_connection()
@@ -70,6 +73,11 @@ def user_primavera(nome_squadra):
 
 @rosa_bp.route("/user_tagli/<nome_squadra>", methods=["GET", "POST"])
 def user_tagli(nome_squadra):
+    conn = None
+    cur = None
+    crediti = 0
+    crediti_disponibili = 0
+    rosa = []
 
     try:
         conn = get_connection()
@@ -156,7 +164,10 @@ def user_tagli(nome_squadra):
 
 @rosa_bp.route("/user_gestione_prestiti/<nome_squadra>", methods=["GET", "POST"])
 def user_gestione_prestiti(nome_squadra):
-
+    conn = None
+    cur = None
+    prestiti_in = []
+    prestiti_out = []
 
     try:
         conn = get_connection()
@@ -190,7 +201,7 @@ def user_gestione_prestiti(nome_squadra):
                     SELECT 
                         p.id AS id_prestito,
                         g.id AS id_giocatore,
-                    *
+                        *
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -221,7 +232,7 @@ def user_gestione_prestiti(nome_squadra):
                     SELECT 
                         p.id AS id_prestito,
                         g.id AS id_giocatore,
-                    *
+                        *
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -260,7 +271,7 @@ def user_gestione_prestiti(nome_squadra):
 
 
 def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
-
+    cur = None
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
@@ -272,7 +283,7 @@ def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
         ''', (id_prestito,))
         stato_prestito = cur.fetchone()
 
-        if stato_prestito == 'richiesta_di_terminazione':
+        if stato_prestito and stato_prestito['stato'] == 'richiesta_di_terminazione':
             flash("❌ L'altra squadra ha già richiesto una terminazione anticipata per questo giocatore. Aggiornare la pagina", "danger")
             return              # Il finally viene eseguito comunque
 
@@ -303,7 +314,7 @@ def accetta_terminazione(conn, id_prestito):
 
     rome_tz = pytz.timezone("Europe/Rome")
     print(id_prestito)
-
+    cur = None
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
@@ -373,7 +384,7 @@ def accetta_terminazione(conn, id_prestito):
 def rifiuta_terminazione(conn, id_prestito):
 
     rome_tz = pytz.timezone("Europe/Rome")
-
+    cur = None
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
 

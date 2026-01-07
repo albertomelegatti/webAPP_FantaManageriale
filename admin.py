@@ -14,6 +14,9 @@ def admin_home():
 
 @admin_bp.route("/crediti", methods=["GET", "POST"])
 def admin_crediti():
+    conn = None
+    cur = None
+    squadre = []
     
     try:
         conn = get_connection()
@@ -22,15 +25,20 @@ def admin_crediti():
 
         if request.method == "POST":
             i = 0
-            while f"squadre[{i}][nome]" in request.form:
+            max_squadre = 100  # Protezione contro loop infinito
+            while f"squadre[{i}][nome]" in request.form and i < max_squadre:
                 nome = request.form.get(f"squadre[{i}][nome]")
                 nuovo_credito = request.form.get(f"squadre[{i}][nuovo_credito]")
                 if nome and nuovo_credito:
-                    cur.execute('''
-                                UPDATE squadra
-                                SET crediti = %s
-                                WHERE nome = %s;
-                    ''',(nuovo_credito, nome))
+                    try:
+                        nuovo_credito = int(nuovo_credito)
+                        cur.execute('''
+                                    UPDATE squadra
+                                    SET crediti = %s
+                                    WHERE nome = %s;
+                        ''', (nuovo_credito, nome))
+                    except ValueError:
+                        print(f"Valore crediti non valido per squadra {nome}")
                 i += 1
             conn.commit()
             flash("✅ Tutti i crediti sono stati aggiornati con successo!", "success")
@@ -59,7 +67,8 @@ def admin_crediti():
 
 @admin_bp.route("/invia_comunicazione", methods=["GET", "POST"])
 def invia_comunicazione():
-
+    conn = None
+    cur = None
     squadre = []
 
     try:
@@ -67,8 +76,11 @@ def invia_comunicazione():
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         if request.method == "POST":
-            text_to_send = request.form.get("text_to_send")
-            print(text_to_send)
+            text_to_send = request.form.get("text_to_send", "").strip()
+            
+            if not text_to_send:
+                flash("❌ Il messaggio non può essere vuoto.", "warning")
+                return redirect(url_for("admin.invia_comunicazione"))
 
             cur.execute('''
                     SELECT nome
@@ -78,12 +90,10 @@ def invia_comunicazione():
             squadre_raw = cur.fetchall()
             squadre = [{"nome": s["nome"]} for s in squadre_raw]
 
-            if text_to_send:
-                for s in squadre:
-                    send_message(s['nome'], text_to_send)
-                    print("")
+            for s in squadre:
+                send_message(s['nome'], text_to_send)
 
-                flash("✅ Messaggi inviati con successo.", "success")
+            flash("✅ Messaggi inviati con successo.", "success")
 
 
     except Exception as e:

@@ -12,6 +12,10 @@ mercato_bp = Blueprint('mercato', __name__, url_prefix='/mercato')
 
 @mercato_bp.route("/mercato/<nome_squadra>", methods=["GET", "POST"])
 def user_mercato(nome_squadra):
+    conn = None
+    cur = None
+    crediti = 0
+    offerta_massima_possibile = 0
 
     try:
         conn = get_connection()
@@ -104,6 +108,8 @@ def user_mercato(nome_squadra):
 
 @mercato_bp.route("/nuovo_scambio/<nome_squadra>", methods=["GET", "POST"])
 def nuovo_scambio(nome_squadra):
+    conn = None
+    cur = None
 
     try:
         conn = get_connection()
@@ -326,7 +332,7 @@ def effettua_scambio(id, conn, nome_squadra):
         scambio = cur.fetchone()
 
         if not scambio:
-            raise ValueError(f"Nessuno scambio valido trovato con id:", id)
+            raise ValueError(f"Nessuno scambio valido trovato con id: {id}")
         
         # Controllo se lo scambio è stato annullato nel mentre che la pagina era aperta
         if scambio['stato'] != 'in_attesa':
@@ -356,7 +362,7 @@ def effettua_scambio(id, conn, nome_squadra):
             cur.execute('''
                         UPDATE scambio
                         SET stato = 'annullato'
-                        WHERE (%s IN giocatori_offerti OR %s IN giocatori_richiesti)
+                        WHERE (%s = ANY(giocatori_offerti) OR %s = ANY(giocatori_richiesti))
                             AND stato = 'in_attesa'
                             AND id <> %s;
             ''', (giocatore_id, giocatore_id, id))
@@ -373,11 +379,11 @@ def effettua_scambio(id, conn, nome_squadra):
             cur.execute('''
                         UPDATE scambio
                         SET stato = 'annullato'
-                        WHERE (%s IN giocatori_offerti OR %s IN giocatori_richiesti)
+                        WHERE (%s = ANY(giocatori_offerti) OR %s = ANY(giocatori_richiesti))
                             AND stato = 'in_attesa'
                             AND id <> %s;
             ''', (giocatore_id, giocatore_id, id))
-            
+        
         # Aggiorno i crediti delle due squadre
         cur.execute('''
                     UPDATE squadra

@@ -20,7 +20,8 @@ aste_bp = Blueprint('aste', __name__, url_prefix='/aste')
 # Pagina gestione aste utente
 @aste_bp.route("/aste/<nome_squadra>", methods=["GET", "POST"])
 def user_aste(nome_squadra):
-
+    conn = None
+    cur = None
     try:
         conn = get_connection()
         conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
@@ -41,7 +42,7 @@ def user_aste(nome_squadra):
                 ''', (asta_id,))
                 stato = cur.fetchone()['stato']
 
-                if stato == 'in_corso':
+                if stato != 'mostra_interesse':
                     tempo_scaduto = True
                     flash("❌ Iscrizione fallita, tempo scaduto.", "danger")
                     return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
@@ -250,7 +251,6 @@ def nuova_asta(nome_squadra):
                 flash("❌ Giocatore non valido o già in un'asta.", "danger")
                 return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
 
-            
             # Gestione asta per giocatore esistente - continua solo se c'è un giocatore selezionato
             if giocatore_scelto:
                 try:
@@ -288,7 +288,7 @@ def nuova_asta(nome_squadra):
 
     except Exception as e:
         print("Errore nuova_asta:", e)
-        flash(f"❌ Errore nella creazione dell'asta: {e}", "danger")
+        flash("❌ Errore nella creazione dell'asta. Riprova più tardi.", "danger")
 
     finally:
         release_connection(conn, cur)
@@ -308,7 +308,8 @@ def nuova_asta(nome_squadra):
 @aste_bp.route("/singola_asta_attiva/<int:asta_id>/<nome_squadra>", methods=["GET", "POST"])
 def singola_asta_attiva(asta_id, nome_squadra):
     asta = None
-
+    conn = None
+    cur = None
     try:
         conn = get_connection()
         conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE)
@@ -396,7 +397,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
             partecipanti = format_partecipanti(asta_raw["partecipanti"])
             data_scadenza = asta_raw["tempo_fine_asta"]
             if isinstance(data_scadenza, str):
-                data_scadenza = datetime.fromisoformat(data_scadenza.split(".")[0])
+                data_scadenza = datetime.datetime.fromisoformat(data_scadenza.split(".")[0])
             data_scadenza_str = data_scadenza.strftime("%d/%m/%Y %H:%M")
 
             asta = {
