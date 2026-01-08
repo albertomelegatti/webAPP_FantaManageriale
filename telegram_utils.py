@@ -1,5 +1,6 @@
 import requests
 import os
+import time
 import textwrap
 from flask import current_app
 from psycopg2.extras import RealDictCursor

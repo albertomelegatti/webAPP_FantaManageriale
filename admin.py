@@ -1,4 +1,5 @@
 import psycopg2
+import time
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from telegram_utils import send_message
@@ -92,8 +93,9 @@ def invia_comunicazione():
 
             for s in squadre:
                 send_message(s['nome'], text_to_send)
+                time.sleep(2)  # Delay per evitare spam
 
-            flash("✅ Messaggi inviati con successo.", "success")
+            flash(f"✅ Messaggi inviati a {len(squadre)} squadre.", "success")
 
 
     except Exception as e:
