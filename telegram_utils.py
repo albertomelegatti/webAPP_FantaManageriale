@@ -2,6 +2,7 @@ import requests
 import os
 import time
 import textwrap
+import json
 from flask import current_app
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
@@ -58,45 +59,6 @@ def asta_rilanciata(conn, id_asta, squadra_da_notificare):
     finally:
         release_connection(None, cur)
 
-
-
-def asta_iniziata(id_asta):
-    try:
-        conn = get_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        cur.execute('''
-                    SELECT g.nome, a.partecipanti
-                    FROM asta a
-                    JOIN giocatore g
-                        ON a.giocatore = g.id
-                    WHERE a.id = %s;
-        ''', (id_asta,))
-        info_asta = cur.fetchone()
-
-        if not info_asta:
-            print(f"Nessuna asta trovata con id {id_asta}")
-            return
-
-        giocatore = info_asta['nome']
-        partecipanti = info_asta['partecipanti']
-
-        text_to_send = textwrap.dedent(f'''
-            🏷️ ASTA: {giocatore}
-            L'asta è iniziata.
-        ''')
-
-
-        for p in partecipanti:
-            send_message(p, text_to_send)
-
-    except Exception as e:
-        print(f"Errore: {e}")
-
-    finally:
-        release_connection(conn, cur)
-    
-            
 
 
 
@@ -486,5 +448,3 @@ def get_all_telegram_ids():
 
     finally:
         release_connection(conn, cur)
-
-        

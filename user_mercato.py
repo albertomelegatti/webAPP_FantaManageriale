@@ -234,8 +234,6 @@ def nuovo_scambio(nome_squadra):
 
 def controlla_scambio(id, conn):
 
-    print(f"Controllo scambio: {id}")
-
     valido = True
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -409,7 +407,7 @@ def effettua_scambio(id, conn, nome_squadra):
         ''', (id,))
         
         conn.commit()
-        print(f"✅ Scambio completato con successo tra {squadra_proponente} e {squadra_destinataria}")
+        flash(f"✅ Scambio completato con successo tra {squadra_proponente} e {squadra_destinataria}", "success")
         telegram_utils.scambio_risposta(conn, id, "Accettato")
         return True
     
