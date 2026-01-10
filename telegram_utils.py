@@ -436,6 +436,8 @@ def send_message(id=None, nome_squadra=None, text_to_send=None):
                 print(f"✅ Messaggio inviato a {chat_id}")
             else:
                 print(f"❌ Errore per {chat_id}: {r.text}")
+        
+            time.sleep(1)
 
         except requests.exceptions.RequestException as e:
             print(f"❌ Errore di Rete per {chat_id}: {e}")

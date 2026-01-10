@@ -92,6 +92,7 @@ def invia_comunicazione():
             squadre = [{"nome": s["nome"]} for s in squadre_raw]
 
             for s in squadre:
+                print("Invio messaggio a ", {s})
                 send_message(s['nome'], text_to_send)
                 time.sleep(2)  # Delay per evitare spam
 

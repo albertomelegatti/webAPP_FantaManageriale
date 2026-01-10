@@ -53,7 +53,7 @@ def user_prestiti(nome_squadra):
                 ''', (id_prestito_da_rifiutare,))
                 conn.commit()
                 flash("✅ Prestito rifiutato con successo.", "success")
-                # telegram_utils.prestito_risposta(conn, id_prestito_da_rifiutare, "Rifiutato")
+                telegram_utils.prestito_risposta(conn, id_prestito_da_rifiutare, "Rifiutato")
 
 
 
@@ -136,7 +136,7 @@ def nuovo_prestito(nome_squadra):
             id_prestito = cur.fetchone()['id']
             conn.commit()
             flash("✅ Richiesta inviata correttamente!", "success")
-            # telegram_utils.nuovo_prestito(conn, id_prestito)
+            telegram_utils.nuovo_prestito(conn, id_prestito)
             return redirect(url_for("prestiti.user_prestiti", nome_squadra=nome_squadra))
             
 
@@ -243,7 +243,7 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
 
         conn.commit()
         flash("✅ Prestito avviato correttamente.", "success")
-        # telegram_utils.prestito_risposta(conn, id_prestito_da_attivare, "Accettato")
+        telegram_utils.prestito_risposta(conn, id_prestito_da_attivare, "Accettato")
 
 
     except Exception as e:

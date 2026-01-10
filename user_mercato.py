@@ -39,6 +39,7 @@ def user_mercato(nome_squadra):
             scambio_id = request.form.get("accetta_scambio")
             if scambio_id:
                 effettua_scambio(scambio_id, conn, nome_squadra)
+                
 
             
             # Bottone RIFIUTA scambio
@@ -51,6 +52,7 @@ def user_mercato(nome_squadra):
                             WHERE id = %s;
                 ''', (scambio_id,))
                 conn.commit()
+                telegram_utils.scambio_risposta(conn, id, "Rifiutato")
 
 
 
@@ -159,7 +161,7 @@ def nuovo_scambio(nome_squadra):
 
             conn.commit()
             flash("✅ Proposta di scambio inviata con successo!", "success")
-            # telegram_utils.nuovo_scambio(conn, id_scambio)
+            telegram_utils.nuovo_scambio(conn, id_scambio)
             return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
 
 
@@ -408,6 +410,7 @@ def effettua_scambio(id, conn, nome_squadra):
         
         conn.commit()
         print(f"✅ Scambio completato con successo tra {squadra_proponente} e {squadra_destinataria}")
+        telegram_utils.scambio_risposta(conn, id, "Accettato")
         return True
     
     except Exception as e:

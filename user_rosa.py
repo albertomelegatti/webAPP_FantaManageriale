@@ -296,7 +296,7 @@ def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
         ''', (nome_squadra, id_prestito))
         conn.commit()
         flash("✅ Richiesta di terminazione anticipata inviata con successo.", "success")
-        # telegram_utils.richiesta_terminazione_prestito(conn, id_prestito_per_cui_richiedere_terminazione)
+        telegram_utils.richiesta_terminazione_prestito(conn, id_prestito)
 
 
 
@@ -365,7 +365,7 @@ def accetta_terminazione(conn, id_prestito):
 
         conn.commit()
         flash("✅ Prestito terminato con successo.", "success")
-        # telegram_utils.richiesta_terminazione_prestito_risposta(conn, id_prestito, "Accettato")
+        telegram_utils.richiesta_terminazione_prestito_risposta(conn, id_prestito, "Accettato")
 
 
 
@@ -419,7 +419,7 @@ def rifiuta_terminazione(conn, id_prestito):
         conn.commit()
 
         flash("✅ Richiesta di terminazione anticipata rifiutata con successo.", "success")
-        # telegram_utils.richiesta_terminazione_prestito_risposta(conn, id_prestito, "Rifiutato")
+        telegram_utils.richiesta_terminazione_prestito_risposta(conn, id_prestito, "Rifiutato")
 
 
     except Exception as e:
