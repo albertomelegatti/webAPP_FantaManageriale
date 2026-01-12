@@ -27,7 +27,7 @@ init_pool()
 app.secret_key = secrets.token_hex(16)
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 7
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 365
 app.config['SQUADRE_TELEGRAM_IDS'] = get_all_telegram_ids() # Per accedere: current_app.config.get('SQUADRE_TELEGRAM_IDS', {})
 
 Session(app)

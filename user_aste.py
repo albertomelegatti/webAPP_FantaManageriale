@@ -279,6 +279,7 @@ def nuova_asta(nome_squadra):
                     conn.commit()
 
                     flash(f"✅ Asta per {giocatore_scelto} creata con successo!", "success")
+                    telegram_utils.nuova_asta(conn, giocatore_id, nome_squadra)
                     return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
 
                 except psycopg2.errors.SerializationFailure:

@@ -21,6 +21,54 @@ if not TOKEN:
 url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
 
+def nuova_asta(conn, id_asta):
+
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute('''
+                    SELECT g.nome, a.squadra_vincente, a.tempo_fine_mostra_interesse
+                    FROM asta a
+                        JOIN giocatore g ON a.giocatore = g.id
+                    WHERE a.id = %s;
+        ''', (id_asta,))
+        info_asta = cur.fetchone()
+
+        if not info_asta:
+            print(f"Nessuna asta trovata con id {id_asta}")
+            return
+
+        giocatore = info_asta['nome']
+        squadra_vincente = info_asta['squadra_vincente']
+        tempo_fine_mostra_interesse = formatta_data(info_asta['tempo_fine_mostra_interesse'])
+
+
+        text_to_send = textwrap.dedent(f'''
+            🏷️ ASTA: {giocatore}
+            La squadra {squadra_vincente} ha iniziato un'asta!
+            📆 Hai tempo per iscriverti fino a: {tempo_fine_mostra_interesse}.
+        ''')
+
+        cur.execute('''
+                    SELECT nome
+                    FROM squadra
+                    WHERE nome NOT IN ('Svincolato', %s);
+        ''', (squadra_vincente,))
+        squadre_raw = cur.fetchall()
+        squadre = [{"nome": s["nome"]} for s in squadre_raw]
+
+        for s in squadre:
+            print("Invio messaggio a ", s)
+            send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
+            time.sleep(2)  # Delay per evitare spam
+
+    except Exception as e:
+        print(f"Errore: {e}")
+    
+    finally:
+        release_connection(None, cur)
+
+
 
 
 def asta_rilanciata(conn, id_asta, squadra_da_notificare):
