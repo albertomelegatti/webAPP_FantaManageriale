@@ -239,10 +239,14 @@ def nuova_asta(nome_squadra):
                         tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti, gia_elaborata
                     )
                     VALUES (%s, %s, NULL, NULL, (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day', 'mostra_interesse', %s, FALSE)
+                    RETURNING id;
                 ''', (nuovo_giocatore_id, nome_squadra, [nome_squadra]))
+                asta_id = cur.fetchone()["id"]
+                
                 
                 conn.commit()
                 flash(f"✅ Giocatore {nome_nuovo} creato e asta avviata con successo!", "success")
+                telegram_utils.nuova_asta(conn, asta_id)
                 return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
             
             # Asta per giocatore già presente nel database
@@ -275,11 +279,13 @@ def nuova_asta(nome_squadra):
                             tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti, gia_elaborata
                         )
                         VALUES (%s, %s, NULL, NULL, (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day', 'mostra_interesse', %s, FALSE)
+                        RETURNING id;
                     ''', (giocatore_id, nome_squadra, [nome_squadra]))
+                    asta_id = cur.fetchone()["id"]
                     conn.commit()
 
                     flash(f"✅ Asta per {giocatore_scelto} creata con successo!", "success")
-                    telegram_utils.nuova_asta(conn, giocatore_id, nome_squadra)
+                    telegram_utils.nuova_asta(conn, asta_id)
                     return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
 
                 except psycopg2.errors.SerializationFailure:

@@ -59,8 +59,8 @@ def nuova_asta(conn, id_asta):
 
         for s in squadre:
             print("Invio messaggio a ", s)
-            send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
-            time.sleep(2)  # Delay per evitare spam
+            #send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
+            #time.sleep(2)  # Delay per evitare spam
 
     except Exception as e:
         print(f"Errore: {e}")
