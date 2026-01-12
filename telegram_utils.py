@@ -70,7 +70,6 @@ def nuova_asta(conn, id_asta):
 
 
 
-
 def asta_rilanciata(conn, id_asta, squadra_da_notificare):
 
     try:
