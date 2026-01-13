@@ -17,6 +17,7 @@ from user_prestiti import prestiti_bp
 from user_rosa import rosa_bp
 from db import get_connection, release_connection, init_pool
 from telegram_utils import get_all_telegram_ids
+from queries import get_slot_giocatori, get_slot_occupati
 from datetime import datetime
 from chatbot import get_answer
 from queries import get_slot_occupati
@@ -208,6 +209,9 @@ def dashboardSquadra(nome_squadra):
 
         # CONTEGGIO SLOT OCCUPATI
         slot_occupati = get_slot_occupati(conn, nome_squadra)
+        
+        # CONTEGGIO SLOT GIOCATORI
+        slot_giocatori = get_slot_giocatori(conn, nome_squadra)
 
         # ROSA
         rosa = []
@@ -306,7 +310,8 @@ def dashboardSquadra(nome_squadra):
             username=username,
             crediti=crediti,
             squadra=[],
-            slot_occupati=slot_occupati
+            slot_occupati=slot_occupati,
+            slot_giocatori=slot_giocatori
         )
 
     except Exception as e:
