@@ -59,8 +59,8 @@ def nuova_asta(conn, id_asta):
 
         for s in squadre:
             print("Invio messaggio a ", s)
-            #send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
-            #time.sleep(2)  # Delay per evitare spam
+            send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
+            time.sleep(2)  # Delay per evitare spam
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -98,7 +98,7 @@ def asta_rilanciata(conn, id_asta, squadra_da_notificare):
             💰 Offerta attuale: {ultima_offerta} crediti.
         ''')
 
-        send_message(squadra_da_notificare, text_to_send)
+        send_message(nome_squadra=squadra_da_notificare, text_to_send=text_to_send)
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -147,7 +147,7 @@ def nuovo_scambio(conn, id_scambio):
             ✉️ Messaggio: {messaggio}
         ''')
 
-        send_message(squadra_destinataria, text_to_send)
+        send_message(nome_squadra=squadra_destinataria, text_to_send=text_to_send)
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -213,7 +213,7 @@ def scambio_risposta(conn, id_scambio, risposta):
                 💰 Crediti richiesti: {crediti_richiesti}
         ''')
 
-        send_message(squadra_proponente, text_to_send)
+        send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -251,7 +251,7 @@ def nuovo_prestito(conn, id_prestito):
             📆 Fino a: {data_fine}
         ''')
 
-        send_message(squadra_prestante, text_to_send)
+        send_message(nome_squadra=squadra_prestante, text_to_send=text_to_send)
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -301,7 +301,7 @@ def prestito_risposta(conn, id_prestito, risposta):
                 📆 Fino a: {data_fine}
             ''')
 
-        send_message(squadra_ricevente, text_to_send)
+        send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -340,9 +340,9 @@ def richiesta_terminazione_prestito(conn, id_prestito):
         ''')
         
         if richiedente_terminazione == squadra_prestante:
-            send_message(squadra_ricevente, text_to_send)
+            send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
         else:
-            send_message(squadra_prestante, text_to_send)
+            send_message(nome_squadra=squadra_prestante, text_to_send=text_to_send)
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -385,7 +385,7 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
                 La tua richiesta di terminare in anticipo il prestito del giocatore: {giocatore} è stata rifiutata.
             ''')
         
-        send_message(richiedente_terminazione, text_to_send)
+        send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
 
     except Exception as e:
         print(f"Errore: {e}")
