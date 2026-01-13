@@ -130,7 +130,7 @@ def user_aste(nome_squadra):
         offerta_massima_possibile = crediti - offerta_totale
 
         block_button = False
-        if crediti == 0 or offerta_massima_possibile == 0 or get_slot_occupati(conn, nome_squadra) == 32:
+        if crediti == 0 or offerta_massima_possibile == 0 or get_slot_occupati(conn, nome_squadra) >= 30:
             block_button = True
 
     except Exception as e:
