@@ -100,8 +100,8 @@
                                     Già iscritto
                                 </button>
                             {% elif slot_occupati >= 30 %}
-                                <button class="btn btn-sm btn-warning fw-semibold py-1 px-2" disabled title="Hai raggiunto il limite massimo di 30 giocatori">
-                                    Slot Pieni 
+                                <button class="btn btn-sm fw-semibold py-1 px-2" style="background-color: #6f42c1; border-color: #6f42c1; color: white;" disabled title="Hai raggiunto il limite massimo di 30 giocatori">
+                                    Slot Pieni
                                 </button>
                             {% else %}
                                 <form method="POST" action="{{ url_for('aste.user_aste', nome_squadra=nome_squadra) }}"
