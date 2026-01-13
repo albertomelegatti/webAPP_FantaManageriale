@@ -213,7 +213,6 @@ def scambio_risposta(conn, id_scambio, risposta):
                 💰 Crediti richiesti: {crediti_richiesti}
         ''')
 
-        send_message(squadra_proponente, text_to_send)
         send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
     except Exception as e:
@@ -252,7 +251,6 @@ def nuovo_prestito(conn, id_prestito):
             📆 Fino a: {data_fine}
         ''')
 
-        send_message(squadra_prestante, text_to_send)
         send_message(nome_squadra=squadra_prestante, text_to_send=text_to_send)
 
     except Exception as e:
@@ -303,7 +301,6 @@ def prestito_risposta(conn, id_prestito, risposta):
                 📆 Fino a: {data_fine}
             ''')
 
-        send_message(squadra_ricevente, text_to_send)
         send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
 
     except Exception as e:
@@ -343,10 +340,8 @@ def richiesta_terminazione_prestito(conn, id_prestito):
         ''')
         
         if richiedente_terminazione == squadra_prestante:
-            send_message(squadra_ricevente, text_to_send)
             send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
         else:
-            send_message(squadra_prestante, text_to_send)
             send_message(nome_squadra=squadra_prestante, text_to_send=text_to_send)
 
     except Exception as e:
@@ -390,7 +385,6 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
                 La tua richiesta di terminare in anticipo il prestito del giocatore: {giocatore} è stata rifiutata.
             ''')
         
-        send_message(richiedente_terminazione, text_to_send)
         send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
 
     except Exception as e:
