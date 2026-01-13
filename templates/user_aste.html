@@ -99,6 +99,10 @@
                                 <button class="btn btn-sm btn-secondary fw-semibold py-1 px-2" disabled>
                                     Già iscritto
                                 </button>
+                            {% elif slot_occupati >= 30 %}
+                                <button class="btn btn-sm btn-warning fw-semibold py-1 px-2" disabled title="Hai raggiunto il limite massimo di 30 giocatori">
+                                    Slot Pieni 
+                                </button>
                             {% else %}
                                 <form method="POST" action="{{ url_for('aste.user_aste', nome_squadra=nome_squadra) }}"
                                         onsubmit="return confirm('Sei sicuro di volerti iscrivere all\'asta per {{ asta.giocatore }}?');">

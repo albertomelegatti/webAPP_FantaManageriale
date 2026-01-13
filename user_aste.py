@@ -128,9 +128,10 @@ def user_aste(nome_squadra):
         crediti = get_crediti_squadra(conn, nome_squadra)
         offerta_totale = get_offerta_totale(conn, nome_squadra)
         offerta_massima_possibile = crediti - offerta_totale
+        slot_occupati = get_slot_occupati(conn, nome_squadra)
 
         block_button = False
-        if crediti == 0 or offerta_massima_possibile == 0 or get_slot_occupati(conn, nome_squadra) >= 30:
+        if crediti == 0 or offerta_massima_possibile == 0 or slot_occupati >= 30:
             block_button = True
 
     except Exception as e:
@@ -141,7 +142,7 @@ def user_aste(nome_squadra):
     finally:
         release_connection(conn, cur)
 
-    return render_template("user_aste.html", nome_squadra=nome_squadra, aste=aste, block_button=block_button, crediti=crediti, crediti_effettivi=offerta_massima_possibile)
+    return render_template("user_aste.html", nome_squadra=nome_squadra, aste=aste, block_button=block_button, crediti=crediti, crediti_effettivi=offerta_massima_possibile, slot_occupati=slot_occupati)
 
 
 
