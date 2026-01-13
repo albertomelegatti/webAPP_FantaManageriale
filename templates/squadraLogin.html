@@ -4,7 +4,11 @@
 <div class="container mt-5">
     <div class="text-center">
         <h1 class="mb-4">Sezione riservata di {{ nome_squadra }}</h1>
-        <p class="lead">Gestisci gli aspetti della tua squadra da qui.</p>
+        <div class="mb-3">
+            <span class="d-block text-muted">Slot giocatori: <strong>{{ slot_giocatori }}</strong></span>
+            <span class="d-block text-muted">Aste a cui partecipi: <strong>{{ slot_aste }}</strong></span>
+            <span class="d-block text-muted">Slot totali: <strong>{{ slot_occupati }} / 32</strong></span>
+        </div>
 
         <div class="text-center">
 

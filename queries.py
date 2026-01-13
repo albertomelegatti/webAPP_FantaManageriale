@@ -28,18 +28,45 @@ def get_offerta_totale(conn, nome_squadra):
     return offerta_totale
 
 
-def get_slot_occupati(conn, nome_squadra):
+def get_slot_giocatori(conn, nome_squadra):
 
     cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    # Conteggio giocatori con contratto
     cur.execute('''
-                SELECT COUNT(id) AS slot_occupati 
+                SELECT COUNT(id) AS slot_giocatori 
                 FROM giocatore 
                 WHERE squadra_att = %s 
                     AND tipo_contratto IN ('Hold', 'Indeterminato');
     ''', (nome_squadra,))
-    slot_occupati = cur.fetchone()["slot_occupati"]
+    slot_giocatori = cur.fetchone()["slot_giocatori"]
     cur.close()
-    return slot_occupati
+    return slot_giocatori
+
+
+
+def get_slot_aste(conn, nome_squadra):
+
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+                      
+    cur.execute('''
+                SELECT COUNT(id) AS slot_aste
+                FROM asta
+                WHERE %s = ANY(partecipanti)
+                    AND stato <> 'conclusa';
+    ''', (nome_squadra,))
+    slot_aste = cur.fetchone()["slot_aste"]
+    cur.close()
+    return slot_aste
+
+
+
+def get_slot_occupati(conn, nome_squadra):
+
+    slot_giocatori = get_slot_giocatori(conn, nome_squadra)
+    slot_aste = get_slot_aste(conn, nome_squadra)
+
+    return slot_giocatori + slot_aste
 
 
 def get_quotazione_attuale(conn, id_giocatore):

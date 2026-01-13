@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from user import format_partecipanti, formatta_data
-from queries import get_crediti_squadra, get_offerta_totale
+from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -130,7 +130,7 @@ def user_aste(nome_squadra):
         offerta_massima_possibile = crediti - offerta_totale
 
         block_button = False
-        if crediti == 0 or offerta_massima_possibile == 0:
+        if crediti == 0 or offerta_massima_possibile == 0 or get_slot_occupati(conn, nome_squadra) == 32:
             block_button = True
 
     except Exception as e:

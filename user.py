@@ -3,13 +3,24 @@ from flask import Blueprint, render_template
 from db import get_connection, release_connection
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
+from queries import get_slot_occupati, get_slot_aste, get_slot_giocatori
+
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
 # Sezione squadra DOPO LOGIN
 @user_bp.route("/squadraLogin/<nome_squadra>")
 def squadraLogin(nome_squadra):
-    return render_template("squadraLogin.html", nome_squadra=nome_squadra)
+
+    conn = get_connection()
+    
+    slot_giocatori = get_slot_giocatori(conn, nome_squadra)
+    slot_aste = get_slot_aste(conn, nome_squadra)
+    slot_occupati = get_slot_occupati(conn, nome_squadra)
+
+    release_connection(conn)
+
+    return render_template("squadraLogin.html", nome_squadra=nome_squadra, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati)
 
 
 
