@@ -106,6 +106,3 @@ def invia_comunicazione():
         release_connection(conn, cur)
 
     return render_template("admin_comunicazione.html", squadre=squadre)
-        
-
-

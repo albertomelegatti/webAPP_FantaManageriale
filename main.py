@@ -1,11 +1,13 @@
-import secrets
 import psycopg2
 import time
 import telegram_utils
+import os
+from dotenv import load_dotenv
 from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify, current_app
 from flask_session import Session
 from psycopg2 import extensions
 from psycopg2.extras import RealDictCursor
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from admin import admin_bp
 from user import user_bp, format_partecipanti, formatta_data
@@ -19,13 +21,23 @@ from datetime import datetime
 from chatbot import get_answer
 from queries import get_slot_occupati
 
-
 app = Flask(__name__)
 
+load_dotenv()
 init_pool()
 
-app.secret_key = secrets.token_hex(16)
-app.config['SESSION_TYPE'] = 'filesystem'
+app.secret_key = os.getenv("SECRET_KEY", "chiave_segreta_default_per_sviluppo")
+
+db_url = os.getenv("DATABASE_URL")
+if db_url and db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+app.config['SESSION_TYPE'] = 'sqlalchemy'
+app.config['SESSION_SQLALCHEMY'] = db
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 365
 app.config['SQUADRE_TELEGRAM_IDS'] = get_all_telegram_ids() # Per accedere: current_app.config.get('SQUADRE_TELEGRAM_IDS', {})
@@ -523,4 +535,3 @@ def chat_page():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=True)
-
