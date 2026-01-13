@@ -59,8 +59,8 @@ def nuova_asta(conn, id_asta):
 
         for s in squadre:
             print("Invio messaggio a ", s)
-            #send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
-            #time.sleep(2)  # Delay per evitare spam
+            send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
+            time.sleep(2)  # Delay per evitare spam
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -98,7 +98,7 @@ def asta_rilanciata(conn, id_asta, squadra_da_notificare):
             💰 Offerta attuale: {ultima_offerta} crediti.
         ''')
 
-        send_message(squadra_da_notificare, text_to_send)
+        send_message(squadra_da_notificare=squadra_da_notificare, text_to_send=text_to_send)
 
     except Exception as e:
         print(f"Errore: {e}")
