@@ -11,7 +11,9 @@
     <!-- RIEPILOGO PRESTITI -->
     <div class="mb-4 text-center">
         <h5>
-            Prestiti in entrata: <strong>{{ prestiti_in|length }}</strong> |
+            Prestiti in entrata: <strong>{{ prestiti_in|length }}</strong>
+            <span class="d-none d-sm-inline"> | </span>
+            <br class="d-sm-none">
             Prestiti in uscita: <strong>{{ prestiti_out|length }}</strong>
         </h5>
     </div>
@@ -121,7 +123,10 @@
                                       action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
                                       onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
                                     <input type="hidden" name="richiedi_terminazione" value="{{ p.id_prestito }}">
-                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-warning w-100">
+                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-warning w-100"
+                                        {% if slot_giocatori >= 30 %}
+                                            disabled title="Non puoi richiedere il rientro del giocatore perché hai gli slot pieni (30/30)"
+                                        {% endif %}>
                                         Chiedi terminazione anticipata
                                     </button>
                                 </form>

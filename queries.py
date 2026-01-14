@@ -63,10 +63,27 @@ def get_slot_aste(conn, nome_squadra):
 
 def get_slot_occupati(conn, nome_squadra):
 
-    slot_giocatori = get_slot_giocatori(conn, nome_squadra)
-    slot_aste = get_slot_aste(conn, nome_squadra)
+    return get_slot_giocatori(conn, nome_squadra) + get_slot_aste(conn, nome_squadra)
 
-    return slot_giocatori + slot_aste
+
+
+def get_slot_prestiti_in(conn, nome_squadra):
+
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    # CONTEGGIO PRESTITI IN
+    cur.execute('''
+                SELECT COUNT(id) AS prestiti_in_num
+                FROM giocatore
+                WHERE squadra_att = %s 
+                    AND tipo_contratto = 'Fanta-Prestito';
+    ''', (nome_squadra,))
+    prestiti_in_num = cur.fetchone()["prestiti_in_num"]
+    cur.close()
+    
+    return prestiti_in_num
+
+
+
 
 
 def get_quotazione_attuale(conn, id_giocatore):

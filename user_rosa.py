@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from user import formatta_data
-from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale
+from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori
 
 rosa_bp = Blueprint('rosa', __name__, url_prefix='/rosa')
 
@@ -255,6 +255,9 @@ def user_gestione_prestiti(nome_squadra):
                 "richiedente_terminazione": p['richiedente_terminazione']
             })
 
+        slot_giocatori = get_slot_giocatori(conn, nome_squadra)
+        
+
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -263,7 +266,7 @@ def user_gestione_prestiti(nome_squadra):
     finally:
         release_connection(conn, cur)
 
-    return render_template("user_gestione_prestiti.html", nome_squadra=nome_squadra, prestiti_in=prestiti_in, prestiti_out=prestiti_out)
+    return render_template("user_gestione_prestiti.html", nome_squadra=nome_squadra, prestiti_in=prestiti_in, prestiti_out=prestiti_out, slot_giocatori=slot_giocatori)
 
 
 

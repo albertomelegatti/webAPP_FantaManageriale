@@ -3,7 +3,7 @@ from flask import Blueprint, render_template
 from db import get_connection, release_connection
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
-from queries import get_slot_occupati, get_slot_aste, get_slot_giocatori
+from queries import get_slot_occupati, get_slot_aste, get_slot_giocatori, get_slot_prestiti_in
 
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
@@ -13,22 +13,13 @@ user_bp = Blueprint('user', __name__, url_prefix='/user')
 def squadraLogin(nome_squadra):
 
     conn = get_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
     
     slot_giocatori = get_slot_giocatori(conn, nome_squadra)
     slot_aste = get_slot_aste(conn, nome_squadra)
     slot_occupati = get_slot_occupati(conn, nome_squadra)
+    prestiti_in_num = get_slot_prestiti_in(conn, nome_squadra)
 
-    # CONTEGGIO PRESTITI IN
-    cur.execute('''
-                SELECT COUNT(id) AS prestiti_in_num
-                FROM giocatore
-                WHERE squadra_att = %s 
-                    AND tipo_contratto = 'Fanta-Prestito';
-    ''', (nome_squadra,))
-    prestiti_in_num = cur.fetchone()["prestiti_in_num"]
-
-    release_connection(conn)
+    release_connection(conn, None)
 
     return render_template("squadraLogin.html", nome_squadra=nome_squadra, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num)
 

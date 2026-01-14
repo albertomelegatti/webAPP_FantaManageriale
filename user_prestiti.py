@@ -5,7 +5,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from user import formatta_data
-from queries import get_crediti_squadra, get_offerta_totale
+from queries import get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in
 
 prestiti_bp = Blueprint('prestiti', __name__, url_prefix='/prestiti')
 
@@ -87,6 +87,12 @@ def user_prestiti(nome_squadra):
                 "data_fine": formatta_data(p["data_fine"])
             })
 
+        
+        block_button = False
+        prestiti_in_num = get_slot_prestiti_in(conn, nome_squadra)
+        if prestiti_in_num >= 2:
+            block_button = True
+
 
     except Exception as e:
         print(f"❌ Errore durante il caricamento della pagina 'prestiti': {e}")
@@ -95,7 +101,7 @@ def user_prestiti(nome_squadra):
     finally:
         release_connection(conn, cur)
 
-    return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=crediti, crediti_disponibili=crediti_disponibili, prestiti=prestiti)
+    return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=crediti, crediti_disponibili=crediti_disponibili, prestiti=prestiti, prestiti_in_num=prestiti_in_num, block_button=block_button)
 
 
 
