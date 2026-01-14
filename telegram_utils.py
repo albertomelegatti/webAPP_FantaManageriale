@@ -396,6 +396,84 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
 
 
 
+    
+def taglio_giocatore(conn, nome_squadra, giocatore, costo_taglio):
+
+    if not nome_squadra or not giocatore or not costo_taglio:
+        print("Errore, mancano dei parametri.")
+        return
+    
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        text_to_send = textwrap.dedent(f'''
+            ✂️ TAGLIO:
+            La squadra {nome_squadra} ha tagliato il giocatore {giocatore}!
+            💸 Costo del taglio: {costo_taglio}.
+        ''')
+
+        cur.execute('''
+                    SELECT nome
+                    FROM squadra
+                    WHERE nome NOT IN ('Svincolato', %s);
+        ''', (nome_squadra,))
+        squadre_raw = cur.fetchall()
+        squadre = [{"nome": s["nome"]} for s in squadre_raw]
+
+        for s in squadre:
+            print("Invio messaggio a ", s)
+            send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
+            time.sleep(2)  # Delay per evitare spam
+
+    except Exception as e:
+        print(f"Errore: {e}")
+    
+    finally:
+        release_connection(None, cur)
+
+
+
+
+
+def promozione_giocatore_primavera(conn, nome_squadra, giocatore):
+
+    if not nome_squadra or not giocatore:
+        print("Errore, mancano dei parametri.")
+        return
+    
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        text_to_send = textwrap.dedent(f'''
+            🆙 PROMOZIONE PRIMAVERA:
+            La squadra {nome_squadra} ha promosso in prima squadra il giocatore {giocatore}!
+        ''')
+
+        cur.execute('''
+                    SELECT nome
+                    FROM squadra
+                    WHERE nome NOT IN ('Svincolato', %s);
+        ''', (nome_squadra,))
+        squadre_raw = cur.fetchall()
+        squadre = [{"nome": s["nome"]} for s in squadre_raw]
+
+        for s in squadre:
+            print("Invio messaggio a ", s)
+            send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
+            time.sleep(2)  # Delay per evitare spam
+
+    except Exception as e:
+        print(f"Errore: {e}")
+    
+    finally:
+        release_connection(None, cur)
+
+    
+
+
+
+
+
 
 
 

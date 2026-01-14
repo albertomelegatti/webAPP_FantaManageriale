@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from user import formatta_data
-from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori
+from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori, get_nome_giocatore
 
 rosa_bp = Blueprint('rosa', __name__, url_prefix='/rosa')
 
@@ -36,7 +36,10 @@ def user_primavera(nome_squadra):
                             WHERE id = %s;
                 ''', (id_giocatore_da_promuovere,))
                 conn.commit()
+
+                nome_giocatore = get_nome_giocatore(conn, id_giocatore_da_promuovere)
                 flash("✅ Giocatore promosso in prima squadra con successo.", "success")
+                telegram_utils.promozione_giocatore_primavera(conn, nome_squadra, nome_giocatore)
 
 
         # Selezione dei giocatori in primavera
@@ -101,22 +104,26 @@ def user_tagli(nome_squadra):
 
                 # Aggiorna il giocatore a svincolato
                 cur.execute('''
-                    UPDATE giocatore
-                    SET squadra_att = 'Svincolato',
-                        detentore_cartellino = 'Svincolato',
-                        tipo_contratto = 'Svincolato'
-                    WHERE id = %s;
+                            UPDATE giocatore
+                            SET squadra_att = 'Svincolato',
+                                detentore_cartellino = 'Svincolato',
+                                tipo_contratto = 'Svincolato'
+                            WHERE id = %s;
                 ''', (id_giocatore_da_tagliare,))
 
                 # Aggiorna i crediti della squadra
                 cur.execute('''
-                    UPDATE squadra
-                    SET crediti = crediti - %s
-                    WHERE nome = %s;
+                            UPDATE squadra
+                            SET crediti = crediti - %s
+                            WHERE nome = %s;
                 ''', (costo_taglio, nome_squadra))
+
+                
+                nome_giocatore = get_nome_giocatore(conn, id_giocatore_da_tagliare)
 
                 conn.commit()
                 flash(f"✅ Giocatore tagliato con successo! Costo: {costo_taglio} crediti.", "success")
+                telegram_utils.taglio_giocatore(conn, nome_squadra, nome_giocatore, costo_taglio)
                 return redirect(url_for("rosa.user_tagli", nome_squadra=nome_squadra))
             
 
