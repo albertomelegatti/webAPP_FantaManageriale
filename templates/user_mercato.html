@@ -168,6 +168,7 @@
                     <tr>
                         <th>Offerta</th>
                         <th>Richiesta</th>
+                        <th>Controparte</th>
                         <th>Data</th>
                     </tr>
                 </thead>
@@ -190,11 +191,12 @@
                                 <strong>Crediti:</strong> {{ scambio.crediti_richiesti }}
                             {% endif %}
                         </td>
+                        <td>{{ scambio.squadra_destinataria }}</td>
                         <td>{{ scambio.data_proposta }}</td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="3" class="text-center text-muted">Nessuno scambio annullato</td>
+                        <td colspan="4" class="text-center text-muted">Nessuno scambio annullato</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -213,7 +215,7 @@
                     <tr>
                         <th>Offerta</th>
                         <th>Richiesta</th>
-                        <th>Contro squadra</th>
+                        <th>Controparte</th>
                         <th>Data conclusione</th>
                     </tr>
                 </thead>
