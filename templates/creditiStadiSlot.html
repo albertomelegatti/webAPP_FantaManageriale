@@ -5,7 +5,7 @@
     <div class="row">
         <!-- Colonna Crediti -->
         <div class="col-md-6">
-            <h2>Crediti</h2>
+            <h2 class="mb-2">Crediti</h2>
             <div class="table-responsive">
                 <table class="table table-sm table-striped small">
                     <thead>
@@ -26,9 +26,34 @@
             </div>
         </div>
 
-        <!-- Colonna Stadi -->
+        <!-- Colonna Slot -->
         <div class="col-md-6">
-            <h2>Stadi</h2>
+            <h2 class="mb-2">Slot Occupati</h2>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped small">
+                    <thead>
+                        <tr>
+                            <th>Squadra</th>
+                            <th>Slot Occupati</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for slot_riga in slot %}
+                        <tr>
+                            <td>{{ slot_riga.squadra_att }}</td>
+                            <td>{{ slot_riga.slot_occupati }} / 30 + {{ slot_riga.slot_in_prestito }} / 2</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <!-- Colonna Stadi -->
+        <div class="col-md-6 mx-auto">
+            <h2 class="mb-2">Stadi</h2>
             <div class="table-responsive">
                 <table class="table table-sm table-striped small">
                     <thead>
@@ -46,31 +71,6 @@
                             <td>{{ stadio.nome }}</td>
                             <td>{{ stadio.livello }}</td>
                             <td>{{ stadio.crediti_annuali }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tabella Slot -->
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <h2>Slot Occupati</h2>
-            <div class="table-responsive">
-                <table class="table table-sm table-striped small">
-                    <thead>
-                        <tr>
-                            <th>Squadra</th>
-                            <th>Slot Occupati</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for slot_riga in slot %}
-                        <tr>
-                            <td>{{ slot_riga.squadra_att }}</td>
-                            <td>{{ slot_riga.slot_occupati }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

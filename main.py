@@ -356,18 +356,28 @@ def creditiStadiSlot():
                 "crediti_annuali": bonus
             })
 
-        # CONTEGGIO SLOT OCCUPATI
+        # CONTEGGIO SLOT OCCUPATI E IN PRESTITO
         cur.execute('''
                     SELECT squadra_att, COUNT(id) AS slot_occupati
                     FROM giocatore
                     WHERE tipo_contratto IN ('Hold', 'Indeterminato')
                     GROUP BY squadra_att;''')
         slot_raw = cur.fetchall()
+        
+        cur.execute('''
+                    SELECT squadra_att, COUNT(id) AS slot_in_prestito
+                    FROM giocatore
+                    WHERE tipo_contratto = 'Fanta-Prestito'
+                    GROUP BY squadra_att;''')
+        slot_prestito_raw = cur.fetchall()
+        slot_prestito_dict = {s["squadra_att"]: s["slot_in_prestito"] for s in slot_prestito_raw}
+        
         slot = []
         for s in slot_raw:
             slot.append({
                 "squadra_att": s["squadra_att"],
-                "slot_occupati": s["slot_occupati"]
+                "slot_occupati": s["slot_occupati"],
+                "slot_in_prestito": slot_prestito_dict.get(s["squadra_att"], 0)
             })
 
 
