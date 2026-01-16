@@ -96,4 +96,22 @@ def get_quotazione_attuale(conn, id_giocatore):
     ''', (id_giocatore,))
     quotazione_attuale = cur.fetchone()["quot_att_mantra"]
     quotazione_attuale = int(quotazione_attuale)
+    cur.close()
+    
     return quotazione_attuale
+
+
+
+
+def get_nome_giocatore(conn, id_giocatore):
+
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute('''
+                SELECT nome 
+                FROM giocatore 
+                WHERE id = %s;
+    ''', (id_giocatore,))
+    nome_giocatore = cur.fetchone()['nome']
+    cur.close()
+
+    return nome_giocatore
