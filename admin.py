@@ -1,8 +1,9 @@
 import psycopg2
 import time
+import telegram_utils
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
+from user import formatta_data
 from db import get_connection, release_connection
-from telegram_utils import send_message
 from psycopg2.extras import RealDictCursor
 from psycopg2 import extensions
 
@@ -93,7 +94,7 @@ def invia_comunicazione():
 
             for s in squadre:
                 print("Invio messaggio a ", s)
-                send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
+                telegram_utils.send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
                 time.sleep(2)  # Delay per evitare spam
 
             flash(f"✅ Messaggi inviati a {len(squadre)} squadre.", "success")
@@ -106,3 +107,114 @@ def invia_comunicazione():
         release_connection(conn, cur)
 
     return render_template("admin_comunicazione.html", squadre=squadre)
+
+
+
+@admin_bp.route("/richiesta/modifica/contratto", methods=["GET", "POST"])
+def richiesta_modifica_contratto():
+    conn = None
+    cur = None
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        if request.method == "POST":
+
+            # RIFIUTA RICHIESTA DI MODIFICA CONTRATTO
+            id_richiesta = request.form.get("rifiuta_richiesta")
+            if id_richiesta:
+
+                # Aggiornamento stato richiesta
+                cur.execute('''
+                            UPDATE richiesta_modifica_contratto
+                            SET stato = 'rifiutata'
+                            WHERE id = %s;
+                ''', (id_richiesta,))
+                conn.commit()
+                flash("✅ Richiesta di modifica contratto rifiutata con successo.", "success")
+                telegram_utils.richiesta_modifica_contratto_risposta(conn, id_richiesta, "Rifiutato")
+
+
+
+            # ACCETTA RICHIESTA DI MODIFICA CONTRATTO
+            id_richiesta = request.form.get("accetta_richiesta")
+            if id_richiesta:
+
+                # Aggiornamento stato richiesta
+                cur.execute('''
+                            UPDATE richiesta_modifica_contratto
+                            SET stato = 'accettata'
+                            WHERE id = %s;
+                ''', (id_richiesta,))
+
+                # Recupero informazioni sulla richiesta
+                cur.execute('''
+                            SELECT giocatore, contratto_richiesto, crediti_richiesti, squadra_richiedente
+                            FROM richiesta_modifica_contratto
+                            WHERE id = %s;
+                ''', (id_richiesta,))
+                row = cur.fetchone()
+                id_giocatore = row['giocatore']
+                nuovo_contratto = row['contratto_richiesto']
+                crediti_richiesti = row['crediti_richiesti']
+                squadra_richiedente = row['squadra_richiedente']
+
+
+                # Aggiornamento contratto giocatore
+                cur.execute('''
+                            UPDATE giocatore
+                            SET tipo_contratto = %s
+                            WHERE id = %s;
+                ''', nuovo_contratto, id_giocatore)
+
+                # Aggiornamento crediti squadra
+                cur.execute('''
+                            UPDATE squadra
+                            SET crediti = crediti - %s
+                            WHERE nome = %s;
+                ''', crediti_richiesti, squadra_richiedente)
+
+
+                conn.commit()
+                flash("✅ Richiesta di modifica contratto accettata con successo.", "success")
+                telegram_utils.richiesta_modifica_contratto_risposta(conn, id_richiesta, "Accettato")
+                return redirect(url_for("admin.richiesta_modifica_contratto"))
+
+
+
+
+
+
+
+
+        cur.execute('''
+                    SELECT g.nome, g.tipo_contratto, r.giocatore, r.contratto_richiesto, r.squadra_richiedente, r.crediti_richiesti, r.messaggio, r.data, r.stato
+                    FROM richiesta_modifica_contratto AS r
+                    JOIN giocatore AS g
+                    ON r.giocatore = g.id
+                    ORDER BY data DESC;
+        ''')
+        richieste_raw = cur.fetchall()
+        richieste = []
+
+        for r in richieste_raw:
+            richieste.append({
+                "nome_giocatore": r["nome"],
+                "contratto_attuale": r["tipo_contratto"],
+                "contratto_richiesto": r["contratto_richiesto"],
+                "squadra_richiedente": r["squadra_richiedente"],
+                "crediti_richiesti": r["crediti_richiesti"],
+                "messaggio": r["messaggio"],
+                "data": formatta_data(r["data"]),
+                "stato": r["stato"]
+            })
+
+    except Exception as e:
+        print("Errore:", e)
+        flash("❌ Errore durante il caricamento delle richieste.", "danger")
+
+    finally:
+        release_connection(conn, cur)
+
+    return render_template("admin_richiesta_modifica_contratto.html", richieste=richieste)

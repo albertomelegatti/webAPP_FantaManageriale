@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header text-center bg-primary text-white">
+                    <h3>Richiesta Modifica Contratto</h3>
+                </div>
+                <div class="card-body p-4">
+                    {% if nome_giocatore %}
+                        <div class="mb-4">
+                            <h5 class="card-title">Dati Giocatore</h5>
+                            <p class="card-text mb-1"><strong>Giocatore:</strong> <span class="text-primary">{{ nome_giocatore }}</span></p>
+                            <p class="card-text"><strong>Tipo di Contratto Attuale:</strong> <span class="badge bg-secondary">{{ tipo_contratto }}</span></p>
+                        </div>
+                        <hr>
+                        <h5 class="card-title mt-4">Crea la tua Richiesta</h5>
+                        <form method="POST" action="{{ url_for('rosa.richiesta_modifica_contratto', nome_squadra=nome_squadra, id_giocatore=id_giocatore) }}">
+                            <div class="mb-3">
+                                <label for="nuovo_contratto" class="form-label"><strong>Nuovo Contratto Richiesto:</strong></label>
+                                <select class="form-select" id="nuovo_contratto" name="nuovo_contratto" required>
+                                    <option value="" disabled selected>Seleziona un'opzione...</option>
+                                    {% if tipo_contratto != 'Fanta-Prestito' %}
+                                    <option value="Fanta-Prestito">Fanta-Prestito</option>
+                                    {% endif %}
+                                    {% if tipo_contratto != 'Prestito Reale' %}
+                                    <option value="Prestito Reale">Prestito Reale</option>
+                                    {% endif %}
+                                    {% if tipo_contratto != 'Hold' %}
+                                    <option value="Hold">Hold</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="crediti_richiesti" class="form-label"><strong>Crediti Richiesti:</strong></label>
+                                <input type="number" class="form-control" id="crediti_richiesti" name="crediti_richiesti" min="0" placeholder="Inserisci i crediti richiesti per il giocatore">
+                            </div>
+                            <div class="mb-3">
+                                <label for="messaggio" class="form-label"><strong>Messaggio (Opzionale):</strong></label>
+                                <textarea class="form-control" id="messaggio" name="messaggio" rows="3" placeholder="Scrivi qui un messaggio da allegare alla richiesta..."></textarea>
+                            </div>
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary fw-bold">Invia Richiesta all'Admin</button>
+                                <a href="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}" class="btn btn-secondary">Annulla</a>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-danger" role="alert">
+                            <h4 class="alert-heading">Errore!</h4>
+                            <p>Dati del giocatore non trovati. Impossibile procedere con la richiesta.</p>
+                            <hr>
+                            <a href="{{ url_for('dashboardSquadra', nome_squadra=nome_squadra) }}" class="btn btn-danger">Torna alla Dashboard</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

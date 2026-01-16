@@ -70,13 +70,13 @@ def nuova_asta(conn, id_asta):
 
 
 
-def asta_rilanciata(conn, id_asta, squadra_da_notificare):
+def asta_rilanciata(conn, id_asta):
 
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         # Recupero info per scrivere il messaggio
         cur.execute('''
-                    SELECT g.nome, a.squadra_vincente, a.ultima_offerta
+                    SELECT g.nome, a.squadra_vincente, a.ultima_offerta, a.partecipanti
                     FROM asta a
                     JOIN giocatore g
                         ON a.giocatore = g.id
@@ -94,11 +94,13 @@ def asta_rilanciata(conn, id_asta, squadra_da_notificare):
 
         text_to_send = textwrap.dedent(f'''
             🏷️ ASTA: {giocatore}
-            La squadra {squadra_che_ha_rilanciato} ha rilanciato la tua offerta!
+            La squadra {squadra_che_ha_rilanciato} ha rilanciato l'offerta!
             💰 Offerta attuale: {ultima_offerta} crediti.
         ''')
 
-        send_message(nome_squadra=squadra_da_notificare, text_to_send=text_to_send)
+        for partecipante in info_asta['partecipanti']:
+            send_message(nome_squadra=partecipante, text_to_send=text_to_send)
+            time.sleep(2)  # Delay per evitare spam
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -468,6 +470,102 @@ def promozione_giocatore_primavera(conn, nome_squadra, giocatore):
     finally:
         release_connection(None, cur)
 
+
+
+
+
+def richiesta_modifica_contratto(conn, squadra_richiedente, id_giocatore, messaggio):
+
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute('''
+                    SELECT nome
+                    FROM giocatore
+                    WHERE id = %s;
+        ''', (id_giocatore,))
+        giocatore_raw = cur.fetchone()
+        giocatore = giocatore_raw['nome']
+
+        text_to_send = textwrap.dedent(f'''
+            📝 Notifica ADMIN
+            La squadra {squadra_richiedente} ha richiesto la modifica del contratto del giocatore {giocatore}.
+            Messaggio allegato: {messaggio}
+        ''')
+
+        cur.execute('''
+                    SELECT id_telegram
+                    FROM admin;
+        ''')
+        id_admin_raw = cur.fetchone()
+        id_admin = id_admin_raw['id_telegram']
+        
+        send_message(id=id_admin[0], text_to_send=text_to_send) # Mura
+        time.sleep(1)
+        send_message(id=id_admin[1], text_to_send=text_to_send) # Theo
+
+    except Exception as e:
+        print(f"Errore: {e}")
+    
+    finally:
+        release_connection(None, cur)
+
+
+
+
+def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
+
+    if risposta != "Accettato" and risposta != "Rifiutato":
+        print("Errore, il terzo parametro deve essere 'Accettato' o 'Rifiutato'")
+        return
+
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute('''
+                    SELECT r.squadra_richiedente, g.nome, g.tipo_contratto
+                    FROM richiesta_modifica_contratto AS r
+                        JOIN giocatore AS g
+                            ON r.giocatore = g.id
+                    WHERE r.id = %s;
+        ''', (id_richiesta,))
+        info_richiesta = cur.fetchone()
+
+        giocatore = info_richiesta['nome']
+        tipo_contratto = info_richiesta['tipo_contratto']
+        squadra_richiedente = info_richiesta['squadra_richiedente']
+
+
+        if risposta == "Accettato":
+            text_to_send = textwrap.dedent(f'''
+                📝 Modifica del contratto ACCETTATA
+                L'admin di Lega ha accettato la tua richiesta di modifica del contratto del giocatore: {giocatore}.
+                Nuovo contratto: {tipo_contratto}.
+            ''')
+
+        else:
+            text_to_send = textwrap.dedent(f'''
+                📝 Modifica del contratto RIFIUTATA
+                L'admin di Lega ha rifiutato la tua richiesta di modifica del contratto del giocatore: {giocatore}.
+            ''')
+
+        
+        send_message(nome_squadra=squadra_richiedente, text_to_send=text_to_send)
+
+    except Exception as e:
+        print(f"Errore: {e}")
+    
+    finally:
+        release_connection(None, cur)
+
+
+        
+
+
+
+
+
+
     
 
 
@@ -482,10 +580,18 @@ def promozione_giocatore_primavera(conn, nome_squadra, giocatore):
 
 def send_message(id=None, nome_squadra=None, text_to_send=None):
 
+    if not text_to_send:
+        print("Errore, inserire il parametro text_to_send.")
+        return
+
+
     if id is not None:
+        if id == 903944311:
+            text_to_send = "Messaggio di routine per non far bannare il bot da Telegram."
+        
         chat_id = id
-        text_to_send = "Messaggio di routine per non far bannare il bot da Telegram."
         payload = {"chat_id": chat_id, "text": text_to_send}
+
 
         try:
             r = requests.post(url, json=payload)

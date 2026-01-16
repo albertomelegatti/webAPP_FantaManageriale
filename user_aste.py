@@ -357,9 +357,6 @@ def singola_asta_attiva(asta_id, nome_squadra):
                 # Controllo sui valori dell'asta prima di rilanciare
                 if asta_dati['ultima_offerta'] < int(nuova_offerta) and asta_dati['squadra_vincente']:
 
-                    # Salvo l'informazione per il messaggio telegram
-                    squadra_vincente_prima_del_rilancio = asta_dati['squadra_vincente']
-
                     cur.execute('''
                         UPDATE asta
                         SET ultima_offerta = %s,
@@ -369,7 +366,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
                     ''', (nuova_offerta, nome_squadra, asta_id))
                     conn.commit()
                     flash(f"✅ Hai rilanciato l'offerta a {nuova_offerta}.", "success")
-                    telegram_utils.asta_rilanciata(conn, asta_id, squadra_vincente_prima_del_rilancio)
+                    telegram_utils.asta_rilanciata(conn, asta_id)
                     return redirect(url_for("aste.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
                 
                 flash("❌ Attenzione, valori non aggiornati, verrai reindirizzato alla pagina aggiornata.", "danger")

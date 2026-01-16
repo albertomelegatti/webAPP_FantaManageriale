@@ -37,6 +37,7 @@
                             <th>Ruolo</th>
                             <th>QA</th>
                             <th>Taglia</th>
+                            <th>Modifica Contratto</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -62,6 +63,9 @@
                                         {% endif %}
                                     </button>
                                 </form>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('rosa.richiesta_modifica_contratto', nome_squadra=nome_squadra, id_giocatore=giocatore.id) }}" class="btn btn-primary btn-sm fw-semibold w-100 py-1">📝 Modifica contratto</a>
                             </td>
                         </tr>
                         {% endfor %}

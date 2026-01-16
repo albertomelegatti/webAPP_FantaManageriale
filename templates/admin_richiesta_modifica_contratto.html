@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4">Gestione Richieste di Modifica Contratto</h1>
+        <p class="text-muted">In questa sezione puoi approvare o rifiutare le richieste inviate dagli utenti.</p>
+    </div>
+
+    <!-- Sezione Nuove Richieste -->
+    <div class="card shadow-lg mb-5 border-primary">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0">📝 Nuove Richieste</h3>
+        </div>
+        <div class="card-body">
+            {% set nuove_richieste_list = richieste | selectattr('stato', 'equalto', 'in_elaborazione') | list %}
+            {% if nuove_richieste_list %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Giocatore</th>
+                            <th scope="col">Squadra</th>
+                            <th scope="col">Data</th>
+                            <th scope="col">Contratto Attuale</th>
+                            <th scope="col">Contratto Richiesto</th>
+                            <th scope="col">Crediti Richiesti</th>
+                            <th scope="col">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for richiesta in nuove_richieste_list %}
+                        <tr>
+                            <td>{{ richiesta.nome_giocatore }}</td>
+                            <td>{{ richiesta.squadra_richiedente }}</td>
+                            <td>{{ richiesta.data}}</td>
+                            <td><span class="badge bg-secondary fs-6">{{ richiesta.contratto_attuale }}</span></td>
+                            <td><span class="badge bg-info fs-6">{{ richiesta.contratto_richiesto }}</span></td>
+                            <td>{{ richiesta.crediti_richiesti }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('admin.richiesta_modifica_contratto') }}"
+                                    class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+                                    <input type="hidden" name="id_richiesta" value="{{ richiesta.id }}">
+                                    <button type="submit" name="accetta_richiesta" value="accetta"
+                                        class="btn btn-success btn-sm fw-bold">✅ Accetta</button>
+                                    <button type="submit" name="rifiuta_richiesta" value="rifiuta"
+                                        class="btn btn-danger btn-sm fw-bold">❌ Rifiuta</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center text-muted">Nessuna nuova richiesta in elaborazione.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sezione Richieste Accettate -->
+    <div class="card shadow-sm mb-5 border-success">
+        <div class="card-header bg-success text-white">
+            <h3 class="mb-0">✅ Richieste Accettate</h3>
+        </div>
+        <div class="card-body">
+            {% set richieste_accettate_list = richieste | selectattr('stato', 'equalto', 'accettata') | list %}
+            {% if richieste_accettate_list %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Giocatore</th>
+                            <th scope="col">Squadra</th>
+                            <th scope="col">Data</th>
+                            <th scope="col">Contratto Approvato</th>
+                            <th scope="col">Crediti</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for richiesta in richieste_accettate_list %}
+                        <tr>
+                            <td>{{ richiesta.nome_giocatore }}</td>
+                            <td>{{ richiesta.squadra_richiedente }}</td>
+                            <td>{{ richiesta.data }}</td>
+                            <td><span class="badge bg-success fs-6">{{ richiesta.contratto_richiesto }}</span></td>
+                            <td>{{ richiesta.crediti_richiesti }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center text-muted">Nessuna richiesta è stata ancora accettata.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sezione Richieste Rifiutate -->
+    <div class="card shadow-sm border-danger">
+        <div class="card-header bg-danger text-white">
+            <h3 class="mb-0">❌ Richieste Rifiutate</h3>
+        </div>
+        <div class="card-body">
+            {% set richieste_rifiutate_list = richieste | selectattr('stato', 'equalto', 'rifiutata') | list %}
+            {% if richieste_rifiutate_list %}
+            <div class="table-responsive">
+                <table class="table table-hover table-striped align-middle text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Giocatore</th>
+                            <th scope="col">Squadra</th>
+                            <th scope="col">Data</th>
+                            <th scope="col">Contratto Richiesto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for richiesta in richieste_rifiutate_list %}
+                        <tr>
+                            <td>{{ richiesta.nome_giocatore }}</td>
+                            <td>{{ richiesta.squadra_richiedente }}</td>
+                            <td>{{ richiesta.data }}</td>
+                            <td><span class="badge bg-danger fs-6">{{ richiesta.contratto_richiesto }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-center text-muted">Nessuna richiesta è stata rifiutata.</p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

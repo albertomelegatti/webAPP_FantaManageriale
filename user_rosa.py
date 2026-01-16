@@ -163,6 +163,70 @@ def user_tagli(nome_squadra):
 
 
 
+@rosa_bp.route("/<nome_squadra>/richiesta_modifica_contratto/<id_giocatore>", methods=["GET", "POST"])
+def richiesta_modifica_contratto(nome_squadra, id_giocatore):
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        if request.method == "POST":
+            nuovo_tipo_contratto = request.form.get("nuovo_contratto")
+            crediti_richiesti = int(request.form.get("crediti_richiesti") or 0)
+            messaggio = (request.form.get("messaggio") or "").strip()
+
+            cur.execute("SELECT tipo_contratto FROM giocatore WHERE id = %s", (id_giocatore,))
+            tipo_contratto_attuale = cur.fetchone()['tipo_contratto']
+
+            cur.execute('''
+                INSERT INTO richiesta_modifica_contratto (
+                    giocatore,
+                    contratto_richiesto,
+                    squadra_richiedente,
+                    crediti_richiesti,
+                    messaggio,
+                    data,
+                    stato
+                ) VALUES (%s, %s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s)
+            ''', (id_giocatore, nuovo_tipo_contratto, nome_squadra, crediti_richiesti, messaggio, 'in_elaborazione'))
+
+            conn.commit()
+
+            flash("✅ Richiesta di modifica contratto inviata con successo.", "success")
+            telegram_utils.richiesta_modifica_contratto(conn, nome_squadra, id_giocatore, messaggio)
+            return redirect(url_for("rosa.user_gestione_rosa", nome_squadra=nome_squadra))
+
+        cur.execute('''
+                    SELECT nome, tipo_contratto
+                    FROM giocatore
+                    WHERE id = %s;
+        ''', (id_giocatore,))
+        giocatore_raw = cur.fetchone()
+
+        if not giocatore_raw:
+            flash(f"❌ Giocatore con id {id_giocatore} non trovato.", "danger")
+            return redirect(url_for('rosa.user_gestione_rosa', nome_squadra=nome_squadra))
+
+        nome_giocatore = giocatore_raw['nome']
+        tipo_contratto = giocatore_raw['tipo_contratto']
+
+        return render_template("user_richiesta_modifica_contratto.html", 
+                               nome_squadra=nome_squadra, 
+                               nome_giocatore=nome_giocatore, 
+                               tipo_contratto=tipo_contratto, 
+                               id_giocatore=id_giocatore)
+
+    except Exception as e:
+        print(f"Errore durante la richiesta di modifica contratto: {e}")
+        flash("❌ Errore durante la richiesta di modifica contratto.", "danger")
+        return redirect(url_for('rosa.user_gestione_rosa', nome_squadra=nome_squadra))
+
+    finally:
+        release_connection(conn, cur)
+
+
+
 
 
 
