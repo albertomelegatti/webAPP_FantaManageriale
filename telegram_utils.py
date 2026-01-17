@@ -569,7 +569,7 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
             text_to_send = textwrap.dedent(f'''
                 📝La squadra {squadra_richiedente} libera lo slot di {giocatore} a causa del suo trasferimento in prestito e recupera {info_richiesta['crediti_richiesti']} crediti. 
             ''')
-        elif tipo_contratto == "hold":
+        elif tipo_contratto == "Hold":
             text_to_send = textwrap.dedent(f'''
                 📝La squadra {squadra_richiedente} esercita il diritto di HOLD sul giocatore {giocatore}. 
             ''')
