@@ -15,6 +15,7 @@ from user_aste import aste_bp
 from user_mercato import mercato_bp
 from user_prestiti import prestiti_bp
 from user_rosa import rosa_bp
+from webhook import webhook_bp
 from db import get_connection, release_connection, init_pool
 from telegram_utils import get_all_telegram_ids
 from queries import get_slot_giocatori, get_slot_occupati
@@ -51,6 +52,7 @@ app.register_blueprint(aste_bp)
 app.register_blueprint(mercato_bp)
 app.register_blueprint(prestiti_bp)
 app.register_blueprint(rosa_bp)
+app.register_blueprint(webhook_bp)
 
 
 
