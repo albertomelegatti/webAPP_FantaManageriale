@@ -114,6 +114,7 @@ def invia_comunicazione():
 def richiesta_modifica_contratto():
     conn = None
     cur = None
+    richieste = []
 
     try:
         conn = get_connection()
@@ -122,8 +123,8 @@ def richiesta_modifica_contratto():
         if request.method == "POST":
 
             # RIFIUTA RICHIESTA DI MODIFICA CONTRATTO
-            id_richiesta = request.form.get("rifiuta_richiesta")
-            if id_richiesta:
+            if request.form.get("rifiuta_richiesta"):
+                id_richiesta = request.form.get("id_richiesta")
 
                 # Aggiornamento stato richiesta
                 cur.execute('''
@@ -138,8 +139,8 @@ def richiesta_modifica_contratto():
 
 
             # ACCETTA RICHIESTA DI MODIFICA CONTRATTO
-            id_richiesta = request.form.get("accetta_richiesta")
-            if id_richiesta:
+            if request.form.get("accetta_richiesta"):
+                id_richiesta = request.form.get("id_richiesta")
 
                 # Aggiornamento stato richiesta
                 cur.execute('''
@@ -160,20 +161,40 @@ def richiesta_modifica_contratto():
                 crediti_richiesti = row['crediti_richiesti']
                 squadra_richiedente = row['squadra_richiedente']
 
-
-                # Aggiornamento contratto giocatore
-                cur.execute('''
-                            UPDATE giocatore
-                            SET tipo_contratto = %s
-                            WHERE id = %s;
-                ''', nuovo_contratto, id_giocatore)
+                # Logica per aggiornare squadra_attuale e detentore_cartellino
+                if nuovo_contratto == 'Svincolato':
+                    # Se il contratto è "Svincolato", 
+                    # squadra attuale e detentore cartellino vanno a "Svincolato"
+                    cur.execute('''
+                                UPDATE giocatore
+                                SET tipo_contratto = %s,
+                                    squadra_att = %s,
+                                    detentore_cartellino = %s
+                                WHERE id = %s;
+                    ''', (nuovo_contratto, 'Svincolato', 'Svincolato', id_giocatore))
+                elif nuovo_contratto == 'Prestito Reale':
+                    # Se il contratto è "Prestito Reale", 
+                    # squadra attuale va a "Svincolato"
+                    cur.execute('''
+                                UPDATE giocatore
+                                SET tipo_contratto = %s,
+                                    squadra_att = %s
+                                WHERE id = %s;
+                    ''', (nuovo_contratto, 'Svincolato', id_giocatore))
+                else:
+                    # Per altri tipi di contratto, aggiorna solo il tipo di contratto
+                    cur.execute('''
+                                UPDATE giocatore
+                                SET tipo_contratto = %s
+                                WHERE id = %s;
+                    ''', (nuovo_contratto, id_giocatore))
 
                 # Aggiornamento crediti squadra
                 cur.execute('''
                             UPDATE squadra
                             SET crediti = crediti - %s
                             WHERE nome = %s;
-                ''', crediti_richiesti, squadra_richiedente)
+                ''', (crediti_richiesti, squadra_richiedente))
 
 
                 conn.commit()
@@ -189,7 +210,7 @@ def richiesta_modifica_contratto():
 
 
         cur.execute('''
-                    SELECT g.nome, g.tipo_contratto, r.giocatore, r.contratto_richiesto, r.squadra_richiedente, r.crediti_richiesti, r.messaggio, r.data, r.stato
+                    SELECT r.id, g.nome, g.tipo_contratto, r.giocatore, r.contratto_richiesto, r.squadra_richiedente, r.crediti_richiesti, r.messaggio, r.data, r.stato
                     FROM richiesta_modifica_contratto AS r
                     JOIN giocatore AS g
                     ON r.giocatore = g.id
@@ -200,6 +221,7 @@ def richiesta_modifica_contratto():
 
         for r in richieste_raw:
             richieste.append({
+                "id": r["id"],
                 "nome_giocatore": r["nome"],
                 "contratto_attuale": r["tipo_contratto"],
                 "contratto_richiesto": r["contratto_richiesto"],
