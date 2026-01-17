@@ -657,7 +657,7 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         for s in squadre:
             print("Invio messaggio a ", s)
             send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
-            time.sleep(2)  # Delay per evitare spam
+            time.sleep(1)  # Delay per evitare spam
             
     except Exception as e:
         print(f"Errore: {e}")
