@@ -285,7 +285,7 @@ def dashboardSquadra(nome_squadra):
                     SELECT nome, ruolo, quot_att_mantra, squadra_att
                     FROM giocatore 
                     WHERE detentore_cartellino = %s 
-                        AND tipo_contratto = 'Fanta-Prestito';
+                        AND tipo_contratto in ('Fanta-Prestito', 'Prestito Reale');
         ''', (nome_squadra,))
         prestiti_out_raw = cur.fetchall()
 
