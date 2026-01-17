@@ -628,7 +628,7 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         
         send_message(nome_squadra=squadra_richiedente, text_to_send=text_to_send)
         
-        # invia notigifica a tutte le squadre
+        # invia notifica a tutte le squadre
         cur.execute('''
                     SELECT nome
                     FROM squadra
