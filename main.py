@@ -432,8 +432,6 @@ def aste():
                 "stato": a["stato"],
                 "partecipanti": partecipanti
             })
-        
-        print(aste)
     
     
     except Exception as e:
