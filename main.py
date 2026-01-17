@@ -411,14 +411,9 @@ def aste():
         cur = conn.cursor(cursor_factory = RealDictCursor)
     
         cur.execute('''
-                    WITH giocatori_svincolati AS (
-                        SELECT id, nome
-                        FROM giocatore
-                        WHERE tipo_contratto = 'Svincolato')
-                    
                     SELECT g.nome, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
                     FROM asta a
-                    JOIN giocatori_svincolati g ON a.giocatore = g.id;''')
+                    JOIN giocatore g ON a.giocatore = g.id;''')
         aste_raw = cur.fetchall()
 
         for a in aste_raw:
@@ -437,6 +432,8 @@ def aste():
                 "stato": a["stato"],
                 "partecipanti": partecipanti
             })
+        
+        print(aste)
     
     
     except Exception as e:
