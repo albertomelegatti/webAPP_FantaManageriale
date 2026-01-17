@@ -632,8 +632,8 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         cur.execute('''
                     SELECT nome
                     FROM squadra
-                    WHERE nome NOT IN ('Svincolato', %s);
-        ''', (squadra_richiedente,))
+                    WHERE nome <> 'Svincolato';
+        ''')
         squadre_raw = cur.fetchall()
         squadre = [{"nome": s["nome"]} for s in squadre_raw]
 
