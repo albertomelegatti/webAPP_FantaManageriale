@@ -70,6 +70,42 @@ def nuova_asta(conn, id_asta):
 
 
 
+def asta_iniziata(conn, id_asta):
+
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # Recupero info per scrivere il messaggio
+
+        cur.execute('''
+                    SELECT g.nome, a.partecipanti
+                    FROM asta AS a
+                    JOIN giocatore AS g
+                        ON a.giocatore = g.id
+                    WHERE a.id = %s;
+        ''', (id_asta,))
+        info_asta = cur.fetchone()
+
+        nome_giocatore = info_asta['nome']
+        partecipanti = info_asta['partecipanti']
+
+        text_to_send = textwrap.dedent(f'''
+            🏷️ ASTA: **{nome_giocatore}**
+            L'asta è iniziata!
+        ''')
+
+        for partecipante in partecipanti:
+            send_message(nome_squadra=partecipante, text_to_send=text_to_send)
+            time.sleep(2)  # Delay per evitare spam 
+
+    except Exception as e:
+        print(f"Errore: {e}")
+    
+    finally:
+        release_connection(None, cur)
+        
+
+
+
 def asta_rilanciata(conn, id_asta):
 
     try:
@@ -108,6 +144,46 @@ def asta_rilanciata(conn, id_asta):
     finally:
         release_connection(None, cur)
 
+
+
+def asta_conclusa(conn, id_asta):
+
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # Recupero info per scrivere il messaggio
+        cur.execute('''
+                    SELECT g.nome, a.squadra_vincente, a.ultima_offerta, a.partecipanti
+                    FROM asta a
+                    JOIN giocatore g
+                        ON a.giocatore = g.id
+                    WHERE a.id = %s;
+        ''', (id_asta,))
+        info_asta = cur.fetchone()
+
+        if not info_asta:
+            print(f"Nessuna asta trovata con id {id_asta}")
+            return
+
+        giocatore = info_asta['nome']
+        squadra_vincente = info_asta['squadra_vincente']
+        ultima_offerta = info_asta['ultima_offerta']
+
+        text_to_send = textwrap.dedent(f'''
+            🏷️ ASTA: {giocatore}
+            L'asta è conclusa!
+            La squadra {squadra_vincente} ha vinto l'asta!
+            💰 Offerta finale: {ultima_offerta} crediti.
+        ''')
+
+        for partecipante in info_asta['partecipanti']:
+            send_message(nome_squadra=partecipante, text_to_send=text_to_send)
+            time.sleep(2)  # Delay per evitare spam
+
+    except Exception as e:
+        print(f"Errore: {e}")
+    
+    finally:
+        release_connection(None, cur)
 
 
 
