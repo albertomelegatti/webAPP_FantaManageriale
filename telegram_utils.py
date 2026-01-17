@@ -523,7 +523,7 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT r.squadra_richiedente, g.nome, g.tipo_contratto
+                    SELECT r.squadra_richiedente, g.nome, g.tipo_contratto, r.crediti_richiesti
                     FROM richiesta_modifica_contratto AS r
                         JOIN giocatore AS g
                             ON r.giocatore = g.id
@@ -551,12 +551,45 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
 
         
         send_message(nome_squadra=squadra_richiedente, text_to_send=text_to_send)
+        
+        # invia notigifica a tutte le squadre
+        cur.execute('''
+                    SELECT nome
+                    FROM squadra
+                    WHERE nome NOT IN ('Svincolato', %s);
+        ''', (squadra_richiedente,))
+        squadre_raw = cur.fetchall()
+        squadre = [{"nome": s["nome"]} for s in squadre_raw]
 
+        if tipo_contratto == "Svincolato":
+            text_to_send = textwrap.dedent(f'''
+                📝La squadra {squadra_richiedente} svincola {giocatore} a causa del suo trasferimento/svincolo e recupera {info_richiesta['crediti_richiesti']} crediti. 
+            ''')
+        elif tipo_contratto == "Prestito Reale":
+            text_to_send = textwrap.dedent(f'''
+                📝La squadra {squadra_richiedente} libera lo slot di {giocatore} a causa del suo trasferimento in prestito e recupera {info_richiesta['crediti_richiesti']} crediti. 
+            ''')
+        elif tipo_contratto == "hold":
+            text_to_send = textwrap.dedent(f'''
+                📝La squadra {squadra_richiedente} esercita il diritto di HOLD sul giocatore {giocatore}. 
+            ''')
+        else:
+            text_to_send = textwrap.dedent(f'''
+                📝La squadra {squadra_richiedente} modifica il contratto di {giocatore} a {tipo_contratto}. 
+            ''')
+
+        for s in squadre:
+            print("Invio messaggio a ", s)
+            send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
+            time.sleep(2)  # Delay per evitare spam
+            
     except Exception as e:
         print(f"Errore: {e}")
     
     finally:
         release_connection(None, cur)
+        
+
 
 
         
