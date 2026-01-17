@@ -1,6 +1,7 @@
+import telegram_utils
+import textwrap
 from flask import Blueprint, request, jsonify, current_app
 from psycopg2.extras import RealDictCursor
-import telegram_utils
 from db import get_connection, release_connection
 
 webhook_bp = Blueprint('webhook_bp', __name__)
@@ -13,7 +14,9 @@ def webhook_update_stato_asta():
     
     try:
         data = request.json
-        
+        conn = None
+        conn = get_connection()
+
         # Log per debug
         print("Webhook ricevuto:", data)
 
@@ -21,41 +24,25 @@ def webhook_update_stato_asta():
             old_status = data["old_record"].get("stato")
             new_status = data["record"].get("stato")
             id_asta = data["record"].get("id")
-            id_giocatore = data["record"].get("giocatore")
 
-            if old_status == "mostra_interesse" and new_status == "in_corso":
-                conn = None
-                cur = None
-                try:
-                    conn = get_connection()
-                    cur = conn.cursor(cursor_factory=RealDictCursor)
+            try:
 
-                    # Recupera il nome del giocatore
-                    cur.execute("SELECT nome FROM giocatore WHERE id = %s", (id_giocatore,))
-                    giocatore = cur.fetchone()
+                if old_status == "mostra_interesse" and new_status == "in_corso":
+                    telegram_utils.asta_iniziata(conn, id_asta)
 
-                    if giocatore:
-                        nome_giocatore = giocatore["nome"]
-                        
-                        # Prepara e invia la notifica
-                        text_to_send = f"📣 L'asta per **{nome_giocatore}** è iniziata! 🚀\n\n"(
-                            f"📣 L'asta per **{nome_giocatore}** è iniziata! 🚀\n\n"
-                            f"Fai la tua offerta ora!"
-                        )
-                        
-                        # Invia notifica a tutti gli utenti registrati su Telegram
-                        telegram_ids = current_app.config.get('SQUADRE_TELEGRAM_IDS', {}).values()
-                        for chat_id in telegram_ids:
-                            telegram_utils.send_message(chat_id, message, parse_mode="Markdown")
+                if old_status == "in_corso" and new_status == "conclusa":
+                    telegram_utils.asta_conclusa(conn, id_asta)
 
-                        print(f"Notifica inviata per l'asta {id_asta} del giocatore {nome_giocatore}")
 
-                except Exception as e:
-                    print(f"Errore durante l'elaborazione del webhook: {e}")
-                finally:
-                    release_connection(conn, cur)
+            except Exception as e:
+                print(f"Errore durante l'elaborazione del webhook: {e}")
+                    
 
     except Exception as e:
         print(f"Errore nella ricezione del webhook: {e}")
+
+    finally:
+        release_connection(conn, None)
+
 
     return jsonify({"status": "success"}), 200
