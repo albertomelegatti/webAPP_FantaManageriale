@@ -133,8 +133,8 @@ def user_tagli(nome_squadra):
         cur.execute('''
                     SELECT id, nome, ruolo, quot_att_mantra
                     FROM giocatore
-                    WHERE squadra_att = %s 
-                        AND tipo_contratto = 'Indeterminato'
+                    WHERE detentore_cartellino = %s 
+                        AND tipo_contratto <> 'Primavera'
                     ORDER BY ruolo, nome;
         ''', (nome_squadra,))
         rosa_raw = cur.fetchall()
