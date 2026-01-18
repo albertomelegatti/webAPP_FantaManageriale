@@ -413,7 +413,8 @@ def aste():
         cur.execute('''
                     SELECT g.nome, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
                     FROM asta a
-                    JOIN giocatore g ON a.giocatore = g.id;''')
+                    JOIN giocatore g ON a.giocatore = g.id
+                    ORDER BY a.tempo_fine_asta DESC;''')
         aste_raw = cur.fetchall()
 
         for a in aste_raw:

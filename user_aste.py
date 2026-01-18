@@ -96,6 +96,7 @@ def user_aste(nome_squadra):
                     WHERE (a.stato = 'in_corso' AND %s = ANY(a.partecipanti)) 
                     OR a.stato = 'mostra_interesse'
                     OR (a.stato = 'conclusa' AND a.squadra_vincente = %s);
+                    ORDER BY a.tempo_fine_asta DESC;
         ''', (nome_squadra, nome_squadra))
         aste_raw = cur.fetchall()
 
