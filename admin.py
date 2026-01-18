@@ -83,20 +83,8 @@ def invia_comunicazione():
             if not text_to_send:
                 flash("❌ Il messaggio non può essere vuoto.", "warning")
                 return redirect(url_for("admin.invia_comunicazione"))
-
-            cur.execute('''
-                    SELECT nome
-                    FROM squadra
-                    WHERE nome <> 'Svincolato';
-            ''')
-            squadre_raw = cur.fetchall()
-            squadre = [{"nome": s["nome"]} for s in squadre_raw]
-
-            for s in squadre:
-                print("Invio messaggio a ", s)
-                telegram_utils.send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
-                time.sleep(2)  # Delay per evitare spam
-
+            telegram_utils.send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+            
             flash(f"✅ Messaggi inviati a {len(squadre)} squadre.", "success")
 
 

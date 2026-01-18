@@ -49,19 +49,8 @@ def nuova_asta(conn, id_asta):
             📆 Hai tempo per iscriverti fino a: {tempo_fine_mostra_interesse}.
         ''')
 
-        cur.execute('''
-                    SELECT nome
-                    FROM squadra
-                    WHERE nome NOT IN ('Svincolato', %s);
-        ''', (squadra_vincente,))
-        squadre_raw = cur.fetchall()
-        squadre = [{"nome": s["nome"]} for s in squadre_raw]
-
-        for s in squadre:
-            print("Invio messaggio a ", s)
-            send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
-            time.sleep(2)  # Delay per evitare spam
-
+        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+        
     except Exception as e:
         print(f"Errore: {e}")
     
@@ -152,7 +141,7 @@ def asta_conclusa(conn, id_asta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
         # Recupero info per scrivere il messaggio
         cur.execute('''
-                    SELECT g.nome, a.squadra_vincente, a.ultima_offerta, a.partecipanti
+                    SELECT g.nome, a.squadra_vincente, a.ultima_offerta
                     FROM asta a
                     JOIN giocatore g
                         ON a.giocatore = g.id
@@ -169,15 +158,11 @@ def asta_conclusa(conn, id_asta):
         ultima_offerta = info_asta['ultima_offerta']
 
         text_to_send = textwrap.dedent(f'''
-            🏷️ ASTA: {giocatore}
-            L'asta è conclusa!
-            La squadra {squadra_vincente} ha vinto l'asta!
-            💰 Offerta finale: {ultima_offerta} crediti.
+            📢 COMUNICAZIONE UFFICIALE:
+            La squadra {squadra_vincente} acquista il giocatore {giocatore} per {ultima_offerta} crediti.
         ''')
 
-        for partecipante in info_asta['partecipanti']:
-            send_message(nome_squadra=partecipante, text_to_send=text_to_send)
-            time.sleep(2)  # Delay per evitare spam
+        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -276,7 +261,20 @@ def scambio_risposta(conn, id_scambio, risposta):
                 {giocatori_richiesti}
                 💰 Crediti richiesti: {crediti_richiesti}
             ''')
-        
+            send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
+            # invia notifica a tutte le squadre
+            text_to_send = textwrap.dedent(f'''
+                📢 SCAMBIO UFFICIALE:
+                🔥 Le squadre{squadra_proponente} e {squadra_destinataria} hanno trovato concluso un scambio:
+
+                ✅ **{squadra_proponente}** riceve:
+                ⚽ {giocatori_richiesti} (+🪙 {crediti_richiesti} cr.)
+
+                ✅ **{squadra_destinataria}** riceve:
+                ⚽ {giocatori_offerti} (+🪙 {crediti_offerti} cr.)
+            ''')
+            send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+
         else:
             text_to_send = textwrap.dedent(f'''
                 SCAMBIO RIFIUTATO
@@ -290,8 +288,7 @@ def scambio_risposta(conn, id_scambio, risposta):
                 {giocatori_richiesti}
                 💰 Crediti richiesti: {crediti_richiesti}
         ''')
-
-        send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
+            send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -371,6 +368,18 @@ def prestito_risposta(conn, id_prestito, risposta):
                 ⚽ Giocatore: {giocatore}
                 📆 Fino a: {data_fine}
             ''')
+            send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
+            text_to_send = textwrap.dedent(f'''
+                📢 PRESTITO UFFICIALE:
+                
+                👤 **{giocatore}**
+                
+                🔴 Da: {squadra_prestante}
+                🟢 A: {squadra_ricevente}
+                📅 Scadenza: {data_fine}
+            ''')
+            send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+        
         else:
             text_to_send = textwrap.dedent(f'''
                 PRESTITO RIFIUTATO
@@ -378,8 +387,7 @@ def prestito_risposta(conn, id_prestito, risposta):
                 ⚽ Giocatore: {giocatore}
                 📆 Fino a: {data_fine}
             ''')
-
-        send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
+            send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -441,7 +449,7 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT p.giocatore, p.richiedente_terminazione
+                    SELECT p.giocatore, p.richiedente_terminazione, p.squadra_prestante, p.squadra_ricevente, p.data_fine
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -451,18 +459,25 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
 
         giocatore = info_prestito['nome']
         richiedente_terminazione = info_prestito['richiedente_terminazione']
-
+        squadra_prestante = info_prestito['squadra_prestante']
+        squadra_ricevente = info_prestito['squadra_ricevente']
+        
         if risposta == "Accettato":
             text_to_send = textwrap.dedent(f'''
                 RICHIESTA DI TERMINAZIONE PRESTITO ANTICIPATA ACCETTATA
                 La tua richiesta di terminare in anticipo il prestito del giocatore: {giocatore} è stata accettata.
             ''')
+            send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
+            text_to_send = textwrap.dedent(f'''
+                📢 COMUNICAZIONE UFFICIALE:
+                Le squadre {squadra_prestante} e {squadra_ricevente} si sono accordate per terminare anticipatamente il prestito del giocatore: {giocatore}.
+            ''')
+            send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
         else:
             text_to_send = textwrap.dedent(f'''
                 RICHIESTA DI TERMINAZIONE PRESTITO ANTICIPATA RIFIUTATA
                 La tua richiesta di terminare in anticipo il prestito del giocatore: {giocatore} è stata rifiutata.
             ''')
-        
         send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
 
     except Exception as e:
@@ -485,24 +500,13 @@ def taglio_giocatore(conn, nome_squadra, giocatore, costo_taglio):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         text_to_send = textwrap.dedent(f'''
-            ✂️ TAGLIO:
-            La squadra {nome_squadra} ha tagliato il giocatore {giocatore}!
+            ✂️ COMUNICAZIONE UFFICIALE:
+            La squadra {nome_squadra} svincola il giocatore {giocatore}!
             💸 Costo del taglio: {costo_taglio}.
         ''')
 
-        cur.execute('''
-                    SELECT nome
-                    FROM squadra
-                    WHERE nome NOT IN ('Svincolato', %s);
-        ''', (nome_squadra,))
-        squadre_raw = cur.fetchall()
-        squadre = [{"nome": s["nome"]} for s in squadre_raw]
-
-        for s in squadre:
-            print("Invio messaggio a ", s)
-            send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
-            time.sleep(2)  # Delay per evitare spam
-
+        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+        
     except Exception as e:
         print(f"Errore: {e}")
     
@@ -523,23 +527,12 @@ def promozione_giocatore_primavera(conn, nome_squadra, giocatore):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         text_to_send = textwrap.dedent(f'''
-            🆙 PROMOZIONE PRIMAVERA:
-            La squadra {nome_squadra} ha promosso in prima squadra il giocatore {giocatore}!
+            🆙 COMUNICAZIONE UFFICIALE:
+            La squadra {nome_squadra} promuove in prima squadra il giocatore {giocatore}
         ''')
 
-        cur.execute('''
-                    SELECT nome
-                    FROM squadra
-                    WHERE nome NOT IN ('Svincolato', %s);
-        ''', (nome_squadra,))
-        squadre_raw = cur.fetchall()
-        squadre = [{"nome": s["nome"]} for s in squadre_raw]
-
-        for s in squadre:
-            print("Invio messaggio a ", s)
-            send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
-            time.sleep(2)  # Delay per evitare spam
-
+        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+        
     except Exception as e:
         print(f"Errore: {e}")
     
@@ -629,35 +622,28 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         send_message(nome_squadra=squadra_richiedente, text_to_send=text_to_send)
         
         # invia notifica a tutte le squadre
-        cur.execute('''
-                    SELECT nome
-                    FROM squadra
-                    WHERE nome <> 'Svincolato';
-        ''')
-        squadre_raw = cur.fetchall()
-        squadre = [{"nome": s["nome"]} for s in squadre_raw]
-
         if tipo_contratto == "Svincolato":
             text_to_send = textwrap.dedent(f'''
+                📢 COMUNICAZIONE UFFICIALE:
                 📝La squadra {squadra_richiedente} svincola {giocatore} a causa del suo trasferimento/svincolo e recupera {info_richiesta['crediti_richiesti']} crediti. 
             ''')
         elif tipo_contratto == "Prestito Reale":
             text_to_send = textwrap.dedent(f'''
+                📢 COMUNICAZIONE UFFICIALE:
                 📝La squadra {squadra_richiedente} libera lo slot di {giocatore} a causa del suo trasferimento in prestito e recupera {info_richiesta['crediti_richiesti']} crediti. 
             ''')
         elif tipo_contratto == "Hold":
             text_to_send = textwrap.dedent(f'''
+                📢 COMUNICAZIONE UFFICIALE:
                 📝La squadra {squadra_richiedente} esercita il diritto di HOLD sul giocatore {giocatore}. 
             ''')
         else:
             text_to_send = textwrap.dedent(f'''
+                📢 COMUNICAZIONE UFFICIALE:
                 📝La squadra {squadra_richiedente} modifica il contratto di {giocatore} a {tipo_contratto}. 
             ''')
 
-        for s in squadre:
-            print("Invio messaggio a ", s)
-            send_message(nome_squadra=s['nome'], text_to_send=text_to_send)
-            time.sleep(1)  # Delay per evitare spam
+        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
             
     except Exception as e:
         print(f"Errore: {e}")
@@ -779,9 +765,21 @@ def get_all_telegram_ids():
                  # Includi la squadra anche se l'array è NULL (vuoto) nel DB
                  SQUADRE_IDS[nome_squadra] = []
 
+        cur.execute('''
+                    SELECT id_gruppo_comunicazioni
+                    FROM admin;
+        ''')
+        id_gruppo_comunicazioni_raw = cur.fetchone()
+        id_gruppo_comunicazioni = id_gruppo_comunicazioni_raw['id_gruppo_comunicazioni']
+        SQUADRE_IDS['gruppo_comunicazioni'] = [id_gruppo_comunicazioni]
+
         print("✅ Inizializzato dizionario ID telegram")
+        #print(SQUADRE_IDS)
+
         return SQUADRE_IDS
 
+
+        
     except Exception as e:
         print(f"❌ Errore critico nel fetching della mappa ID: {e}")
         return {}
