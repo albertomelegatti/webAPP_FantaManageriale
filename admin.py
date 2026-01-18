@@ -169,6 +169,15 @@ def richiesta_modifica_contratto():
                                     squadra_att = %s
                                 WHERE id = %s;
                     ''', (nuovo_contratto, 'Svincolato', id_giocatore))
+                elif nuovo_contratto == 'Indeterminato':
+                    # Se il contratto è "Indeterminato", 
+                    # squadra attuale va a tonra a  detentore cartellino
+                    cur.execute('''
+                                UPDATE giocatore
+                                SET tipo_contratto = %s,
+                                    squadra_att = %s
+                                WHERE id = %s;
+                    ''', (nuovo_contratto, squadra_richiedente, id_giocatore))
                 else:
                     # Per altri tipi di contratto, aggiorna solo il tipo di contratto
                     cur.execute('''

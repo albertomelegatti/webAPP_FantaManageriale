@@ -22,6 +22,8 @@
                                 <label for="nuovo_contratto" class="form-label"><strong>Nuovo Contratto Richiesto:</strong></label>
                                 <select class="form-select" id="nuovo_contratto" name="nuovo_contratto" required>
                                     <option value="" disabled selected>Seleziona un'opzione...</option>
+                                    {% if tipo_contratto != 'Indeterminato' %}
+                                    <option value="Indeterminato">Indeterminato</option>
                                     {% if tipo_contratto != 'Svincolato' %}
                                     <option value="Svincolato">Trasferimento Reale</option>
                                     {% endif %}
