@@ -66,7 +66,7 @@ def nuova_asta(conn, id_asta):
         print(f"Errore: {e}")
     
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -101,7 +101,7 @@ def asta_iniziata(conn, id_asta):
         print(f"Errore: {e}")
     
     finally:
-        release_connection(None, cur)
+        cur.close()
         
 
 
@@ -142,7 +142,7 @@ def asta_rilanciata(conn, id_asta):
         print(f"Errore: {e}")
     
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -183,7 +183,7 @@ def asta_conclusa(conn, id_asta):
         print(f"Errore: {e}")
     
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -231,7 +231,7 @@ def nuovo_scambio(conn, id_scambio):
         print(f"Errore: {e}")
 
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -297,7 +297,7 @@ def scambio_risposta(conn, id_scambio, risposta):
         print(f"Errore: {e}")
 
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -335,7 +335,7 @@ def nuovo_prestito(conn, id_prestito):
         print(f"Errore: {e}")
 
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -385,7 +385,7 @@ def prestito_risposta(conn, id_prestito, risposta):
         print(f"Errore: {e}")
 
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -426,7 +426,7 @@ def richiesta_terminazione_prestito(conn, id_prestito):
         print(f"Errore: {e}")
 
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -469,7 +469,7 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
         print(f"Errore: {e}")
 
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -507,7 +507,7 @@ def taglio_giocatore(conn, nome_squadra, giocatore, costo_taglio):
         print(f"Errore: {e}")
     
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -544,7 +544,7 @@ def promozione_giocatore_primavera(conn, nome_squadra, giocatore):
         print(f"Errore: {e}")
     
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -584,7 +584,7 @@ def richiesta_modifica_contratto(conn, squadra_richiedente, id_giocatore, messag
         print(f"Errore: {e}")
     
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -663,7 +663,7 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         print(f"Errore: {e}")
     
     finally:
-        release_connection(None, cur)
+        cur.close()
         
 
 
