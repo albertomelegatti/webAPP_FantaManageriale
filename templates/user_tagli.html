@@ -4,9 +4,9 @@
 <div class="container mt-5">
 
     <div class="text-center mb-4">
-        <h1 class="mb-3">Gestione Tagli - {{ nome_squadra }}</h1>
+        <h1 class="mb-3">Svincoli & Gestione Contratti - {{ nome_squadra }}</h1>
         <p class="text-muted">
-            ✂️ Quando un giocatore viene tagliato, la squadra dovrà pagare 
+            ✂️ Quando un giocatore viene svincolato, la squadra dovrà pagare 
             <strong>metà della sua quotazione attuale arrotondata per eccesso.</strong>
         </p>
         <small class="text-muted">
@@ -36,13 +36,13 @@
                             <th>Nome</th>
                             <th>Ruolo</th>
                             <th>QA</th>
-                            <th>Taglia</th>
+                            <th>Svincola</th>
                             <th>Modifica Contratto</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for giocatore in rosa %}
-                        {% set costo_taglio = ((giocatore.quot_att_mantra / 2) | round(0, 'ceil')) %}
+                        {% set costo_taglio = ((giocatore.quot_att_mantra / 2) | round(0, 'ceil')) | int %}
                         <tr>
                             <td>{{ giocatore.nome }}</td>
                             <td>{{ giocatore.ruolo }}</td>
@@ -59,7 +59,7 @@
                                         {% if crediti_disponibili < costo_taglio %}
                                             🚫 Non disponibile
                                         {% else %}
-                                            ✂️ Taglia
+                                            ✂️ Svincola ({{ costo_taglio }} crediti)
                                         {% endif %}
                                     </button>
                                 </form>
