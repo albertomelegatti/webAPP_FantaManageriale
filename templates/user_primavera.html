@@ -3,7 +3,8 @@
 {% block content %}
 <div class="container mt-5">
     <h2 class="text-center mb-4">👥 Promozione Giocatori dalla Primavera</h2>
-    <p class="text-center text-muted">Seleziona i giocatori che vuoi promuovere nella prima squadra.</p>
+    <p class="text-center text-muted">In questa schermata puoi promuovere un giocatore in prima squadra o tagliarlo, ricordiamo che per i giocatori
+        in primavera non sono previsti costi per il taglio.</p>
 
     {% if primavera %}
     <div class="card shadow-sm mx-auto" style="max-width: 900px;">
@@ -16,6 +17,7 @@
                             <th>Ruolo</th>
                             <th>QA</th>
                             <th>Promuovi</th>
+                            <th>Taglio</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -31,6 +33,16 @@
                                     <button type="submit" 
                                             class="btn btn-sm btn-success fw-semibold w-100 py-1">
                                         Promuovi
+                                    </button>
+                                </form>
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('rosa.user_primavera', nome_squadra=nome_squadra) }}"
+                                    onsubmit="return confirm('Vuoi davvero tagliare {{ giocatore.nome }}?');">
+                                    <input type="hidden" name="id_giocatore_da_tagliare" value="{{ giocatore.id }}">
+                                    <button type="submit"
+                                            class="btn btn-sm btn-danger fw-semibold w-100 py-1">
+                                        Taglio
                                     </button>
                                 </form>
                             </td>

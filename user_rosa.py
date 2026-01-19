@@ -41,6 +41,23 @@ def user_primavera(nome_squadra):
                 flash("✅ Giocatore promosso in prima squadra con successo.", "success")
                 telegram_utils.promozione_giocatore_primavera(conn, nome_squadra, nome_giocatore)
 
+            # Taglia un giocatore dalla primavera
+            id_giocatore_da_tagliare = request.form.get("id_giocatore_da_tagliare")
+            if id_giocatore_da_tagliare:
+                cur.execute('''
+                            UPDATE giocatore
+                            SET squadra_att = 'Svincolato',
+                                detentore_cartellino = 'Svincolato',
+                                tipo_contratto = 'Svincolato'
+                            WHERE id = %s;
+                ''', (id_giocatore_da_tagliare,))
+                
+                nome_giocatore = get_nome_giocatore(conn, id_giocatore_da_tagliare)
+                
+                conn.commit()
+                flash("✅ Giocatore tagliato con successo.", "success")
+                telegram_utils.taglio_giocatore(conn, nome_squadra, nome_giocatore, 0)
+
 
         # Selezione dei giocatori in primavera
         cur.execute('''
