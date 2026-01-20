@@ -25,17 +25,20 @@ def webhook_update_stato_asta():
             new_status = data["record"].get("stato")
             id_asta = data["record"].get("id")
 
-            try:
+            # Controlla che ci sia effettivamente un cambiamento dello stato
+            if old_status != new_status:
+                try:
 
-                if old_status == "mostra_interesse" and new_status == "in_corso":
-                    telegram_utils.asta_iniziata(conn, id_asta)
+                    if old_status == "mostra_interesse" and new_status == "in_corso":
+                        telegram_utils.asta_iniziata(conn, id_asta)
 
-                if old_status == "in_corso" and new_status == "conclusa":
-                    telegram_utils.asta_conclusa(conn, id_asta)
-
-
-            except Exception as e:
-                print(f"Errore durante l'elaborazione del webhook: {e}")
+                    if old_status == "in_corso" and new_status == "conclusa":
+                        telegram_utils.asta_conclusa(conn, id_asta)
+                        
+                except Exception as e:
+                    print(f"Errore durante l'elaborazione del webhook: {e}")
+            else:
+                print(f"Webhook ignorato: nessun cambio di stato per asta {id_asta}")
                     
 
     except Exception as e:
