@@ -13,22 +13,12 @@ def webhook_update_stato_asta():
     #Invia una notifica Telegram quando un'asta passa da 'mostra_interesse' a 'in_corso'.
     
     try:
-        print(f"\n=== WEBHOOK CHIAMATO ===")
-        print(f"Metodo: {request.method}")
-        print(f"Headers: {dict(request.headers)}")
-        print(f"Raw data: {request.data}")
-        
         data = request.json
-        print(f"JSON parsato: {data}")
-        
         conn = None
         conn = get_connection()
 
         # Log per debug
-        print(f"Webhook ricevuto: {data}")
-        print(f"Tipo di data: {type(data)}")
-        if data:
-            print(f"Chiavi presenti: {data.keys()}")
+        print("Webhook ricevuto:", data)
 
         if data and data.get("type") == "UPDATE" and "record" in data and "old_record" in data:
             old_status = data["old_record"].get("stato")
