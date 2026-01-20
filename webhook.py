@@ -45,4 +45,5 @@ def webhook_update_stato_asta():
         release_connection(conn, None)
 
 
+    print("Invio risposta al database...")
     return jsonify({"status": "success"}), 200
