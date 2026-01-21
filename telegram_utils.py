@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 from db import get_connection, release_connection
 from user import format_giocatori, formatta_data
 
+var_stagione = '25-26'
+
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 
 load_dotenv(dotenv_path=env_path)
@@ -673,6 +675,32 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
 
 
 
+def salva_movimento(text_to_send):
+    """Salva il messaggio nella tabella movimenti_squadra"""
+    conn = None
+    cur = None
+    
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        cur.execute('''
+            INSERT INTO movimenti_squadra (evento, data, stagione)
+            VALUES (%s, NOW(), %s)
+        ''', (text_to_send, var_stagione))
+        
+        conn.commit()
+        print(f"✅ Movimento salvato nel database")
+        
+    except Exception as e:
+        print(f"❌ Errore nel salvataggio del movimento: {e}")
+        if conn:
+            conn.rollback()
+    
+    finally:
+        release_connection(conn, cur)
+
+
 def send_message(id=None, nome_squadra=None, text_to_send=None):
 
     if not text_to_send:
@@ -713,6 +741,10 @@ def send_message(id=None, nome_squadra=None, text_to_send=None):
     except Exception as e:
         print(f"❌ Errore critico di accesso alla cache: {e}")
         return
+
+    # Salva il movimento se destinatario è il gruppo_comunicazioni
+    if nome_squadra == 'gruppo_comunicazioni':
+        salva_movimento(text_to_send)
 
     # Fase di invio dei messaggi
     for chat_id in CHAT_IDS:
