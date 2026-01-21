@@ -300,6 +300,23 @@ def dashboardSquadra(nome_squadra):
                 "squadra_att": g['squadra_att']
             })
 
+        # MOVIMENTI DI MERCATO
+        mercato = []
+        cur.execute('''
+                    SELECT data, evento, stagione
+                    FROM movimenti_squadra
+                    WHERE evento ILIKE %s
+                    ORDER BY data DESC;
+        ''', (f'%{nome_squadra}%',))
+        mercato_raw = cur.fetchall()
+
+        for m in mercato_raw:
+            mercato.append({
+                "data": m['data'],
+                "evento": m['evento'],
+                "stagione": m['stagione']
+            })
+
         return render_template(
             "dashboardSquadra.html",
             nome_squadra=nome_squadra,
@@ -313,7 +330,8 @@ def dashboardSquadra(nome_squadra):
             crediti=crediti,
             squadra=[],
             slot_occupati=slot_occupati,
-            slot_giocatori=slot_giocatori
+            slot_giocatori=slot_giocatori,
+            mercato=mercato
         )
 
     except Exception as e:

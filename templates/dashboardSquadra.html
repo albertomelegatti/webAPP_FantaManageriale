@@ -139,30 +139,96 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- MOVIMENTI DI MERCATO -->
+    <div class="row mt-4">
+        <div class="col-12">
             <div class="card shadow p-3">
                 <h4>Movimenti di mercato</h4>
+                
+                <!-- Filtri -->
+                <div class="row mb-3">
+                    <div class="col-12 col-md-6">
+                        <label for="filterStagione" class="form-label">Filtra per Stagione:</label>
+                        <select id="filterStagione" class="form-select">
+                            <option value="">-- Tutte le stagioni --</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label for="filterEvento" class="form-label">Filtra Evento:</label>
+                        <input type="text" id="filterEvento" class="form-control" placeholder="Cerca nel messaggio...">
+                    </div>
+                </div>
+
                 <div class="table-responsive">
-                    <table class="table table-sm mb-0 table-striped">
+                    <table class="table table-sm mb-0 table-striped" id="mercatoTable">
                         <thead class="table-light">
                             <tr>
                                 <th>Data</th>
                                 <th>Evento</th>
+                                <th>Stagione</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="mercatoBody">
                             {% for m in mercato %}
-                            <tr>
+                            <tr data-stagione="{{ m.stagione }}" data-evento="{{ m.evento.lower() }}">
                                 <td>{{ m.data }}</td>
                                 <td>{{ m.evento }}</td>
+                                <td>{{ m.stagione }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
-
         </div>
     </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterStagione = document.getElementById('filterStagione');
+    const filterEvento = document.getElementById('filterEvento');
+    const mercatoBody = document.getElementById('mercatoBody');
+    const rows = mercatoBody.querySelectorAll('tr');
+
+    // Popola il select delle stagioni
+    const stagioni = new Set();
+    rows.forEach(row => {
+        const stagione = row.getAttribute('data-stagione');
+        if (stagione) stagioni.add(stagione);
+    });
+    
+    Array.from(stagioni).sort().reverse().forEach(stagione => {
+        const option = document.createElement('option');
+        option.value = stagione;
+        option.textContent = stagione;
+        filterStagione.appendChild(option);
+    });
+
+    // Funzione di filtro
+    function applyFilters() {
+        const selectedStagione = filterStagione.value.toLowerCase();
+        const searchEvento = filterEvento.value.toLowerCase();
+
+        rows.forEach(row => {
+            const rowStagione = row.getAttribute('data-stagione').toLowerCase();
+            const rowEvento = row.getAttribute('data-evento');
+
+            const matchStagione = !selectedStagione || rowStagione === selectedStagione;
+            const matchEvento = !searchEvento || rowEvento.includes(searchEvento);
+
+            row.style.display = matchStagione && matchEvento ? '' : 'none';
+        });
+    }
+
+    // Event listeners
+    filterStagione.addEventListener('change', applyFilters);
+    filterEvento.addEventListener('keyup', applyFilters);
+});
+</script>
+
 {% endblock %}
