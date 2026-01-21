@@ -234,7 +234,7 @@ def scambio_risposta(conn, id_scambio, risposta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT squadra_proponente, squadra_destinataria, giocatori_offerti, giocatori_richiesti, crediti_offerti, crediti_richiesti
+                    SELECT squadra_proponente, squadra_destinataria, giocatori_offerti, giocatori_richiesti, crediti_offerti, crediti_richiesti, messaggio
                     FROM scambio
                     WHERE id = %s;
         ''', (id_scambio,))
@@ -250,6 +250,7 @@ def scambio_risposta(conn, id_scambio, risposta):
         giocatori_richiesti = format_giocatori(info_scambio['giocatori_richiesti']) or []
         crediti_offerti = info_scambio['crediti_offerti'] or 0
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
+        messaggio = info_scambio['messaggio'] or "Nessuna Condizione."
 
         if risposta == "Accettato":
             text_to_send = textwrap.dedent(f'''
@@ -275,6 +276,8 @@ def scambio_risposta(conn, id_scambio, risposta):
 
                 ✅ **{squadra_destinataria}** riceve:
                 ⚽ {giocatori_offerti} (+🪙 {crediti_offerti} cr.)
+
+                📝 Condizioni/Bonus: {messaggio}
             ''')
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
 
