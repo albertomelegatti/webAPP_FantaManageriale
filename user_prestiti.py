@@ -72,7 +72,6 @@ def user_prestiti(nome_squadra):
                     AND p.stato = 'in_attesa';
         ''', (nome_squadra, nome_squadra))
         prestiti_raw = cur.fetchall()
-        print(prestiti_raw)
 
         prestiti = []
 
@@ -221,7 +220,6 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
                     WHERE id = %s;
         ''', (id_prestito_da_attivare,))
         prestito = cur.fetchone()
-        print(prestito)
 
         # Cambio di stato
         cur.execute('''
