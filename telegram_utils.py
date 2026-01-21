@@ -11,31 +11,6 @@ from db import get_connection, release_connection
 from user import format_giocatori, formatta_data
 
 
-def get_stagione():
-    """
-    Calcola la stagione in base alla data attuale.
-    La stagione va dal 2 luglio di un anno al 2 luglio dell'anno successivo.
-    Esempi: 25-26 (dal 2 luglio 2025 al 2 luglio 2026)
-    """
-    today = datetime.now()
-    year = today.year
-    month = today.month
-    day = today.day
-    
-    # Se siamo prima del 2 luglio, la stagione è dell'anno precedente
-    if month < 7 or (month == 7 and day < 2):
-        stagione_start = year - 1
-    else:
-        stagione_start = year
-    
-    stagione_end = stagione_start + 1
-    
-    # Restituisci nel formato "25-26"
-    return f"{stagione_start % 100:02d}-{stagione_end % 100:02d}"
-
-
-var_stagione = get_stagione()
-
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 
 load_dotenv(dotenv_path=env_path)
@@ -46,6 +21,7 @@ if not TOKEN:
     exit()
 
 url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+
 
 
 def nuova_asta(conn, id_asta):
@@ -681,27 +657,10 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
 
 
 
-        
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
 
 def salva_movimento(text_to_send):
-    """Salva il messaggio nella tabella movimenti_squadra"""
+    # Salva il messaggio nella tabella movimenti_squadra
+
     conn = None
     cur = None
     
@@ -710,9 +669,9 @@ def salva_movimento(text_to_send):
         cur = conn.cursor()
         
         cur.execute('''
-            INSERT INTO movimenti_squadra (evento, data, stagione)
-            VALUES (%s, NOW(), %s)
-        ''', (text_to_send, var_stagione))
+                    INSERT INTO movimenti_squadra (evento, data, stagione)
+                    VALUES (%s, NOW(), %s)
+        ''', (text_to_send, get_stagione()))
         
         conn.commit()
         print(f"✅ Movimento salvato nel database")
@@ -724,6 +683,9 @@ def salva_movimento(text_to_send):
     
     finally:
         release_connection(conn, cur)
+
+
+
 
 
 def send_message(id=None, nome_squadra=None, text_to_send=None):
@@ -788,6 +750,30 @@ def send_message(id=None, nome_squadra=None, text_to_send=None):
             print(f"❌ Errore di Rete per {chat_id}: {e}")
 
     return
+
+
+
+def get_stagione():
+    
+    # Calcola la stagione in base alla data attuale.
+    # La stagione va dal 2 luglio di un anno al 2 luglio dell'anno successivo.
+    # Esempi: 25-26 (dal 2 luglio 2025 al 2 luglio 2026)
+    
+    today = datetime.now()
+    year = today.year
+    month = today.month
+    day = today.day
+    
+    # Se siamo prima del 2 luglio, la stagione è dell'anno precedente
+    if month < 7 or (month == 7 and day < 2):
+        stagione_start = year - 1
+    else:
+        stagione_start = year
+    
+    stagione_end = stagione_start + 1
+    
+    # Restituisci nel formato "25-26"
+    return f"{stagione_start % 100:02d}-{stagione_end % 100:02d}"
         
 
 
