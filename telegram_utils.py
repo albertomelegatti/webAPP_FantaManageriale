@@ -3,13 +3,38 @@ import os
 import time
 import textwrap
 import json
+from datetime import datetime
 from flask import current_app
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from db import get_connection, release_connection
 from user import format_giocatori, formatta_data
 
-var_stagione = '25-26'
+
+def get_stagione():
+    """
+    Calcola la stagione in base alla data attuale.
+    La stagione va dal 2 luglio di un anno al 2 luglio dell'anno successivo.
+    Esempi: 25-26 (dal 2 luglio 2025 al 2 luglio 2026)
+    """
+    today = datetime.now()
+    year = today.year
+    month = today.month
+    day = today.day
+    
+    # Se siamo prima del 2 luglio, la stagione è dell'anno precedente
+    if month < 7 or (month == 7 and day < 2):
+        stagione_start = year - 1
+    else:
+        stagione_start = year
+    
+    stagione_end = stagione_start + 1
+    
+    # Restituisci nel formato "25-26"
+    return f"{stagione_start % 100:02d}-{stagione_end % 100:02d}"
+
+
+var_stagione = get_stagione()
 
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 
