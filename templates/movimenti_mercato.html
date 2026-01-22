@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3">Movimenti di Mercato</h2>
+            <div class="card shadow p-3">
+                <!-- Filtri -->
+                <div class="row mb-4">
+                    <div class="col-12 col-md-4">
+                        <label for="filterStagione" class="form-label"><strong>Filtra per Stagione:</strong></label>
+                        <select id="filterStagione" class="form-select">
+                            <option value="">-- Tutte le stagioni --</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label for="filterSquadra" class="form-label"><strong>Filtra per Squadra:</strong></label>
+                        <select id="filterSquadra" class="form-select">
+                            <option value="">-- Tutte le squadre --</option>
+                            {% for squadra in squadre %}
+                            <option value="{{ squadra.lower() }}">{{ squadra }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
+                        <label for="filterEvento" class="form-label"><strong>Filtra Evento:</strong></label>
+                        <input type="text" id="filterEvento" class="form-control" placeholder="Cerca nel messaggio...">
+                    </div>
+                </div>
+
+                <!-- Tabella movimenti -->
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0 table-striped table-hover" id="mercatoTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="cursor: pointer; user-select: none;" onclick="sortTable(0)">
+                                    Data 
+                                    <span id="sortIcon0" style="margin-left: 5px;"></span>
+                                </th>
+                                <th>Evento</th>
+                                <th>Stagione</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mercatoBody">
+                            {% for m in mercato %}
+                            <tr data-stagione="{{ m.stagione }}" data-evento="{{ m.evento.lower() }}" data-date="{{ m.data }}">
+                                <td>{{ m.data }}</td>
+                                <td>{{ m.evento }}</td>
+                                <td>{{ m.stagione }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Messaggio nessun risultato -->
+                <div id="noResults" class="alert alert-info mt-3" style="display: none;">
+                    Nessun movimento trovato con i filtri selezionati.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let sortDirection = 'desc'; // Ordinamento iniziale: decrescente (più recenti prima)
+
+function sortTable(columnIndex) {
+    const mercatoBody = document.getElementById('mercatoBody');
+    const rows = Array.from(mercatoBody.querySelectorAll('tr'));
+    
+    // Toggle ordinamento
+    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    
+    // Ordina le righe in base alla data
+    rows.sort((a, b) => {
+        const dateA = new Date(a.getAttribute('data-date'));
+        const dateB = new Date(b.getAttribute('data-date'));
+        
+        return sortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+    });
+    
+    // Riordina le righe nel DOM
+    rows.forEach(row => mercatoBody.appendChild(row));
+    
+    // Aggiorna l'icona di ordinamento
+    updateSortIcon();
+}
+
+function updateSortIcon() {
+    const icon = document.getElementById('sortIcon0');
+    icon.textContent = sortDirection === 'asc' ? '▲' : '▼';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const filterStagione = document.getElementById('filterStagione');
+    const filterSquadra = document.getElementById('filterSquadra');
+    const filterEvento = document.getElementById('filterEvento');
+    const mercatoBody = document.getElementById('mercatoBody');
+    const noResults = document.getElementById('noResults');
+    const rows = mercatoBody.querySelectorAll('tr');
+
+    // Inizializza l'icona di ordinamento
+    updateSortIcon();
+
+    // Popola il select delle stagioni
+    const stagioni = new Set();
+    rows.forEach(row => {
+        const stagione = row.getAttribute('data-stagione');
+        if (stagione) stagioni.add(stagione);
+    });
+    
+    Array.from(stagioni).sort().reverse().forEach(stagione => {
+        const option = document.createElement('option');
+        option.value = stagione;
+        option.textContent = stagione;
+        filterStagione.appendChild(option);
+    });
+
+    // Funzione di filtro
+    function applyFilters() {
+        const selectedStagione = filterStagione.value.toLowerCase();
+        const selectedSquadra = filterSquadra.value.toLowerCase();
+        const searchEvento = filterEvento.value.toLowerCase();
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const rowStagione = row.getAttribute('data-stagione').toLowerCase();
+            const rowEvento = row.getAttribute('data-evento');
+
+            const matchStagione = !selectedStagione || rowStagione === selectedStagione;
+            const matchSquadra = !selectedSquadra || rowEvento.includes(selectedSquadra);
+            const matchEvento = !searchEvento || rowEvento.includes(searchEvento);
+
+            if (matchStagione && matchSquadra && matchEvento) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Mostra messaggio se nessun risultato
+        noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+
+    // Event listeners
+    filterStagione.addEventListener('change', applyFilters);
+    filterSquadra.addEventListener('change', applyFilters);
+    filterEvento.addEventListener('keyup', applyFilters);
+});
+</script>
+
+{% endblock %}

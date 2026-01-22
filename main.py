@@ -343,6 +343,56 @@ def dashboardSquadra(nome_squadra):
         release_connection(conn, cur)
 
 
+@app.route("/movimenti_mercato")
+def movimenti_mercato():
+    """Visualizza tutti gli eventi di mercato con filtri per stagione ed evento"""
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Recupera tutti gli eventi di mercato
+        cur.execute('''
+                    SELECT data, evento, stagione
+                    FROM movimenti_squadra
+                    ORDER BY data DESC;
+        ''')
+        mercato_raw = cur.fetchall()
+
+        mercato = []
+        for m in mercato_raw:
+            mercato.append({
+                "data": m['data'],
+                "evento": m['evento'],
+                "stagione": m['stagione']
+            })
+
+        # Recupera tutte le squadre (eccetto Svincolato)
+        cur.execute('''
+                    SELECT nome
+                    FROM squadra
+                    WHERE nome <> 'Svincolato'
+                    ORDER BY nome ASC;
+        ''')
+        squadre_raw = cur.fetchall()
+        squadre = [row['nome'] for row in squadre_raw]
+
+        return render_template(
+            "movimenti_mercato.html",
+            mercato=mercato,
+            squadre=squadre
+        )
+
+    except Exception as e:
+        print("Errore movimenti_mercato:", e)
+        flash("❌ Errore nel recupero dei movimenti di mercato.", "danger")
+        return redirect(url_for('home'))
+
+    finally:
+        release_connection(conn, cur)
+
+
 @app.route("/creditiStadi")
 def creditiStadiSlot():
 
