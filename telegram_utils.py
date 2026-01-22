@@ -307,7 +307,7 @@ def nuovo_prestito(conn, id_prestito):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT p.giocatore, p.squadra_prestante, p.squadra_ricevente, p.data_fine
+                    SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -349,7 +349,7 @@ def prestito_risposta(conn, id_prestito, risposta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT p.giocatore, p.squadra_prestante, p.squadra_ricevente, p.data_fine
+                    SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -403,7 +403,7 @@ def richiesta_terminazione_prestito(conn, id_prestito):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT p.giocatore, p.squadra_prestante, p.squadra_ricevente, p.data_fine, p.richiedente_terminazione
+                    SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine, p.richiedente_terminazione
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -448,7 +448,7 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT p.giocatore, p.richiedente_terminazione, p.squadra_prestante, p.squadra_ricevente, p.data_fine
+                    SELECT g.nome, p.richiedente_terminazione, p.squadra_prestante, p.squadra_ricevente, p.data_fine
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
