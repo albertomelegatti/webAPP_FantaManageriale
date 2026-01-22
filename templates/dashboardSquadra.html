@@ -105,7 +105,7 @@
                                 <td>{{ p.nome }}</td>
                                 <td>{{ p.ruolo }}</td>
                                 <td>{{ p.quot_att_mantra }}</td>
-                                <td>{{ p.squadra_att }}</td>
+                                <td>{% if p.squadra_att == 'Svincolato' %}Prestito Reale{% else %}{{ p.squadra_att }}{% endif %}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
