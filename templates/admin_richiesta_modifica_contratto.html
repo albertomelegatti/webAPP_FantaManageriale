@@ -25,6 +25,7 @@
                             <th scope="col">Contratto Attuale</th>
                             <th scope="col">Contratto Richiesto</th>
                             <th scope="col">Crediti Richiesti</th>
+                            <th scope="col">Messaggio</th>
                             <th scope="col">Azioni</th>
                         </tr>
                     </thead>
@@ -37,6 +38,7 @@
                             <td><span class="badge bg-secondary fs-6">{{ richiesta.contratto_attuale }}</span></td>
                             <td><span class="badge bg-info fs-6">{{ richiesta.contratto_richiesto }}</span></td>
                             <td>{{ richiesta.crediti_richiesti }}</td>
+                            <td>{{ richiesta.messaggio or '-' }}</td>
                             <td>
                                 <form method="POST" action="{{ url_for('admin.richiesta_modifica_contratto') }}"
                                     class="d-flex flex-column flex-sm-row justify-content-center gap-2">
@@ -75,6 +77,7 @@
                             <th scope="col">Data</th>
                             <th scope="col">Contratto Approvato</th>
                             <th scope="col">Crediti</th>
+                            <th scope="col">Messaggio</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -85,6 +88,7 @@
                             <td>{{ richiesta.data }}</td>
                             <td><span class="badge bg-success fs-6">{{ richiesta.contratto_richiesto }}</span></td>
                             <td>{{ richiesta.crediti_richiesti }}</td>
+                            <td>{{ richiesta.messaggio or '-' }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -112,6 +116,7 @@
                             <th scope="col">Squadra</th>
                             <th scope="col">Data</th>
                             <th scope="col">Contratto Richiesto</th>
+                            <th scope="col">Messaggio</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -121,6 +126,7 @@
                             <td>{{ richiesta.squadra_richiedente }}</td>
                             <td>{{ richiesta.data }}</td>
                             <td><span class="badge bg-danger fs-6">{{ richiesta.contratto_richiesto }}</span></td>
+                            <td>{{ richiesta.messaggio or '-' }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
