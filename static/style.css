@@ -38,10 +38,10 @@ body {
 
 /* Container centrale con larghezza massima */
 .container {
-    width: 90%;
+    width: 98%;
     max-width: 1650px;
     margin: 0 auto;
-    padding: 0 2%;
+    padding: 0 1%;
 }
 
 /* Header del sito */
@@ -215,8 +215,8 @@ h1 {
 
 /* Tabelle principali */
 .table {
-    width: 90%;             /* larghezza proporzionale al container */
-    max-width: 1200px;
+    width: 98%;             /* larghezza proporzionale al container */
+    max-width: 1600px;
     border-collapse: collapse;
     margin: 0 auto;         /* centrata */
     font-size: 0.8rem;
