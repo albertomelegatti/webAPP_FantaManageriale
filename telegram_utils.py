@@ -372,11 +372,11 @@ def prestito_risposta(conn, id_prestito, risposta):
             send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
             text_to_send = textwrap.dedent(f'''📢 PRESTITO UFFICIALE:
                                            
-                👤 **{giocatore}**
+            👤 {giocatore}
                 
-                🔴 Da: {squadra_prestante}
-                🟢 A: {squadra_ricevente}
-                📅 Scadenza: {data_fine}
+            🔴 Da: {squadra_prestante}
+            🟢 A: {squadra_ricevente}
+            📅 Scadenza: {data_fine}
             ''')
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
         
