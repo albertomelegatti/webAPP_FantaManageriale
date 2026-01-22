@@ -614,24 +614,25 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         send_message(nome_squadra=squadra_richiedente, text_to_send=text_to_send)
         
         # invia notifica a tutte le squadre
-        if tipo_contratto == "Svincolato":
-            text_to_send = textwrap.dedent(f'''📢 COMUNICAZIONE UFFICIALE: 
-            📝La squadra {squadra_richiedente} svincola {giocatore} a causa del suo trasferimento/svincolo e recupera {info_richiesta['crediti_richiesti']} crediti. 
-            ''')
-        elif tipo_contratto == "Prestito Reale":
-            text_to_send = textwrap.dedent(f'''📢 COMUNICAZIONE UFFICIALE:
-            📝La squadra {squadra_richiedente} libera lo slot di {giocatore} a causa del suo trasferimento in prestito e recupera {info_richiesta['crediti_richiesti']} crediti. 
-            ''')
-        elif tipo_contratto == "Hold":
-            text_to_send = textwrap.dedent(f'''📢 COMUNICAZIONE UFFICIALE: 
-            📝La squadra {squadra_richiedente} esercita il diritto di HOLD sul giocatore {giocatore}. 
-            ''')
-        else:
-            text_to_send = textwrap.dedent(f'''📢 COMUNICAZIONE UFFICIALE: 
-            📝La squadra {squadra_richiedente} modifica il contratto di {giocatore} a {tipo_contratto}. 
-            ''')
+        if risposta == "Accettato":
+            if tipo_contratto == "Svincolato":
+                text_to_send = textwrap.dedent(f'''📢 COMUNICAZIONE UFFICIALE: 
+                📝La squadra {squadra_richiedente} svincola {giocatore} a causa del suo trasferimento/svincolo e recupera {info_richiesta['crediti_richiesti']} crediti. 
+                ''')
+            elif tipo_contratto == "Prestito Reale":
+                text_to_send = textwrap.dedent(f'''📢 COMUNICAZIONE UFFICIALE:
+                📝La squadra {squadra_richiedente} libera lo slot di {giocatore} a causa del suo trasferimento in prestito e recupera {info_richiesta['crediti_richiesti']} crediti. 
+                ''')
+            elif tipo_contratto == "Hold":
+                text_to_send = textwrap.dedent(f'''📢 COMUNICAZIONE UFFICIALE: 
+                📝La squadra {squadra_richiedente} esercita il diritto di HOLD sul giocatore {giocatore}. 
+                ''')
+            else:
+                text_to_send = textwrap.dedent(f'''📢 COMUNICAZIONE UFFICIALE: 
+                📝La squadra {squadra_richiedente} modifica il contratto di {giocatore} a {tipo_contratto}. 
+                ''')
 
-        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+            send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
             
     except Exception as e:
         print(f"Errore: {e}")
