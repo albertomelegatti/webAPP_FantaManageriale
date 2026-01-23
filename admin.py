@@ -186,10 +186,10 @@ def richiesta_modifica_contratto():
                                 WHERE id = %s;
                     ''', (nuovo_contratto, id_giocatore))
 
-                # Aggiornamento crediti squadra
+                # Aggiornamento crediti squadra: la modifica contratto assegna i crediti richiesti
                 cur.execute('''
                             UPDATE squadra
-                            SET crediti = crediti - %s
+                            SET crediti = crediti + %s
                             WHERE nome = %s;
                 ''', (crediti_richiesti, squadra_richiedente))
 

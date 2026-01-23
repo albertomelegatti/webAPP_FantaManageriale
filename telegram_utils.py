@@ -16,6 +16,9 @@ env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path=env_path)
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
+# Flag per abilitare/disabilitare notifiche (default on).
+NOTIFICATIONS_ENABLED = os.getenv("NOTIFICHE_ATTIVE").lower() 
+
 if not TOKEN:
     print("❌ Token non trovato nel file .env")
     exit()
@@ -307,7 +310,8 @@ def nuovo_prestito(conn, id_prestito):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine
+                    SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine,
+                           p.tipo_prestito, p.costo_prestito, p.crediti_riscatto, COALESCE(p.note, '') AS note
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -319,12 +323,20 @@ def nuovo_prestito(conn, id_prestito):
         squadra_prestante = info_prestito['squadra_prestante']
         squadra_ricevente = info_prestito['squadra_ricevente']
         data_fine = formatta_data(info_prestito['data_fine'])
+        tipo_prestito = info_prestito.get('tipo_prestito') or '-'
+        costo_prestito = info_prestito.get('costo_prestito') or 0
+        crediti_riscatto = info_prestito.get('crediti_riscatto') or 0
+        note = info_prestito.get('note') or ''
 
         text_to_send = textwrap.dedent(f'''
             🟢 NUOVA PROPOSTA DI PRESTITO
             La squadra {squadra_ricevente} ti ha inviato una proposta di prestito:
             ⚽ Giocatore: {giocatore}
             📆 Fino a: {data_fine}
+            🧾 Tipo: {tipo_prestito}
+            💸 Costo prestito: {costo_prestito}
+            🪙 Riscatto: {crediti_riscatto}
+            📝 Note: {note}
         ''')
 
         send_message(nome_squadra=squadra_prestante, text_to_send=text_to_send)
@@ -349,7 +361,8 @@ def prestito_risposta(conn, id_prestito, risposta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine
+                SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine,
+                   p.tipo_prestito, p.costo_prestito, p.crediti_riscatto, COALESCE(p.note, '') AS note
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -361,13 +374,21 @@ def prestito_risposta(conn, id_prestito, risposta):
         squadra_prestante = info_prestito['squadra_prestante']
         squadra_ricevente = info_prestito['squadra_ricevente']
         data_fine = formatta_data(info_prestito['data_fine'])
+        tipo_prestito = info_prestito.get('tipo_prestito') or '-'
+        costo_prestito = info_prestito.get('costo_prestito') or 0
+        crediti_riscatto = info_prestito.get('crediti_riscatto') or 0
+        note = info_prestito.get('note') or 'Nessuna nota.'
 
         if risposta == "Accettato":
-            text_to_send = textwrap.dedent(f'''
+            text_to_send = textwrap.dedent(f'''\
                 PRESTITO ACCETTATO
                 La squadra {squadra_prestante} ha accettato la tua richiesta di prestito:
                 ⚽ Giocatore: {giocatore}
                 📆 Fino a: {data_fine}
+                🧾 Tipo: {tipo_prestito}
+                💸 Costo prestito: {costo_prestito}
+                🪙 Riscatto: {crediti_riscatto}
+                📝 Note: {note}
             ''')
             send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
             text_to_send = textwrap.dedent(f'''📢 PRESTITO UFFICIALE:
@@ -377,6 +398,10 @@ def prestito_risposta(conn, id_prestito, risposta):
             🔴 Da: {squadra_prestante}
             🟢 A: {squadra_ricevente}
             📅 Scadenza: {data_fine}
+            🧾 Tipo: {tipo_prestito}
+            💸 Costo prestito: {costo_prestito}
+            🪙 Riscatto: {crediti_riscatto}
+            📝 Note: {note}
             ''')
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
         
@@ -392,6 +417,43 @@ def prestito_risposta(conn, id_prestito, risposta):
     except Exception as e:
         print(f"Errore: {e}")
 
+    finally:
+        cur.close()
+
+
+def prestito_riscattato(conn, id_prestito):
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute('''
+                    SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine,
+                           p.crediti_riscatto
+                    FROM prestito p
+                    JOIN giocatore g ON p.giocatore = g.id
+                    WHERE p.id = %s;
+        ''', (id_prestito,))
+        info = cur.fetchone()
+        if not info:
+            return
+        giocatore = info['nome']
+        squadra_prestante = info['squadra_prestante']
+        squadra_ricevente = info['squadra_ricevente']
+        crediti = info.get('crediti_riscatto') or 0
+
+        to_ricevente = textwrap.dedent(f'''
+            ✅ RISCATTO EFFETTUATO
+            Hai riscattato {giocatore} per {crediti} crediti.
+        ''')
+        to_prestante = textwrap.dedent(f'''
+            ✅ RISCATTO EFFETTUATO
+            La squadra {squadra_ricevente} ha riscattato {giocatore} per {crediti} crediti.
+        ''')
+        broadcast = textwrap.dedent(f'''📢 RISCATTO UFFICIALE: {giocatore} resta a {squadra_ricevente} (🪙 {crediti} crediti).''')
+
+        send_message(nome_squadra=squadra_ricevente, text_to_send=to_ricevente)
+        send_message(nome_squadra=squadra_prestante, text_to_send=to_prestante)
+        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=broadcast)
+    except Exception as e:
+        print(f"Errore: {e}")
     finally:
         cur.close()
 
@@ -680,6 +742,10 @@ def send_message(id=None, nome_squadra=None, text_to_send=None):
         print("Errore, inserire il parametro text_to_send.")
         return
 
+    if not NOTIFICATIONS_ENABLED:
+        print("ℹ️ Notifiche disattivate (NOTIFICHE_ATTIVE=0)")
+        return
+
 
     if id is not None:
         if id == 903944311:
@@ -688,16 +754,18 @@ def send_message(id=None, nome_squadra=None, text_to_send=None):
         chat_id = id
         payload = {"chat_id": chat_id, "text": text_to_send}
 
-
+        
         try:
             r = requests.post(url, json=payload)
             if r.status_code == 200:
                 print(f"✅ Messaggio inviato a {chat_id}")
             else:
                 print(f"❌ Errore per {chat_id}: {r.text}")
-
+        
         except requests.exceptions.RequestException as e:
             print(f"❌ Errore di Rete per {chat_id}: {e}")
+            
+        
 
         return
 
