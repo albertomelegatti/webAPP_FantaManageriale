@@ -343,9 +343,12 @@ def dashboardSquadra(nome_squadra):
         release_connection(conn, cur)
 
 
+
+
+# Visualizza tutti gli eventi di mercato con filtri per stagione ed evento
 @app.route("/movimenti_mercato")
 def movimenti_mercato():
-    """Visualizza tutti gli eventi di mercato con filtri per stagione ed evento"""
+
     conn = None
     cur = None
     try:
@@ -391,6 +394,7 @@ def movimenti_mercato():
 
     finally:
         release_connection(conn, cur)
+        
 
 
 @app.route("/creditiStadi")
