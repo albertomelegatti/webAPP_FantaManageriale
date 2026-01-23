@@ -68,7 +68,11 @@
                                 </form>
                             </td>
                             <td>
-                                <a href="{{ url_for('rosa.richiesta_modifica_contratto', nome_squadra=nome_squadra, id_giocatore=giocatore.id) }}" class="btn btn-primary btn-sm fw-semibold w-100 py-1">📝 Modifica contratto</a>
+                                {% if giocatore.esiste_gia_una_richiesta %}
+                                    <button type="button" class="btn btn-secondary btn-sm fw-semibold w-100 py-1" disabled>📝 Richiesta in corso</button>
+                                {% else %}
+                                    <a href="{{ url_for('rosa.richiesta_modifica_contratto', nome_squadra=nome_squadra, id_giocatore=giocatore.id) }}" class="btn btn-primary btn-sm fw-semibold w-100 py-1">📝 Modifica contratto</a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}

@@ -163,7 +163,8 @@ def user_tagli(nome_squadra):
                 "id": r['id'],
                 "nome": r['nome'],
                 "ruolo": ruolo,
-                "quot_att_mantra": r['quot_att_mantra']
+                "quot_att_mantra": r['quot_att_mantra'],
+                "esiste_gia_una_richiesta": esiste_gia_una_richiesta(conn, r['id'])
             })
 
     except Exception as e:
@@ -519,3 +520,30 @@ def rifiuta_terminazione(conn, id_prestito):
 
     finally:
         release_connection(None, cur)
+
+
+
+#Funzione che verifica se esiste già una richiesta in fase di elaborazione per un giocatore
+def esiste_gia_una_richiesta(conn, id_giocatore):
+    cur = None
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute('''
+                    SELECT COUNT(*)
+                    FROM richiesta_modifica_contratto
+                    WHERE giocatore = %s
+                        AND stato = 'in_elaborazione';
+        ''', (id_giocatore,))
+        row = cur.fetchone()
+
+        return row['count'] > 0
+
+    except Exception as e:
+        print(f"Errore: {e}")
+        return False
+
+    finally:
+        cur.close()
+        
+
