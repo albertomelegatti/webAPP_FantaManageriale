@@ -582,7 +582,8 @@ def promozione_giocatore_primavera(conn, nome_squadra, giocatore):
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        text_to_send = textwrap.dedent(f'''🆙 COMUNICAZIONE UFFICIALE: La squadra {nome_squadra} promuove in prima squadra il giocatore {giocatore}
+        text_to_send = textwrap.dedent(f'''🆙 COMUNICAZIONE UFFICIALE: 
+    La squadra {nome_squadra} promuove in prima squadra il giocatore {giocatore}
         ''')
 
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
