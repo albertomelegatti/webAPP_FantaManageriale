@@ -64,10 +64,51 @@
                     </div>
                 </div>
 
-                <!-- Messaggio opzionale -->
+                <!-- Tipo prestito -->
                 <div class="mb-3">
-                    <label for="messaggio" class="form-label">Messaggio (opzionale)</label>
-                    <textarea name="messaggio" id="messaggio" class="form-control" rows="3"></textarea>
+                    <label for="tipo_prestito" class="form-label fw-semibold">Tipo di prestito</label>
+                    <select id="tipo_prestito" name="tipo_prestito" class="form-select">
+                        <option value="">Seleziona tipo</option>
+                        <option value="Secco">Secco</option>
+                        <option value="Con diritto di riscatto">Con diritto di riscatto</option>
+                        <option value="Con obbligo di riscatto">Con obbligo di riscatto</option>
+                    </select>
+                </div>
+
+                <!-- Costo prestito -->
+                <div class="mb-3">
+                    <label for="costo_prestito" class="form-label fw-semibold">Costo del prestito (crediti)</label>
+                    <input 
+                        type="number" 
+                        id="costo_prestito" 
+                        name="costo_prestito" 
+                        class="form-control" 
+                        min="0"
+                        value="0"
+                        placeholder="0"
+                    >
+                    <div class="form-text">Crediti da versare alla squadra prestante.</div>
+                </div>
+
+                <!-- Crediti riscatto -->
+                <div class="mb-3">
+                    <label for="crediti_riscatto" class="form-label fw-semibold">Crediti per il riscatto</label>
+                    <input 
+                        type="number" 
+                        id="crediti_riscatto" 
+                        name="crediti_riscatto" 
+                        class="form-control" 
+                        min="0"
+                        value="0"
+                        placeholder="0"
+                    >
+                    <div class="form-text">Crediti per l'eventuale riscatto del giocatore (solo se previsto).</div>
+                </div>
+
+                <!-- Note opzionali -->
+                <div class="mb-3">
+                    <label for="note" class="form-label">Note (opzionali)</label>
+                    <textarea name="note" id="note" class="form-control" rows="3" placeholder="Aggiungi eventuali note al prestito..."></textarea>
                 </div>
 
                 <button type="submit" class="btn btn-primary w-100 py-2">Invia richiesta di prestito</button>
@@ -102,6 +143,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const allGiocatori = JSON.parse('{{ giocatori|tojson|safe }}'); 
     // giocatori: lista completa [{id, nome, squadra_att}, ...]
+
+    // Gestione campo crediti_riscatto in base al tipo di prestito
+    const tipoPrestito = document.getElementById('tipo_prestito');
+    const creditiRiscatto = document.getElementById('crediti_riscatto');
+
+    tipoPrestito.addEventListener('change', function() {
+        if (this.value === 'Secco') {
+            creditiRiscatto.value = '0';
+            creditiRiscatto.disabled = true;
+            creditiRiscatto.style.backgroundColor = '#e9ecef';
+        } else {
+            creditiRiscatto.disabled = false;
+            creditiRiscatto.style.backgroundColor = '';
+        }
+    });
+
+    // Imposta lo stato iniziale se già selezionato
+    if (tipoPrestito.value === 'Secco') {
+        creditiRiscatto.value = '0';
+        creditiRiscatto.disabled = true;
+        creditiRiscatto.style.backgroundColor = '#e9ecef';
+    }
 
     selectSquadra.on('change', (squadraSelezionata) => {
         selectGiocatore.clearOptions();

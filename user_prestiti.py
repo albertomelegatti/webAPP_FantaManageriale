@@ -64,7 +64,11 @@ def user_prestiti(nome_squadra):
 
 
         cur.execute('''
-                    SELECT *, p.id AS prestito_id
+                    SELECT *, p.id AS prestito_id, 
+                           COALESCE(p.note, '') AS note,
+                           COALESCE(p.costo_prestito, 0) AS costo_prestito,
+                           COALESCE(p.tipo_prestito, '') AS tipo_prestito,
+                           COALESCE(p.crediti_riscatto, 0) AS crediti_riscatto
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -83,7 +87,11 @@ def user_prestiti(nome_squadra):
                 "squadra_ricevente": p["squadra_ricevente"],
                 "stato": p["stato"],
                 "data_inizio": formatta_data(p["data_inizio"]),
-                "data_fine": formatta_data(p["data_fine"])
+                "data_fine": formatta_data(p["data_fine"]),
+                "note": p["note"],
+                "costo_prestito": p["costo_prestito"],
+                "tipo_prestito": p["tipo_prestito"],
+                "crediti_riscatto": p["crediti_riscatto"]
             })
 
         
@@ -123,7 +131,25 @@ def nuovo_prestito(nome_squadra):
             squadra_prestante = request.form.get("squadra_prestante")
             giocatore_richiesto = request.form.get("giocatore_richiesto")
             data_fine = request.form.get("data_fine")
-            messaggio = request.form.get("messaggio", "").strip()
+            note = request.form.get("note", "").strip()
+            costo_prestito = request.form.get("costo_prestito", 0)
+            tipo_prestito = request.form.get("tipo_prestito", "").strip()
+            crediti_riscatto = request.form.get("crediti_riscatto", 0)
+            
+            # Convert to int with default 0 if empty
+            try:
+                costo_prestito = int(costo_prestito) if costo_prestito else 0
+            except ValueError:
+                costo_prestito = 0
+            
+            try:
+                crediti_riscatto = int(crediti_riscatto) if crediti_riscatto else 0
+            except ValueError:
+                crediti_riscatto = 0
+            
+            # Se il tipo di prestito è "Secco", forza crediti_riscatto a 0
+            if tipo_prestito == 'Secco':
+                crediti_riscatto = 0
 
             if not squadra_prestante or not giocatore_richiesto or not data_fine:
                 flash("❌ Errore: seleziona una squadra, un giocatore e una data di fine prestito.", "danger")
@@ -134,10 +160,10 @@ def nuovo_prestito(nome_squadra):
 
             cur.execute('''
                         INSERT INTO prestito (
-                        giocatore, squadra_prestante, squadra_ricevente, stato, data_inizio, data_fine)
-                        VALUES(%s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s)
+                        giocatore, squadra_prestante, squadra_ricevente, stato, data_inizio, data_fine, note, costo_prestito, tipo_prestito, crediti_riscatto)
+                        VALUES(%s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s, %s, %s, %s, %s)
                         RETURNING id;
-            ''', (giocatore_richiesto, squadra_prestante, nome_squadra, 'in_attesa', data_fine))
+            ''', (giocatore_richiesto, squadra_prestante, nome_squadra, 'in_attesa', data_fine, note, costo_prestito, tipo_prestito, crediti_riscatto))
             id_prestito = cur.fetchone()['id']
             conn.commit()
             flash("✅ Richiesta inviata correttamente!", "success")
@@ -244,6 +270,8 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
                     AND giocatore = %s
                     AND stato = 'in_attesa';
         ''', (prestito['squadra_prestante'], prestito['giocatore']))
+        
+        sposta_crediti(conn, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['costo_prestito'])
 
         conn.commit()
         flash("✅ Prestito avviato correttamente.", "success")

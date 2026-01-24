@@ -290,6 +290,10 @@ def user_gestione_prestiti(nome_squadra):
                     SELECT 
                         p.id AS id_prestito,
                         g.id AS id_giocatore,
+                        COALESCE(p.note, '') AS note,
+                        COALESCE(p.costo_prestito, 0) AS costo_prestito,
+                        COALESCE(p.tipo_prestito, '') AS tipo_prestito,
+                        COALESCE(p.crediti_riscatto, 0) AS crediti_riscatto,
                         *
                     FROM prestito p
                     JOIN giocatore g
@@ -311,7 +315,11 @@ def user_gestione_prestiti(nome_squadra):
                 "stato": p['stato'],
                 "data_inizio": formatta_data(p['data_inizio']),
                 "data_fine": formatta_data(p['data_fine']),
-                "richiedente_terminazione": p['richiedente_terminazione']
+                "richiedente_terminazione": p['richiedente_terminazione'],
+                "note": p['note'],
+                "costo_prestito": p['costo_prestito'],
+                "tipo_prestito": p['tipo_prestito'],
+                "crediti_riscatto": p['crediti_riscatto']
             })
         
 
@@ -321,6 +329,10 @@ def user_gestione_prestiti(nome_squadra):
                     SELECT 
                         p.id AS id_prestito,
                         g.id AS id_giocatore,
+                        COALESCE(p.note, '') AS note,
+                        COALESCE(p.costo_prestito, 0) AS costo_prestito,
+                        COALESCE(p.tipo_prestito, '') AS tipo_prestito,
+                        COALESCE(p.crediti_riscatto, 0) AS crediti_riscatto,
                         *
                     FROM prestito p
                     JOIN giocatore g
@@ -341,7 +353,11 @@ def user_gestione_prestiti(nome_squadra):
                 "stato": p['stato'],
                 "data_inizio": formatta_data(p['data_inizio']),
                 "data_fine": formatta_data(p['data_fine']),
-                "richiedente_terminazione": p['richiedente_terminazione']
+                "richiedente_terminazione": p['richiedente_terminazione'],
+                "note": p['note'],
+                "costo_prestito": p['costo_prestito'],
+                "tipo_prestito": p['tipo_prestito'],
+                "crediti_riscatto": p['crediti_riscatto']
             })
 
         slot_giocatori = get_slot_giocatori(conn, nome_squadra)

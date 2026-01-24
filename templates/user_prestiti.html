@@ -47,15 +47,26 @@
                         <th>Giocatore</th>
                         <th>Verso</th>
                         <th>Fino a</th>
+                        <th>Tipo</th>
+                        <th>Costo</th>
+                        <th>Riscatto</th>
                         <th class="text-center">Azione</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for prestito in prestiti if prestito.squadra_ricevente == nome_squadra and prestito.stato == 'in_attesa' %}
                     <tr>
-                        <td>{{ prestito.giocatore }}</td>
+                        <td>
+                            {{ prestito.giocatore }}
+                            {% if prestito.note %}
+                                <br><small class="text-muted">📝 {{ prestito.note }}</small>
+                            {% endif %}
+                        </td>
                         <td>{{ prestito.squadra_prestante }}</td>
                         <td>{{ prestito.data_fine }}</td>
+                        <td>{{ prestito.tipo_prestito if prestito.tipo_prestito else '-' }}</td>
+                        <td>{{ prestito.costo_prestito }}</td>
+                        <td>{{ prestito.crediti_riscatto }}</td>
                         <td class="text-center">
                             <form method="POST" 
                                     action="{{ url_for('prestiti.user_prestiti', nome_squadra=nome_squadra) }}" 
@@ -69,7 +80,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="4" class="text-center text-muted">Nessuna richiesta di prestito inviata</td>
+                        <td colspan="7" class="text-center text-muted">Nessuna richiesta di prestito inviata</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -88,15 +99,26 @@
                         <th>Giocatore</th>
                         <th>Da</th>
                         <th>Fino a</th>
+                        <th>Tipo</th>
+                        <th>Costo</th>
+                        <th>Riscatto</th>
                         <th class="text-center">Azioni</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for prestito in prestiti if prestito.squadra_prestante == nome_squadra and prestito.stato == 'in_attesa' %}
                     <tr>
-                        <td>{{ prestito.giocatore }}</td>
+                        <td>
+                            {{ prestito.giocatore }}
+                            {% if prestito.note %}
+                                <br><small class="text-muted">📝 {{ prestito.note }}</small>
+                            {% endif %}
+                        </td>
                         <td>{{ prestito.squadra_ricevente }}</td>
                         <td>{{ prestito.data_fine }}</td>
+                        <td>{{ prestito.tipo_prestito if prestito.tipo_prestito else '-' }}</td>
+                        <td>{{ prestito.costo_prestito }}</td>
+                        <td>{{ prestito.crediti_riscatto }}</td>
                         <td class="text-center">
                             <form method="POST" 
                                     action="{{ url_for('prestiti.user_prestiti', nome_squadra=nome_squadra) }}" 
@@ -113,7 +135,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="4" class="text-center text-muted">Nessuna richiesta in entrata</td>
+                        <td colspan="7" class="text-center text-muted">Nessuna richiesta in entrata</td>
                     </tr>
                     {% endfor %}
                 </tbody>
