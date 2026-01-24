@@ -17,7 +17,7 @@ load_dotenv(dotenv_path=env_path)
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 # Flag per abilitare/disabilitare notifiche (default on).
-NOTIFICATIONS_ENABLED = os.getenv("NOTIFICHE_ATTIVE").lower() 
+NOTIFICATIONS_ENABLED = os.getenv("NOTIFICHE_ATTIVE") == 'True'
 
 if not TOKEN:
     print("❌ Token non trovato nel file .env")
@@ -737,7 +737,7 @@ def salva_movimento(text_to_send):
 
 
 def send_message(id=None, nome_squadra=None, text_to_send=None):
-
+    
     if not text_to_send:
         print("Errore, inserire il parametro text_to_send.")
         return
