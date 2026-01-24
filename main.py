@@ -417,7 +417,7 @@ def creditiStadiSlot():
         # STADIO
         cur.execute('''
                     SELECT nome, proprietario, livello 
-                    FROM stadio ORDER BY nome ASC;''')
+                    FROM stadio ORDER BY proprietario ASC;''')
         stadi_raw = cur.fetchall()
         stadi = []
         for s in stadi_raw:
