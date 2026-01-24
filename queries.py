@@ -115,3 +115,30 @@ def get_nome_giocatore(conn, id_giocatore):
     cur.close()
 
     return nome_giocatore
+
+def sposta_crediti (conn, squadra_from, squadra_to, crediti):
+    try:
+        cur = conn.cursor()
+
+        # Sottrarre crediti dalla squadra_from
+        cur.execute('''
+                    UPDATE squadra
+                    SET crediti = crediti - %s
+                    WHERE nome = %s;
+        ''', (crediti, squadra_from))
+
+        # Aggiungere crediti alla squadra_to
+        cur.execute('''
+                    UPDATE squadra
+                    SET crediti = crediti + %s
+                    WHERE nome = %s;
+        ''', (crediti, squadra_to))
+
+        conn.commit()
+        
+    except Exception as e:
+        print(f"Errore durante lo spostamento dei crediti: {e}")
+        conn.rollback()
+        
+    finally:
+        cur.close()

@@ -5,7 +5,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from user import formatta_data
-from queries import get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in
+from queries import get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in, sposta_crediti
 
 prestiti_bp = Blueprint('prestiti', __name__, url_prefix='/prestiti')
 
