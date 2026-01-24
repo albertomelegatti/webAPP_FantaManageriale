@@ -164,7 +164,8 @@ def asta_conclusa(conn, id_asta):
         ultima_offerta = info_asta['ultima_offerta']
 
         text_to_send = textwrap.dedent(f'''
-                📢 COMUNICAZIONE UFFICIALE: La squadra {squadra_vincente} acquista il giocatore {giocatore} per {ultima_offerta} crediti.
+            📢 COMUNICAZIONE UFFICIALE: 
+            La squadra {squadra_vincente} acquista il {giocatore} per {ultima_offerta} crediti.
         ''')
 
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
@@ -458,9 +459,9 @@ def prestito_riscattato(conn, id_prestito):
                 ✅ RISCATTO EFFETTUATO
                 La squadra {squadra_ricevente} ha riscattato {giocatore} per {crediti} crediti.
         ''')
-
         broadcast = textwrap.dedent(f'''
-                📢 RISCATTO UFFICIALE: {giocatore} resta a {squadra_ricevente} (🪙 {crediti} crediti).''')
+        📢 RISCATTO UFFICIALE: 
+        {giocatore} Viene riscattato da {squadra_ricevente} per {crediti} crediti.''')
 
         send_message(nome_squadra=squadra_ricevente, text_to_send=to_ricevente)
         send_message(nome_squadra=squadra_prestante, text_to_send=to_prestante)
@@ -544,9 +545,9 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
                     La tua richiesta di terminare in anticipo il prestito del giocatore: {giocatore} è stata accettata.
             ''')
             send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
-
             text_to_send = textwrap.dedent(f'''
-                    📢 COMUNICAZIONE UFFICIALE: Le squadre {squadra_prestante} e {squadra_ricevente} si sono accordate per terminare anticipatamente il prestito del giocatore: {giocatore}.
+                📢 COMUNICAZIONE UFFICIALE: 
+                Le squadre {squadra_prestante} e {squadra_ricevente} si sono accordate per terminare anticipatamente il prestito del giocatore: {giocatore}.
             ''')
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
 
@@ -577,7 +578,8 @@ def taglio_giocatore(conn, nome_squadra, giocatore, costo_taglio):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         text_to_send = textwrap.dedent(f'''
-                ✂️ COMUNICAZIONE UFFICIALE: La squadra {nome_squadra} svincola il giocatore {giocatore} pagando {costo_taglio} crediti.
+            ✂️ COMUNICAZIONE UFFICIALE: 
+            La squadra {nome_squadra} svincola il giocatore {giocatore} pagando {costo_taglio} crediti.
         ''')
 
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
@@ -602,7 +604,8 @@ def promozione_giocatore_primavera(conn, nome_squadra, giocatore):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         text_to_send = textwrap.dedent(f'''
-                🆙 COMUNICAZIONE UFFICIALE: La squadra {nome_squadra} promuove in prima squadra il giocatore {giocatore}
+        🆙 COMUNICAZIONE UFFICIALE: 
+        La squadra {nome_squadra} promuove in prima squadra il giocatore {giocatore}
         ''')
 
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
@@ -717,9 +720,8 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
                 ''')
 
             else:
-                text_to_send = textwrap.dedent(f'''
-                        📢 COMUNICAZIONE UFFICIALE: 
-                        📝La squadra {squadra_richiedente} modifica il contratto di {giocatore} a {tipo_contratto}. 
+                text_to_send = textwrap.dedent(f'''📢 COMUNICAZIONE UFFICIALE: 
+            📝La squadra {squadra_richiedente} modifica il contratto di {giocatore} a {tipo_contratto}. 
                 ''')
 
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
