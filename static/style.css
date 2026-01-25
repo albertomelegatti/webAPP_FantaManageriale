@@ -104,7 +104,6 @@ h1 {
 .buttons .btn {
     width: 9em;             /* larghezza fissa per tutti i bottoni */
     text-align: center;     /* testo centrato */
-    white-space: nowrap;    /* evita l'andare a capo */
 }
 
 
@@ -388,6 +387,7 @@ h1 {
 /* Media query per schermi medi (tablet) */
 @media (max-width: 980px) {
     .btn { min-width: 20%; padding: 0.9em 1.5em; font-size: 1.05rem; }
+    .buttons { gap: 4%; row-gap: 2em; }
     .logo { width: 28%; max-width: 140px; }
     h1 { font-size: 2rem; }
     .table { font-size: 0.95rem; width: 95%; }
@@ -396,7 +396,8 @@ h1 {
 
 /* Media query per schermi piccoli (smartphone) */
 @media (max-width: 680px) {
-    .btn { min-width: 25%; padding: 0.8em 1em; font-size: 1rem; }
+    .btn { min-width: 40%; padding: 1em 1.2em; font-size: 1rem; margin: 0.5em; }
+    .buttons { gap: 3%; row-gap: 0.5em; padding: 0 2%; }
     .logo { width: 38%; max-width: 120px; }
     h1 { font-size: 1.7rem; }
     .login-box { width: 96%; padding: 3vh 3vw; }
