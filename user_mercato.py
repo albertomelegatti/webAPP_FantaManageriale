@@ -287,14 +287,16 @@ def controlla_scambio(id, conn):
         
         # Controllo che le squadre abbiano abbastanza slot giocatori disponibili per effettuare gli scambi
         slot_squadra_proponente = get_slot_occupati(conn, squadra_proponente)
-        num_giocatori_in_entrata = len(giocatori_richiesti)
-        if slot_squadra_proponente + num_giocatori_in_entrata > 30:
-            return False
-        
-
         slot_squadra_destinataria = get_slot_occupati(conn, squadra_destinataria)
-        num_giocatori_in_uscita = len(giocatori_offerti)
-        if slot_squadra_destinataria + num_giocatori_in_uscita > 30:
+
+        # Verifica post-scambio: slot occupati dopo aver applicato entrate/uscite
+        slot_prop_finali = slot_squadra_proponente - len(giocatori_offerti) + len(giocatori_richiesti)
+        slot_dest_finali = slot_squadra_destinataria - len(giocatori_richiesti) + len(giocatori_offerti)
+
+        if slot_prop_finali > 30:
+            return False
+
+        if slot_dest_finali > 30:
             return False
 
         return True

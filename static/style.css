@@ -153,6 +153,28 @@ h1 {
     transform: translateY(-1px);
 }
 
+/* Slot cards (scambio) */
+.slot-card {
+    border-radius: 12px;
+}
+
+.slot-label {
+    font-size: 0.9rem;
+    color: var(--color-text-muted, #6c757d);
+}
+
+.slot-subtitle {
+    font-size: 0.9rem;
+    color: var(--color-text-muted, #6c757d);
+    font-weight: 600;
+}
+
+.slot-value {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
 /* Box di login (form centrato) */
 .login-box {
     background: var(--white);

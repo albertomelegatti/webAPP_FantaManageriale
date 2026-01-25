@@ -14,10 +14,65 @@
         </a>
     </div>
 
+    <div class="row g-3 mb-3">
+        <div class="col-md-6">
+            <div class="card slot-card shadow-sm bg-light border-0 h-100">
+                <div class="card-body py-3">
+                    <p class="slot-label mb-2">Slot e crediti ({{ nome_squadra }})</p>
+                    <div class="d-flex flex-wrap align-items-baseline gap-3 justify-content-center">
+                        <div class="text-center">
+                            <p class="slot-subtitle mb-1">Slot att.</p>
+                            <p class="slot-value mb-0" id="card-miei-slot">—</p>
+                        </div>
+                        <div class="border-start ps-3 text-center">
+                            <p class="slot-subtitle mb-1">Slot post</p>
+                            <p class="slot-value mb-0" id="card-miei-slot-after">—</p>
+                        </div>
+                        <div class="border-start ps-3 text-center">
+                            <p class="slot-subtitle mb-1">Crediti att.</p>
+                            <p class="slot-value mb-0" id="card-miei-crediti">—</p>
+                        </div>
+                        <div class="border-start ps-3 text-center">
+                            <p class="slot-subtitle mb-1">Crediti post</p>
+                            <p class="slot-value mb-0" id="card-miei-crediti-after">—</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card slot-card shadow-sm bg-light border-0 h-100">
+                <div class="card-body py-3">
+                    <p class="slot-label mb-2">Slot e crediti (<span id="card-dest-team">Seleziona squadra</span>)</p>
+                    <div class="d-flex flex-wrap align-items-baseline gap-3 justify-content-center">
+                        <div class="text-center">
+                            <p class="slot-subtitle mb-1">Slot att.</p>
+                            <p class="slot-value mb-0" id="card-dest-slot">—</p>
+                        </div>
+                        <div class="border-start ps-3 text-center">
+                            <p class="slot-subtitle mb-1">Slot post</p>
+                            <p class="slot-value mb-0" id="card-dest-slot-after">—</p>
+                        </div>
+                        <div class="border-start ps-3 text-center">
+                            <p class="slot-subtitle mb-1">Crediti att.</p>
+                            <p class="slot-value mb-0" id="card-dest-crediti">—</p>
+                        </div>
+                        <div class="border-start ps-3 text-center">
+                            <p class="slot-subtitle mb-1">Crediti post</p>
+                            <p class="slot-value mb-0" id="card-dest-crediti-after">—</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card shadow-sm">
         <div class="card-body">
             <form method="POST" action="{{ url_for('mercato.nuovo_scambio', nome_squadra=nome_squadra) }}" 
-                  data-slot-liberi-miei="{{ slot_liberi_miei }}"> <div class="mb-3">
+                data-slot-liberi-miei="{{ slot_liberi_miei }}" 
+                data-crediti-miei="{{ crediti_effettivi }}">
+                <div class="mb-3">
                     <label for="squadra_destinataria" class="form-label fw-semibold">Squadra destinataria</label>
                     <select id="squadra_destinataria" name="squadra_destinataria" class="form-select" required>
                         <option value="" selected disabled>Seleziona squadra</option>
@@ -78,6 +133,17 @@
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.querySelector('form');
     const myFreeSlots = parseInt(form.dataset.slotLiberiMiei) || 0;
+    const myCreditsAvailable = parseInt(form.dataset.creditiMiei) || 0;
+    const myOccupiedSpan = document.getElementById('card-miei-slot');
+    const destOccupiedSpan = document.getElementById('card-dest-slot');
+    const myOccupiedAfterSpan = document.getElementById('card-miei-slot-after');
+    const destOccupiedAfterSpan = document.getElementById('card-dest-slot-after');
+    const myCreditsSpan = document.getElementById('card-miei-crediti');
+    const myCreditsAfterSpan = document.getElementById('card-miei-crediti-after');
+    const destCreditsSpan = document.getElementById('card-dest-crediti');
+    const destCreditsAfterSpan = document.getElementById('card-dest-crediti-after');
+    const creditiOffertiInput = document.getElementById('crediti_offerti');
+    const creditiRichiestiInput = document.getElementById('crediti_richiesti');
     
     // Elementi per aggiornare la UI
     const maxOffertiSpan = document.getElementById('max_offerti');
@@ -94,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
         create: false,
         // Limita il numero di selezioni che POTREBBERO essere offerte.
         // La validazione vera è sulla combinazione offerti/richiesti. Qui è un limite di usabilità.
-        maxItems: 30, // Impostiamo un limite alto di default, la validazione avviene al change/submit
+            maxItems: 30, // Impostiamo un limite alto di default, la validazione avviene al change/submit
     });
 
     const selectRichiesti = new TomSelect("#giocatori_richiesti", {
@@ -116,55 +182,79 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateMaxItems() {
         const selectedOfferti = selectOfferti.items.length;
         const selectedRichiesti = selectRichiesti.items.length;
-        
-        // 1. Validazione Squadra Proponente (io):
-        // Numero di giocatori dopo lo scambio: (Miei Attuali - Offerti) + Richiesti
-        // Il limite è 30.
-        // Numero di slot occupati attuali: 30 - myFreeSlots
-        // Numero di slot occupati dopo: (30 - myFreeSlots) - selectedOfferti + selectedRichiesti
-        // Requisito: (30 - myFreeSlots) - selectedOfferti + selectedRichiesti <= 30
-        // Semplificando: selectedRichiesti - selectedOfferti <= myFreeSlots
 
-        // Max Giocatori Richiesti consentiti: selectedOfferti + myFreeSlots
-        const maxRichiestiAllowed = selectedOfferti + myFreeSlots;
-        
-        // Aggiorna TomSelect e l'etichetta per i Giocatori Richiesti
-        const destFreeSlots = parseInt(selectSquadra.options[selectSquadra.selectedIndex].dataset.slotLiberi) || 0;
-        const finalMaxRichiesti = Math.min(maxRichiestiAllowed, destFreeSlots + selectedRichiesti); // Non posso superare gli slot liberi della squadra destinataria + i giocatori che ricevo
-        
-        // Aggiorna i maxItems per i giocatori richiesti
-        selectRichiesti.settings.maxItems = finalMaxRichiesti;
+        const destOption = selectSquadra.options[selectSquadra.selectedIndex];
+        const destFreeSlots = destOption ? parseInt(destOption.dataset.slotLiberi) || 0 : 0;
 
-        // 2. Validazione Squadra Destinataria:
-        // Numero di slot occupati dopo: (Dest. Attuali - Richiesti) + Offerti
-        // Requisito: Offerti - Richiesti <= DestFreeSlots
-        // Max Giocatori Offerti consentiti: selectedRichiesti + destFreeSlots
-        const maxOffertiAllowed = selectedRichiesti + destFreeSlots;
+        // Limiti suggeriti (non bloccanti) basati sul saldo posti disponibili
+        const maxRichiestiSuggeriti = selectedOfferti + myFreeSlots;
+        const maxOffertiSuggeriti = selectedRichiesti + destFreeSlots;
 
-        // Aggiorna TomSelect e l'etichetta per i Giocatori Offerti
-        selectOfferti.settings.maxItems = maxOffertiAllowed;
+        // Consenti la selezione anche quando le squadre sono piene; la validazione finale avviene al submit
+        selectRichiesti.settings.maxItems = 30;
+        selectOfferti.settings.maxItems = 30;
 
-        // Aggiorna le etichette con il limite attuale (utile solo se cambio l'ordine di selezione)
-        maxOffertiSpan.textContent = maxOffertiAllowed;
-        maxRichiestiSpan.textContent = finalMaxRichiesti;
+        // Aggiorna le etichette informative
+        maxOffertiSpan.textContent = maxOffertiSuggeriti;
+        maxRichiestiSpan.textContent = maxRichiestiSuggeriti;
+    }
+
+    function updateSlotsCard() {
+        const destOption = selectSquadra.options[selectSquadra.selectedIndex];
+        const destFreeSlots = destOption ? parseInt(destOption.dataset.slotLiberi) || 0 : null;
+        const destCreditsAvail = destOption ? parseInt(destOption.dataset.maxCrediti) || 0 : null;
+
+        const selectedOfferti = selectOfferti.items.length;
+        const selectedRichiesti = selectRichiesti.items.length;
+        const creditiOfferti = parseInt(creditiOffertiInput.value) || 0;
+        const creditiRichiesti = parseInt(creditiRichiestiInput.value) || 0;
+
+        const mieiOra = 30 - myFreeSlots;
+        const destOra = destFreeSlots === null ? null : 30 - destFreeSlots;
+
+        const mieiDopo = mieiOra - selectedOfferti + selectedRichiesti;
+        const destDopo = destOra === null ? null : destOra - selectedRichiesti + selectedOfferti;
+
+        const mieiCredOra = myCreditsAvailable;
+        const destCredOra = destCreditsAvail === null ? null : destCreditsAvail;
+
+        const mieiCredDopo = mieiCredOra - creditiOfferti + creditiRichiesti;
+        const destCredDopo = destCredOra === null ? null : destCredOra - creditiRichiesti + creditiOfferti;
+
+        myOccupiedSpan.textContent = mieiOra;
+        myOccupiedAfterSpan.textContent = isNaN(mieiDopo) ? '—' : mieiDopo;
+        destOccupiedSpan.textContent = destOra === null ? '—' : destOra;
+        destOccupiedAfterSpan.textContent = destDopo === null || isNaN(destDopo) ? '—' : destDopo;
+
+        myCreditsSpan.textContent = mieiCredOra;
+        myCreditsAfterSpan.textContent = isNaN(mieiCredDopo) ? '—' : mieiCredDopo;
+        destCreditsSpan.textContent = destCredOra === null ? '—' : destCredOra;
+        destCreditsAfterSpan.textContent = destCredDopo === null || isNaN(destCredDopo) ? '—' : destCredDopo;
     }
     
     // Ascoltatori per il cambiamento delle selezioni
     selectOfferti.on('change', updateMaxItems);
     selectRichiesti.on('change', updateMaxItems);
+    selectOfferti.on('change', updateSlotsCard);
+    selectRichiesti.on('change', updateSlotsCard);
+    creditiOffertiInput.addEventListener('input', updateSlotsCard);
+    creditiRichiestiInput.addEventListener('input', updateSlotsCard);
     
     // Inizializza con i miei slot liberi come limite iniziale massimo
     // Il limite è sul *saldo* dei giocatori. L'utente non può richiedere più di (giocatori offerti + miei slot liberi)
     selectOfferti.settings.maxItems = 30; // Max tutti i miei giocatori
-    selectRichiesti.settings.maxItems = myFreeSlots;
+    selectRichiesti.settings.maxItems = 30;
     maxOffertiSpan.textContent = selectOfferti.options.length; // Max tutti i miei giocatori
     maxRichiestiSpan.textContent = myFreeSlots; // Max iniziali (se offro 0)
+    updateSlotsCard();
 
 
     selectSquadra.addEventListener("change", () => {
         const squadraSelezionata = selectSquadra.value;
         const selectedOption = selectSquadra.options[selectSquadra.selectedIndex];
-        const destFreeSlots = parseInt(selectedOption.dataset.slotLibri) || 0;
+        const destFreeSlots = parseInt(selectedOption.dataset.slotLiberi) || 0;
+        
+        const destTeamSpan = document.getElementById('card-dest-team');
 
         selectRichiesti.clearOptions();
         selectRichiesti.clear(); // Pulisce i valori selezionati
@@ -173,9 +263,13 @@ document.addEventListener("DOMContentLoaded", () => {
             selectRichiesti.disable();
             creditiRichiesti.disabled = true;
             maxRichiestiSpan.textContent = 0;
+            destTeamSpan.textContent = 'Seleziona squadra';
             updateMaxItems();
             return;
         }
+        
+        // Aggiorna il nome della squadra nel card
+        destTeamSpan.textContent = squadraSelezionata;
 
         // Filtra solo i giocatori della squadra selezionata
         const filtrati = allOptions.filter(g => g.squadra_att === squadraSelezionata);
@@ -194,10 +288,37 @@ document.addEventListener("DOMContentLoaded", () => {
         // Aggiorna il limite per i giocatori richiesti basato sui nuovi slot liberi della squadra destinataria
         // e ricalcola il limite anche per i giocatori offerti.
         updateMaxItems();
+        updateSlotsCard();
+    });
+    
+    form.addEventListener("submit", (event) => {
+        const selectedOption = selectSquadra.options[selectSquadra.selectedIndex];
+        if (!selectedOption) {
+            event.preventDefault();
+            alert("Seleziona una squadra destinataria.");
+            return;
+        }
+
+        const selectedOfferti = selectOfferti.items.length;
+        const selectedRichiesti = selectRichiesti.items.length;
+        const destFreeSlots = parseInt(selectedOption.dataset.slotLiberi) || 0;
+
+        const mieiAttuali = 30 - myFreeSlots;
+        const destAttuali = 30 - destFreeSlots;
+
+        const mieiDopo = mieiAttuali - selectedOfferti + selectedRichiesti;
+        const destDopo = destAttuali - selectedRichiesti + selectedOfferti;
+
+        if (mieiDopo > 30 || destDopo > 30) {
+            event.preventDefault();
+            alert("Lo scambio non rispetta il limite di 30 slot: regola le selezioni di giocatori.");
+            return;
+        }
     });
     
     // Chiamata iniziale per impostare i limiti e le etichette
     updateMaxItems(); 
+    updateSlotsCard();
 });
 </script>
 

@@ -344,3 +344,19 @@ body.dark-mode .form-control::placeholder {
 body.dark-mode .text-muted {
     color: #aaa !important;
 }
+
+/* Slot cards in dark mode */
+body.dark-mode .slot-card {
+    background-color: var(--color-background-card);
+    border: 1px solid var(--color-border-primary);
+}
+
+body.dark-mode .slot-label,
+body.dark-mode .slot-value,
+body.dark-mode .slot-subtitle {
+    color: var(--color-text-primary) !important;
+}
+
+body.dark-mode .slot-subtitle {
+    color: var(--color-text-muted, #ccc) !important;
+}
