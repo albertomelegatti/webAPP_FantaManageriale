@@ -430,45 +430,52 @@ def prestito_risposta(conn, id_prestito, risposta):
         cur.close()
 
 
-def prestito_riscattato(conn, id_prestito):
+def riscatto_giocatore(conn, id_prestito):
+    
+    #Invia notifica Telegram quando un giocatore viene riscattato
+    
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
+
         cur.execute('''
-                    SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine,
-                           p.crediti_riscatto
+                SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine,
+                   p.tipo_prestito, p.crediti_riscatto, COALESCE(p.note, '') AS note
                     FROM prestito p
-                    JOIN giocatore g ON p.giocatore = g.id
+                    JOIN giocatore g
+                    ON p.giocatore = g.id
                     WHERE p.id = %s;
         ''', (id_prestito,))
-        info = cur.fetchone()
+        info_prestito = cur.fetchone()
 
-        if not info:
-            return
+        giocatore = info_prestito['nome']
+        squadra_prestante = info_prestito['squadra_prestante']
+        squadra_ricevente = info_prestito['squadra_ricevente']
+        crediti_riscatto = info_prestito.get('crediti_riscatto') or 0
+
+        # Notifica al proprietario originale (squadra_prestante)
+        text_to_send = textwrap.dedent(f'''\
+                GIOCATORE RISCATTATO
+                La squadra {squadra_ricevente} ha riscattato il giocatore {giocatore} per {crediti_riscatto} crediti.
+        ''')
+        send_message(nome_squadra=squadra_prestante, text_to_send=text_to_send)
+
+        # Notifica alla squadra ricevente (che fa il riscatto)
+        text_to_send = textwrap.dedent(f'''\
+                GIOCATORE RISCATTATO CON SUCCESSO
+                Hai riscattato {giocatore} per {crediti_riscatto} crediti.
+        ''')
+        send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
         
-        giocatore = info['nome']
-        squadra_prestante = info['squadra_prestante']
-        squadra_ricevente = info['squadra_ricevente']
-        crediti = info.get('crediti_riscatto') or 0
-
-        to_ricevente = textwrap.dedent(f'''
-                ✅ RISCATTO EFFETTUATO
-                Hai riscattato {giocatore} per {crediti} crediti.
+        # Notifica al gruppo comunicazioni
+        text_to_send = textwrap.dedent(f'''\
+                📢 COMUNICAZIONE UFFICIALE:
+                La squadra {squadra_ricevente} ha riscattato {giocatore} dalla squadra {squadra_prestante} per {crediti_riscatto} crediti.
         ''')
-
-        to_prestante = textwrap.dedent(f'''
-                ✅ RISCATTO EFFETTUATO
-                La squadra {squadra_ricevente} ha riscattato {giocatore} per {crediti} crediti.
-        ''')
-        broadcast = textwrap.dedent(f'''
-                📢 RISCATTO UFFICIALE: 
-                {giocatore} Viene riscattato da {squadra_ricevente} per {crediti} crediti.''')
-
-        send_message(nome_squadra=squadra_ricevente, text_to_send=to_ricevente)
-        send_message(nome_squadra=squadra_prestante, text_to_send=to_prestante)
-        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=broadcast)
+        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
 
     except Exception as e:
-        print(f"Errore: {e}")
+        print(f"❌ Errore nel send_message riscatto_giocatore: {e}")
+
     finally:
         cur.close()
 
@@ -916,3 +923,5 @@ def get_all_telegram_ids():
 
     finally:
         release_connection(conn, cur)
+
+

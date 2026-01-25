@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from user import formatta_data
-from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori, get_nome_giocatore
+from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori, get_nome_giocatore, sposta_crediti
 
 rosa_bp = Blueprint('rosa', __name__, url_prefix='/rosa')
 
@@ -264,6 +264,11 @@ def user_gestione_prestiti(nome_squadra):
 
         if request.method == "POST":
 
+            # Bottone RISCATTA GIOCATORE
+            id_prestito_da_riscattare = request.form.get("riscatta_giocatore")
+            if id_prestito_da_riscattare:
+                riscatta_giocatore(conn, id_prestito_da_riscattare, nome_squadra)
+
             # Bottone RICHIESTA DI TERMINAZIONE ANTICIPATA
             id_prestito_per_cui_richiedere_terminazione = request.form.get("richiedi_terminazione")
             if id_prestito_per_cui_richiedere_terminazione:
@@ -299,11 +304,13 @@ def user_gestione_prestiti(nome_squadra):
                     JOIN giocatore g
                     ON p.giocatore = g.id
                     WHERE p.squadra_ricevente = %s
-                        AND p.stato IN ('in_corso', 'richiesta_di_terminazione');
+                        AND p.stato IN ('in_corso', 'richiesta_di_terminazione')
+                        AND p.stato != 'riscattato';
         ''', (nome_squadra,))
         prestiti_in_raw = cur.fetchall()
         
-
+        print(prestiti_in_raw)
+        
         prestiti_in = []
 
         for p in prestiti_in_raw:
@@ -376,6 +383,93 @@ def user_gestione_prestiti(nome_squadra):
 
 
 
+
+
+def riscatta_giocatore(conn, id_prestito, nome_squadra):
+    """
+    Riscatta un giocatore in prestito con diritto di riscatto.
+    La squadra attuale (squadra_ricevente) paga i crediti del riscatto
+    e il giocatore diventa di proprietà della squadra attuale.
+    """
+    cur = None
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Recupero informazioni sul prestito
+        cur.execute('''
+                    SELECT *
+                    FROM prestito
+                    WHERE id = %s;
+        ''', (id_prestito,))
+        prestito = cur.fetchone()
+
+        if not prestito:
+            flash("❌ Prestito non trovato.", "danger")
+            return
+
+        # Verifica che il prestito sia in corso
+        if prestito['stato'] != 'in_corso':
+            flash("❌ Il prestito non è in corso.", "danger")
+            return
+
+        # Verifica che il tipo sia "Con diritto di riscatto" o "Con obbligo di riscatto"
+        if prestito['tipo_prestito'] not in ('Con diritto di riscatto', 'Con obbligo di riscatto'):
+            flash("❌ Questo prestito non ha diritto di riscatto.", "danger")
+            return
+
+        # Controlla i crediti della squadra
+        cur.execute('''
+                    SELECT crediti
+                    FROM squadra
+                    WHERE nome = %s;
+        ''', (nome_squadra,))
+        squadra_row = cur.fetchone()
+
+        if not squadra_row:
+            flash("❌ Squadra non trovata.", "danger")
+            return
+
+        crediti_squadra = squadra_row['crediti']
+        costo_riscatto = prestito['crediti_riscatto']
+
+        if crediti_squadra < costo_riscatto:
+            flash(f"❌ Non hai abbastanza crediti per riscattare questo giocatore. Hai {crediti_squadra} crediti, te ne servono {costo_riscatto}.", "danger")
+            return
+
+        # RISCATTO EFFETTUATO:
+            
+        # 1. Sottrarre i crediti dalla squadra ricevente e aggiungerli alla squadra prestante
+        sposta_crediti(conn, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['crediti_riscatto'])
+        
+        # 2. Aggiornare il prestito come "riscattato"
+        cur.execute('''
+                    UPDATE prestito
+                    SET stato = 'riscattato',
+                        data_fine = (NOW() AT TIME ZONE 'Europe/Rome'),
+                        richiedente_terminazione = NULL
+                    WHERE id = %s;
+        ''', (id_prestito,))
+
+        # 3. Aggiornare il giocatore: squadra_att e detentore_cartellino diventano la squadra attuale
+        cur.execute('''
+                    UPDATE giocatore
+                    SET squadra_att = %s,
+                        detentore_cartellino = %s,
+                        tipo_contratto = 'Indeterminato'
+                    WHERE id = %s;
+        ''', (nome_squadra, nome_squadra, prestito['giocatore']))
+
+        conn.commit()
+        flash(f"✅ Giocatore riscattato con successo! Pagati {costo_riscatto} crediti.", "success")
+        telegram_utils.riscatto_giocatore(conn, id_prestito)
+
+    except Exception as e:
+        print(f"❌ Errore durante il riscatto del giocatore: {e}")
+        flash("❌ Si è verificato un errore durante il riscatto. Ricaricare la pagina.", "danger")
+        conn.rollback()
+
+    finally:
+        release_connection(None, cur)
 
 
 def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):

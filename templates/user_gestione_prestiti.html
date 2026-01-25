@@ -54,15 +54,29 @@
                         <td>{{ p.crediti_riscatto }}</td>
                         <td class="text-center">
                             {% if p.stato == 'in_corso' %}
-                                <!-- Bottone CHIEDI TERMINAZIONE ANTICIPATA -->
-                                <form method="POST" 
-                                      action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
-                                      onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
-                                    <input type="hidden" name="richiedi_terminazione" value="{{ p.id_prestito }}">
-                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-outline-warning w-100">
-                                        Chiedi terminazione anticipata
-                                    </button>
-                                </form>
+                                {% if (p.tipo_prestito == 'Con diritto di riscatto' or p.tipo_prestito == 'Con obbligo di riscatto') and p.crediti_riscatto > 0 %}
+                                    <!-- Bottone RISCATTA o CHIEDI TERMINAZIONE -->
+                                    <div class="d-flex flex-column flex-md-row gap-2 justify-content-center w-100">
+                                        <form method="POST" 
+                                              action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
+                                              onsubmit="return confirm('Vuoi riscattare {{ p.giocatori }} pagando {{ p.crediti_riscatto }} crediti?');">
+                                            <input type="hidden" name="riscatta_giocatore" value="{{ p.id_prestito }}">
+                                            <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-info w-100">
+                                                💰 Riscatta ({{ p.crediti_riscatto }} crediti)
+                                            </button>
+                                        </form>
+                                    </div>
+                                {% else %}
+                                    <!-- Bottone CHIEDI TERMINAZIONE ANTICIPATA -->
+                                    <form method="POST" 
+                                          action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
+                                          onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
+                                        <input type="hidden" name="richiedi_terminazione" value="{{ p.id_prestito }}">
+                                        <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-danger w-100">
+                                            Chiedi terminazione anticipata
+                                        </button>
+                                    </form>
+                                {% endif %}
                             {% elif p.stato == 'richiesta_di_terminazione' and p.richiedente_terminazione != nome_squadra %}
                                 <div class="d-flex flex-column flex-md-row gap-2 justify-content-center w-100">
                                     <!-- Bottone ACCETTA -->
@@ -145,7 +159,7 @@
                                       action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
                                       onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
                                     <input type="hidden" name="richiedi_terminazione" value="{{ p.id_prestito }}">
-                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-warning w-100"
+                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-danger w-100"
                                         {% if slot_giocatori >= 30 %}
                                             disabled title="Non puoi richiedere il rientro del giocatore perché hai gli slot pieni (30/30)"
                                         {% endif %}>
