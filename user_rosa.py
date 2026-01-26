@@ -304,8 +304,7 @@ def user_gestione_prestiti(nome_squadra):
                     JOIN giocatore g
                     ON p.giocatore = g.id
                     WHERE p.squadra_ricevente = %s
-                        AND p.stato IN ('in_corso', 'richiesta_di_terminazione')
-                        AND p.stato != 'riscattato';
+                        AND p.stato IN ('in_corso', 'richiesta_di_terminazione');
         ''', (nome_squadra,))
         prestiti_in_raw = cur.fetchall()
         
