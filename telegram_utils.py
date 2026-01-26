@@ -198,8 +198,8 @@ def nuovo_scambio(conn, id_scambio):
 
         squadra_proponente = info_scambio['squadra_proponente']
         squadra_destinataria = info_scambio['squadra_destinataria']
-        giocatori_offerti = format_giocatori(info_scambio['giocatori_offerti']) or []
-        giocatori_richiesti = format_giocatori(info_scambio['giocatori_richiesti']) or []
+        giocatori_offerti = format_giocatori(info_scambio['giocatori_offerti'])
+        giocatori_richiesti = format_giocatori(info_scambio['giocatori_richiesti'])
         crediti_offerti = info_scambio['crediti_offerti'] or 0
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
         messaggio = info_scambio['messaggio'] or ""
@@ -252,8 +252,8 @@ def scambio_risposta(conn, id_scambio, risposta):
 
         squadra_proponente = info_scambio['squadra_proponente']
         squadra_destinataria = info_scambio['squadra_destinataria']
-        giocatori_offerti = format_giocatori(info_scambio['giocatori_offerti']) or []
-        giocatori_richiesti = format_giocatori(info_scambio['giocatori_richiesti']) or []
+        giocatori_offerti = format_giocatori(info_scambio['giocatori_offerti'])
+        giocatori_richiesti = format_giocatori(info_scambio['giocatori_richiesti'])
         crediti_offerti = info_scambio['crediti_offerti'] or 0
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
         messaggio = info_scambio['messaggio'] or "Nessuna Condizione."
@@ -275,13 +275,16 @@ def scambio_risposta(conn, id_scambio, risposta):
 
             # invia notifica a tutte le squadre
             text_to_send = textwrap.dedent(f'''
-                    📢 SCAMBIO UFFICIALE: 🔥 Le squadre{squadra_proponente} e {squadra_destinataria} hanno trovato concluso un scambio:
+                    📢 SCAMBIO UFFICIALE: 🔥
+                    Le squadre {squadra_proponente} e {squadra_destinataria} hanno trovato concluso un scambio:
 
-                    ✅ **{squadra_proponente}** riceve:
-                    ⚽ {giocatori_richiesti} (+🪙 {crediti_richiesti} cr.)
+                    ✅ {squadra_proponente} riceve:
+                    ⚽ {giocatori_richiesti}
+                    🪙 {crediti_richiesti} crediti
 
-                    ✅ **{squadra_destinataria}** riceve:
-                    ⚽ {giocatori_offerti} (+🪙 {crediti_offerti} cr.)
+                    ✅ {squadra_destinataria} riceve:
+                    ⚽ {giocatori_offerti}
+                    🪙 {crediti_offerti} crediti
 
                     📝 Condizioni/Bonus: {messaggio}
             ''')
