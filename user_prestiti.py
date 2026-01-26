@@ -65,10 +65,10 @@ def user_prestiti(nome_squadra):
 
         cur.execute('''
                     SELECT *, p.id AS prestito_id, 
-                           COALESCE(p.note, '') AS note,
-                           COALESCE(p.costo_prestito, 0) AS costo_prestito,
-                           COALESCE(p.tipo_prestito, '') AS tipo_prestito,
-                           COALESCE(p.crediti_riscatto, 0) AS crediti_riscatto
+                           p.note,
+                           p.costo_prestito,
+                           p.tipo_prestito,
+                           p.crediti_riscatto
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
