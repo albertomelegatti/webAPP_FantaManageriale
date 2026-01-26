@@ -19,6 +19,9 @@ TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 # Flag per abilitare/disabilitare notifiche (default on).
 NOTIFICATIONS_ENABLED = os.getenv("NOTIFICHE_ATTIVE") == 'True'
 
+# Cache per i telegram IDs (lazy loading)
+_TELEGRAM_IDS_CACHE = None
+
 if not TOKEN:
     print("❌ Token non trovato nel file .env")
     exit()
@@ -874,6 +877,11 @@ def get_stagione():
 
 
 def get_all_telegram_ids():
+    # Lazy loading: carica i dati solo al primo accesso
+    global _TELEGRAM_IDS_CACHE
+    
+    if _TELEGRAM_IDS_CACHE is not None:
+        return _TELEGRAM_IDS_CACHE
 
     conn = None
     cur = None
@@ -910,6 +918,7 @@ def get_all_telegram_ids():
         id_gruppo_comunicazioni = id_gruppo_comunicazioni_raw['id_gruppo_comunicazioni']
         SQUADRE_IDS['gruppo_comunicazioni'] = [id_gruppo_comunicazioni]
 
+        _TELEGRAM_IDS_CACHE = SQUADRE_IDS
         print("✅ Inizializzato dizionario ID telegram")
         #print(SQUADRE_IDS)
 

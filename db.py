@@ -18,6 +18,7 @@ def init_pool():
     global pool
     if pool is not None:
         print("Il pool è già inizializzato.")
+        return pool
 
     if not DATABASE_URL:
         raise ValueError("Variabile d'ambiente DATABASE_URL non trovata")
