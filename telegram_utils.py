@@ -322,7 +322,7 @@ def nuovo_prestito(conn, id_prestito):
 
         cur.execute('''
                     SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine,
-                           p.tipo_prestito, p.costo_prestito, p.crediti_riscatto, COALESCE(p.note, '') AS note
+                           p.tipo_prestito, p.costo_prestito, p.crediti_riscatto, p.note
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -373,7 +373,7 @@ def prestito_risposta(conn, id_prestito, risposta):
 
         cur.execute('''
                 SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine,
-                   p.tipo_prestito, p.costo_prestito, p.crediti_riscatto, COALESCE(p.note, '') AS note
+                   p.tipo_prestito, p.costo_prestito, p.crediti_riscatto, p.note
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -445,7 +445,7 @@ def riscatto_giocatore(conn, id_prestito):
 
         cur.execute('''
                 SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine,
-                   p.tipo_prestito, p.crediti_riscatto, COALESCE(p.note, '') AS note
+                   p.tipo_prestito, p.crediti_riscatto, p.note
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
