@@ -147,9 +147,17 @@ def nuovo_prestito(nome_squadra):
             except ValueError:
                 crediti_riscatto = 0
             
-            # Se il tipo di prestito è "Secco", forza crediti_riscatto a 0
+            # Il menù a tendina del frontend non combacia con i valori dell'enum  del database per cui è necessario fare delle modifiche prima dell'INSERT
             if tipo_prestito == 'Secco':
                 crediti_riscatto = 0
+                tipo_prestito = 'secco'
+
+            elif tipo_prestito == 'Con obbligo di riscatto':
+                tipo_prestito = 'obbligo_di_riscatto'
+
+            elif tipo_prestito == 'Con diritto di riscatto':
+                tipo_prestito = 'diritto_di_riscatto'
+
 
             if not squadra_prestante or not giocatore_richiesto or not data_fine:
                 flash("❌ Errore: seleziona una squadra, un giocatore e una data di fine prestito.", "danger")
