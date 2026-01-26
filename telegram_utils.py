@@ -276,7 +276,7 @@ def scambio_risposta(conn, id_scambio, risposta):
             # invia notifica a tutte le squadre
             text_to_send = textwrap.dedent(f'''
                     📢 SCAMBIO UFFICIALE: 🔥
-                    Le squadre {squadra_proponente} e {squadra_destinataria} hanno trovato concluso un scambio:
+                    Le squadre {squadra_proponente} e {squadra_destinataria} hanno concluso un scambio:
 
                     ✅ {squadra_proponente} riceve:
                     ⚽ {giocatori_richiesti}
