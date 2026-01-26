@@ -42,9 +42,15 @@ app.config['SESSION_TYPE'] = 'sqlalchemy'
 app.config['SESSION_SQLALCHEMY'] = db
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 365
-app.config['SQUADRE_TELEGRAM_IDS'] = get_all_telegram_ids() # Per accedere: current_app.config.get('SQUADRE_TELEGRAM_IDS', {})
+app.config['SQUADRE_TELEGRAM_IDS'] = {}  # Inizializzato vuoto, sarà riempito al primo accesso
 
 Session(app)
+
+# Inizializza il dizionario telegram al primo accesso (lazy loading)
+@app.before_request
+def init_telegram_ids():
+    if not app.config['SQUADRE_TELEGRAM_IDS']:
+        app.config['SQUADRE_TELEGRAM_IDS'] = get_all_telegram_ids()
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
