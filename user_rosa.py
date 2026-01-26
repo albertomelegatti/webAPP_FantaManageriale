@@ -308,8 +308,6 @@ def user_gestione_prestiti(nome_squadra):
         ''', (nome_squadra,))
         prestiti_in_raw = cur.fetchall()
         
-        print(prestiti_in_raw)
-        
         prestiti_in = []
 
         for p in prestiti_in_raw:
@@ -514,7 +512,7 @@ def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
 def accetta_terminazione(conn, id_prestito):
 
     rome_tz = pytz.timezone("Europe/Rome")
-    print(id_prestito)
+    
     cur = None
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
