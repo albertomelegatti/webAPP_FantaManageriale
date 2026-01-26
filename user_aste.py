@@ -71,7 +71,7 @@ def user_aste(nome_squadra):
                                     SELECT giocatore 
                                     FROM asta 
                                     WHERE id = %s;
-                        ''', (asta_id))
+                        ''', (asta_id,))
                         id_giocatore = cur.fetchone()['giocatore']
 
                         # Recupero info sul nome del giocatore
