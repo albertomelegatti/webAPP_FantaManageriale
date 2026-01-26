@@ -164,7 +164,7 @@ def nuovo_prestito(nome_squadra):
                 return redirect(url_for("user.nuovo_prestito", nome_squadra=nome_squadra))
             
             data_fine = datetime.strptime(data_fine, "%Y-%m-%d")
-            data_fine = datetime.combine(data_fine.date(), time(hour=12, minute=0, second=0))
+            data_fine = datetime.combine(data_fine.date(), time(hour=23, minute=59, second=59))
 
             cur.execute('''
                         INSERT INTO prestito (
