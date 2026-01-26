@@ -928,7 +928,6 @@ def get_all_telegram_ids():
         return SQUADRE_IDS
 
 
-        
     except Exception as e:
         print(f"❌ Errore critico nel fetching della mappa ID: {e}")
         return {}

@@ -42,15 +42,10 @@ app.config['SESSION_TYPE'] = 'sqlalchemy'
 app.config['SESSION_SQLALCHEMY'] = db
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 365
-app.config['SQUADRE_TELEGRAM_IDS'] = {}  # Inizializzato vuoto, sarà riempito al primo accesso
-
 Session(app)
 
-# Inizializza il dizionario telegram al primo accesso (lazy loading)
-@app.before_request
-def init_telegram_ids():
-    if not app.config['SQUADRE_TELEGRAM_IDS']:
-        app.config['SQUADRE_TELEGRAM_IDS'] = get_all_telegram_ids()
+# Inizializza il dizionario telegram al lancio dell'app
+app.config['SQUADRE_TELEGRAM_IDS'] = get_all_telegram_ids()
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
@@ -78,7 +73,7 @@ def login():
         if session.get("is_admin"):
             return redirect(url_for('admin.admin_home'))
         elif session.get("nome_squadra"):
-            return redirect(url_for('user.squadraLogin', nome_squadra=session["nome_squadra"]))
+            return redirect(url_for('user.squadra_login', nome_squadra=session["nome_squadra"]))
         return redirect(url_for('home'))
     
     error = None
@@ -137,7 +132,7 @@ def login():
                         session["is_admin"] = False
                         session["username"] = username
                         session.permanent = True
-                        return redirect(url_for('user.squadraLogin', nome_squadra=nome_squadra))
+                        return redirect(url_for('user.squadra_login', nome_squadra=nome_squadra))
                     else:
                         flash("❌ Password errata.", "danger")
                 else:
@@ -189,7 +184,7 @@ def squadre():
 
 
 @app.route("/squadra/<nome_squadra>")
-def dashboardSquadra(nome_squadra):
+def dashboard_squadra(nome_squadra):
 
     conn = None
     cur = None
@@ -324,7 +319,7 @@ def dashboardSquadra(nome_squadra):
             })
 
         return render_template(
-            "dashboardSquadra.html",
+            "dashboard_squadra.html",
             nome_squadra=nome_squadra,
             rosa=rosa,
             primavera=primavera,
@@ -341,7 +336,7 @@ def dashboardSquadra(nome_squadra):
         )
 
     except Exception as e:
-        print("Errore dashboardSquadra:", e)
+        print("Errore dashboard Squadra:", e)
         flash("❌ Errore nel caricamento della squadra.", "danger")
         return redirect(url_for('home'))
 
@@ -403,8 +398,8 @@ def movimenti_mercato():
         
 
 
-@app.route("/creditiStadi")
-def creditiStadiSlot():
+@app.route("/crediti_stadi_slot")
+def crediti_stadi_slot():
 
     conn = None
     cur = None
@@ -461,10 +456,10 @@ def creditiStadiSlot():
             })
 
 
-        return render_template("creditiStadiSlot.html", stadi=stadi, squadre=squadre, slot=slot)
+        return render_template("crediti_stadi_slot.html", stadi=stadi, squadre=squadre, slot=slot)
 
     except Exception as e:
-        print("Errore creditiStadi:", e)
+        print("Errore crediti stadi e slot:", e)
         flash("❌ Errore nel caricamento dati stadi.", "danger")
         return redirect(url_for('home'))
 
@@ -576,7 +571,7 @@ def cambia_password():
                 nome_squadra = cur.fetchone()["nome"]
 
 
-                return redirect(url_for('user.squadraLogin', nome_squadra=nome_squadra))
+                return redirect(url_for('user.squadra_login', nome_squadra=nome_squadra))
 
             flash("❌ Errore nel cambio password.", "danger")
 
@@ -589,7 +584,7 @@ def cambia_password():
 
         return redirect(url_for('cambia_password'))
 
-    return render_template("changePassword.html")
+    return render_template("change_password.html")
 
 
 @app.route("/keepalive", methods=["GET", "POST"])

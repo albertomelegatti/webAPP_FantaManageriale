@@ -9,8 +9,8 @@ from queries import get_slot_occupati, get_slot_aste, get_slot_giocatori, get_sl
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
 # Sezione squadra DOPO LOGIN
-@user_bp.route("/squadraLogin/<nome_squadra>")
-def squadraLogin(nome_squadra):
+@user_bp.route("/squadra_login/<nome_squadra>")
+def squadra_login(nome_squadra):
 
     conn = get_connection()
     
@@ -21,7 +21,7 @@ def squadraLogin(nome_squadra):
 
     release_connection(conn, None)
 
-    return render_template("squadraLogin.html", nome_squadra=nome_squadra, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num)
+    return render_template("squadra_login.html", nome_squadra=nome_squadra, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num)
 
 
 
