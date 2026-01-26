@@ -59,7 +59,7 @@
                         required
                         min="{{ current_date }}"
                     >
-                    <div class="form-text">Seleziona la data entro cui il prestito dovrà terminare.<br>
+                    <div class="form-text text-muted">Per facilitare il riscatto consigliamo di impostare la data di scadenza al 2 luglio, quando gli slot dei giocatori retrocessi vi si saranno liberati.<br>
                             L'orario di scadenza sarà impostato per default alle 12:00 del giorno selezionato.
                     </div>
                 </div>
@@ -182,18 +182,34 @@ document.addEventListener("DOMContentLoaded", () => {
         selectGiocatore.refreshOptions(false);
     });
 
-    // Imposta la data minima (domani) per il campo data_scadenza
+    // Funzione per formattare una data in YYYY-MM-DD
+    function formatDateToString(date) {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // Imposta la data minima (domani) per il campo data_fine
     const oggi = new Date();
     const domani = new Date(oggi);
     domani.setDate(domani.getDate() + 1); // aggiunge 1 giorno
+    const domaniStr = formatDateToString(domani);
+    document.getElementById('data_fine').setAttribute('min', domaniStr);
 
-    // Formatta in YYYY-MM-DD
-    const yyyy = domani.getFullYear();
-    const mm = String(domani.getMonth() + 1).padStart(2, '0');
-    const dd = String(domani.getDate()).padStart(2, '0');
-    const domaniStr = `${yyyy}-${mm}-${dd}`;
-
-    document.getElementById('data_scadenza').setAttribute('min', domaniStr);
+    // Imposta il valore di default: il primo 2 giugno disponibile
+    const annoCorrente = oggi.getFullYear();
+    const giunoDiQuestAnno = new Date(annoCorrente, 6, 2); // mese 6 = luglio (0-indexed)
+    
+    let defaultDate;
+    if (oggi <= giunoDiQuestAnno) {
+        // Se oggi è prima o uguale al 2 giugno di quest'anno, usa giugno di quest'anno
+        defaultDate = formatDateToString(giunoDiQuestAnno);
+    } else {
+        // Altrimenti usa giugno dell'anno prossimo
+        defaultDate = formatDateToString(new Date(annoCorrente + 1, 6, 2));
+    }
+    document.getElementById('data_fine').value = defaultDate;
 });
 </script>
 

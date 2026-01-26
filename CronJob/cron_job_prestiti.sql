@@ -1,6 +1,8 @@
+-- da verificare come incide il cambiare lo stato del prestito + per obbligo di riscatto bisogna anche passare i crediti
+
 -- Cron job per la gestione della fine dei prestiti
 
--- 1. Aggiorna i giocatori il cui prestito è scaduto
+-- 1. Tipo prestito = SECCO
 -- Riporta il giocatore alla squadra di origine e imposta il contratto a Indeterminato
 UPDATE giocatore g
 SET 
@@ -20,8 +22,8 @@ SET stato = 'terminato'
 WHERE stato = 'in_corso'
   AND data_fine <= NOW() AT TIME ZONE 'Europe/Rome';
 
-
--- 3 Gestione dei prestiti con diritto di riscatto che non vengono riscattati e terminano
+-- 3. Tipo prestito = DIRITTO DI RISCATTO
+-- Gestione dei prestiti con diritto di riscatto che vengono riscattati
 UPDATE giocatore g
 SET
     g.squadra_att = p.squadra_prestante,
@@ -34,8 +36,7 @@ WHERE p.giocatore = g.id
 
 
 
-
--- 4. Gestione dei prestiti con obbligo di riscatto
+-- 4. Tipo prestito = OBBLIGO DI RISCATTO
 UPDATE giocatore g
 SET
     g.squadra_att = p.squadra_ricevente,
