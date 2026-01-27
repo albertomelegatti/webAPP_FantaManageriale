@@ -1,7 +1,5 @@
 import telegram_utils
-import textwrap
-from flask import Blueprint, request, jsonify, current_app
-from psycopg2.extras import RealDictCursor
+from flask import Blueprint, request, jsonify
 from db import get_connection, release_connection
 
 webhook_bp = Blueprint('webhook_bp', __name__)

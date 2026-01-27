@@ -1,4 +1,3 @@
-from db import get_connection, release_connection
 from psycopg2.extras import RealDictCursor
 
 def get_crediti_squadra(conn, nome_squadra):

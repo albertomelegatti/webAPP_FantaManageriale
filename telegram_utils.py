@@ -2,7 +2,6 @@ import requests
 import os
 import time
 import textwrap
-import json
 from datetime import datetime
 from flask import current_app
 from psycopg2.extras import RealDictCursor

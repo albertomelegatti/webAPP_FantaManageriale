@@ -1,11 +1,9 @@
 import psycopg2
-import time
 import telegram_utils
 import os
 from dotenv import load_dotenv
-from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify, current_app
+from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify
 from flask_session import Session
-from psycopg2 import extensions
 from psycopg2.extras import RealDictCursor
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -19,9 +17,7 @@ from webhook import webhook_bp
 from db import get_connection, release_connection, init_pool
 from telegram_utils import get_all_telegram_ids
 from queries import get_slot_giocatori, get_slot_occupati
-from datetime import datetime
 from chatbot import get_answer
-from queries import get_slot_occupati
 
 app = Flask(__name__)
 

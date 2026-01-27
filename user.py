@@ -1,4 +1,3 @@
-import psycopg2
 from flask import Blueprint, render_template
 from db import get_connection, release_connection
 from psycopg2.extras import RealDictCursor
