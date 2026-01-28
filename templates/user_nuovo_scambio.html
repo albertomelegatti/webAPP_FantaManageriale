@@ -396,6 +396,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const destTeamLabel = document.getElementById('card-dest-team');
 
     const allOptions = JSON.parse('{{ giocatori|tojson|safe }}');
+    const contractById = new Map(allOptions.map(g => [String(g.id), g.tipo_contratto]));
 
     // Scambio selects
     const selectOfferti = new TomSelect("#giocatori_offerti", {
@@ -498,22 +499,34 @@ document.addEventListener("DOMContentLoaded", () => {
         const loanRichiesti = (loan1Active ? selectPrestito1Rich.items.length : 0) + (loan2Active ? selectPrestito2Rich.items.length : 0);
         const loanOfferti = (loan1Active ? selectPrestito1Off.items.length : 0) + (loan2Active ? selectPrestito2Off.items.length : 0);
 
+        const loanOffertiSlotDelta = (loan1Active ? selectPrestito1Off.items : []).concat(loan2Active ? selectPrestito2Off.items : [])
+            .filter(id => {
+                const tipo = contractById.get(String(id));
+                return tipo === 'Indeterminato' || tipo === 'Hold';
+            }).length;
+
+        const loanRichiestiSlotDelta = (loan1Active ? selectPrestito1Rich.items : []).concat(loan2Active ? selectPrestito2Rich.items : [])
+            .filter(id => {
+                const tipo = contractById.get(String(id));
+                return tipo === 'Indeterminato' || tipo === 'Hold';
+            }).length;
+
         const creditiOfferti = parseInt(creditiOffertiInput.value) || 0;
         const creditiRichiesti = parseInt(creditiRichiestiInput.value) || 0;
 
         const mieiOra = 30 - myFreeSlots;
         const destOra = destFreeSlots === null ? null : 30 - destFreeSlots;
 
-        const mieiDopo = mieiOra - (scambioOfferti + loanOfferti) + (scambioRichiesti + loanRichiesti);
-        const destDopo = destOra === null ? null : destOra - (scambioRichiesti + loanRichiesti) + (scambioOfferti + loanOfferti);
+        const mieiDopo = mieiOra - scambioOfferti + scambioRichiesti - loanOffertiSlotDelta;
+        const destDopo = destOra === null ? null : destOra - scambioRichiesti + scambioOfferti - loanRichiestiSlotDelta;
         
         // Calcolo slot prestiti - usa i valori reali dal backend
         const mieiPrestitiOra = mySlotPrestiti;
         const destPrestitiOra = destSlotPrestiti;
         
         // Dopo lo scambio: prestiti attuali + nuovi prestiti dal form
-        const mieiPrestitiDopo = mieiPrestitiOra + loanOfferti;
-        const destPrestitiDopo = destPrestitiOra + loanRichiesti;
+        const mieiPrestitiDopo = mieiPrestitiOra + loanRichiesti;
+        const destPrestitiDopo = destPrestitiOra + loanOfferti;
 
         const mieiCredOra = myCreditsAvailable;
         const destCredOra = destCreditsAvail === null ? null : destCreditsAvail;
@@ -613,8 +626,20 @@ document.addEventListener("DOMContentLoaded", () => {
         const loanRichiesti = (loan1Active ? selectPrestito1Rich.items.length : 0) + (loan2Active ? selectPrestito2Rich.items.length : 0);
         const loanOfferti = (loan1Active ? selectPrestito1Off.items.length : 0) + (loan2Active ? selectPrestito2Off.items.length : 0);
 
-        const mieiDopo = mieiAttuali - (scambioOfferti + loanOfferti) + (scambioRichiesti + loanRichiesti);
-        const destDopo = destAttuali - (scambioRichiesti + loanRichiesti) + (scambioOfferti + loanOfferti);
+        const loanOffertiSlotDelta = (loan1Active ? selectPrestito1Off.items : []).concat(loan2Active ? selectPrestito2Off.items : [])
+            .filter(id => {
+                const tipo = contractById.get(String(id));
+                return tipo === 'Indeterminato' || tipo === 'Hold';
+            }).length;
+
+        const loanRichiestiSlotDelta = (loan1Active ? selectPrestito1Rich.items : []).concat(loan2Active ? selectPrestito2Rich.items : [])
+            .filter(id => {
+                const tipo = contractById.get(String(id));
+                return tipo === 'Indeterminato' || tipo === 'Hold';
+            }).length;
+
+        const mieiDopo = mieiAttuali - scambioOfferti + scambioRichiesti - loanOffertiSlotDelta;
+        const destDopo = destAttuali - scambioRichiesti + scambioOfferti - loanRichiestiSlotDelta;
 
         if (mieiDopo > 30 || destDopo > 30) {
             event.preventDefault();

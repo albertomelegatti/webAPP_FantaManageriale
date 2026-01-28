@@ -297,18 +297,23 @@ def nuovo_scambio(nome_squadra):
 
         # Recupera tutti i giocatori validi (non svincolati, non prestiti, non hold)
         cur.execute('''
-            SELECT id, nome, squadra_att
-            FROM giocatore
-            WHERE squadra_att IS NOT NULL
-              AND squadra_att != 'Svincolati'
-              AND tipo_contratto NOT IN ('Fanta-Prestito', 'Hold')
-            ORDER BY squadra_att, nome;
+                SELECT id, nome, squadra_att, tipo_contratto
+                FROM giocatore
+                WHERE squadra_att IS NOT NULL
+                    AND squadra_att != 'Svincolati'
+                    AND tipo_contratto NOT IN ('Fanta-Prestito', 'Hold')
+                ORDER BY squadra_att, nome;
         ''')
         giocatori_raw = cur.fetchall()
 
         miei_giocatori = [g for g in giocatori_raw if g["squadra_att"] == nome_squadra]
         giocatori = [
-            {"id": g["id"], "nome": g["nome"], "squadra_att": g["squadra_att"]}
+            {
+                "id": g["id"],
+                "nome": g["nome"],
+                "squadra_att": g["squadra_att"],
+                "tipo_contratto": g["tipo_contratto"]
+            }
             for g in giocatori_raw
         ]
 
