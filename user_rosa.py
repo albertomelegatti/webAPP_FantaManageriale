@@ -441,7 +441,7 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
         # 2. Aggiornare il prestito come "riscattato"
         cur.execute('''
                     UPDATE prestito
-                    SET stato = 'riscattato',
+                    SET stato = 'terminato',
                         data_fine = (NOW() AT TIME ZONE 'Europe/Rome'),
                         richiedente_terminazione = NULL
                     WHERE id = %s;
