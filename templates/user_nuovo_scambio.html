@@ -1,206 +1,484 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-5">
+<div class="container-fluid py-4 negotiation-page">
 
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
         <div>
-            <h1 class="mb-0">Nuova proposta di scambio</h1>
-            <small class="text-muted">Squadra: <strong>{{ nome_squadra }}</strong></small>
+            <h1 class="mb-1">Nuova trattativa</h1>
+            <p class="mb-0 text-muted">Scambi & Prestiti | Squadra: <strong>{{ nome_squadra }}</strong></p>
         </div>
-        <a href="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}" 
-           class="btn btn-outline-secondary btn-lg mt-2 mt-sm-0">
-            ← Torna al mercato
-        </a>
+        <a href="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}" class="btn btn-outline-light btn-lg">← Torna al mercato</a>
     </div>
 
-    <div class="row g-3 mb-3">
-        <div class="col-md-6">
-            <div class="card slot-card shadow-sm bg-light border-0 h-100">
-                <div class="card-body py-3">
-                    <p class="slot-label mb-3">Slot e crediti ({{ nome_squadra }})</p>
-                    <div class="row g-2">
-                        <div class="col-6 text-center border-end">
-                            <p class="slot-subtitle mb-1">Slot att.</p>
-                            <p class="slot-value mb-0" id="card-miei-slot">—</p>
-                        </div>
-                        <div class="col-6 text-center">
-                            <p class="slot-subtitle mb-1">Slot post</p>
-                            <p class="slot-value mb-0" id="card-miei-slot-after">—</p>
-                        </div>
-                    </div>
-                    <hr class="my-2">
-                    <div class="row g-2">
-                        <div class="col-6 text-center border-end">
-                            <p class="slot-subtitle mb-1">Crediti att.</p>
-                            <p class="slot-value mb-0" id="card-miei-crediti">—</p>
-                        </div>
-                        <div class="col-6 text-center">
-                            <p class="slot-subtitle mb-1">Crediti post</p>
-                            <p class="slot-value mb-0" id="card-miei-crediti-after">—</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card slot-card shadow-sm bg-light border-0 h-100">
-                <div class="card-body py-3">
-                    <p class="slot-label mb-3">Slot e crediti (<span id="card-dest-team">Seleziona squadra</span>)</p>
-                    <div class="row g-2">
-                        <div class="col-6 text-center border-end">
-                            <p class="slot-subtitle mb-1">Slot att.</p>
-                            <p class="slot-value mb-0" id="card-dest-slot">—</p>
-                        </div>
-                        <div class="col-6 text-center">
-                            <p class="slot-subtitle mb-1">Slot post</p>
-                            <p class="slot-value mb-0" id="card-dest-slot-after">—</p>
-                        </div>
-                    </div>
-                    <hr class="my-2">
-                    <div class="row g-2">
-                        <div class="col-6 text-center border-end">
-                            <p class="slot-subtitle mb-1">Crediti att.</p>
-                            <p class="slot-value mb-0" id="card-dest-crediti">—</p>
-                        </div>
-                        <div class="col-6 text-center">
-                            <p class="slot-subtitle mb-1">Crediti post</p>
-                            <p class="slot-value mb-0" id="card-dest-crediti-after">—</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="alert alert-info mb-3 info-box">
+        <small><strong>Per facilitare il riscatto si consiglia di impostare la data di scadenza dei prestiti al 2 luglio, quando gli slot dei giocatori retrocessi e svincolati saranno liberati.</small>
     </div>
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <form method="POST" action="{{ url_for('mercato.nuovo_scambio', nome_squadra=nome_squadra) }}" 
-                data-slot-liberi-miei="{{ slot_liberi_miei }}" 
-                data-crediti-miei="{{ crediti_effettivi }}">
-                <div class="mb-3">
-                    <label for="squadra_destinataria" class="form-label fw-semibold">Squadra destinataria</label>
-                    <select id="squadra_destinataria" name="squadra_destinataria" class="form-select" required>
-                        <option value="" selected disabled>Seleziona squadra</option>
-                        {% for s in squadre %}
-                            {% if s.nome != nome_squadra %}
-                                <option value="{{ s.nome }}" 
-                                        data-max-crediti="{{ s.offerta_massima_possibile }}"
-                                        data-slot-liberi="{{ s.slot_liberi }}">
-                                    {{ s.nome }}
-                                </option>
-                            {% endif %}
-                        {% endfor %}
-                    </select>
-                </div>
+    <form method="POST" action="{{ url_for('mercato.nuovo_scambio', nome_squadra=nome_squadra) }}"
+          class="negotiation-form"
+          data-slot-liberi-miei="{{ slot_liberi_miei }}"
+          data-crediti-miei="{{ crediti_effettivi }}"
+          data-slot-prestiti-miei="{{ slot_prestiti_miei }}">
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="crediti_offerti" class="form-label">Crediti offerti</label>
-                        <input type="number" min="0" name="crediti_offerti" id="crediti_offerti" class="form-control"
-                                 max="{{ crediti_effettivi }}" placeholder="Max: {{ crediti_effettivi }}">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="crediti_richiesti" class="form-label">Crediti richiesti</label>
-                        <input type="number" min="0" name="crediti_richiesti" id="crediti_richiesti" class="form-control" disabled>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="giocatori_offerti" class="form-label">Giocatori offerti (Max: <span id="max_offerti">{{ miei_giocatori|length }}</span>)</label> <select multiple name="giocatori_offerti" id="giocatori_offerti" class="form-select">
-                            {% for g in miei_giocatori %}
-                                <option value="{{ g.id }}">{{ g.nome }}</option>
+        <div class="card soft-card mb-3">
+            <div class="card-body">
+                <div class="row g-3 align-items-end justify-content-center">
+                    <div class="col-lg-6 col-md-8 col-sm-10">
+                        <label for="squadra_destinataria" class="form-label fw-semibold">Seleziona controparte</label>
+                        <select id="squadra_destinataria" name="squadra_destinataria" class="form-select" required>
+                            <option value="" selected disabled>Seleziona squadra</option>
+                            {% for s in squadre %}
+                                {% if s.nome != nome_squadra %}
+                                    <option value="{{ s.nome }}"
+                                            data-max-crediti="{{ s.offerta_massima_possibile }}"
+                                            data-slot-liberi="{{ s.slot_liberi }}"
+                                            data-slot-prestiti="{{ s.slot_prestiti }}">
+                                        {{ s.nome }}
+                                    </option>
+                                {% endif %}
                             {% endfor %}
                         </select>
                     </div>
+            </div>
+        </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label for="giocatori_richiesti" class="form-label">Giocatori richiesti (Max: <span id="max_richiesti">0</span>)</label> <select multiple name="giocatori_richiesti" id="giocatori_richiesti" class="form-select" disabled></select>
+        <div class="row g-3 mb-3">
+            <div class="col-lg-6">
+                <div class="card soft-card h-100">
+                    <div class="card-body">
+                        <p class="slot-label">Slot & Crediti ({{ nome_squadra }})</p>
+                        <div class="row g-2 text-center">
+                            <div class="col-6">
+                                <div class="slot-box">
+                                    <small>Slot att.</small>
+                                    <div id="card-miei-slot-now">—</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="slot-box">
+                                    <small>Slot post</small>
+                                    <div id="card-miei-slot-after">—</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="slot-box">
+                                    <small>Slot prest. att.</small>
+                                    <div id="card-miei-prestiti-now">—</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="slot-box">
+                                    <small>Slot prest. post</small>
+                                    <div id="card-miei-prestiti-after">—</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="slot-box">
+                                    <small>Crediti att.</small>
+                                    <div id="card-miei-crediti-now">—</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="slot-box">
+                                    <small>Crediti post</small>
+                                    <div id="card-miei-crediti-after">—</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <div class="mb-3">
-                    <label for="messaggio" class="form-label">Messaggio (opzionale)</label>
-                    <textarea name="messaggio" id="messaggio" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="col-lg-6">
+                <div class="card soft-card h-100">
+                    <div class="card-body">
+                        <p class="slot-label">Slot & Crediti (<span id="card-dest-team">CONTROPARTE</span>)</p>
+                        <div class="row g-2 text-center">
+                            <div class="col-6">
+                                <div class="slot-box">
+                                    <small>Slot att.</small>
+                                    <div id="card-dest-slot-now">—</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="slot-box">
+                                    <small>Slot post</small>
+                                    <div id="card-dest-slot-after">—</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="slot-box">
+                                    <small>Slot prest. att.</small>
+                                    <div id="card-dest-prestiti-now">—</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="slot-box">
+                                    <small>Slot prest. post</small>
+                                    <div id="card-dest-prestiti-after">—</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="slot-box">
+                                    <small>Crediti att.</small>
+                                    <div id="card-dest-crediti-now">—</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="slot-box">
+                                    <small>Crediti post</small>
+                                    <div id="card-dest-crediti-after">—</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
-                <button type="submit" class="btn btn-primary w-100 py-2">Invia proposta di scambio</button>
-            </form>
+            </div>
         </div>
-    </div>
+
+        <div class="card soft-card mb-3">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <div class="slot-box text-center mb-3 py-2">
+                            <h5 class="fw-bold mb-0">Richieste</h5>
+                        </div>
+                        <div class="mb-3">
+                            <label for="giocatori_richiesti" class="form-label" style="font-size: 0.875rem;">Giocatori richiesti (Max: <span id="max_richiesti">0</span>)</label>
+                            <select multiple name="giocatori_richiesti" id="giocatori_richiesti" class="form-select" disabled></select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="crediti_richiesti" class="form-label" style="font-size: 0.875rem;">Crediti richiesti</label>
+                            <input type="number" min="0" name="crediti_richiesti" id="crediti_richiesti" class="form-control" disabled>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="slot-box text-center mb-3 py-2">
+                            <h5 class="fw-bold mb-0">Offerte</h5>
+                        </div>
+                        <div class="mb-3">
+                            <label for="giocatori_offerti" class="form-label" style="font-size: 0.875rem;">Giocatori offerti (Max: <span id="max_offerti">{{ miei_giocatori|length }}</span>)</label>
+                            <select multiple name="giocatori_offerti" id="giocatori_offerti" class="form-select">
+                                {% for g in miei_giocatori %}
+                                    <option value="{{ g.id }}">{{ g.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="crediti_offerti" class="form-label" style="font-size: 0.875rem;">Crediti offerti</label>
+                            <input type="number" min="0" name="crediti_offerti" id="crediti_offerti" class="form-control" max="{{ crediti_effettivi }}" placeholder="Max: {{ crediti_effettivi }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card soft-card mb-3 loan-card" id="loan1">
+            <div class="card-header d-flex align-items-center gap-2 bg-success text-white">
+                <input type="checkbox" id="enable_prestito1" name="enable_prestito1" class="form-check-input m-0">
+                <label for="enable_prestito1" class="form-check-label fw-semibold">Aggiungi prestito</label>
+            </div>
+            <div class="card-body loan-body d-none" id="loan1-body">
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <div class="slot-box text-center mb-3 py-2">
+                            <h5 class="fw-bold mb-0">Prestito richiesto</h5>
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito1_richiesto" class="form-label" style="font-size: 0.875rem;">Giocatore</label>
+                            <select id="prestito1_richiesto" name="prestito1_richiesto" class="form-select" disabled>
+                                <option value="">Seleziona controparte</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito1_tipo_richiesto" class="form-label" style="font-size: 0.875rem;">Tipo</label>
+                            <select id="prestito1_tipo_richiesto" name="prestito1_tipo_richiesto" class="form-select" disabled>
+                                <option value="">Seleziona tipo</option>
+                                <option value="Secco">Secco</option>
+                                <option value="Diritto">Con diritto di riscatto</option>
+                                <option value="Obbligo">Con obbligo di riscatto</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito1_data_fine_richiesta" class="form-label" style="font-size: 0.875rem;">Data fine</label>
+                            <input type="date" id="prestito1_data_fine_richiesta" name="prestito1_data_fine_richiesta" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito1_riscatto_richiesto" class="form-label" style="font-size: 0.875rem;">Riscatto</label>
+                            <input type="number" min="0" id="prestito1_riscatto_richiesto" name="prestito1_riscatto_richiesto" class="form-control" placeholder="0" disabled>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="slot-box text-center mb-3 py-2">
+                            <h5 class="fw-bold mb-0">Prestito offerto</h5>
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito1_offerto" class="form-label" style="font-size: 0.875rem;">Giocatore</label>
+                            <select id="prestito1_offerto" name="prestito1_offerto" class="form-select" disabled>
+                                <option value="">Seleziona un tuo giocatore</option>
+                                {% for g in miei_giocatori %}
+                                    <option value="{{ g.id }}">{{ g.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito1_tipo_offerto" class="form-label" style="font-size: 0.875rem;">Tipo</label>
+                            <select id="prestito1_tipo_offerto" name="prestito1_tipo_offerto" class="form-select" disabled>
+                                <option value="">Seleziona tipo</option>
+                                <option value="Secco">Secco</option>
+                                <option value="Diritto">Con diritto di riscatto</option>
+                                <option value="Obbligo">Con obbligo di riscatto</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito1_data_fine_offerta" class="form-label" style="font-size: 0.875rem;">Data fine</label>
+                            <input type="date" id="prestito1_data_fine_offerta" name="prestito1_data_fine_offerta" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito1_riscatto_offerto" class="form-label" style="font-size: 0.875rem;">Riscatto</label>
+                            <input type="number" min="0" id="prestito1_riscatto_offerto" name="prestito1_riscatto_offerto" class="form-control" placeholder="0" disabled>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card soft-card mb-3 loan-card" id="loan2">
+            <div class="card-header d-flex align-items-center gap-2 bg-success text-white">
+                <input type="checkbox" id="enable_prestito2" name="enable_prestito2" class="form-check-input m-0">
+                <label for="enable_prestito2" class="form-check-label fw-semibold">Aggiungi prestito</label>
+            </div>
+            <div class="card-body loan-body d-none" id="loan2-body">
+                <div class="row g-3">
+                    <div class="col-lg-6">
+                        <div class="slot-box text-center mb-3 py-2">
+                            <h5 class="fw-bold mb-0">Prestito richiesto</h5>
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito2_richiesto" class="form-label" style="font-size: 0.875rem;">Giocatore</label>
+                            <select id="prestito2_richiesto" name="prestito2_richiesto" class="form-select" disabled>
+                                <option value="">Seleziona controparte</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito2_tipo_richiesto" class="form-label" style="font-size: 0.875rem;">Tipo</label>
+                            <select id="prestito2_tipo_richiesto" name="prestito2_tipo_richiesto" class="form-select" disabled>
+                                <option value="">Seleziona tipo</option>
+                                <option value="Secco">Secco</option>
+                                <option value="Diritto">Con diritto di riscatto</option>
+                                <option value="Obbligo">Con obbligo di riscatto</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito2_data_fine_richiesta" class="form-label" style="font-size: 0.875rem;">Data fine</label>
+                            <input type="date" id="prestito2_data_fine_richiesta" name="prestito2_data_fine_richiesta" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito2_riscatto_richiesto" class="form-label" style="font-size: 0.875rem;">Riscatto</label>
+                            <input type="number" min="0" id="prestito2_riscatto_richiesto" name="prestito2_riscatto_richiesto" class="form-control" placeholder="0" disabled>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="slot-box text-center mb-3 py-2">
+                            <h5 class="fw-bold mb-0">Prestito offerto</h5>
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito2_offerto" class="form-label" style="font-size: 0.875rem;">Giocatore</label>
+                            <select id="prestito2_offerto" name="prestito2_offerto" class="form-select" disabled>
+                                <option value="">Seleziona un tuo giocatore</option>
+                                {% for g in miei_giocatori %}
+                                    <option value="{{ g.id }}">{{ g.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito2_tipo_offerto" class="form-label" style="font-size: 0.875rem;">Tipo</label>
+                            <select id="prestito2_tipo_offerto" name="prestito2_tipo_offerto" class="form-select" disabled>
+                                <option value="">Seleziona tipo</option>
+                                <option value="Secco">Secco</option>
+                                <option value="Diritto">Con diritto di riscatto</option>
+                                <option value="Obbligo">Con obbligo di riscatto</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito2_data_fine_offerta" class="form-label" style="font-size: 0.875rem;">Data fine</label>
+                            <input type="date" id="prestito2_data_fine_offerta" name="prestito2_data_fine_offerta" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="prestito2_riscatto_offerto" class="form-label" style="font-size: 0.875rem;">Riscatto</label>
+                            <input type="number" min="0" id="prestito2_riscatto_offerto" name="prestito2_riscatto_offerto" class="form-control" placeholder="0" disabled>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card soft-card mb-3">
+            <div class="card-body">
+                <label for="messaggio" class="form-label fw-semibold">Messaggio opzionale</label>
+                <textarea name="messaggio" id="messaggio" class="form-control" rows="3" placeholder="Dettaglia condizioni, clausole di riscatto o note."></textarea>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-success btn-lg w-100 py-3">Invia proposta</button>
+    </form>
 </div>
 
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
-
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-    const form = document.querySelector('form');
+    // Funzione per formattare una data in YYYY-MM-DD
+    function formatDateToString(date) {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // Imposta il valore di default al prossimo 2 luglio per i campi data prestito
+    const oggi = new Date();
+    const annoCorrente = oggi.getFullYear();
+    const luglioDiQuestAnno = new Date(annoCorrente, 6, 2); // mese 6 = luglio (0-indexed)
+    
+    let defaultDate;
+    if (oggi <= luglioDiQuestAnno) {
+        // Se oggi è prima o uguale al 2 luglio di quest'anno, usa luglio di quest'anno
+        defaultDate = formatDateToString(luglioDiQuestAnno);
+    } else {
+        // Altrimenti usa luglio dell'anno prossimo
+        defaultDate = formatDateToString(new Date(annoCorrente + 1, 6, 2));
+    }
+
+    // Imposta il valore di default per i campi data prestito
+    const dataInputs = [
+        'prestito1_data_fine_richiesta',
+        'prestito1_data_fine_offerta',
+        'prestito2_data_fine_richiesta',
+        'prestito2_data_fine_offerta'
+    ];
+    dataInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.value = defaultDate;
+        }
+    });
+
+    const form = document.querySelector('.negotiation-form');
     const myFreeSlots = parseInt(form.dataset.slotLiberiMiei) || 0;
     const myCreditsAvailable = parseInt(form.dataset.creditiMiei) || 0;
-    const myOccupiedSpan = document.getElementById('card-miei-slot');
-    const destOccupiedSpan = document.getElementById('card-dest-slot');
+    const mySlotPrestiti = parseInt(form.dataset.slotPrestitiMiei) || 0;
+
+    // Snapshot elements
+    const myOccupiedSpan = document.getElementById('card-miei-slot-now');
+    const destOccupiedSpan = document.getElementById('card-dest-slot-now');
     const myOccupiedAfterSpan = document.getElementById('card-miei-slot-after');
     const destOccupiedAfterSpan = document.getElementById('card-dest-slot-after');
-    const myCreditsSpan = document.getElementById('card-miei-crediti');
+    
+    const myPrestitiSpan = document.getElementById('card-miei-prestiti-now');
+    const myPrestitiAfterSpan = document.getElementById('card-miei-prestiti-after');
+    const destPrestitiSpan = document.getElementById('card-dest-prestiti-now');
+    const destPrestitiAfterSpan = document.getElementById('card-dest-prestiti-after');
+    
+    const myCreditsSpan = document.getElementById('card-miei-crediti-now');
     const myCreditsAfterSpan = document.getElementById('card-miei-crediti-after');
-    const destCreditsSpan = document.getElementById('card-dest-crediti');
+    const destCreditsSpan = document.getElementById('card-dest-crediti-now');
     const destCreditsAfterSpan = document.getElementById('card-dest-crediti-after');
+
     const creditiOffertiInput = document.getElementById('crediti_offerti');
     const creditiRichiestiInput = document.getElementById('crediti_richiesti');
-    
-    // Elementi per aggiornare la UI
+
     const maxOffertiSpan = document.getElementById('max_offerti');
     const maxRichiestiSpan = document.getElementById('max_richiesti');
-    
-    // Aggiorna l'etichetta per i giocatori offerti (la squadra otterrà N giocatori e cederà M. La differenza M-N deve essere <= myFreeSlots)
-    // Per semplicità, inizialmente limitiamo le offerte al numero di giocatori che POTREI ricevere, ovvero myFreeSlots
-    // Un controllo più preciso avverrà alla selezione. Il max iniziale è il numero massimo di giocatori che la mia squadra è disposta ad accettare.
-    maxOffertiSpan.textContent = myFreeSlots;
 
+    const selectSquadra = document.getElementById('squadra_destinataria');
+    const destTeamLabel = document.getElementById('card-dest-team');
+
+    const allOptions = JSON.parse('{{ giocatori|tojson|safe }}');
+
+    // Scambio selects
     const selectOfferti = new TomSelect("#giocatori_offerti", {
         plugins: ['remove_button'],
-        placeholder: "Seleziona giocatori da offrire...",
+        placeholder: "Giocatori da offrire",
         create: false,
-        // Limita il numero di selezioni che POTREBBERO essere offerte.
-        // La validazione vera è sulla combinazione offerti/richiesti. Qui è un limite di usabilità.
-            maxItems: 30, // Impostiamo un limite alto di default, la validazione avviene al change/submit
+        maxItems: 30
     });
 
     const selectRichiesti = new TomSelect("#giocatori_richiesti", {
         plugins: ['remove_button'],
-        placeholder: "Seleziona giocatori da richiedere...",
+        placeholder: "Giocatori da richiedere",
         create: false,
-        maxItems: 0, // Inizialmente 0, verrà aggiornato
+        maxItems: 0
     });
-
     selectRichiesti.disable();
 
-    const selectSquadra = document.getElementById("squadra_destinataria");
-    const creditiRichiesti = document.getElementById("crediti_richiesti");
+    // Prestiti selects (single item)
+    const selectPrestito1Rich = new TomSelect('#prestito1_richiesto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
+    const selectPrestito1Off = new TomSelect('#prestito1_offerto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
+    const selectPrestito2Rich = new TomSelect('#prestito2_richiesto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
+    const selectPrestito2Off = new TomSelect('#prestito2_offerto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
 
-    // Usa JSON per generare l'array JS in modo sicuro
-    const allOptions = JSON.parse('{{ giocatori|tojson|safe }}');
+    selectPrestito1Rich.disable();
+    selectPrestito1Off.disable();
+    selectPrestito2Rich.disable();
+    selectPrestito2Off.disable();
 
-    // Funzione di validazione per i maxItems
+    const prestito1Fields = [
+        selectPrestito1Rich, selectPrestito1Off,
+        document.getElementById('prestito1_tipo_richiesto'),
+        document.getElementById('prestito1_tipo_offerto'),
+        document.getElementById('prestito1_riscatto_richiesto'),
+        document.getElementById('prestito1_riscatto_offerto')
+    ];
+
+    const prestito2Fields = [
+        selectPrestito2Rich, selectPrestito2Off,
+        document.getElementById('prestito2_tipo_richiesto'),
+        document.getElementById('prestito2_tipo_offerto'),
+        document.getElementById('prestito2_riscatto_richiesto'),
+        document.getElementById('prestito2_riscatto_offerto')
+    ];
+
+    const loan1Body = document.getElementById('loan1-body');
+    const loan2Body = document.getElementById('loan2-body');
+
+    // Helper to enable/disable a loan block
+    function toggleLoan(blockFields, enabled) {
+        blockFields.forEach(f => {
+            if (f instanceof TomSelect) {
+                if (enabled) { f.enable(); } else { f.disable(); f.clear(); }
+            } else {
+                f.disabled = !enabled;
+                if (!enabled) f.value = '';
+            }
+        });
+    }
+
+    document.getElementById('enable_prestito1').addEventListener('change', (e) => {
+        toggleLoan(prestito1Fields, e.target.checked);
+        loan1Body.classList.toggle('d-none', !e.target.checked);
+        updateSlotsCard();
+    });
+    document.getElementById('enable_prestito2').addEventListener('change', (e) => {
+        toggleLoan(prestito2Fields, e.target.checked);
+        loan2Body.classList.toggle('d-none', !e.target.checked);
+        updateSlotsCard();
+    });
+
+    loan1Body.classList.toggle('d-none', !document.getElementById('enable_prestito1').checked);
+    loan2Body.classList.toggle('d-none', !document.getElementById('enable_prestito2').checked);
+
     function updateMaxItems() {
-        const selectedOfferti = selectOfferti.items.length;
-        const selectedRichiesti = selectRichiesti.items.length;
-
         const destOption = selectSquadra.options[selectSquadra.selectedIndex];
         const destFreeSlots = destOption ? parseInt(destOption.dataset.slotLiberi) || 0 : 0;
 
-        // Limiti suggeriti (non bloccanti) basati sul saldo posti disponibili
-        const maxRichiestiSuggeriti = selectedOfferti + myFreeSlots;
-        const maxOffertiSuggeriti = selectedRichiesti + destFreeSlots;
+        const maxRichiestiSuggeriti = selectOfferti.items.length + myFreeSlots;
+        const maxOffertiSuggeriti = selectRichiesti.items.length + destFreeSlots;
 
-        // Consenti la selezione anche quando le squadre sono piene; la validazione finale avviene al submit
         selectRichiesti.settings.maxItems = 30;
         selectOfferti.settings.maxItems = 30;
 
-        // Aggiorna le etichette informative
         maxOffertiSpan.textContent = maxOffertiSuggeriti;
         maxRichiestiSpan.textContent = maxRichiestiSuggeriti;
     }
@@ -209,17 +487,33 @@ document.addEventListener("DOMContentLoaded", () => {
         const destOption = selectSquadra.options[selectSquadra.selectedIndex];
         const destFreeSlots = destOption ? parseInt(destOption.dataset.slotLiberi) || 0 : null;
         const destCreditsAvail = destOption ? parseInt(destOption.dataset.maxCrediti) || 0 : null;
+        const destSlotPrestiti = destOption ? parseInt(destOption.dataset.slotPrestiti) || 0 : 0;
 
-        const selectedOfferti = selectOfferti.items.length;
-        const selectedRichiesti = selectRichiesti.items.length;
+        const scambioOfferti = selectOfferti.items.length;
+        const scambioRichiesti = selectRichiesti.items.length;
+
+        const loan1Active = document.getElementById('enable_prestito1').checked;
+        const loan2Active = document.getElementById('enable_prestito2').checked;
+
+        const loanRichiesti = (loan1Active ? selectPrestito1Rich.items.length : 0) + (loan2Active ? selectPrestito2Rich.items.length : 0);
+        const loanOfferti = (loan1Active ? selectPrestito1Off.items.length : 0) + (loan2Active ? selectPrestito2Off.items.length : 0);
+
         const creditiOfferti = parseInt(creditiOffertiInput.value) || 0;
         const creditiRichiesti = parseInt(creditiRichiestiInput.value) || 0;
 
         const mieiOra = 30 - myFreeSlots;
         const destOra = destFreeSlots === null ? null : 30 - destFreeSlots;
 
-        const mieiDopo = mieiOra - selectedOfferti + selectedRichiesti;
-        const destDopo = destOra === null ? null : destOra - selectedRichiesti + selectedOfferti;
+        const mieiDopo = mieiOra - (scambioOfferti + loanOfferti) + (scambioRichiesti + loanRichiesti);
+        const destDopo = destOra === null ? null : destOra - (scambioRichiesti + loanRichiesti) + (scambioOfferti + loanOfferti);
+        
+        // Calcolo slot prestiti - usa i valori reali dal backend
+        const mieiPrestitiOra = mySlotPrestiti;
+        const destPrestitiOra = destSlotPrestiti;
+        
+        // Dopo lo scambio: prestiti attuali + nuovi prestiti dal form
+        const mieiPrestitiDopo = mieiPrestitiOra + loanOfferti;
+        const destPrestitiDopo = destPrestitiOra + loanRichiesti;
 
         const mieiCredOra = myCreditsAvailable;
         const destCredOra = destCreditsAvail === null ? null : destCreditsAvail;
@@ -227,103 +521,115 @@ document.addEventListener("DOMContentLoaded", () => {
         const mieiCredDopo = mieiCredOra - creditiOfferti + creditiRichiesti;
         const destCredDopo = destCredOra === null ? null : destCredOra - creditiRichiesti + creditiOfferti;
 
-        myOccupiedSpan.textContent = mieiOra;
-        myOccupiedAfterSpan.textContent = isNaN(mieiDopo) ? '—' : mieiDopo;
-        destOccupiedSpan.textContent = destOra === null ? '—' : destOra;
-        destOccupiedAfterSpan.textContent = destDopo === null || isNaN(destDopo) ? '—' : destDopo;
+        myOccupiedSpan.textContent = mieiOra + ' / 30';
+        destOccupiedSpan.textContent = destOra === null ? '—' : destOra + ' / 30';
+        myOccupiedAfterSpan.textContent = isNaN(mieiDopo) ? '—' : mieiDopo + ' / 30';
+        destOccupiedAfterSpan.textContent = destDopo === null || isNaN(destDopo) ? '—' : destDopo + ' / 30';
+        
+        myPrestitiSpan.textContent = mieiPrestitiOra + ' / 2';
+        myPrestitiAfterSpan.textContent = mieiPrestitiDopo + ' / 2';
+        destPrestitiSpan.textContent = destPrestitiOra + ' / 2';
+        destPrestitiAfterSpan.textContent = destPrestitiDopo + ' / 2';
 
         myCreditsSpan.textContent = mieiCredOra;
         myCreditsAfterSpan.textContent = isNaN(mieiCredDopo) ? '—' : mieiCredDopo;
         destCreditsSpan.textContent = destCredOra === null ? '—' : destCredOra;
         destCreditsAfterSpan.textContent = destCredDopo === null || isNaN(destCredDopo) ? '—' : destCredDopo;
     }
-    
-    // Ascoltatori per il cambiamento delle selezioni
-    selectOfferti.on('change', updateMaxItems);
-    selectRichiesti.on('change', updateMaxItems);
-    selectOfferti.on('change', updateSlotsCard);
-    selectRichiesti.on('change', updateSlotsCard);
+
+    selectOfferti.on('change', () => { updateMaxItems(); updateSlotsCard(); });
+    selectRichiesti.on('change', () => { updateMaxItems(); updateSlotsCard(); });
+    selectPrestito1Rich.on('change', updateSlotsCard);
+    selectPrestito1Off.on('change', updateSlotsCard);
+    selectPrestito2Rich.on('change', updateSlotsCard);
+    selectPrestito2Off.on('change', updateSlotsCard);
     creditiOffertiInput.addEventListener('input', updateSlotsCard);
     creditiRichiestiInput.addEventListener('input', updateSlotsCard);
-    
-    // Inizializza con i miei slot liberi come limite iniziale massimo
-    // Il limite è sul *saldo* dei giocatori. L'utente non può richiedere più di (giocatori offerti + miei slot liberi)
-    selectOfferti.settings.maxItems = 30; // Max tutti i miei giocatori
-    selectRichiesti.settings.maxItems = 30;
-    maxOffertiSpan.textContent = selectOfferti.options.length; // Max tutti i miei giocatori
-    maxRichiestiSpan.textContent = myFreeSlots; // Max iniziali (se offro 0)
-    updateSlotsCard();
 
-
-    selectSquadra.addEventListener("change", () => {
+    selectSquadra.addEventListener('change', () => {
         const squadraSelezionata = selectSquadra.value;
         const selectedOption = selectSquadra.options[selectSquadra.selectedIndex];
-        const destFreeSlots = parseInt(selectedOption.dataset.slotLiberi) || 0;
-        
-        const destTeamSpan = document.getElementById('card-dest-team');
 
         selectRichiesti.clearOptions();
-        selectRichiesti.clear(); // Pulisce i valori selezionati
-        
+        selectPrestito1Rich.clearOptions();
+        selectPrestito2Rich.clearOptions();
+
         if (!squadraSelezionata) {
             selectRichiesti.disable();
-            creditiRichiesti.disabled = true;
+            selectPrestito1Rich.disable();
+            selectPrestito2Rich.disable();
+            creditiRichiestiInput.disabled = true;
             maxRichiestiSpan.textContent = 0;
-            destTeamSpan.textContent = 'Seleziona squadra';
+            destTeamLabel.textContent = 'Controparte';
             updateMaxItems();
+            updateSlotsCard();
             return;
         }
-        
-        // Aggiorna il nome della squadra nel card
-        destTeamSpan.textContent = squadraSelezionata;
 
-        // Filtra solo i giocatori della squadra selezionata
+        destTeamLabel.textContent = squadraSelezionata;
+
         const filtrati = allOptions.filter(g => g.squadra_att === squadraSelezionata);
-        filtrati.forEach(g => selectRichiesti.addOption({value: g.id, text: g.nome}));
+        filtrati.forEach(g => {
+            selectRichiesti.addOption({ value: g.id, text: g.nome });
+            selectPrestito1Rich.addOption({ value: g.id, text: g.nome });
+            selectPrestito2Rich.addOption({ value: g.id, text: g.nome });
+        });
 
         selectRichiesti.enable();
+        selectPrestito1Rich.enable();
+        selectPrestito2Rich.enable();
+
         selectRichiesti.refreshOptions(false);
+        selectPrestito1Rich.refreshOptions(false);
+        selectPrestito2Rich.refreshOptions(false);
 
-        // Imposta max crediti richiesti
         const maxCrediti = selectedOption.dataset.maxCrediti || 0;
-        creditiRichiesti.disabled = false;
-        creditiRichiesti.max = maxCrediti;
-        creditiRichiesti.value = "";
-        creditiRichiesti.placeholder = `Max: ${maxCrediti}`;
+        creditiRichiestiInput.disabled = false;
+        creditiRichiestiInput.max = maxCrediti;
+        creditiRichiestiInput.value = '';
+        creditiRichiestiInput.placeholder = `Max: ${maxCrediti}`;
 
-        // Aggiorna il limite per i giocatori richiesti basato sui nuovi slot liberi della squadra destinataria
-        // e ricalcola il limite anche per i giocatori offerti.
         updateMaxItems();
         updateSlotsCard();
     });
-    
-    form.addEventListener("submit", (event) => {
+
+    form.addEventListener('submit', (event) => {
         const selectedOption = selectSquadra.options[selectSquadra.selectedIndex];
         if (!selectedOption) {
             event.preventDefault();
-            alert("Seleziona una squadra destinataria.");
+            alert('Seleziona una squadra destinataria.');
             return;
         }
 
-        const selectedOfferti = selectOfferti.items.length;
-        const selectedRichiesti = selectRichiesti.items.length;
         const destFreeSlots = parseInt(selectedOption.dataset.slotLiberi) || 0;
-
         const mieiAttuali = 30 - myFreeSlots;
         const destAttuali = 30 - destFreeSlots;
 
-        const mieiDopo = mieiAttuali - selectedOfferti + selectedRichiesti;
-        const destDopo = destAttuali - selectedRichiesti + selectedOfferti;
+        const scambioOfferti = selectOfferti.items.length;
+        const scambioRichiesti = selectRichiesti.items.length;
+
+        const loan1Active = document.getElementById('enable_prestito1').checked;
+        const loan2Active = document.getElementById('enable_prestito2').checked;
+        const loanRichiesti = (loan1Active ? selectPrestito1Rich.items.length : 0) + (loan2Active ? selectPrestito2Rich.items.length : 0);
+        const loanOfferti = (loan1Active ? selectPrestito1Off.items.length : 0) + (loan2Active ? selectPrestito2Off.items.length : 0);
+
+        const mieiDopo = mieiAttuali - (scambioOfferti + loanOfferti) + (scambioRichiesti + loanRichiesti);
+        const destDopo = destAttuali - (scambioRichiesti + loanRichiesti) + (scambioOfferti + loanOfferti);
 
         if (mieiDopo > 30 || destDopo > 30) {
             event.preventDefault();
-            alert("Lo scambio non rispetta il limite di 30 slot: regola le selezioni di giocatori.");
+            alert('La trattativa supera il limite di 30 slot per una delle squadre.');
             return;
         }
     });
-    
-    // Chiamata iniziale per impostare i limiti e le etichette
-    updateMaxItems(); 
+
+    // Init
+    maxOffertiSpan.textContent = selectOfferti.options.length;
+    maxRichiestiSpan.textContent = myFreeSlots;
+    myOccupiedSpan.textContent = 30 - myFreeSlots;
+    myCreditsSpan.textContent = myCreditsAvailable;
+    myCreditsAfterSpan.textContent = myCreditsAvailable;
+    updateMaxItems();
     updateSlotsCard();
 });
 </script>

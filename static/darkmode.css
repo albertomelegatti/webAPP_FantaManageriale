@@ -345,6 +345,33 @@ body.dark-mode .text-muted {
     color: #aaa !important;
 }
 
+/* Slot cards in dark mode - negotiation page */
+body.dark-mode .soft-card {
+    background-color: var(--color-background-card);
+    border-color: var(--color-border-primary);
+}
+
+body.dark-mode .slot-box {
+    background: #1a2a1f;
+    border: 1px solid #2d4a35;
+    color: #d4e8d9;
+}
+
+body.dark-mode .slot-box small {
+    color: #40b478;
+    font-weight: 600;
+}
+
+body.dark-mode .slot-box div {
+    color: #f0f4f7;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+body.dark-mode .slot-label {
+    color: var(--color-text-primary) !important;
+}
+
 /* Slot cards in dark mode */
 body.dark-mode .slot-card {
     background-color: var(--color-background-card);
@@ -359,4 +386,15 @@ body.dark-mode .slot-subtitle {
 
 body.dark-mode .slot-subtitle {
     color: var(--color-text-muted, #ccc) !important;
+}
+
+/* Info box alert for tips */
+body.dark-mode .info-box {
+    background-color: #1a3a4a !important;
+    border-color: #2d5a6a !important;
+    color: #b8d4e0 !important;
+}
+
+body.dark-mode .info-box strong {
+    color: #d4e8f0 !important;
 }

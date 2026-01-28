@@ -34,7 +34,7 @@
                         <th>Tipo</th>
                         <th>Costo</th>
                         <th>Riscatto</th>
-                        <th></th>
+                        <th>Azioni</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -54,29 +54,29 @@
                         <td>{{ p.crediti_riscatto }}</td>
                         <td class="text-center">
                             {% if p.stato == 'in_corso' %}
-                                {% if (p.tipo_prestito == 'Con diritto di riscatto' or p.tipo_prestito == 'Con obbligo di riscatto') and p.crediti_riscatto > 0 %}
-                                    <!-- Bottone RISCATTA o CHIEDI TERMINAZIONE -->
-                                    <div class="d-flex flex-column flex-md-row gap-2 justify-content-center w-100">
+                                {% if (p.tipo_prestito == 'diritto_di_riscatto' or p.tipo_prestito == 'obbligo_di_riscatto') and p.crediti_riscatto > 0 %}
+                                    <!-- Bottoni RISCATTA e CHIEDI TERMINAZIONE sulla stessa riga -->
+                                    <div class="d-flex flex-row gap-2 justify-content-center">
                                         <form method="POST" 
                                               action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
                                               onsubmit="return confirm('Vuoi riscattare {{ p.giocatori }} pagando {{ p.crediti_riscatto }} crediti?');">
                                             <input type="hidden" name="riscatta_giocatore" value="{{ p.id_prestito }}">
-                                            <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-info w-100">
-                                                💰 Riscatta ({{ p.crediti_riscatto }} crediti)
+                                            <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-info">
+                                                💰 Riscatta ({{ p.crediti_riscatto }} crediti)        
                                             </button>
-                                        </form>
-                                    </div>
-                                {% else %}
-                                    <!-- Bottone CHIEDI TERMINAZIONE ANTICIPATA -->
-                                    <form method="POST" 
-                                          action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
-                                          onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
-                                        <input type="hidden" name="richiedi_terminazione" value="{{ p.id_prestito }}">
-                                        <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-danger w-100">
-                                            Chiedi terminazione anticipata
-                                        </button>
-                                    </form>
                                 {% endif %}
+                                            
+                                </form>
+                                <form method="POST" 
+                                        action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
+                                        onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
+                                    <input type="hidden" name="richiedi_terminazione" value="{{ p.id_prestito }}">
+                                    <button type="submit" class="btn btn-sm fw-semibold"
+                                    style="background-color:#dc3545; border-color:#dc3545; color:white; padding:0.25rem 0.5rem;">       
+                                        Chiedi terminazione anticipata
+                                    </button>
+                                </form>
+                            </div>
                             {% elif p.stato == 'richiesta_di_terminazione' and p.richiedente_terminazione != nome_squadra %}
                                 <div class="d-flex flex-column flex-md-row gap-2 justify-content-center w-100">
                                     <!-- Bottone ACCETTA -->
@@ -135,7 +135,7 @@
                         <th>Tipo</th>
                         <th>Costo</th>
                         <th>Riscatto</th>
-                        <th></th>
+                        <th>Azioni</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -159,7 +159,8 @@
                                       action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
                                       onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
                                     <input type="hidden" name="richiedi_terminazione" value="{{ p.id_prestito }}">
-                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-danger w-100"
+                                    <button type="submit" class="btn btn-sm fw-semibold"
+                                    style="background-color:#dc3545; border-color:#dc3545; color:white; padding:0.25rem 0.5rem;"
                                         {% if slot_giocatori >= 30 %}
                                             disabled title="Non puoi richiedere il rientro del giocatore perché hai gli slot pieni (30/30)"
                                         {% endif %}>
@@ -171,7 +172,7 @@
                                       action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
                                       onsubmit="return confirm('Vuoi accettare la terminazione anticipata del prestito per {{ p.giocatori }}?');">
                                     <input type="hidden" name="accetta_terminazione" value="{{ p.id_prestito }}">
-                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-success w-100">
+                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-danger w-100">
                                         Accetta terminazione anticipata
                                     </button>
                                 </form>

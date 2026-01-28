@@ -1,10 +1,11 @@
 import psycopg2
+from datetime import datetime, time
 import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from user import format_giocatori, formatta_data
-from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati
+from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati, get_slot_prestiti_in
 
 
 mercato_bp = Blueprint('mercato', __name__, url_prefix='/mercato')
@@ -125,6 +126,52 @@ def nuovo_scambio(nome_squadra):
             giocatori_richiesti = [int(g) for g in request.form.getlist("giocatori_richiesti") if g.isdigit()]
             messaggio = (request.form.get("messaggio") or "").strip()
 
+            # Nuovi campi prestito (due blocchi opzionali)
+            enable_prestito1 = request.form.get("enable_prestito1") is not None
+            enable_prestito2 = request.form.get("enable_prestito2") is not None
+
+            # Prestito 1
+            p1_richiesto = request.form.get("prestito1_richiesto")
+            p1_offerto = request.form.get("prestito1_offerto")
+            p1_tipo_richiesto = (request.form.get("prestito1_tipo_richiesto") or "").strip()
+            p1_tipo_offerto = (request.form.get("prestito1_tipo_offerto") or "").strip()
+            p1_riscatto_rich = int(request.form.get("prestito1_riscatto_richiesto") or 0)
+            p1_riscatto_off = int(request.form.get("prestito1_riscatto_offerto") or 0)
+
+            # Prestito 2
+            p2_richiesto = request.form.get("prestito2_richiesto")
+            p2_offerto = request.form.get("prestito2_offerto")
+            p2_tipo_richiesto = (request.form.get("prestito2_tipo_richiesto") or "").strip()
+            p2_tipo_offerto = (request.form.get("prestito2_tipo_offerto") or "").strip()
+            p2_riscatto_rich = int(request.form.get("prestito2_riscatto_richiesto") or 0)
+            p2_riscatto_off = int(request.form.get("prestito2_riscatto_offerto") or 0)
+
+            def map_tipo(val):
+                if not val:
+                    return ''
+                if val == 'Secco':
+                    return 'secco'
+                if val in ('Con diritto di riscatto', 'Diritto'):
+                    return 'diritto_di_riscatto'
+                if val in ('Con obbligo di riscatto', 'Obbligo'):
+                    return 'obbligo_di_riscatto'
+                return ''
+
+            # Se secco, forza riscatto a 0
+            if map_tipo(p1_tipo_richiesto) == 'secco':
+                p1_riscatto_rich = 0
+            if map_tipo(p1_tipo_offerto) == 'secco':
+                p1_riscatto_off = 0
+            if map_tipo(p2_tipo_richiesto) == 'secco':
+                p2_riscatto_rich = 0
+            if map_tipo(p2_tipo_offerto) == 'secco':
+                p2_riscatto_off = 0
+
+            # Data di fine default: 2 luglio alle 23:59:59 (prima data utile futura)
+            today = datetime.now()
+            target_year = today.year if today < datetime(today.year, 7, 2) else today.year + 1
+            default_data_fine = datetime(target_year, 7, 2, 23, 59, 59)
+
             # Validazioni base
             if not squadra_destinataria:
                 flash("Seleziona una squadra destinataria.", "warning")
@@ -159,9 +206,59 @@ def nuovo_scambio(nome_squadra):
             ))
             id_scambio = cur.fetchone()['id']
 
+            # Inserisci eventuali prestiti collegati (costo_prestito=0)
+            def crea_prestito(giocatore_id, squadra_prestante, squadra_ricevente, tipo_txt, riscatto):
+                if not giocatore_id or not tipo_txt:
+                    return None
+                tipo_db = map_tipo(tipo_txt)
+                if tipo_db == 'secco':
+                    riscatto = 0
+                cur.execute('''
+                    INSERT INTO prestito (
+                        giocatore, squadra_prestante, squadra_ricevente, stato, data_inizio, data_fine, note, costo_prestito, tipo_prestito, crediti_riscatto
+                    ) VALUES (%s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s, %s, %s, %s, %s)
+                    RETURNING id;
+                ''', (
+                    int(giocatore_id),
+                    squadra_prestante,
+                    squadra_ricevente,
+                    'in_attesa',
+                    default_data_fine,
+                    f'Collegato allo scambio ID {id_scambio}',
+                    0,
+                    tipo_db,
+                    int(riscatto or 0)
+                ))
+                return cur.fetchone()['id']
+
+            created_prestiti = []
+            if enable_prestito1:
+                if p1_richiesto:
+                    created_prestiti.append(
+                        crea_prestito(p1_richiesto, squadra_destinataria, nome_squadra, p1_tipo_richiesto, p1_riscatto_rich)
+                    )
+                if p1_offerto:
+                    created_prestiti.append(
+                        crea_prestito(p1_offerto, nome_squadra, squadra_destinataria, p1_tipo_offerto, p1_riscatto_off)
+                    )
+            if enable_prestito2:
+                if p2_richiesto:
+                    created_prestiti.append(
+                        crea_prestito(p2_richiesto, squadra_destinataria, nome_squadra, p2_tipo_richiesto, p2_riscatto_rich)
+                    )
+                if p2_offerto:
+                    created_prestiti.append(
+                        crea_prestito(p2_offerto, nome_squadra, squadra_destinataria, p2_tipo_offerto, p2_riscatto_off)
+                    )
+
             conn.commit()
-            flash("✅ Proposta di scambio inviata con successo!", "success")
+            flash("✅ Proposta inviata con successo!", "success")
             telegram_utils.nuovo_scambio(conn, id_scambio)
+            for pid in [pid for pid in created_prestiti if pid]:
+                try:
+                    telegram_utils.nuovo_prestito(conn, pid)
+                except Exception:
+                    pass
             return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
 
 
@@ -181,19 +278,22 @@ def nuovo_scambio(nome_squadra):
 
         for s in squadre_raw:
             slot_occupati = int(get_slot_occupati(conn, s["nome"]))
+            slot_prestiti = int(get_slot_prestiti_in(conn, s["nome"]))
             offerta_massima_possibile = max(s["crediti"] - offerta_totale, 0)
 
             squadre.append({
                 "nome": s["nome"],
                 "offerta_massima_possibile": offerta_massima_possibile,
-                "slot_liberi": max(30 - slot_occupati, 0)
+                "slot_liberi": max(30 - slot_occupati, 0),
+                "slot_prestiti": slot_prestiti
             })
 
             if s["nome"] == nome_squadra:
                 crediti_effettivi = offerta_massima_possibile
 
-        # Slot liberi della squadra loggata
+        # Slot liberi e prestiti della squadra loggata
         slot_liberi_miei = max(30 - int(get_slot_occupati(conn, nome_squadra)), 0)
+        slot_prestiti_miei = int(get_slot_prestiti_in(conn, nome_squadra))
 
         # Recupera tutti i giocatori validi (non svincolati, non prestiti, non hold)
         cur.execute('''
@@ -219,7 +319,8 @@ def nuovo_scambio(nome_squadra):
             giocatori=giocatori,
             miei_giocatori=miei_giocatori,
             crediti_effettivi=crediti_effettivi,
-            slot_liberi_miei=slot_liberi_miei
+            slot_liberi_miei=slot_liberi_miei,
+            slot_prestiti_miei=slot_prestiti_miei
         )
 
     except Exception as e:

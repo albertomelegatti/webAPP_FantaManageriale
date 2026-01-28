@@ -158,6 +158,27 @@ h1 {
     border-radius: 12px;
 }
 
+.slot-box {
+    background: #e8f5e9;
+    border: 1px solid #a5d6a7;
+    border-radius: 8px;
+    padding: 0.75rem;
+    color: #2e7d32;
+}
+
+.slot-box small {
+    color: #4caf50;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.slot-box div {
+    color: #1b5e20;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
 .slot-label {
     font-size: 0.9rem;
     color: var(--color-text-muted, #6c757d);
@@ -174,6 +195,7 @@ h1 {
     font-weight: 700;
     letter-spacing: 0.5px;
 }
+
 
 /* Box di login (form centrato) */
 .login-box {
