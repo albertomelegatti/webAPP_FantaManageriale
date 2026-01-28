@@ -18,7 +18,7 @@ TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 # Flag per abilitare/disabilitare notifiche (default on).
 NOTIFICATIONS_ENABLED = os.getenv("NOTIFICHE_ATTIVE") == 'True'
 
-# Cache per i telegram IDs (lazy loading)
+# Cache per i telegram IDs (lazy loading)f
 _TELEGRAM_IDS_CACHE = None
 
 if not TOKEN:
@@ -86,7 +86,7 @@ def asta_iniziata(conn, id_asta):
         partecipanti = info_asta['partecipanti']
 
         text_to_send = textwrap.dedent(f'''
-                🏷️ ASTA: **{nome_giocatore}**
+                🏷️ ASTA: {nome_giocatore}
                 L'asta è iniziata!
         ''')
 
