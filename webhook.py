@@ -30,7 +30,7 @@ def webhook_update_stato_asta():
                     if old_status == "mostra_interesse" and new_status == "in_corso":
                         telegram_utils.asta_iniziata(conn, id_asta)
 
-                    if old_status == "in_corso" and new_status == "conclusa":
+                    if (old_status == "in_corso" and new_status == "conclusa") or (old_status == "mostra_interesse" and new_status == "conclusa"):
                         telegram_utils.asta_conclusa(conn, id_asta)
 
                 except Exception as e:

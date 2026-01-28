@@ -167,7 +167,7 @@ def asta_conclusa(conn, id_asta):
 
         text_to_send = textwrap.dedent(f'''
             📢 COMUNICAZIONE UFFICIALE: 
-            La squadra {squadra_vincente} acquista il {giocatore} per {ultima_offerta} crediti.
+            La squadra {squadra_vincente} acquista il giocatore {giocatore} per {ultima_offerta} crediti.
         ''')
 
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)

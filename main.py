@@ -52,6 +52,12 @@ app.register_blueprint(rosa_bp)
 app.register_blueprint(webhook_bp)
 
 
+@app.teardown_appcontext
+def teardown_db(exception):
+    if exception:
+        db.session.rollback()
+    db.session.remove()
+
 
 
 # Pagina principale
