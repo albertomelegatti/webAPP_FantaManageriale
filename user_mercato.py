@@ -81,19 +81,68 @@ def user_mercato(nome_squadra):
             if s['squadra_destinataria'] == nome_squadra and s['stato'] == 'in_attesa':
                 valido = controlla_scambio(s['id'], conn)
 
+            # Recupera prestiti collegati allo scambio
+            cur.execute('''
+                SELECT p.id, p.giocatore, p.squadra_prestante, p.squadra_ricevente, 
+                       p.tipo_prestito, p.crediti_riscatto, p.data_fine, p.stato,
+                       g.nome as nome_giocatore
+                FROM prestito p
+                JOIN giocatore g ON p.giocatore = g.id
+                WHERE p.note LIKE %s
+                ORDER BY p.id;
+            ''', (f'%Collegato allo scambio ID {s["id"]}%',))
+            prestiti_raw = cur.fetchall()
+            
+            prestiti = []
+            for p in prestiti_raw:
+                prestiti.append({
+                    "id": p['id'],
+                    "giocatore_id": p['giocatore'],
+                    "nome_giocatore": p['nome_giocatore'],
+                    "squadra_prestante": p['squadra_prestante'],
+                    "squadra_ricevente": p['squadra_ricevente'],
+                    "tipo_prestito": p['tipo_prestito'],
+                    "crediti_riscatto": p['crediti_riscatto'],
+                    "data_fine": formatta_data(p['data_fine']),
+                    "stato": p['stato']
+                })
+
+            # Recupera dettagli giocatori offerti
+            giocatori_offerti_details = []
+            if s['giocatori_offerti']:
+                cur.execute('''
+                    SELECT id, nome
+                    FROM giocatore
+                    WHERE id = ANY(%s)
+                    ORDER BY nome;
+                ''', (s['giocatori_offerti'],))
+                giocatori_offerti_details = [{'id': g['id'], 'nome': g['nome']} for g in cur.fetchall()]
+
+            # Recupera dettagli giocatori richiesti
+            giocatori_richiesti_details = []
+            if s['giocatori_richiesti']:
+                cur.execute('''
+                    SELECT id, nome
+                    FROM giocatore
+                    WHERE id = ANY(%s)
+                    ORDER BY nome;
+                ''', (s['giocatori_richiesti'],))
+                giocatori_richiesti_details = [{'id': g['id'], 'nome': g['nome']} for g in cur.fetchall()]
+
             scambi.append({
                 "scambio_id": s['id'],
                 "squadra_proponente": s['squadra_proponente'],
                 "squadra_destinataria": s['squadra_destinataria'],
-                "giocatori_offerti": format_giocatori(s['giocatori_offerti']),
-                "giocatori_richiesti": format_giocatori(s['giocatori_richiesti']),
+                "giocatori_offerti": giocatori_offerti_details,
+                "giocatori_richiesti": giocatori_richiesti_details,
                 "crediti_offerti": s['crediti_offerti'],
                 "crediti_richiesti": s['crediti_richiesti'],
                 "messaggio": s['messaggio'],
                 "stato": s['stato'],
                 "data_proposta": formatta_data(s['data_proposta']),
                 "data_risposta": formatta_data(s['data_risposta']),
-                "valido": valido
+                "valido": valido,
+                "prestiti": prestiti
             })
         
     except Exception as e:
@@ -409,9 +458,10 @@ def controlla_scambio(id, conn):
 
     except Exception as e:
         print(f"Errore: {e}")
+        return False
 
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -527,5 +577,4 @@ def effettua_scambio(id, conn, nome_squadra):
         return False
     
     finally:
-        # La connessione è None perchè viene rilasciata dalla pagina del mercato
-        release_connection(None, cur)
+        cur.close()

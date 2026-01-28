@@ -466,7 +466,7 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
         conn.rollback()
 
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
@@ -504,8 +504,7 @@ def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
         flash("❌ Errore nel controllo del prestito, riprovare.", "danger")
 
     finally:
-        release_connection(None, cur)
-
+        cur.close()
 
 
 
@@ -573,7 +572,7 @@ def accetta_terminazione(conn, id_prestito):
         flash("❌ Si è verificato un errore. Ricaricare la pagina.", "danger")
 
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -626,7 +625,7 @@ def rifiuta_terminazione(conn, id_prestito):
         flash("❌ Si è verificato un errore. Ricaricare la pagina.", "danger")
 
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
