@@ -203,16 +203,49 @@ def nuovo_scambio(conn, id_scambio):
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
         messaggio = info_scambio['messaggio'] or ""
 
+        # Recupera prestiti collegati allo scambio
+        cur.execute('''
+            SELECT p.squadra_prestante, p.squadra_ricevente, p.tipo_prestito, p.crediti_riscatto,
+                   g.nome as nome_giocatore
+            FROM prestito p
+            JOIN giocatore g ON p.giocatore = g.id
+            WHERE p.note LIKE %s
+            ORDER BY p.id;
+        ''', (f'%Collegato allo scambio ID {id_scambio}%',))
+        prestiti = cur.fetchall()
+
+        # Formatta prestiti offerti e richiesti
+        prestiti_offerti = []
+        prestiti_richiesti = []
+        for p in prestiti:
+            tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
+            tipo_str = tipo_map.get(p['tipo_prestito'], p['tipo_prestito'])
+            riscatto_str = f" (risc. {p['crediti_riscatto']})" if p['crediti_riscatto'] > 0 else ""
+            prestito_str = f"  • {p['nome_giocatore']} [Prestito {tipo_str}{riscatto_str}]"
+            
+            if p['squadra_prestante'] == squadra_proponente:
+                prestiti_offerti.append(prestito_str)
+            else:
+                prestiti_richiesti.append(prestito_str)
+
+        offerta_text = giocatori_offerti
+        if prestiti_offerti:
+            offerta_text += "\n" + "\n".join(prestiti_offerti)
+        
+        richiesta_text = giocatori_richiesti
+        if prestiti_richiesti:
+            richiesta_text += "\n" + "\n".join(prestiti_richiesti)
+
         text_to_send = textwrap.dedent(f'''
                 🟢 NUOVA PROPOSTA DI SCAMBIO
                 La squadra {squadra_proponente} ti ha inviato una proposta di scambio
 
                 ⚽ Offerta:
-                {giocatori_offerti}
+                {offerta_text}
                 💰 Crediti offerti: {crediti_offerti}
 
                 ⚽ Richiesta:
-                {giocatori_richiesti}
+                {richiesta_text}
                 💰 Crediti richiesti: {crediti_richiesti}
 
                 ✉️ Messaggio: {messaggio}
@@ -257,17 +290,50 @@ def scambio_risposta(conn, id_scambio, risposta):
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
         messaggio = info_scambio['messaggio'] or "Nessuna Condizione."
 
+        # Recupera prestiti collegati allo scambio
+        cur.execute('''
+            SELECT p.squadra_prestante, p.squadra_ricevente, p.tipo_prestito, p.crediti_riscatto,
+                   g.nome as nome_giocatore
+            FROM prestito p
+            JOIN giocatore g ON p.giocatore = g.id
+            WHERE p.note LIKE %s
+            ORDER BY p.id;
+        ''', (f'%Collegato allo scambio ID {id_scambio}%',))
+        prestiti = cur.fetchall()
+
+        # Formatta prestiti offerti e richiesti
+        prestiti_offerti = []
+        prestiti_richiesti = []
+        for p in prestiti:
+            tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
+            tipo_str = tipo_map.get(p['tipo_prestito'], p['tipo_prestito'])
+            riscatto_str = f" (risc. {p['crediti_riscatto']})" if p['crediti_riscatto'] > 0 else ""
+            prestito_str = f"  • {p['nome_giocatore']} [Prestito {tipo_str}{riscatto_str}]"
+            
+            if p['squadra_prestante'] == squadra_proponente:
+                prestiti_offerti.append(prestito_str)
+            else:
+                prestiti_richiesti.append(prestito_str)
+
+        offerta_text = giocatori_offerti
+        if prestiti_offerti:
+            offerta_text += "\n" + "\n".join(prestiti_offerti)
+        
+        richiesta_text = giocatori_richiesti
+        if prestiti_richiesti:
+            richiesta_text += "\n" + "\n".join(prestiti_richiesti)
+
         if risposta == "Accettato":
             text_to_send = textwrap.dedent(f'''
                     SCAMBIO ACCETTATO
                     La squadra {squadra_destinataria} ha accettato la tua offerta di scambio.
 
                     ⚽ Offerta:
-                    {giocatori_offerti}
+                    {offerta_text}
                     💰 Crediti offerti: {crediti_offerti}
 
                     ⚽ Richiesta:
-                    {giocatori_richiesti}
+                    {richiesta_text}
                     💰 Crediti richiesti: {crediti_richiesti}
             ''')
             send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
@@ -278,11 +344,11 @@ def scambio_risposta(conn, id_scambio, risposta):
                     Le squadre {squadra_proponente} e {squadra_destinataria} hanno concluso un scambio:
 
                     ✅ {squadra_proponente} riceve:
-                    ⚽ {giocatori_richiesti}
+                    ⚽ {richiesta_text}
                     🪙 {crediti_richiesti} crediti
 
                     ✅ {squadra_destinataria} riceve:
-                    ⚽ {giocatori_offerti}
+                    ⚽ {offerta_text}
                     🪙 {crediti_offerti} crediti
 
                     📝 Condizioni/Bonus: {messaggio}
@@ -295,11 +361,11 @@ def scambio_risposta(conn, id_scambio, risposta):
                     La squadra {squadra_destinataria} ha rifiutato la tua offerta di scambio.
 
                     ⚽ Offerta:
-                    {giocatori_offerti}
+                    {offerta_text}
                     💰 Crediti offerti: {crediti_offerti}
 
                     ⚽ Richiesta:
-                    {giocatori_richiesti}
+                    {richiesta_text}
                     💰 Crediti richiesti: {crediti_richiesti}
         ''')
             send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
