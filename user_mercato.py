@@ -33,6 +33,15 @@ def user_mercato(nome_squadra):
                             SET stato = 'annullato' 
                             WHERE id = %s;
                 ''', (scambio_id,))
+                
+                # Annulla anche i prestiti collegati
+                cur.execute('''
+                            UPDATE prestito
+                            SET stato = 'annullato'
+                            WHERE note LIKE %s
+                                AND stato = 'in_attesa';
+                ''', (f'%Collegato allo scambio ID {scambio_id}%',))
+                
                 conn.commit()
 
 
@@ -52,6 +61,15 @@ def user_mercato(nome_squadra):
                                 data_risposta = NOW() AT TIME ZONE 'Europe/Rome'
                             WHERE id = %s;
                 ''', (scambio_id,))
+                
+                # Rifiuta anche i prestiti collegati
+                cur.execute('''
+                            UPDATE prestito
+                            SET stato = 'rifiutato'
+                            WHERE note LIKE %s
+                                AND stato = 'in_attesa';
+                ''', (f'%Collegato allo scambio ID {scambio_id}%',))
+                
                 conn.commit()
                 telegram_utils.scambio_risposta(conn, id, "Rifiutato")
 
@@ -402,7 +420,7 @@ def controlla_scambio(id, conn):
 
         if scambio['stato'] != 'in_attesa':
             return False
- 
+
         
         squadra_proponente = scambio["squadra_proponente"]
         squadra_destinataria = scambio["squadra_destinataria"]
@@ -563,6 +581,50 @@ def effettua_scambio(id, conn, nome_squadra):
                     data_risposta = NOW() AT TIME ZONE 'Europe/Rome'
                     WHERE id = %s;
         ''', (id,))
+        
+        # Attiva eventuali prestiti collegati allo scambio
+        cur.execute('''
+                    SELECT id, giocatore, squadra_ricevente, squadra_prestante
+                    FROM prestito
+                    WHERE note LIKE %s
+                        AND stato = 'in_attesa';
+        ''', (f'%Collegato allo scambio ID {id}%',))
+        prestiti_collegati = cur.fetchall()
+        
+        for prestito in prestiti_collegati:
+            # Attiva il prestito (stato = 'in_corso' come in attiva_prestito)
+            cur.execute('''
+                        UPDATE prestito
+                        SET stato = 'in_corso'
+                        WHERE id = %s;
+            ''', (prestito['id'],))
+            
+            # Aggiorna il contratto del giocatore in prestito
+            cur.execute('''
+                        UPDATE giocatore
+                        SET tipo_contratto = 'Fanta-Prestito',
+                            squadra_att = %s
+                        WHERE id = %s;
+            ''', (prestito['squadra_ricevente'], prestito['giocatore']))
+            
+            # Rifiuta altri prestiti in attesa per lo stesso giocatore dalla stessa squadra prestante
+            cur.execute('''
+                        UPDATE prestito
+                        SET stato = 'rifiutato'
+                        WHERE squadra_prestante = %s
+                            AND giocatore = %s
+                            AND stato = 'in_attesa'
+                            AND id <> %s;
+            ''', (prestito['squadra_prestante'], prestito['giocatore'], prestito['id']))
+            
+            # Annulla altri scambi che coinvolgono questo giocatore
+            cur.execute('''
+                        UPDATE scambio
+                        SET stato = 'annullato'
+                        WHERE (%s = ANY(giocatori_offerti) OR %s = ANY(giocatori_richiesti))
+                            AND stato = 'in_attesa'
+                            AND id <> %s;
+            ''', (prestito['giocatore'], prestito['giocatore'], id))
         
         conn.commit()
         flash(f"✅ Scambio completato con successo tra {squadra_proponente} e {squadra_destinataria}", "success")

@@ -27,7 +27,7 @@
                     <div class="col-lg-6 col-md-8 col-sm-10">
                         <label for="squadra_destinataria" class="form-label fw-semibold">Seleziona controparte</label>
                         <select id="squadra_destinataria" name="squadra_destinataria" class="form-select" required>
-                            <option value="" selected disabled>Seleziona squadra</option>
+                            <option value="" selected disabled>-- Seleziona squadra --</option>
                             {% for s in squadre %}
                                 {% if s.nome != nome_squadra %}
                                     <option value="{{ s.nome }}"
@@ -193,7 +193,7 @@
                         <div class="mb-3">
                             <label for="prestito1_tipo_richiesto" class="form-label" style="font-size: 0.875rem;">Tipo</label>
                             <select id="prestito1_tipo_richiesto" name="prestito1_tipo_richiesto" class="form-select" disabled>
-                                <option value="">Seleziona tipo</option>
+                                <option value="">-- Seleziona tipo --</option>
                                 <option value="Secco">Secco</option>
                                 <option value="Diritto">Con diritto di riscatto</option>
                                 <option value="Obbligo">Con obbligo di riscatto</option>
@@ -224,7 +224,7 @@
                         <div class="mb-3">
                             <label for="prestito1_tipo_offerto" class="form-label" style="font-size: 0.875rem;">Tipo</label>
                             <select id="prestito1_tipo_offerto" name="prestito1_tipo_offerto" class="form-select" disabled>
-                                <option value="">Seleziona tipo</option>
+                                <option value="">-- Seleziona tipo --</option>
                                 <option value="Secco">Secco</option>
                                 <option value="Diritto">Con diritto di riscatto</option>
                                 <option value="Obbligo">Con obbligo di riscatto</option>
@@ -263,7 +263,7 @@
                         <div class="mb-3">
                             <label for="prestito2_tipo_richiesto" class="form-label" style="font-size: 0.875rem;">Tipo</label>
                             <select id="prestito2_tipo_richiesto" name="prestito2_tipo_richiesto" class="form-select" disabled>
-                                <option value="">Seleziona tipo</option>
+                                <option value="">-- Seleziona tipo --</option>
                                 <option value="Secco">Secco</option>
                                 <option value="Diritto">Con diritto di riscatto</option>
                                 <option value="Obbligo">Con obbligo di riscatto</option>
@@ -294,7 +294,7 @@
                         <div class="mb-3">
                             <label for="prestito2_tipo_offerto" class="form-label" style="font-size: 0.875rem;">Tipo</label>
                             <select id="prestito2_tipo_offerto" name="prestito2_tipo_offerto" class="form-select" disabled>
-                                <option value="">Seleziona tipo</option>
+                                <option value="">-- Seleziona tipo --</option>
                                 <option value="Secco">Secco</option>
                                 <option value="Diritto">Con diritto di riscatto</option>
                                 <option value="Obbligo">Con obbligo di riscatto</option>

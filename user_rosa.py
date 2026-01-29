@@ -410,7 +410,7 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
             return
 
         # Verifica che il tipo sia "Con diritto di riscatto" o "Con obbligo di riscatto"
-        if prestito['tipo_prestito'] not in ('Con diritto di riscatto', 'Con obbligo di riscatto'):
+        if prestito['tipo_prestito'] not in ('obbligo_di_riscatto', 'diritto_di_riscatto'):
             flash("❌ Questo prestito non ha diritto di riscatto.", "danger")
             return
 
