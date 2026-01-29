@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center">
+        <h1 class="mb-4">Mercato di {{ nome_squadra }}</h1>
+
+        <div class="d-grid gap-2 col-6 mx-auto">
+            <a href="{{ url_for('aste.user_aste', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
+                💰 Aste
+            </a>
+            <a href="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
+                🔁 Scambi
+            </a>
+            <a href="{{ url_for('user.user_prestiti_menu', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
+                🤝 Prestiti
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -9,32 +9,30 @@
             <span class="d-block text-muted">Slot totali: <strong>{{ slot_giocatori }} / 30 + {{ prestiti_in_num }} / 2</strong></span>
         </div>
 
-        <div class="text-center">
-
-    <a href="{{ url_for('aste.user_aste', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
-        💰 Aste
-    </a>
-    <a href="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
-        📈 Mercato
-    </a>
-    <a href="{{ url_for('prestiti.user_prestiti', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
-        🤝 Prestiti
-    </a>
-    <a href="{{ url_for('rosa.user_gestione_rosa', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
-        👥 Rosa
-    </a>
-
-    <div class="mt-3">
-        <a href="/cambia_password" class="btn btn-lg mb-3" 
-           style="background-color: #6f42c1; border-color: #6f42c1; color: white;">
-            🔒 Cambia Password
-        </a>
-        <a href="/logout" class="btn btn-lg mb-3" 
-           style="background-color: #6f42c1; border-color: #6f42c1; color: white;">
-            <i class="bi bi-box-arrow-right"></i> Logout
-        </a>
-    </div>
-</div>
+        <div class="row g-3 justify-content-center mx-auto" style="max-width: 600px;">
+            <div class="col-6">
+                <a href="{{ url_for('user.user_mercato_menu', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg w-100 d-flex align-items-center justify-content-center" style="height: 72px;">
+                    📈 Mercato
+                </a>
+            </div>
+            <div class="col-6">
+                <a href="{{ url_for('user.user_rosa_menu', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg w-100 d-flex align-items-center justify-content-center" style="height: 72px;">
+                    👥 Gestione Rosa
+                </a>
+            </div>
+            <div class="col-6">
+                <a href="/cambia_password" class="btn btn-lg w-100 d-flex align-items-center justify-content-center"
+                   style="background-color: #6f42c1; border-color: #6f42c1; color: white; height: 72px;">
+                    🔒 Cambia Password
+                </a>
+            </div>
+            <div class="col-6">
+                <a href="/logout" class="btn btn-lg w-100 d-flex align-items-center justify-content-center"
+                   style="background-color: #6f42c1; border-color: #6f42c1; color: white; height: 72px;">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+            </div>
+        </div>
 
 
     </div>
