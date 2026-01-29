@@ -5,14 +5,14 @@
     <h1 class="mb-4">Gestione rosa di {{ nome_squadra }}</h1>
     <p class="lead">Gestisci la rosa da qui.</p>
 
-    <div class="d-flex justify-content-center gap-3">
-        <a href="{{ url_for('rosa.user_primavera', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg">
+    <div class="d-flex flex-column flex-md-row justify-content-center gap-2 gap-md-3">
+        <a href="{{ url_for('rosa.user_primavera', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-sm">
             Primavera
         </a>
-        <a href="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}" class="btn btn-secondary btn-lg">
+        <a href="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}" class="btn btn-secondary btn-sm">
             Gestione Contratti
         </a>
-        <a href="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" class="btn btn-secondary btn-lg">
+        <a href="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" class="btn btn-secondary btn-sm">
             Prestiti
         </a>
     </div>
