@@ -33,7 +33,7 @@
     <!-- SEZIONE: SCAMBI PROPOSTI DA ME -->
     <div class="card mb-4 shadow-sm">
         <div class="card-header bg-primary text-white">
-            Scambi proposti da me
+            Scambi proposti
         </div>
         <div class="card-body table-responsive bg-light">
             <table class="table table-striped table-hover align-top">
@@ -221,85 +221,6 @@
         </div>
     </div>
 
-    <!-- SEZIONE: SCAMBI ANNULLATI -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light text-dark">
-            Scambi annullati
-        </div>
-        <div class="card-body table-responsive">
-            <table class="table table-striped table-hover align-top">
-                <thead class="table-light">
-                    <tr>
-                        <th>Offerta</th>
-                        <th>Richiesta</th>
-                        <th>Controparte</th>
-                        <th>Data</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for scambio in scambi if scambio.stato == 'annullato' %}
-                    <tr>
-                        <td>
-                            {% if scambio.giocatori_offerti or scambio.prestiti or scambio.crediti_offerti %}
-                                <strong>Giocatori:</strong>
-                                <ul class="mb-1">
-                                {% for giocatore in scambio.giocatori_offerti %}
-                                    <li>{{ giocatore.nome }} <span class="badge bg-primary">Definitivo</span></li>
-                                {% endfor %}
-                                {% for prestito in scambio.prestiti if prestito.squadra_prestante == scambio.squadra_proponente %}
-                                    <li>{{ prestito.nome_giocatore }} 
-                                        {% if prestito.tipo_prestito == 'secco' %}
-                                            <span class="badge bg-info text-dark">Prestito secco</span>
-                                        {% elif prestito.tipo_prestito == 'diritto_di_riscatto' %}
-                                            <span class="badge bg-success"> Prest. DDR</span>{% if prestito.crediti_riscatto > 0 %} (risc. {{ prestito.crediti_riscatto }}){% endif %}
-                                        {% elif prestito.tipo_prestito == 'obbligo_di_riscatto' %}
-                                            <span class="badge bg-warning text-dark"> Prest. ODR</span>{% if prestito.crediti_riscatto > 0 %} (risc. {{ prestito.crediti_riscatto }}){% endif %}
-                                        {% endif %}
-                                    </li>
-                                {% endfor %}
-                                </ul>
-                                {% if scambio.crediti_offerti %}
-                                    <strong>Crediti:</strong> {{ scambio.crediti_offerti }}<br>
-                                {% endif %}
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if scambio.giocatori_richiesti or scambio.prestiti or scambio.crediti_richiesti %}
-                                <strong>Giocatori:</strong>
-                                <ul class="mb-1">
-                                {% for giocatore in scambio.giocatori_richiesti %}
-                                    <li>{{ giocatore.nome }} <span class="badge bg-primary">Definitivo</span></li>
-                                {% endfor %}
-                                {% for prestito in scambio.prestiti if prestito.squadra_ricevente == scambio.squadra_proponente %}
-                                    <li>{{ prestito.nome_giocatore }} 
-                                        {% if prestito.tipo_prestito == 'secco' %}
-                                            <span class="badge bg-info text-dark">Prestito secco</span>
-                                        {% elif prestito.tipo_prestito == 'diritto_di_riscatto' %}
-                                            <span class="badge bg-success"> Prest. DDR</span>{% if prestito.crediti_riscatto > 0 %} (risc. {{ prestito.crediti_riscatto }}){% endif %}
-                                        {% elif prestito.tipo_prestito == 'obbligo_di_riscatto' %}
-                                            <span class="badge bg-warning text-dark"> Prest. ODR</span>{% if prestito.crediti_riscatto > 0 %} (risc. {{ prestito.crediti_riscatto }}){% endif %}
-                                        {% endif %}
-                                    </li>
-                                {% endfor %}
-                                </ul>
-                                {% if scambio.crediti_richiesti %}
-                                    <strong>Crediti:</strong> {{ scambio.crediti_richiesti }}<br>
-                                {% endif %}
-                            {% endif %}
-                        </td>
-                        <td>{{ scambio.squadra_destinataria }}</td>
-                        <td>{{ scambio.data_proposta }}</td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="4" class="text-center text-muted">Nessuno scambio annullato</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
     <!-- SEZIONE: SCAMBI CONCLUSI -->
     <div class="card mb-4 shadow-sm">
         <div class="card-header bg-secondary text-white">
@@ -378,6 +299,85 @@
                     {% else %}
                     <tr>
                         <td colspan="4" class="text-center text-muted">Nessuno scambio concluso</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SEZIONE: SCAMBI ANNULLATI -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-light text-dark">
+            Scambi annullati
+        </div>
+        <div class="card-body table-responsive">
+            <table class="table table-striped table-hover align-top">
+                <thead class="table-light">
+                    <tr>
+                        <th>Offerta</th>
+                        <th>Richiesta</th>
+                        <th>Controparte</th>
+                        <th>Data</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for scambio in scambi if scambio.stato == 'annullato' %}
+                    <tr>
+                        <td>
+                            {% if scambio.giocatori_offerti or scambio.prestiti or scambio.crediti_offerti %}
+                                <strong>Giocatori:</strong>
+                                <ul class="mb-1">
+                                {% for giocatore in scambio.giocatori_offerti %}
+                                    <li>{{ giocatore.nome }} <span class="badge bg-primary">Definitivo</span></li>
+                                {% endfor %}
+                                {% for prestito in scambio.prestiti if prestito.squadra_prestante == scambio.squadra_proponente %}
+                                    <li>{{ prestito.nome_giocatore }} 
+                                        {% if prestito.tipo_prestito == 'secco' %}
+                                            <span class="badge bg-info text-dark">Prestito secco</span>
+                                        {% elif prestito.tipo_prestito == 'diritto_di_riscatto' %}
+                                            <span class="badge bg-success"> Prest. DDR</span>{% if prestito.crediti_riscatto > 0 %} (risc. {{ prestito.crediti_riscatto }}){% endif %}
+                                        {% elif prestito.tipo_prestito == 'obbligo_di_riscatto' %}
+                                            <span class="badge bg-warning text-dark"> Prest. ODR</span>{% if prestito.crediti_riscatto > 0 %} (risc. {{ prestito.crediti_riscatto }}){% endif %}
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                                {% if scambio.crediti_offerti %}
+                                    <strong>Crediti:</strong> {{ scambio.crediti_offerti }}<br>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if scambio.giocatori_richiesti or scambio.prestiti or scambio.crediti_richiesti %}
+                                <strong>Giocatori:</strong>
+                                <ul class="mb-1">
+                                {% for giocatore in scambio.giocatori_richiesti %}
+                                    <li>{{ giocatore.nome }} <span class="badge bg-primary">Definitivo</span></li>
+                                {% endfor %}
+                                {% for prestito in scambio.prestiti if prestito.squadra_ricevente == scambio.squadra_proponente %}
+                                    <li>{{ prestito.nome_giocatore }} 
+                                        {% if prestito.tipo_prestito == 'secco' %}
+                                            <span class="badge bg-info text-dark">Prestito secco</span>
+                                        {% elif prestito.tipo_prestito == 'diritto_di_riscatto' %}
+                                            <span class="badge bg-success"> Prest. DDR</span>{% if prestito.crediti_riscatto > 0 %} (risc. {{ prestito.crediti_riscatto }}){% endif %}
+                                        {% elif prestito.tipo_prestito == 'obbligo_di_riscatto' %}
+                                            <span class="badge bg-warning text-dark"> Prest. ODR</span>{% if prestito.crediti_riscatto > 0 %} (risc. {{ prestito.crediti_riscatto }}){% endif %}
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                                {% if scambio.crediti_richiesti %}
+                                    <strong>Crediti:</strong> {{ scambio.crediti_richiesti }}<br>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>{{ scambio.squadra_destinataria }}</td>
+                        <td>{{ scambio.data_proposta }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Nessuno scambio annullato</td>
                     </tr>
                     {% endfor %}
                 </tbody>
