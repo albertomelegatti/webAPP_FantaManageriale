@@ -197,8 +197,11 @@ def nuovo_scambio(conn, id_scambio):
 
         squadra_proponente = info_scambio['squadra_proponente']
         squadra_destinataria = info_scambio['squadra_destinataria']
-        giocatori_offerti = format_giocatori(info_scambio['giocatori_offerti'])
-        giocatori_richiesti = format_giocatori(info_scambio['giocatori_richiesti'])
+        giocatori_offerti_raw = format_giocatori(info_scambio['giocatori_offerti'])
+        giocatori_richiesti_raw = format_giocatori(info_scambio['giocatori_richiesti'])
+        # Splitti per virgola e aggiungi bullet e [Definitivo] per ogni giocatore
+        giocatori_offerti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_offerti_raw.split(',') if g.strip()]
+        giocatori_richiesti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_richiesti_raw.split(',') if g.strip()]
         crediti_offerti = info_scambio['crediti_offerti'] or 0
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
         messaggio = info_scambio['messaggio'] or ""
@@ -221,35 +224,34 @@ def nuovo_scambio(conn, id_scambio):
             tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
             tipo_str = tipo_map.get(p['tipo_prestito'], p['tipo_prestito'])
             riscatto_str = f" (risc. {p['crediti_riscatto']})" if p['crediti_riscatto'] > 0 else ""
-            prestito_str = f"  • {p['nome_giocatore']} [Prestito {tipo_str}{riscatto_str}]"
+            prestito_str = f"• {p['nome_giocatore']} [Prestito {tipo_str}{riscatto_str}]"
             
             if p['squadra_prestante'] == squadra_proponente:
                 prestiti_offerti.append(prestito_str)
             else:
                 prestiti_richiesti.append(prestito_str)
 
-        offerta_text = giocatori_offerti
+        offerta_text = "\n".join(giocatori_offerti_list)
         if prestiti_offerti:
             offerta_text += "\n" + "\n".join(prestiti_offerti)
         
-        richiesta_text = giocatori_richiesti
+        richiesta_text = "\n".join(giocatori_richiesti_list)
         if prestiti_richiesti:
             richiesta_text += "\n" + "\n".join(prestiti_richiesti)
 
-        text_to_send = textwrap.dedent(f'''
-                🟢 NUOVA PROPOSTA DI SCAMBIO
-                La squadra {squadra_proponente} ti ha inviato una proposta di scambio
+        text_to_send = f'''🟢 NUOVA PROPOSTA DI SCAMBIO
+La squadra {squadra_proponente} ti ha inviato una proposta di scambio
 
-                ⚽ Offerta:
-                {offerta_text}
-                💰 Crediti offerti: {crediti_offerti}
+Offerta:
+{offerta_text}
+💰 Crediti offerti: {crediti_offerti}
 
-                ⚽ Richiesta:
-                {richiesta_text}
-                💰 Crediti richiesti: {crediti_richiesti}
+Richiesta:
+{richiesta_text}
+💰 Crediti richiesti: {crediti_richiesti}
 
-                ✉️ Messaggio: {messaggio}
-        ''')
+✉️ Messaggio: {messaggio}
+'''
 
         send_message(nome_squadra=squadra_destinataria, text_to_send=text_to_send)
 
@@ -284,8 +286,11 @@ def scambio_risposta(conn, id_scambio, risposta):
 
         squadra_proponente = info_scambio['squadra_proponente']
         squadra_destinataria = info_scambio['squadra_destinataria']
-        giocatori_offerti = format_giocatori(info_scambio['giocatori_offerti'])
-        giocatori_richiesti = format_giocatori(info_scambio['giocatori_richiesti'])
+        giocatori_offerti_raw = format_giocatori(info_scambio['giocatori_offerti'])
+        giocatori_richiesti_raw = format_giocatori(info_scambio['giocatori_richiesti'])
+        # Splitti per virgola e aggiungi bullet e [Definitivo] per ogni giocatore
+        giocatori_offerti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_offerti_raw.split(',') if g.strip()]
+        giocatori_richiesti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_richiesti_raw.split(',') if g.strip()]
         crediti_offerti = info_scambio['crediti_offerti'] or 0
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
         messaggio = info_scambio['messaggio'] or "Nessuna Condizione."
@@ -308,66 +313,65 @@ def scambio_risposta(conn, id_scambio, risposta):
             tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
             tipo_str = tipo_map.get(p['tipo_prestito'], p['tipo_prestito'])
             riscatto_str = f" (risc. {p['crediti_riscatto']})" if p['crediti_riscatto'] > 0 else ""
-            prestito_str = f"  • {p['nome_giocatore']} [Prestito {tipo_str}{riscatto_str}]"
+            prestito_str = f"• {p['nome_giocatore']} [Prestito {tipo_str}{riscatto_str}]"
             
             if p['squadra_prestante'] == squadra_proponente:
                 prestiti_offerti.append(prestito_str)
             else:
                 prestiti_richiesti.append(prestito_str)
 
-        offerta_text = giocatori_offerti
+        offerta_text = "\n".join(giocatori_offerti_list)
         if prestiti_offerti:
             offerta_text += "\n" + "\n".join(prestiti_offerti)
         
-        richiesta_text = giocatori_richiesti
+        richiesta_text = "\n".join(giocatori_richiesti_list)
         if prestiti_richiesti:
             richiesta_text += "\n" + "\n".join(prestiti_richiesti)
 
         if risposta == "Accettato":
-            text_to_send = textwrap.dedent(f'''
-                    SCAMBIO ACCETTATO
-                    La squadra {squadra_destinataria} ha accettato la tua offerta di scambio.
+            text_to_send = f'''SCAMBIO ACCETTATO
+La squadra {squadra_destinataria} ha accettato la tua offerta di scambio.
 
-                    ⚽ Offerta:
-                    {offerta_text}
-                    💰 Crediti offerti: {crediti_offerti}
+Offerta:
+{offerta_text}
+💰 Crediti offerti: {crediti_offerti}
 
-                    ⚽ Richiesta:
-                    {richiesta_text}
-                    💰 Crediti richiesti: {crediti_richiesti}
-            ''')
+Richiesta:
+{richiesta_text}
+💰 Crediti richiesti: {crediti_richiesti}
+'''
             send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
             # invia notifica a tutte le squadre
-            text_to_send = textwrap.dedent(f'''
-                    📢 SCAMBIO UFFICIALE: 🔥
-                    Le squadre {squadra_proponente} e {squadra_destinataria} hanno concluso un scambio:
+            text_to_send = f'''📢 SCAMBIO UFFICIALE: 🔥
+Le squadre {squadra_proponente} e {squadra_destinataria} hanno concluso un scambio:
 
-                    ✅ {squadra_proponente} riceve:
-                    ⚽ {richiesta_text}
-                    🪙 {crediti_richiesti} crediti
+✅ {squadra_proponente} riceve:
+⚽
+{richiesta_text}
+🪙 {crediti_richiesti} crediti
 
-                    ✅ {squadra_destinataria} riceve:
-                    ⚽ {offerta_text}
-                    🪙 {crediti_offerti} crediti
+✅ {squadra_destinataria} riceve:
+⚽
+{offerta_text}
+🪙 {crediti_offerti} crediti
 
-                    📝 Condizioni/Bonus: {messaggio}
-            ''')
+📝 Condizioni/Bonus: {messaggio}
+'''
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
 
         else:
-            text_to_send = textwrap.dedent(f'''
-                    SCAMBIO RIFIUTATO
-                    La squadra {squadra_destinataria} ha rifiutato la tua offerta di scambio.
+            text_to_send = f'''SCAMBIO RIFIUTATO
+La squadra {squadra_destinataria} ha rifiutato la tua offerta di scambio.
 
-                    ⚽ Offerta:
-                    {offerta_text}
-                    💰 Crediti offerti: {crediti_offerti}
+Offerta:
+{offerta_text}
+💰 Crediti offerti: {crediti_offerti}
 
-                    ⚽ Richiesta:
-                    {richiesta_text}
-                    💰 Crediti richiesti: {crediti_richiesti}
-        ''')
+Richiesta:
+{richiesta_text}
+💰 Crediti richiesti: {crediti_richiesti}
+'''
             send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
     except Exception as e:
