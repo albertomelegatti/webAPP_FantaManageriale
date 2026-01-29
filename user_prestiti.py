@@ -12,6 +12,7 @@ prestiti_bp = Blueprint('prestiti', __name__, url_prefix='/prestiti')
 
 @prestiti_bp.route("/prestiti/<nome_squadra>", methods=["GET", "POST"])
 def user_prestiti(nome_squadra):
+
     conn = None
     cur = None
     crediti = 0
@@ -70,10 +71,9 @@ def user_prestiti(nome_squadra):
                            p.tipo_prestito,
                            p.crediti_riscatto
                     FROM prestito p
-                    JOIN giocatore g
-                    ON p.giocatore = g.id
+                    JOIN giocatore g ON p.giocatore = g.id
                     WHERE (p.squadra_prestante = %s OR p.squadra_ricevente = %s)
-                    AND p.stato = 'in_attesa';
+                        AND p.stato = 'in_attesa';
         ''', (nome_squadra, nome_squadra))
         prestiti_raw = cur.fetchall()
 

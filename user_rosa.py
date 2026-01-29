@@ -17,6 +17,7 @@ def user_gestione_rosa(nome_squadra):
 
 @rosa_bp.route("/user_primavera/<nome_squadra>", methods=["GET", "POST"])
 def user_primavera(nome_squadra):
+
     conn = None
     cur = None
     primavera = []
@@ -93,6 +94,7 @@ def user_primavera(nome_squadra):
 
 @rosa_bp.route("/user_tagli/<nome_squadra>", methods=["GET", "POST"])
 def user_tagli(nome_squadra):
+
     conn = None
     cur = None
     crediti = 0
@@ -103,10 +105,11 @@ def user_tagli(nome_squadra):
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        crediti = get_crediti_squadra(conn, nome_squadra)
-        crediti_disponibili = crediti - get_offerta_totale(conn, nome_squadra)
+        crediti_disponibili = get_crediti_squadra(conn, nome_squadra) - get_offerta_totale(conn, nome_squadra)
+
 
         if request.method == "POST":
+
             id_giocatore_da_tagliare = request.form.get("id_giocatore_da_tagliare")
             if id_giocatore_da_tagliare:
 
@@ -135,12 +138,13 @@ def user_tagli(nome_squadra):
                             WHERE nome = %s;
                 ''', (costo_taglio, nome_squadra))
 
-                
+                conn.commit()
+
                 nome_giocatore = get_nome_giocatore(conn, id_giocatore_da_tagliare)
 
-                conn.commit()
                 flash(f"✅ Giocatore tagliato con successo! Costo: {costo_taglio} crediti.", "success")
                 telegram_utils.taglio_giocatore(conn, nome_squadra, nome_giocatore, costo_taglio)
+
                 return redirect(url_for("rosa.user_tagli", nome_squadra=nome_squadra))
             
 
@@ -183,8 +187,10 @@ def user_tagli(nome_squadra):
 
 @rosa_bp.route("/<nome_squadra>/richiesta_modifica_contratto/<id_giocatore>", methods=["GET", "POST"])
 def richiesta_modifica_contratto(nome_squadra, id_giocatore):
+
     conn = None
     cur = None
+
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -193,9 +199,6 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
             nuovo_tipo_contratto = request.form.get("nuovo_contratto")
             crediti_richiesti = int(request.form.get("crediti_richiesti") or 0)
             messaggio = (request.form.get("messaggio") or "").strip()
-
-            cur.execute("SELECT tipo_contratto FROM giocatore WHERE id = %s", (id_giocatore,))
-            tipo_contratto_attuale = cur.fetchone()['tipo_contratto']
 
             cur.execute('''
                 INSERT INTO richiesta_modifica_contratto (
@@ -253,6 +256,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
 
 @rosa_bp.route("/user_gestione_prestiti/<nome_squadra>", methods=["GET", "POST"])
 def user_gestione_prestiti(nome_squadra):
+
     conn = None
     cur = None
     prestiti_in = []
@@ -301,8 +305,7 @@ def user_gestione_prestiti(nome_squadra):
                         p.crediti_riscatto,
                         *
                     FROM prestito p
-                    JOIN giocatore g
-                    ON p.giocatore = g.id
+                    JOIN giocatore g ON p.giocatore = g.id
                     WHERE p.squadra_ricevente = %s
                         AND p.stato IN ('in_corso', 'richiesta_di_terminazione');
         ''', (nome_squadra,))
@@ -339,8 +342,7 @@ def user_gestione_prestiti(nome_squadra):
                         p.crediti_riscatto,
                         *
                     FROM prestito p
-                    JOIN giocatore g
-                    ON p.giocatore = g.id
+                    JOIN giocatore g ON p.giocatore = g.id
                     WHERE p.squadra_prestante = %s
                         AND stato IN ('in_corso', 'richiesta_di_terminazione');
         ''', (nome_squadra,))
@@ -383,12 +385,12 @@ def user_gestione_prestiti(nome_squadra):
 
 
 def riscatta_giocatore(conn, id_prestito, nome_squadra):
-    """
-    Riscatta un giocatore in prestito con diritto di riscatto.
-    La squadra attuale (squadra_ricevente) paga i crediti del riscatto
-    e il giocatore diventa di proprietà della squadra attuale.
-    """
+
+    # Riscatta un giocatore in prestito con diritto di riscatto.
+    # La squadra attuale (squadra_ricevente) paga i crediti del riscatto e il giocatore diventa di proprietà della squadra attuale.
+
     cur = None
+
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
@@ -414,19 +416,8 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
             flash("❌ Questo prestito non ha diritto di riscatto.", "danger")
             return
 
-        # Controlla i crediti della squadra
-        cur.execute('''
-                    SELECT crediti
-                    FROM squadra
-                    WHERE nome = %s;
-        ''', (nome_squadra,))
-        squadra_row = cur.fetchone()
-
-        if not squadra_row:
-            flash("❌ Squadra non trovata.", "danger")
-            return
-
-        crediti_squadra = squadra_row['crediti']
+      
+        crediti_squadra = get_crediti_squadra(conn, nome_squadra)
         costo_riscatto = prestito['crediti_riscatto']
 
         if crediti_squadra < costo_riscatto:
@@ -434,8 +425,6 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
             return
 
         # RISCATTO EFFETTUATO:
-            
-        # 1. Sottrarre i crediti dalla squadra ricevente e aggiungerli alla squadra prestante
         sposta_crediti(conn, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['crediti_riscatto'])
         
         # 2. Aggiornare il prestito come "riscattato"
@@ -466,11 +455,13 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
         conn.rollback()
 
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
+
     cur = None
+
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
@@ -573,7 +564,7 @@ def accetta_terminazione(conn, id_prestito):
         flash("❌ Si è verificato un errore. Ricaricare la pagina.", "danger")
 
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -626,13 +617,15 @@ def rifiuta_terminazione(conn, id_prestito):
         flash("❌ Si è verificato un errore. Ricaricare la pagina.", "danger")
 
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
 #Funzione che verifica se esiste già una richiesta in fase di elaborazione per un giocatore
 def esiste_gia_una_richiesta(conn, id_giocatore):
+
     cur = None
+    
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
 

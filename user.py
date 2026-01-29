@@ -34,19 +34,17 @@ def format_partecipanti(partecipanti):
     
 
 
-def format_giocatori(giocatori):
+def format_giocatori(conn, giocatori):
     if not giocatori:
         return ""
     
     if isinstance(giocatori, int):
         giocatori = [giocatori]
     
-    conn = None
     cur = None
     nomi_ordinati = []
 
     try:
-        conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
@@ -71,7 +69,7 @@ def format_giocatori(giocatori):
         return "Errore nel recupero dei giocatori"
 
     finally:
-        release_connection(conn, cur)
+        cur.close()
     
     if not nomi_ordinati:
         return ""
