@@ -196,6 +196,335 @@ h1 {
     letter-spacing: 0.5px;
 }
 
+/* =====================================================
+    Pagina Trattativa (user_nuovo_scambio)
+    ===================================================== */
+.step-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    gap: 1rem;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.step-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #495057;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.step-number.active {
+    background: #28a745;
+}
+
+.step-arrow {
+    color: #6c757d;
+    font-size: 1.2rem;
+}
+
+.section-card {
+    border-left: 4px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.section-card.active {
+    border-left-color: #28a745;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+}
+
+.step-divider {
+    height: 1px;
+    background: rgba(0, 0, 0, 0.08);
+    margin: 1.5rem 0 2rem;
+}
+
+.trade-side {
+    position: relative;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.05) 0%, rgba(40, 167, 69, 0.02) 100%);
+    border: 2px solid rgba(40, 167, 69, 0.2);
+}
+
+.trade-side.offer {
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.05) 0%, rgba(0, 123, 255, 0.02) 100%);
+    border-color: rgba(0, 123, 255, 0.2);
+}
+
+.trade-side-label {
+    position: absolute;
+    top: -12px;
+    left: 1rem;
+    background: #ffffff;
+    padding: 0 0.5rem;
+    font-weight: bold;
+    font-size: 0.85rem;
+    color: #28a745;
+}
+
+.trade-side.offer .trade-side-label {
+    color: #007bff;
+}
+
+.info-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.info-badge.positive {
+    background: #d4edda;
+    color: #155724;
+}
+
+.info-badge.negative {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.info-badge.neutral {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.slot-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.slot-summary-item {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.slot-summary-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0.5rem 0;
+}
+
+.slot-summary-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.loan-toggle {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.loan-toggle label {
+    cursor: pointer;
+}
+
+.loan-toggle:hover {
+    background: rgba(40, 167, 69, 0.1) !important;
+}
+
+.help-text {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.trade-arrow {
+    text-align: center;
+    font-size: 2rem;
+    color: #28a745;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* === Mobile-first tweaks === */
+@media (max-width: 768px) {
+    .negotiation-page {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+        padding-bottom: 5.5rem;
+    }
+
+    .step-indicator {
+        flex-wrap: wrap;
+        gap: 0.5rem 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .step-arrow {
+        display: none;
+    }
+
+    .trade-side {
+        padding: 1rem;
+    }
+
+    .slot-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .form-select,
+    .form-control {
+        font-size: 1rem;
+    }
+
+    .btn-lg {
+        font-size: 1rem;
+        padding: 0.85rem 1rem;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    .slot-summary-value {
+        font-size: 1.25rem;
+    }
+
+    .trade-side-label {
+        font-size: 0.8rem;
+    }
+
+    .section-card h4 {
+        font-size: 1.1rem;
+    }
+
+    .help-text {
+        font-size: 0.8rem;
+    }
+
+    .card.soft-card {
+        border-radius: 0.75rem;
+    }
+
+    .card.soft-card .card-body {
+        padding: 1rem 0.9rem;
+    }
+
+    .row.g-4 {
+        --bs-gutter-y: 1rem;
+    }
+
+    .trade-side,
+    .trade-side.offer {
+        border-width: 1px;
+    }
+
+    .trade-side-label {
+        top: -10px;
+        left: 0.75rem;
+    }
+
+    .form-select,
+    .form-control,
+    .ts-control {
+        min-height: 44px;
+    }
+
+    .btn,
+    .btn-lg,
+    .btn-sm {
+        min-height: 44px;
+    }
+
+    .mobile-summary-bar .btn-sm {
+        min-height: 38px;
+    }
+
+    .mobile-summary-bar {
+        position: fixed;
+        left: 0.75rem;
+        right: 0.75rem;
+        bottom: 0.75rem;
+        z-index: 1030;
+        padding: 0.75rem 1rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .mobile-summary-title {
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+
+    .mobile-summary-values {
+        display: flex;
+        gap: 0.75rem;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.4rem;
+    }
+
+    .step-number {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+    }
+
+    .slot-summary-item {
+        padding: 0.75rem;
+    }
+
+    textarea.form-control {
+        min-height: 110px;
+    }
+
+    .step-indicator {
+        justify-content: flex-start;
+        gap: 0.5rem;
+    }
+
+    .step-item {
+        flex: 1 1 45%;
+    }
+
+    .step-number {
+        width: 26px;
+        height: 26px;
+    }
+
+    .slot-summary-value {
+        font-size: 1.1rem;
+    }
+
+    .trade-side {
+        padding: 0.85rem;
+    }
+
+    .mobile-summary-bar {
+        left: 0.5rem;
+        right: 0.5rem;
+        bottom: 0.5rem;
+        padding: 0.6rem 0.8rem;
+    }
+
+    .mobile-summary-values {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+
 
 /* Box di login (form centrato) */
 .login-box {

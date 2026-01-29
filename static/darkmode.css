@@ -398,3 +398,83 @@ body.dark-mode .info-box {
 body.dark-mode .info-box strong {
     color: #d4e8f0 !important;
 }
+
+/* === Nuovi elementi UX: trattativa === */
+body.dark-mode .step-indicator {
+    color: var(--color-text-primary);
+}
+
+body.dark-mode .step-number {
+    background: #2f2f2f;
+    color: #ffffff;
+    border: 1px solid #444;
+}
+
+body.dark-mode .step-number.active {
+    background: var(--bs-success);
+    color: #ffffff;
+    border-color: #1f6b3b;
+}
+
+body.dark-mode .step-arrow {
+    color: #9aa0a6;
+}
+
+body.dark-mode .section-card {
+    border-left-color: #444;
+}
+
+body.dark-mode .section-card.active {
+    border-left-color: var(--bs-success);
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.25);
+}
+
+body.dark-mode .step-divider {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .trade-side {
+    background: #1f2a24;
+    border-color: #2f4a3a;
+}
+
+body.dark-mode .trade-side.offer {
+    background: #1f2630;
+    border-color: #2b3f55;
+}
+
+body.dark-mode .trade-side-label {
+    background: var(--color-background-card);
+    color: #8fd19e;
+}
+
+body.dark-mode .trade-side.offer .trade-side-label {
+    color: #8ab4f8;
+}
+
+body.dark-mode .slot-summary-item {
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+}
+
+body.dark-mode .slot-summary-value {
+    color: #f1f1f1;
+}
+
+body.dark-mode .slot-summary-label {
+    color: #b0b0b0;
+}
+
+body.dark-mode .loan-toggle {
+    border: 1px solid #2a7a48;
+}
+
+body.dark-mode .help-text {
+    color: #b0b0b0;
+}
+
+/* Mobile sticky summary bar */
+body.dark-mode .mobile-summary-bar {
+    background-color: var(--color-background-card) !important;
+    border: 1px solid var(--color-border-primary);
+}
