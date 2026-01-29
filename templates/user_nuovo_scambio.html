@@ -467,6 +467,26 @@ document.addEventListener("DOMContentLoaded", () => {
         updateSlotsCard();
     });
 
+    // Event listeners per bloccare riscatto a 0 se prestito è secco
+    function setupLoanTypeListener(tipoSelectId, riscattoSelectId) {
+        const tipoSelect = document.getElementById(tipoSelectId);
+        const riscattoInput = document.getElementById(riscattoSelectId);
+        
+        tipoSelect.addEventListener('change', () => {
+            if (tipoSelect.value === 'Secco') {
+                riscattoInput.value = '0';
+                riscattoInput.disabled = true;
+            } else {
+                riscattoInput.disabled = false;
+            }
+        });
+    }
+    
+    setupLoanTypeListener('prestito1_tipo_richiesto', 'prestito1_riscatto_richiesto');
+    setupLoanTypeListener('prestito1_tipo_offerto', 'prestito1_riscatto_offerto');
+    setupLoanTypeListener('prestito2_tipo_richiesto', 'prestito2_riscatto_richiesto');
+    setupLoanTypeListener('prestito2_tipo_offerto', 'prestito2_riscatto_offerto');
+
     loan1Body.classList.toggle('d-none', !document.getElementById('enable_prestito1').checked);
     loan2Body.classList.toggle('d-none', !document.getElementById('enable_prestito2').checked);
 

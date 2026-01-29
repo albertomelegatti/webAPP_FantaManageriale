@@ -169,7 +169,7 @@
                                 {% for giocatore in scambio.giocatori_richiesti %}
                                     <li>{{ giocatore.nome }} <span class="badge bg-primary">Definitivo</span></li>
                                 {% endfor %}
-                                {% for prestito in scambio.prestiti if prestito.squadra_ricevente == nome_squadra %}
+                                {% for prestito in scambio.prestiti if prestito.squadra_prestante == nome_squadra %}
                                     <li>{{ prestito.nome_giocatore }} 
                                         {% if prestito.tipo_prestito == 'secco' %}
                                             <span class="badge bg-info text-dark">Prestito secco</span>
