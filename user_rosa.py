@@ -10,10 +10,6 @@ from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attu
 
 rosa_bp = Blueprint('rosa', __name__, url_prefix='/rosa')
 
-@rosa_bp.route("/gestione_rosa/<nome_squadra>")
-def user_gestione_rosa(nome_squadra):
-    return render_template("user_gestione_rosa.html", nome_squadra=nome_squadra)
-
 
 @rosa_bp.route("/user_primavera/<nome_squadra>", methods=["GET", "POST"])
 def user_primavera(nome_squadra):
@@ -213,7 +209,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
 
             flash("✅ Richiesta di modifica contratto inviata con successo.", "success")
             telegram_utils.richiesta_modifica_contratto(conn, nome_squadra, id_giocatore, messaggio)
-            return redirect(url_for("rosa.user_gestione_rosa", nome_squadra=nome_squadra))
+            return redirect(url_for("rosa.user_tagli", nome_squadra=nome_squadra))
 
         cur.execute('''
                     SELECT nome, tipo_contratto
@@ -224,7 +220,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
 
         if not giocatore_raw:
             flash(f"❌ Giocatore con id {id_giocatore} non trovato.", "danger")
-            return redirect(url_for('rosa.user_gestione_rosa', nome_squadra=nome_squadra))
+            return redirect(url_for('rosa.user_tagli', nome_squadra=nome_squadra))
 
         nome_giocatore = giocatore_raw['nome']
         tipo_contratto = giocatore_raw['tipo_contratto']
@@ -238,7 +234,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
     except Exception as e:
         print(f"Errore durante la richiesta di modifica contratto: {e}")
         flash("❌ Errore durante la richiesta di modifica contratto.", "danger")
-        return redirect(url_for('rosa.user_gestione_rosa', nome_squadra=nome_squadra))
+        return redirect(url_for('rosa.user_tagli', nome_squadra=nome_squadra))
 
     finally:
         release_connection(conn, cur)
