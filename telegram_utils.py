@@ -185,7 +185,8 @@ def nuovo_scambio(conn, id_scambio):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT squadra_proponente, squadra_destinataria, giocatori_offerti, giocatori_richiesti, crediti_offerti, crediti_richiesti, messaggio
+                    SELECT squadra_proponente, squadra_destinataria, giocatori_offerti, giocatori_richiesti, 
+                           crediti_offerti, crediti_richiesti, messaggio, prestiti_associati
                     FROM scambio
                     WHERE id = %s;
         ''', (id_scambio,))
@@ -199,37 +200,39 @@ def nuovo_scambio(conn, id_scambio):
         squadra_destinataria = info_scambio['squadra_destinataria']
         giocatori_offerti_raw = format_giocatori(info_scambio['giocatori_offerti'])
         giocatori_richiesti_raw = format_giocatori(info_scambio['giocatori_richiesti'])
-        # Splitti per virgola e aggiungi bullet e [Definitivo] per ogni giocatore
         giocatori_offerti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_offerti_raw.split(',') if g.strip()]
         giocatori_richiesti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_richiesti_raw.split(',') if g.strip()]
         crediti_offerti = info_scambio['crediti_offerti'] or 0
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
         messaggio = info_scambio['messaggio'] or ""
-
-        # Recupera prestiti collegati allo scambio
-        cur.execute('''
-            SELECT p.squadra_prestante, p.squadra_ricevente, p.tipo_prestito, p.crediti_riscatto,
-                   g.nome as nome_giocatore
-            FROM prestito p
-            JOIN giocatore g ON p.giocatore = g.id
-            WHERE p.note LIKE %s
-            ORDER BY p.id;
-        ''', (f'%Collegato allo scambio ID {id_scambio}%',))
-        prestiti = cur.fetchall()
-
-        # Formatta prestiti offerti e richiesti
+        
+        prestiti_associati_ids = info_scambio['prestiti_associati']
         prestiti_offerti = []
         prestiti_richiesti = []
-        for p in prestiti:
-            tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
-            tipo_str = tipo_map.get(p['tipo_prestito'], p['tipo_prestito'])
-            riscatto_str = f" (risc. {p['crediti_riscatto']})" if p['crediti_riscatto'] > 0 else ""
-            prestito_str = f"• {p['nome_giocatore']} [Prestito {tipo_str}{riscatto_str}]"
-            
-            if p['squadra_prestante'] == squadra_proponente:
-                prestiti_offerti.append(prestito_str)
-            else:
-                prestiti_richiesti.append(prestito_str)
+
+        if prestiti_associati_ids:
+            # Recupera prestiti collegati allo scambio
+            cur.execute('''
+                SELECT p.squadra_prestante, p.squadra_ricevente, p.tipo_prestito, p.crediti_riscatto,
+                       g.nome as nome_giocatore
+                FROM prestito p
+                JOIN giocatore g ON p.giocatore = g.id
+                WHERE p.id = ANY(%s)
+                ORDER BY p.id;
+            ''', (prestiti_associati_ids,))
+            prestiti = cur.fetchall()
+
+            # Formatta prestiti offerti e richiesti
+            for p in prestiti:
+                tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
+                tipo_str = tipo_map.get(p['tipo_prestito'], p['tipo_prestito'])
+                riscatto_str = f" (risc. {p['crediti_riscatto']})" if p['crediti_riscatto'] and p['crediti_riscatto'] > 0 else ""
+                prestito_str = f"• {p['nome_giocatore']} [Prestito {tipo_str}{riscatto_str}]"
+                
+                if p['squadra_prestante'] == squadra_proponente:
+                    prestiti_offerti.append(prestito_str)
+                else:
+                    prestiti_richiesti.append(prestito_str)
 
         offerta_text = "\n".join(giocatori_offerti_list)
         if prestiti_offerti:
@@ -256,7 +259,7 @@ Richiesta:
         send_message(nome_squadra=squadra_destinataria, text_to_send=text_to_send)
 
     except Exception as e:
-        print(f"Errore: {e}")
+        print(f"Errore in nuovo_scambio: {e}")
 
     finally:
         cur.close()
@@ -274,7 +277,7 @@ def scambio_risposta(conn, id_scambio, risposta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT squadra_proponente, squadra_destinataria, giocatori_offerti, giocatori_richiesti, crediti_offerti, crediti_richiesti, messaggio
+                    SELECT squadra_proponente, squadra_destinataria, giocatori_offerti, giocatori_richiesti, crediti_offerti, crediti_richiesti, messaggio, prestiti_associati
                     FROM scambio
                     WHERE id = %s;
         ''', (id_scambio,))
@@ -294,6 +297,8 @@ def scambio_risposta(conn, id_scambio, risposta):
         crediti_offerti = info_scambio['crediti_offerti'] or 0
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
         messaggio = info_scambio['messaggio'] or "Nessuna Condizione."
+        prestiti_associati_ids = info_scambio['prestiti_associati']
+
 
         # Recupera prestiti collegati allo scambio
         cur.execute('''
@@ -301,9 +306,9 @@ def scambio_risposta(conn, id_scambio, risposta):
                    g.nome as nome_giocatore
             FROM prestito p
             JOIN giocatore g ON p.giocatore = g.id
-            WHERE p.note LIKE %s
+            WHERE p.id = ANY(%s)
             ORDER BY p.id;
-        ''', (f'%Collegato allo scambio ID {id_scambio}%',))
+        ''', (prestiti_associati_ids,))
         prestiti = cur.fetchall()
 
         # Formatta prestiti offerti e richiesti
@@ -814,7 +819,48 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
     
     finally:
         cur.close()
+
+
+
+def format_prestito(conn, lista_prestiti):
+    if not lista_prestiti:
+        return ""
+    
+    formatted_prestiti = []
+    cur = None
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        for prestito_id in lista_prestiti:
+            cur.execute('''
+                        SELECT g.nome, p.tipo_prestito, p.crediti_riscatto
+                        FROM prestito p
+                        JOIN giocatore g
+                        ON p.giocatore = g.id
+                        WHERE p.id = %s;
+            ''', (prestito_id,))
+            info_prestito = cur.fetchone()
+            
+            if info_prestito:
+                giocatore = info_prestito['nome']
+                tipo_prestito = info_prestito['tipo_prestito']
+                crediti_riscatto = info_prestito['crediti_riscatto']
+                
+                tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
+                tipo_str = tipo_map.get(tipo_prestito, tipo_prestito)
+                riscatto_str = f" (risc. {crediti_riscatto})" if crediti_riscatto and crediti_riscatto > 0 else ""
+                
+                prestito_str = f"• {giocatore} [Prestito {tipo_str}{riscatto_str}]"
+                formatted_prestiti.append(prestito_str)
         
+        return "\n".join(formatted_prestiti)
+    
+    except Exception as e:
+        print(f"Errore in format_prestito: {e}")
+        return ""
+    
+    finally:
+        cur.close()
 
 
 

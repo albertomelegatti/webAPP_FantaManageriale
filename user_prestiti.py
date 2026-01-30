@@ -62,7 +62,7 @@ def user_prestiti(nome_squadra):
         offerta_totale = get_offerta_totale(conn, nome_squadra)
         crediti_disponibili = crediti - offerta_totale
 
-
+        # Selezione dei prestiti che non sono associati con nessuno scambio
         cur.execute('''
                     SELECT *, p.id AS prestito_id, 
                            p.note,
@@ -70,10 +70,14 @@ def user_prestiti(nome_squadra):
                            p.tipo_prestito,
                            p.crediti_riscatto
                     FROM prestito p
-                    JOIN giocatore g
-                    ON p.giocatore = g.id
+                    JOIN giocatore g ON p.giocatore = g.id
                     WHERE (p.squadra_prestante = %s OR p.squadra_ricevente = %s)
-                    AND p.stato = 'in_attesa';
+                        AND p.stato = 'in_attesa'
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM scambio s
+                            WHERE p.id = ANY(s.prestiti_associati)
+                        );
         ''', (nome_squadra, nome_squadra))
         prestiti_raw = cur.fetchall()
 

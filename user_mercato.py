@@ -252,28 +252,7 @@ def nuovo_scambio(nome_squadra):
             if not giocatori_richiesti and crediti_richiesti == 0:
                 flash("Devi richiedere almeno un giocatore o dei crediti.", "warning")
                 return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
-
-            # Inserisci la proposta di scambio
-            cur.execute('''
-                INSERT INTO scambio (
-                    squadra_proponente, squadra_destinataria, 
-                    crediti_offerti, crediti_richiesti, 
-                    giocatori_offerti, giocatori_richiesti, 
-                    messaggio, stato, data_proposta
-                )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome')
-                RETURNING id;
-            ''', (
-                nome_squadra,
-                squadra_destinataria,
-                crediti_offerti,
-                crediti_richiesti,
-                giocatori_offerti,
-                giocatori_richiesti,
-                messaggio
-            ))
-            id_scambio = cur.fetchone()['id']
-
+            
 
 
 
@@ -290,7 +269,7 @@ def nuovo_scambio(nome_squadra):
                 cur.execute('''
                     INSERT INTO prestito (
                         giocatore, squadra_prestante, squadra_ricevente, stato, data_inizio, data_fine, note, costo_prestito, tipo_prestito, crediti_riscatto
-                    ) VALUES (%s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s, %s, %s, %s, %s)
+                    ) VALUES (%s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s, %s, %s, %s)
                     RETURNING id;
                 ''', (
                     int(giocatore_id),
@@ -298,12 +277,13 @@ def nuovo_scambio(nome_squadra):
                     squadra_ricevente,
                     'in_attesa',
                     default_data_fine,
-                    f'Collegato allo scambio ID {id_scambio}',
                     0,
                     tipo_db,
                     int(riscatto or 0)
                 ))
                 return cur.fetchone()['id']
+            
+
 
             created_prestiti = []
 
@@ -327,14 +307,36 @@ def nuovo_scambio(nome_squadra):
                         crea_prestito(p2_offerto, nome_squadra, squadra_destinataria, p2_tipo_offerto, p2_riscatto_off)
                     )
 
+
+
+            # Inserisci la proposta di scambio
+            cur.execute('''
+                INSERT INTO scambio (
+                    squadra_proponente, squadra_destinataria, 
+                    crediti_offerti, crediti_richiesti, 
+                    giocatori_offerti, giocatori_richiesti, 
+                    messaggio, stato, data_proposta, prestito_associato
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome', %s)
+                RETURNING id;
+            ''', (
+                nome_squadra,
+                squadra_destinataria,
+                crediti_offerti,
+                crediti_richiesti,
+                giocatori_offerti,
+                giocatori_richiesti,
+                messaggio,
+                created_prestiti
+            ))
+            id_scambio = cur.fetchone()['id']
+
             conn.commit()
+
+
             flash("✅ Proposta inviata con successo!", "success")
             telegram_utils.nuovo_scambio(conn, id_scambio)
-            for pid in [pid for pid in created_prestiti if pid]:
-                try:
-                    telegram_utils.nuovo_prestito(conn, pid)
-                except Exception:
-                    pass
+
             return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
 
 
