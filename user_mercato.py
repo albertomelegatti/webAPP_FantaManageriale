@@ -216,11 +216,11 @@ def nuovo_scambio(nome_squadra):
             def map_tipo(val):
                 if not val:
                     return ''
-                if val == 'Secco':
+                elif val == 'Secco':
                     return 'secco'
-                if val in ('Con diritto di riscatto', 'Diritto'):
+                elif val in ('Con diritto di riscatto', 'Diritto'):
                     return 'diritto_di_riscatto'
-                if val in ('Con obbligo di riscatto', 'Obbligo'):
+                elif val in ('Con obbligo di riscatto', 'Obbligo'):
                     return 'obbligo_di_riscatto'
                 return ''
 
@@ -237,6 +237,7 @@ def nuovo_scambio(nome_squadra):
             # Data di fine default: 2 luglio alle 23:59:59 (prima data utile futura)
             today = datetime.now()
             target_year = today.year if today < datetime(today.year, 7, 2) else today.year + 1
+
             default_data_fine = datetime(target_year, 7, 2, 23, 59, 59)
 
             # Validazioni base
@@ -251,39 +252,24 @@ def nuovo_scambio(nome_squadra):
             if not giocatori_richiesti and crediti_richiesti == 0:
                 flash("Devi richiedere almeno un giocatore o dei crediti.", "warning")
                 return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
+            
 
-            # Inserisci la proposta di scambio
-            cur.execute('''
-                INSERT INTO scambio (
-                    squadra_proponente, squadra_destinataria, 
-                    crediti_offerti, crediti_richiesti, 
-                    giocatori_offerti, giocatori_richiesti, 
-                    messaggio, stato, data_proposta
-                )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome')
-                RETURNING id;
-            ''', (
-                nome_squadra,
-                squadra_destinataria,
-                crediti_offerti,
-                crediti_richiesti,
-                giocatori_offerti,
-                giocatori_richiesti,
-                messaggio
-            ))
-            id_scambio = cur.fetchone()['id']
+
 
             # Inserisci eventuali prestiti collegati (costo_prestito=0)
             def crea_prestito(giocatore_id, squadra_prestante, squadra_ricevente, tipo_txt, riscatto):
+
                 if not giocatore_id or not tipo_txt:
                     return None
+                
                 tipo_db = map_tipo(tipo_txt)
                 if tipo_db == 'secco':
                     riscatto = 0
+
                 cur.execute('''
                     INSERT INTO prestito (
                         giocatore, squadra_prestante, squadra_ricevente, stato, data_inizio, data_fine, note, costo_prestito, tipo_prestito, crediti_riscatto
-                    ) VALUES (%s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s, %s, %s, %s, %s)
+                    ) VALUES (%s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s, %s, %s, %s)
                     RETURNING id;
                 ''', (
                     int(giocatore_id),
@@ -291,14 +277,16 @@ def nuovo_scambio(nome_squadra):
                     squadra_ricevente,
                     'in_attesa',
                     default_data_fine,
-                    f'Collegato allo scambio ID {id_scambio}',
                     0,
                     tipo_db,
                     int(riscatto or 0)
                 ))
                 return cur.fetchone()['id']
+            
+
 
             created_prestiti = []
+
             if enable_prestito1:
                 if p1_richiesto:
                     created_prestiti.append(
@@ -308,6 +296,7 @@ def nuovo_scambio(nome_squadra):
                     created_prestiti.append(
                         crea_prestito(p1_offerto, nome_squadra, squadra_destinataria, p1_tipo_offerto, p1_riscatto_off)
                     )
+
             if enable_prestito2:
                 if p2_richiesto:
                     created_prestiti.append(
@@ -318,17 +307,40 @@ def nuovo_scambio(nome_squadra):
                         crea_prestito(p2_offerto, nome_squadra, squadra_destinataria, p2_tipo_offerto, p2_riscatto_off)
                     )
 
+
+
+            # Inserisci la proposta di scambio
+            cur.execute('''
+                INSERT INTO scambio (
+                    squadra_proponente, squadra_destinataria, 
+                    crediti_offerti, crediti_richiesti, 
+                    giocatori_offerti, giocatori_richiesti, 
+                    messaggio, stato, data_proposta, prestito_associato
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome', %s)
+                RETURNING id;
+            ''', (
+                nome_squadra,
+                squadra_destinataria,
+                crediti_offerti,
+                crediti_richiesti,
+                giocatori_offerti,
+                giocatori_richiesti,
+                messaggio,
+                created_prestiti
+            ))
+            id_scambio = cur.fetchone()['id']
+
             conn.commit()
+
+
             flash("✅ Proposta inviata con successo!", "success")
             telegram_utils.nuovo_scambio(conn, id_scambio)
-            for pid in [pid for pid in created_prestiti if pid]:
-                try:
-                    telegram_utils.nuovo_prestito(conn, pid)
-                except Exception:
-                    pass
+
             return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
 
 
+        # Sezione GET
 
         # Recupera tutte le squadre (tranne "Svincolato")
         cur.execute('''
