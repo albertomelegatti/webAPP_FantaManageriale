@@ -829,7 +829,7 @@ def salva_movimento(text_to_send):
         conn = get_connection()
         cur = conn.cursor()
         
-        text_to_send = text_to_send.replace('\n', ' ')
+        text_to_send = text_to_send.replace('\n', ' ').strip()
 
         cur.execute('''
                     INSERT INTO movimenti_squadra (evento, data, stagione)
