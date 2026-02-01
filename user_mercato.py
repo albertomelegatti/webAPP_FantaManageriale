@@ -28,21 +28,7 @@ def user_mercato(nome_squadra):
             # Bottone ANNULLA scambio
             scambio_id = request.form.get("annulla_scambio")
             if scambio_id:
-                # Recupera gli ID dei prestiti associati prima di annullare lo scambio
-                cur.execute("SELECT prestito_associato FROM scambio WHERE id = %s", (scambio_id,))
-                scambio = cur.fetchone()
-                
-                cur.execute("UPDATE scambio SET stato = 'annullato' WHERE id = %s;", (scambio_id,))
-                
-                # Annulla anche i prestiti collegati, se ce ne sono
-                if scambio and scambio['prestito_associato']:
-                    cur.execute('''
-                                UPDATE prestito
-                                SET stato = 'annullato'
-                                WHERE id = ANY(%s) AND stato = 'in_attesa';
-                    ''', (scambio['prestito_associato'],))
-                
-                conn.commit()
+                annulla_scambio(scambio_id, conn)
 
 
             # Bottone ACCETTA scambio
@@ -663,3 +649,52 @@ def effettua_scambio(id, conn, nome_squadra):
     
     finally:
         cur.close()
+        
+        
+        
+        
+        
+def annulla_scambio(scambio_id, conn):
+    
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Recupera gli ID dei prestiti associati prima di annullare lo scambio
+        cur.execute('''
+                    SELECT prestito_associato, stato
+                    FROM scambio 
+                    WHERE id = %s
+                    FOR UPDATE;
+        ''', (scambio_id,))
+        scambio = cur.fetchone()
+        
+        # Controllo se lo scambio è ancora annullabile
+        if not scambio or scambio['stato'] != 'in_attesa':
+            conn.rollback()
+            return
+        
+        # Aggiorno lo stato
+        cur.execute('''
+                    UPDATE scambio 
+                    SET stato = 'annullato' 
+                    WHERE id = %s;
+        ''', (scambio_id,))
+        
+        # Annulla anche i prestiti collegati, se ce ne sono
+        if scambio and scambio['prestito_associato']:
+            cur.execute('''
+                        UPDATE prestito
+                        SET stato = 'annullato'
+                        WHERE id = ANY(%s) AND stato = 'in_attesa';
+            ''', (scambio['prestito_associato'],))
+        
+        conn.commit()
+    
+    except Exception as e:
+        print(f"Errore durante l'annullamento dello scambio: {e}")
+        conn.rollback()
+        return False
+
+    finally:
+        cur.close()
+
