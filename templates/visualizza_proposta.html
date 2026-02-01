@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <h1 class="mb-0">Dettaglio Scambio</h1>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h4>Proposta di: <span class="text-primary">{{ scambio.squadra_proponente }}</span></h4>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <h4>Per: <span class="text-primary">{{ scambio.squadra_destinataria }}</span></h4>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Offerta -->
+                <div class="col-md-6 border-end">
+                    <h3 class="text-success">Offerta</h3>
+                    <hr>
+                    {% if scambio.giocatori_offerti %}
+                        <p><strong>Giocatori offerti:</strong> {{ scambio.giocatori_offerti }}</p>
+                    {% endif %}
+                    {% if scambio.crediti_offerti %}
+                        <p><strong>Crediti offerti:</strong> {{ scambio.crediti_offerti }}</p>
+                    {% endif %}
+                    {% if not scambio.giocatori_offerti and not scambio.crediti_offerti %}
+                        <p class="text-muted">Nessuna offerta in giocatori o crediti.</p>
+                    {% endif %}
+                </div>
+
+                <!-- Richiesta -->
+                <div class="col-md-6">
+                    <h3 class="text-danger">Richiesta</h3>
+                    <hr>
+                    {% if scambio.giocatori_richiesti %}
+                        <p><strong>Giocatori richiesti:</strong> {{ scambio.giocatori_richiesti }}</p>
+                    {% endif %}
+                    {% if scambio.crediti_richiesti %}
+                        <p><strong>Crediti richiesti:</strong> {{ scambio.crediti_richiesti }}</p>
+                    {% endif %}
+                    {% if not scambio.giocatori_richiesti and not scambio.crediti_richiesti %}
+                        <p class="text-muted">Nessuna richiesta in giocatori o crediti.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <!-- Bottoni Azione -->
+            <div class="text-center">
+                {% if nome_squadra == scambio.squadra_proponente %}
+                    <!-- L'utente è il proponente: può solo annullare -->
+                    <form method="POST" action="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}" 
+                          onsubmit="return confirm('Sei sicuro di voler annullare questo scambio?');" class="d-inline">
+                        <input type="hidden" name="annulla_scambio" value="{{ scambio.scambio_id }}">
+                        <button type="submit" class="btn btn-lg btn-warning text-dark">Annulla Proposta</button>
+                    </form>
+                {% elif nome_squadra == scambio.squadra_destinataria %}
+                    <!-- L'utente è il destinatario: può accettare o rifiutare -->
+                    <div class="d-flex justify-content-center gap-3">
+                        <form method="POST" action="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}" 
+                              onsubmit="return confirm('Sei sicuro di voler accettare questo scambio?');" class="d-inline">
+                            <input type="hidden" name="accetta_scambio" value="{{ scambio.scambio_id }}">
+                            <button type="submit" class="btn btn-lg btn-success"
+                                    {% if scambio.valido == False %}disabled{% endif %}>
+                                Accetta Proposta
+                            </button>
+                        </form>
+
+                        <form method="POST" action="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}"
+                              onsubmit="return confirm('Sei sicuro di voler rifiutare questo scambio?');" class="d-inline">
+                            <input type="hidden" name="rifiuta_scambio" value="{{ scambio.scambio_id }}">
+                            <button type="submit" class="btn btn-lg btn-danger">Rifiuta Proposta</button>
+                        </form>
+                    </div>
+                    {% if scambio.valido == False %}
+                        <div class="alert alert-danger mt-3" role="alert">
+                            Non puoi accettare questa proposta perchè non hai i giocatori/crediti necessari.
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-footer text-muted">
+            Data della proposta: {{ scambio.data_proposta }}
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}" class="btn btn-secondary">Torna al mercato</a>
+    </div>
+</div>
+{% endblock %}
