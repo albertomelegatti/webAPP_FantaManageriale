@@ -76,7 +76,7 @@ def user_prestiti(nome_squadra):
                         AND NOT EXISTS (
                             SELECT 1
                             FROM scambio s
-                            WHERE p.id = ANY(s.prestiti_associati)
+                            WHERE p.id = ANY(s.prestito_associato)
                         );
         ''', (nome_squadra, nome_squadra))
         prestiti_raw = cur.fetchall()
