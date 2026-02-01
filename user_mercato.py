@@ -28,19 +28,19 @@ def user_mercato(nome_squadra):
             # Bottone ANNULLA scambio
             scambio_id = request.form.get("annulla_scambio")
             if scambio_id:
-                cur.execute('''
-                            UPDATE scambio
-                            SET stato = 'annullato' 
-                            WHERE id = %s;
-                ''', (scambio_id,))
+                # Recupera gli ID dei prestiti associati prima di annullare lo scambio
+                cur.execute("SELECT prestito_associato FROM scambio WHERE id = %s", (scambio_id,))
+                scambio = cur.fetchone()
                 
-                # Annulla anche i prestiti collegati
-                cur.execute('''
-                            UPDATE prestito
-                            SET stato = 'annullato'
-                            WHERE note LIKE %s
-                                AND stato = 'in_attesa';
-                ''', (f'%Collegato allo scambio ID {scambio_id}%',))
+                cur.execute("UPDATE scambio SET stato = 'annullato' WHERE id = %s;", (scambio_id,))
+                
+                # Annulla anche i prestiti collegati, se ce ne sono
+                if scambio and scambio['prestito_associato']:
+                    cur.execute('''
+                                UPDATE prestito
+                                SET stato = 'annullato'
+                                WHERE id = ANY(%s) AND stato = 'in_attesa';
+                    ''', (scambio['prestito_associato'],))
                 
                 conn.commit()
 
@@ -55,6 +55,9 @@ def user_mercato(nome_squadra):
             # Bottone RIFIUTA scambio
             scambio_id = request.form.get("rifiuta_scambio")
             if scambio_id:
+                cur.execute("SELECT prestito_associato FROM scambio WHERE id = %s", (scambio_id,))
+                scambio = cur.fetchone()
+
                 cur.execute('''
                             UPDATE scambio
                             SET stato= 'rifiutato',
@@ -63,15 +66,15 @@ def user_mercato(nome_squadra):
                 ''', (scambio_id,))
                 
                 # Rifiuta anche i prestiti collegati
-                cur.execute('''
-                            UPDATE prestito
-                            SET stato = 'rifiutato'
-                            WHERE note LIKE %s
-                                AND stato = 'in_attesa';
-                ''', (f'%Collegato allo scambio ID {scambio_id}%',))
-                
+                if scambio and scambio['prestito_associato']:
+                    cur.execute('''
+                                UPDATE prestito
+                                SET stato = 'rifiutato'
+                                WHERE id = ANY(%s) AND stato = 'in_attesa';
+                    ''', (scambio['prestito_associato'],))
+
                 conn.commit()
-                telegram_utils.scambio_risposta(conn, id, "Rifiutato")
+                telegram_utils.scambio_risposta(conn, scambio_id, "Rifiutato")
 
 
 
@@ -100,16 +103,18 @@ def user_mercato(nome_squadra):
                 valido = controlla_scambio(s['id'], conn)
 
             # Recupera prestiti collegati allo scambio
-            cur.execute('''
-                SELECT p.id, p.giocatore, p.squadra_prestante, p.squadra_ricevente, 
-                       p.tipo_prestito, p.crediti_riscatto, p.data_fine, p.stato,
-                       g.nome as nome_giocatore
-                FROM prestito p
-                JOIN giocatore g ON p.giocatore = g.id
-                WHERE p.note LIKE %s
-                ORDER BY p.id;
-            ''', (f'%Collegato allo scambio ID {s["id"]}%',))
-            prestiti_raw = cur.fetchall()
+            prestiti_raw = []
+            if s['prestito_associato']:
+                cur.execute('''
+                    SELECT p.id, p.giocatore, p.squadra_prestante, p.squadra_ricevente, 
+                           p.tipo_prestito, p.crediti_riscatto, p.data_fine, p.stato,
+                           g.nome as nome_giocatore
+                    FROM prestito p
+                    JOIN giocatore g ON p.giocatore = g.id
+                    WHERE p.id = ANY(%s)
+                    ORDER BY p.id;
+                ''', (s['prestito_associato'],))
+                prestiti_raw = cur.fetchall()
             
             prestiti = []
             for p in prestiti_raw:
@@ -268,20 +273,22 @@ def nuovo_scambio(nome_squadra):
 
                 cur.execute('''
                     INSERT INTO prestito (
-                        giocatore, squadra_prestante, squadra_ricevente, stato, data_inizio, data_fine, note, costo_prestito, tipo_prestito, crediti_riscatto
-                    ) VALUES (%s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s, %s, %s, %s)
+                        giocatore, squadra_prestante, squadra_ricevente, stato, data_inizio, data_fine, costo_prestito, tipo_prestito, crediti_riscatto, note
+                    ) VALUES (%s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome', %s, %s, %s, %s, %s)
                     RETURNING id;
                 ''', (
                     int(giocatore_id),
                     squadra_prestante,
                     squadra_ricevente,
-                    'in_attesa',
                     default_data_fine,
                     0,
                     tipo_db,
-                    int(riscatto or 0)
+                    int(riscatto or 0),
+                    ''
                 ))
                 return cur.fetchone()['id']
+            
+            
             
 
 
@@ -307,6 +314,9 @@ def nuovo_scambio(nome_squadra):
                         crea_prestito(p2_offerto, nome_squadra, squadra_destinataria, p2_tipo_offerto, p2_riscatto_off)
                     )
 
+
+            if len(created_prestiti) == 0:
+                created_prestiti = None
 
 
             # Inserisci la proposta di scambio
@@ -595,13 +605,14 @@ def effettua_scambio(id, conn, nome_squadra):
         ''', (id,))
         
         # Attiva eventuali prestiti collegati allo scambio
-        cur.execute('''
-                    SELECT id, giocatore, squadra_ricevente, squadra_prestante
-                    FROM prestito
-                    WHERE note LIKE %s
-                        AND stato = 'in_attesa';
-        ''', (f'%Collegato allo scambio ID {id}%',))
-        prestiti_collegati = cur.fetchall()
+        prestiti_collegati = []
+        if scambio and scambio['prestito_associato']:
+            cur.execute('''
+                        SELECT id, giocatore, squadra_ricevente, squadra_prestante
+                        FROM prestito
+                        WHERE id = ANY(%s) AND stato = 'in_attesa';
+            ''', (scambio['prestito_associato'],))
+            prestiti_collegati = cur.fetchall()
         
         for prestito in prestiti_collegati:
             # Attiva il prestito (stato = 'in_corso' come in attiva_prestito)

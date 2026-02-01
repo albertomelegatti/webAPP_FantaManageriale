@@ -107,7 +107,7 @@ def user_prestiti(nome_squadra):
 
     except Exception as e:
         print(f"❌ Errore durante il caricamento della pagina 'prestiti': {e}")
-        return render_template("user_prestiti.html", nome_squadra=nome_squadra)
+        return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=0, crediti_disponibili=0, prestiti=[], prestiti_in_num=0, block_button=False)
     
     finally:
         release_connection(conn, cur)
@@ -228,7 +228,7 @@ def nuovo_prestito(nome_squadra):
 
     except Exception as e:
         print(f"❌ Errore durante il caricamento della pagina 'nuovo_prestito': {e}")
-        return render_template("user_prestiti.html", nome_squadra=nome_squadra)
+        return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=0, crediti_disponibili=0, prestiti=[], prestiti_in_num=0, block_button=False)
     
     finally:
         release_connection(conn, cur)
@@ -292,7 +292,7 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
 
     except Exception as e:
         print(f"❌ Errore durante l'attivazione del prestito: {e}")
-        return render_template("user_prestiti.html", nome_squadra=nome_squadra)
+        return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=0, crediti_disponibili=0, prestiti=[], prestiti_in_num=0, block_button=False)
     
     finally:
         release_connection(conn, cur)
