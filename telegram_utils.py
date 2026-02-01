@@ -186,7 +186,7 @@ def nuovo_scambio(conn, id_scambio):
 
         cur.execute('''
                     SELECT squadra_proponente, squadra_destinataria, giocatori_offerti, giocatori_richiesti, 
-                           crediti_offerti, crediti_richiesti, messaggio, prestiti_associati
+                           crediti_offerti, crediti_richiesti, messaggio, prestito_associato
                     FROM scambio
                     WHERE id = %s;
         ''', (id_scambio,))
@@ -206,11 +206,11 @@ def nuovo_scambio(conn, id_scambio):
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
         messaggio = info_scambio['messaggio'] or ""
         
-        prestiti_associati_ids = info_scambio['prestiti_associati']
+        prestito_associato_ids = info_scambio['prestito_associato']
         prestiti_offerti = []
         prestiti_richiesti = []
 
-        if prestiti_associati_ids:
+        if prestito_associato_ids:
             # Recupera prestiti collegati allo scambio
             cur.execute('''
                 SELECT p.squadra_prestante, p.squadra_ricevente, p.tipo_prestito, p.crediti_riscatto,
@@ -219,7 +219,7 @@ def nuovo_scambio(conn, id_scambio):
                 JOIN giocatore g ON p.giocatore = g.id
                 WHERE p.id = ANY(%s)
                 ORDER BY p.id;
-            ''', (prestiti_associati_ids,))
+            ''', (prestito_associato_ids,))
             prestiti = cur.fetchall()
 
             # Formatta prestiti offerti e richiesti
@@ -277,7 +277,7 @@ def scambio_risposta(conn, id_scambio, risposta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT squadra_proponente, squadra_destinataria, giocatori_offerti, giocatori_richiesti, crediti_offerti, crediti_richiesti, messaggio, prestiti_associati
+                    SELECT squadra_proponente, squadra_destinataria, giocatori_offerti, giocatori_richiesti, crediti_offerti, crediti_richiesti, messaggio, prestito_associato
                     FROM scambio
                     WHERE id = %s;
         ''', (id_scambio,))
@@ -297,7 +297,7 @@ def scambio_risposta(conn, id_scambio, risposta):
         crediti_offerti = info_scambio['crediti_offerti'] or 0
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
         messaggio = info_scambio['messaggio'] or "Nessuna Condizione."
-        prestiti_associati_ids = info_scambio['prestiti_associati']
+        prestito_associato_ids = info_scambio['prestito_associato']
 
 
         # Recupera prestiti collegati allo scambio
@@ -308,7 +308,7 @@ def scambio_risposta(conn, id_scambio, risposta):
             JOIN giocatore g ON p.giocatore = g.id
             WHERE p.id = ANY(%s)
             ORDER BY p.id;
-        ''', (prestiti_associati_ids,))
+        ''', (prestito_associato_ids,))
         prestiti = cur.fetchall()
 
         # Formatta prestiti offerti e richiesti
