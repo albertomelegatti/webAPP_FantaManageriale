@@ -8,7 +8,7 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from db import get_connection, release_connection
 from user import format_giocatori, formatta_data
-
+from user_mercato import format_prestito
 
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 
@@ -819,49 +819,6 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
     
     finally:
         cur.close()
-
-
-
-def format_prestito(conn, lista_prestiti):
-    if not lista_prestiti:
-        return ""
-    
-    formatted_prestiti = []
-    cur = None
-    try:
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        for prestito_id in lista_prestiti:
-            cur.execute('''
-                        SELECT g.nome, p.tipo_prestito, p.crediti_riscatto
-                        FROM prestito p
-                        JOIN giocatore g
-                        ON p.giocatore = g.id
-                        WHERE p.id = %s;
-            ''', (prestito_id,))
-            info_prestito = cur.fetchone()
-            
-            if info_prestito:
-                giocatore = info_prestito['nome']
-                tipo_prestito = info_prestito['tipo_prestito']
-                crediti_riscatto = info_prestito['crediti_riscatto']
-                
-                tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
-                tipo_str = tipo_map.get(tipo_prestito, tipo_prestito)
-                riscatto_str = f" (risc. {crediti_riscatto})" if crediti_riscatto and crediti_riscatto > 0 else ""
-                
-                prestito_str = f"• {giocatore} [Prestito {tipo_str}{riscatto_str}]"
-                formatted_prestiti.append(prestito_str)
-        
-        return "\n".join(formatted_prestiti)
-    
-    except Exception as e:
-        print(f"Errore in format_prestito: {e}")
-        return ""
-    
-    finally:
-        cur.close()
-
 
 
 
