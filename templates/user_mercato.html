@@ -243,6 +243,12 @@
         </div>
     </div>
 </div>
+
+<!-- Elemento nascosto con i dati degli scambi in JSON -->
+<script type="application/json" id="scambi-json-data">
+{{ scambi|tojson }}
+</script>
+
 {% endblock %}
 
 {% block scripts %}
@@ -320,14 +326,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (credits) {
                 items.push(`<strong>Crediti:</strong> ${credits}`);
             }
-            if (loanPlayers) {
-                items.push(`<strong>Prestiti:</strong> ${loanPlayers}`);
+            if (loanPlayers && loanPlayers.trim()) {
+                items.push(`<strong>Prestiti:</strong><br>${loanPlayers.replace(/\n/g, '<br>')}`);
             }
             return items.length > 0 ? items.join('<br>') : '<span class="text-muted">Nessun elemento</span>';
         }
 
-        const offerta = buildTradeContent(scambio.giocatori_offerti_nomi, scambio.crediti_offerti, scambio.giocatori_offerti_prestito_nomi);
-        const richiesta = buildTradeContent(scambio.giocatori_richiesti_nomi, scambio.crediti_richiesti, scambio.giocatori_richiesti_prestito_nomi);
+        const offerta = buildTradeContent(scambio.giocatori_offerti_nomi, scambio.crediti_offerti, scambio.prestiti_offerti_formattati);
+        const richiesta = buildTradeContent(scambio.giocatori_richiesti_nomi, scambio.crediti_richiesti, scambio.prestiti_richiesti_formattati);
         
         // Determina quali bottoni mostrare
         let buttonsHtml = '';

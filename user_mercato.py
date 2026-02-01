@@ -86,6 +86,10 @@ def user_mercato(nome_squadra):
             # Add formatted player names for JS to use, without overwriting original IDs
             s_dict['giocatori_offerti_nomi'] = format_giocatori(s_dict['giocatori_offerti'])
             s_dict['giocatori_richiesti_nomi'] = format_giocatori(s_dict['giocatori_richiesti'])
+            # Add formatted loans associated with the exchange, separated by direction
+            prestiti_offerti, prestiti_richiesti = format_prestito(conn, s_dict['prestito_associato'], s_dict['squadra_proponente'])
+            s_dict['prestiti_offerti_formattati'] = prestiti_offerti
+            s_dict['prestiti_richiesti_formattati'] = prestiti_richiesti
             scambi.append(s_dict)
         
     except Exception as e:
@@ -690,18 +694,19 @@ def annulla_scambio(scambio_id, conn):
 
 
 
-def format_prestito(conn, lista_prestiti):
+def format_prestito(conn, lista_prestiti, squadra_proponente):
     if not lista_prestiti:
-        return ""
+        return "", ""
     
-    formatted_prestiti = []
+    prestiti_offerti = []
+    prestiti_richiesti = []
     cur = None
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         for prestito_id in lista_prestiti:
             cur.execute('''
-                        SELECT g.nome, p.tipo_prestito, p.crediti_riscatto
+                        SELECT g.nome, p.tipo_prestito, p.crediti_riscatto, p.squadra_prestante
                         FROM prestito p
                         JOIN giocatore g
                         ON p.giocatore = g.id
@@ -719,13 +724,18 @@ def format_prestito(conn, lista_prestiti):
                 riscatto_str = f" (risc. {crediti_riscatto})" if crediti_riscatto and crediti_riscatto > 0 else ""
                 
                 prestito_str = f"• {giocatore} [Prestito {tipo_str}{riscatto_str}]"
-                formatted_prestiti.append(prestito_str)
+                
+                # Smista i prestiti in base a chi è la squadra prestante
+                if info_prestito['squadra_prestante'] == squadra_proponente:
+                    prestiti_offerti.append(prestito_str)
+                else:
+                    prestiti_richiesti.append(prestito_str)
         
-        return "\n".join(formatted_prestiti)
+        return "\n".join(prestiti_offerti), "\n".join(prestiti_richiesti)
     
     except Exception as e:
         print(f"Errore in format_prestito: {e}")
-        return ""
+        return "", ""
     
     finally:
         cur.close()
