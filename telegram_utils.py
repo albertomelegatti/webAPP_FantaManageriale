@@ -8,7 +8,6 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from db import get_connection, release_connection
 from user import format_giocatori, formatta_data
-from user_mercato import format_prestito
 
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 
@@ -291,7 +290,6 @@ def scambio_risposta(conn, id_scambio, risposta):
         squadra_destinataria = info_scambio['squadra_destinataria']
         giocatori_offerti_raw = format_giocatori(info_scambio['giocatori_offerti'])
         giocatori_richiesti_raw = format_giocatori(info_scambio['giocatori_richiesti'])
-        # Splitti per virgola e aggiungi bullet e [Definitivo] per ogni giocatore
         giocatori_offerti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_offerti_raw.split(',') if g.strip()]
         giocatori_richiesti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_richiesti_raw.split(',') if g.strip()]
         crediti_offerti = info_scambio['crediti_offerti'] or 0
@@ -632,11 +630,13 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
                     La tua richiesta di terminare in anticipo il prestito del giocatore: {giocatore} è stata accettata.
             ''')
             send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
+            
             text_to_send = textwrap.dedent(f'''
                     📢 COMUNICAZIONE UFFICIALE: 
                     Le squadre {squadra_prestante} e {squadra_ricevente} si sono accordate per terminare anticipatamente il prestito del giocatore: {giocatore}.
             ''')
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+
 
         else:
             text_to_send = textwrap.dedent(f'''
