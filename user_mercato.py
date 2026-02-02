@@ -41,26 +41,7 @@ def user_mercato(nome_squadra):
             # Bottone RIFIUTA scambio
             scambio_id = request.form.get("rifiuta_scambio")
             if scambio_id:
-                cur.execute("SELECT prestito_associato FROM scambio WHERE id = %s", (scambio_id,))
-                scambio = cur.fetchone()
-
-                cur.execute('''
-                            UPDATE scambio
-                            SET stato= 'rifiutato',
-                                data_risposta = NOW() AT TIME ZONE 'Europe/Rome'
-                            WHERE id = %s;
-                ''', (scambio_id,))
-                
-                # Rifiuta anche i prestiti collegati
-                if scambio and scambio['prestito_associato']:
-                    cur.execute('''
-                                UPDATE prestito
-                                SET stato = 'rifiutato'
-                                WHERE id = ANY(%s) AND stato = 'in_attesa';
-                    ''', (scambio['prestito_associato'],))
-
-                conn.commit()
-                telegram_utils.scambio_risposta(conn, scambio_id, "Rifiutato")
+                rifiuta_scambio(scambio_id, conn)
 
 
 
@@ -687,6 +668,48 @@ def annulla_scambio(scambio_id, conn):
 
     finally:
         cur.close()
+        
+        
+
+def rifiuta_scambio(scambio_id, conn):
+
+    cur = None
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cur.execute('''
+                    SELECT prestito_associato 
+                    FROM scambio 
+                    WHERE id = %s
+        ''', (scambio_id,))
+        scambio = cur.fetchone()
+        
+        # Aggiorno lo stato
+        cur.execute('''
+                    UPDATE scambio
+                    SET stato= 'rifiutato',
+                        data_risposta = NOW() AT TIME ZONE 'Europe/Rome'
+                    WHERE id = %s;
+        ''', (scambio_id,))
+        
+        # Rifiuta anche i prestiti collegati
+        if scambio and scambio['prestito_associato']:
+            cur.execute('''
+                        UPDATE prestito
+                        SET stato = 'rifiutato'
+                        WHERE id = ANY(%s) AND stato = 'in_attesa';
+            ''', (scambio['prestito_associato'],))
+        conn.commit()
+        telegram_utils.scambio_risposta(conn, scambio_id, "Rifiutato")
+        
+    except Exception as e:
+        print(f"Errore durante il rifiuto dello scambio: {e}")
+        conn.rollback()
+    
+    finally:
+        cur.close()
+
+
 
 
 
