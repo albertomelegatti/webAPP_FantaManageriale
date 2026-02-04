@@ -41,26 +41,7 @@ def user_mercato(nome_squadra):
             # Bottone RIFIUTA scambio
             scambio_id = request.form.get("rifiuta_scambio")
             if scambio_id:
-                cur.execute("SELECT prestito_associato FROM scambio WHERE id = %s", (scambio_id,))
-                scambio = cur.fetchone()
-
-                cur.execute('''
-                            UPDATE scambio
-                            SET stato= 'rifiutato',
-                                data_risposta = NOW() AT TIME ZONE 'Europe/Rome'
-                            WHERE id = %s;
-                ''', (scambio_id,))
-                
-                # Rifiuta anche i prestiti collegati
-                if scambio and scambio['prestito_associato']:
-                    cur.execute('''
-                                UPDATE prestito
-                                SET stato = 'rifiutato'
-                                WHERE id = ANY(%s) AND stato = 'in_attesa';
-                    ''', (scambio['prestito_associato'],))
-
-                conn.commit()
-                telegram_utils.scambio_risposta(conn, scambio_id, "Rifiutato")
+                rifiuta_scambio(scambio_id, conn)
 
 
 
@@ -83,10 +64,8 @@ def user_mercato(nome_squadra):
         scambi = []
         for s_raw in scambi_raw:
             s_dict = dict(s_raw)
-            # Add formatted player names for JS to use, without overwriting original IDs
             s_dict['giocatori_offerti_nomi'] = format_giocatori(s_dict['giocatori_offerti'])
             s_dict['giocatori_richiesti_nomi'] = format_giocatori(s_dict['giocatori_richiesti'])
-            # Add formatted loans associated with the exchange, separated by direction
             prestiti_offerti, prestiti_richiesti = format_prestito(conn, s_dict['prestito_associato'], s_dict['squadra_proponente'])
             s_dict['prestiti_offerti_formattati'] = prestiti_offerti
             s_dict['prestiti_richiesti_formattati'] = prestiti_richiesti
@@ -144,14 +123,6 @@ def visualizza_proposta(scambio_id):
         release_connection(conn, cur)
         
         
-
-
-
-
-
-
-
-
 
 
 
@@ -687,6 +658,48 @@ def annulla_scambio(scambio_id, conn):
 
     finally:
         cur.close()
+        
+        
+
+def rifiuta_scambio(scambio_id, conn):
+
+    cur = None
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cur.execute('''
+                    SELECT prestito_associato 
+                    FROM scambio 
+                    WHERE id = %s
+        ''', (scambio_id,))
+        scambio = cur.fetchone()
+        
+        # Aggiorno lo stato
+        cur.execute('''
+                    UPDATE scambio
+                    SET stato= 'rifiutato',
+                        data_risposta = NOW() AT TIME ZONE 'Europe/Rome'
+                    WHERE id = %s;
+        ''', (scambio_id,))
+        
+        # Rifiuta anche i prestiti collegati
+        if scambio and scambio['prestito_associato']:
+            cur.execute('''
+                        UPDATE prestito
+                        SET stato = 'rifiutato'
+                        WHERE id = ANY(%s) AND stato = 'in_attesa';
+            ''', (scambio['prestito_associato'],))
+        conn.commit()
+        telegram_utils.scambio_risposta(conn, scambio_id, "Rifiutato")
+        
+    except Exception as e:
+        print(f"Errore durante il rifiuto dello scambio: {e}")
+        conn.rollback()
+    
+    finally:
+        cur.close()
+
+
 
 
 
