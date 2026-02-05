@@ -205,6 +205,15 @@ def nuovo_scambio(nome_squadra):
                 flash("Devi richiedere almeno un giocatore o dei crediti.", "warning")
                 return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
             
+            # Validazione: crediti offerti non superano crediti disponibili
+            crediti_squad = get_crediti_squadra(conn, nome_squadra)
+            offerta_tot = get_offerta_totale(conn, nome_squadra)
+            crediti_max_offribili = crediti_squad - offerta_tot
+            
+            if crediti_offerti > crediti_max_offribili:
+                flash(f"❌ Crediti insufficienti. Puoi offrire massimo {crediti_max_offribili} crediti.", "danger")
+                return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
+            
 
 
 
@@ -303,9 +312,9 @@ def nuovo_scambio(nome_squadra):
         cur.execute('''
             SELECT nome, crediti 
             FROM squadra 
-            WHERE nome <> 'Svincolato'
+            WHERE nome NOT IN ('Svincolati', %s)
             ORDER BY nome;
-        ''')
+        ''', (nome_squadra,))
         squadre_raw = cur.fetchall()
 
         squadre = []
@@ -491,7 +500,7 @@ def effettua_scambio(id, conn, nome_squadra):
     # Se lo scambio non è valido non fare niente
     if controlla_scambio(id, conn) == False:
         flash("❌ Non è possibile avviare questo scambio.", "danger")
-        return
+        return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
     
 
     # Se lo scambio è valido, esegui tutti i passaggi.
@@ -634,11 +643,10 @@ def effettua_scambio(id, conn, nome_squadra):
         return True
     
     except Exception as e:
-        if conn:
-            conn.rollback()
+        conn.rollback()
         print(f"Errore durante l'esecuzione dello scambio: {e}")
         flash("❌ Errore nell'esecuzione dello scambio. Rivedere i valori dello scambio.", "danger")
-        return False
+        return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
     
     finally:
         cur.close()

@@ -332,49 +332,52 @@ def scambio_risposta(conn, id_scambio, risposta):
             richiesta_text += "\n" + "\n".join(prestiti_richiesti)
 
         if risposta == "Accettato":
-            text_to_send = f'''SCAMBIO ACCETTATO
-La squadra {squadra_destinataria} ha accettato la tua offerta di scambio.
+            text_to_send = textwrap.dedent(f'''\
+                    SCAMBIO ACCETTATO
+                    La squadra {squadra_destinataria} ha accettato la tua offerta di scambio.
 
-Offerta:
-{offerta_text}
-💰 Crediti offerti: {crediti_offerti}
+                    Offerta:
+                    {offerta_text}
+                    💰 Crediti offerti: {crediti_offerti}
 
-Richiesta:
-{richiesta_text}
-💰 Crediti richiesti: {crediti_richiesti}
-'''
+                    Richiesta:
+                    {richiesta_text}
+                    💰 Crediti richiesti: {crediti_richiesti}
+            ''')
             send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
-            # invia notifica a tutte le squadre
-            text_to_send = f'''📢 SCAMBIO UFFICIALE: 🔥
-Le squadre {squadra_proponente} e {squadra_destinataria} hanno concluso un scambio:
+            # Invia notifica a tutte le squadre
+            text_to_send = textwrap.dedent(f'''\
+                    📢 SCAMBIO UFFICIALE: 🔥
+                    Le squadre {squadra_proponente} e {squadra_destinataria} hanno concluso un scambio:
 
-✅ {squadra_proponente} riceve:
-⚽
-{richiesta_text}
-🪙 {crediti_richiesti} crediti
+                    ✅ {squadra_proponente} riceve:
+                    ⚽
+                    {richiesta_text}
+                    🪙 {crediti_richiesti} crediti
 
-✅ {squadra_destinataria} riceve:
-⚽
-{offerta_text}
-🪙 {crediti_offerti} crediti
+                    ✅ {squadra_destinataria} riceve:
+                    ⚽
+                    {offerta_text}
+                    🪙 {crediti_offerti} crediti
 
-📝 Condizioni/Bonus: {messaggio}
-'''
+                    📝 Condizioni/Bonus: {messaggio}
+            ''')
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
 
         else:
-            text_to_send = f'''SCAMBIO RIFIUTATO
-La squadra {squadra_destinataria} ha rifiutato la tua offerta di scambio.
+            text_to_send = textwrap.dedent(f'''\
+                    SCAMBIO RIFIUTATO
+                    La squadra {squadra_destinataria} ha rifiutato la tua offerta di scambio.
 
-Offerta:
-{offerta_text}
-💰 Crediti offerti: {crediti_offerti}
+                    Offerta:
+                    {offerta_text}
+                    💰 Crediti offerti: {crediti_offerti}
 
-Richiesta:
-{richiesta_text}
-💰 Crediti richiesti: {crediti_richiesti}
-'''
+                    Richiesta:
+                    {richiesta_text}
+                    💰 Crediti richiesti: {crediti_richiesti}
+            ''')
             send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
     except Exception as e:
