@@ -153,6 +153,81 @@ h1 {
     transform: translateY(-1px);
 }
 
+/* =====================================================
+    Classi unificate per bottoni (tutte le dimensioni)
+    ===================================================== */
+
+/* Bottone grande (predefinito) */
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* Bottone medio */
+.btn-md {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* Bottone piccolo */
+.btn-sm {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* Bottone extra piccolo (tabelle, liste) */
+.btn-xs {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 6px;
+}
+
+/* Bottone per tabelle (grigio neutro) */
+.btn-table {
+    background-color: var(--muted);
+    color: var(--white);
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 6px;
+    display: inline-block;
+    border: none;
+    cursor: pointer;
+    transition: background 0.18s ease;
+}
+
+.btn-table:hover {
+    background-color: #5a6268;
+}
+
+/* Bottone viola (logout, cambio password) */
+.btn-purple {
+    background-color: #6f42c1;
+    color: var(--white);
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 10px;
+    display: inline-block;
+    border: none;
+    cursor: pointer;
+    transition: background 0.18s ease, transform 0.08s ease;
+}
+
+.btn-purple:hover {
+    background-color: #553399;
+    transform: translateY(-2px);
+}
+
+.btn-purple:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.25);
+}
+
 /* Slot cards (scambio) */
 .slot-card {
     border-radius: 12px;
@@ -173,6 +248,139 @@ h1 {
     margin-bottom: 0.25rem;
 }
 
+/* =====================================================
+    Stili per la sezione Mercato (scambi)
+    ===================================================== */
+
+/* Stile per la riga dei dettagli per rimuovere i bordi della tabella */
+.details-row > td {
+    padding: 0 !important;
+    border: none !important;
+    background-color: transparent !important;
+}
+
+/* Contenitore principale della visualizzazione dei dettagli dello scambio */
+.trade-details-container {
+    padding: 1.5rem;
+    margin: 1rem 0;
+    border-radius: 0.75rem;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+body.dark-mode .trade-details-container {
+    background-color: #2a2a2a;
+    border-color: #444;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Layout a griglia per le sezioni "Offerta" e "Richiesta" */
+.trade-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+/* Card per singola sezione (Offerta/Richiesta) */
+.trade-side {
+    padding: 1.2rem;
+    border-radius: 0.5rem;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+body.dark-mode .trade-side {
+    background-color: #1f1f1f;
+    border-color: #3a3a3a;
+}
+
+/* Titolo della sezione */
+.trade-side-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+body.dark-mode .trade-side-title {
+    color: #e0e0e0;
+}
+
+.trade-side-title .icon {
+    font-size: 1.25rem;
+}
+
+/* Contenuto della card */
+.trade-content {
+    color: #555;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+body.dark-mode .trade-content {
+    color: #b0b0b0;
+}
+
+body.dark-mode .trade-content strong {
+    color: #e0e0e0;
+}
+
+.trade-content strong {
+    font-weight: 700;
+    color: #333;
+}
+
+/* Contenitore per i bottoni di azione */
+.trade-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+/* Messaggio di avviso per proposte non valide */
+.alert-invalid {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+    width: 100%;
+    margin-top: 1rem;
+}
+
+body.dark-mode .alert-invalid {
+    background-color: #5a2b2f;
+    border-color: #a74d56;
+    color: #f5c6cb;
+}
+
+/* Responsive per schermi più piccoli */
+@media (max-width: 768px) {
+    .trade-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    .trade-details-container { 
+        padding: 1rem;
+    }
+    .trade-side { 
+        padding: 1rem; 
+    }
+    .trade-actions {
+        gap: 0.5rem;
+    }
+}
 .slot-box div {
     color: #1b5e20;
     font-weight: 700;
@@ -769,7 +977,7 @@ h1 {
 
 /* Media query per schermi medi (tablet) */
 @media (max-width: 980px) {
-    .btn { min-width: 20%; padding: 0.9em 1.5em; font-size: 1.05rem; }
+    .buttons .btn { width: 9em; }
     .buttons { gap: 4%; row-gap: 2em; }
     .logo { width: 28%; max-width: 140px; }
     h1 { font-size: 2rem; }
@@ -779,7 +987,7 @@ h1 {
 
 /* Media query per schermi piccoli (smartphone) */
 @media (max-width: 680px) {
-    .btn { min-width: 40%; padding: 1em 1.2em; font-size: 1rem; margin: 0.5em; }
+    .buttons .btn { width: 9em; padding: 1em 1.2em; font-size: 1rem; }
     .buttons { gap: 3%; row-gap: 0.5em; padding: 0 2%; }
     .logo { width: 38%; max-width: 120px; }
     h1 { font-size: 1.7rem; }

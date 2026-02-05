@@ -441,6 +441,38 @@ def controlla_scambio(id, conn):
         if slot_dest_finali > 30:
             return False
 
+        # Controllo che le squadre non superino 2 prestiti disponibili
+        prestiti_prop_attuali = get_slot_prestiti_in(conn, squadra_proponente)
+        prestiti_dest_attuali = get_slot_prestiti_in(conn, squadra_destinataria)
+
+        # Conteggio prestiti collegati allo scambio
+        prestiti_offerti_count = 0
+        prestiti_richiesti_count = 0
+
+        if scambio['prestito_associato']:
+            cur.execute('''
+                        SELECT squadra_prestante, squadra_ricevente
+                        FROM prestito
+                        WHERE id = ANY(%s) AND stato = 'in_attesa';
+            ''', (scambio['prestito_associato'],))
+            prestiti_collegati = cur.fetchall()
+            
+            for prestito in prestiti_collegati:
+                if prestito['squadra_prestante'] == squadra_proponente:
+                    prestiti_offerti_count += 1
+                else:
+                    prestiti_richiesti_count += 1
+
+        # Verifica prestiti post-scambio
+        prestiti_prop_finali = prestiti_prop_attuali + prestiti_richiesti_count
+        prestiti_dest_finali = prestiti_dest_attuali + prestiti_offerti_count
+
+        if prestiti_prop_finali > 2:
+            return False
+
+        if prestiti_dest_finali > 2:
+            return False
+
         return True
 
     except Exception as e:
