@@ -473,8 +473,58 @@ def crediti_stadi_slot():
 
 @app.route("/listone")
 def listone():
-    link_fantacalcio_it = "https://www.fantacalcio.it/quotazioni-fantacalcio"
-    return redirect(link_fantacalcio_it)
+    
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cur.execute('''
+                    SELECT *
+                    FROM giocatore
+                    ORDER BY id;            
+        ''')
+        giocatori_raw = cur.fetchall()
+        giocatori = []
+        
+        for g in giocatori_raw:
+            ruolo = g['ruolo'].strip("{}")
+            giocatori.append({
+                "nome": g['nome'],
+                "squadra_att": g['squadra_att'],
+                "detentore_cartellino": g['detentore_cartellino'],
+                "quot_att_mantra": g['quot_att_mantra'],
+                "tipo_contratto": g['tipo_contratto'],
+                "ruolo": ruolo,
+                "costo": g['costo']
+            })
+            
+        return render_template("listone.html", giocatori=giocatori)
+    
+    except Exception as e:
+        print("Errore listone:", e)
+        flash("❌ Errore nel caricamento del listone.", "danger")
+        return redirect(url_for('home'))
+    
+    finally:
+        release_connection(conn, cur)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 
 @app.route("/aste")
