@@ -2,6 +2,56 @@
 
 Una piattaforma web completa per la gestione di un campionato di fantacalcio. Consente alle squadre di partecipare ad aste, gestire trasferimenti di giocatori, organizzare prestiti e coordinare scambi, il tutto attraverso un'interfaccia intuitiva con notifiche in tempo reale via Telegram.
 
+🌐 **[https://webapp-fantamanageriale.onrender.com/](https://webapp-fantamanageriale.onrender.com/)**
+
+## Tech Stack
+
+### Backend
+- **Framework**: Flask 3.0.0 - microframework Python leggero e scalabile
+- **Linguaggio**: Python 3.11
+- **Gestione Database**: SQLAlchemy ORM + psycopg2
+- **Server**: Gunicorn web server con preload per prestazioni
+- **Sessioni**: Flask-Session con database backend
+
+### Database
+- **Sistema**: PostgreSQL (Supabase Hosted)
+- **Connection Pooling**: ThreadedConnectionPool per gestione efficiente connessioni
+- **Integrazione**: Webhook real-time per aggiornamenti aste
+- **Gestione Transazioni**: Isolation level REPEATABLE_READ per integrità dati
+
+### Frontend
+- **Template Engine**: Jinja2 (integrato Flask)
+- **Styling**: CSS custom + dark mode
+- **Interattività**: JavaScript vanilla
+- **Interfaccia Responsiva**: HTML5 semantico
+
+### Integrazioni Esterne
+- **Telegram API**: Notifiche real-time e gestione bot
+- **OpenAI / NVIDIA API**: Chatbot regolamentare con modello Deepseek
+- **Supabase**: Hosting PostgreSQL con webhook
+
+### DevOps & Deployment
+- **Containerization**: Docker + Docker Compose
+- **Base Image**: Python 3.11-slim
+- **Dipendenze di Sistema**: gcc, postgresql-client
+- **Orchestration**: Docker Compose per ambiente locale
+- **Procfile**: Supporto Heroku per deployment in cloud
+
+## Backend Database (Supabase)
+
+L'applicazione utilizza **Supabase** per l'hosting del database PostgreSQL e sfrutta le seguenti funzionalità:
+
+- **Tables Principali**: squadra, giocatore, asta, prestito, scambio
+- **Real-time Webhooks**: Configurati per aggiornamenti dello stato aste
+- **Connection Pool**: Gestione efficiente connessioni con minconn=1, maxconn=5
+- **Authentication URL**: Ereditata dalla stringa di connessione
+
+### Webhook Implementati
+
+Il webhook `/webhook/update_stato_asta` riceve aggiornamenti da Supabase quando cambia lo stato di un'asta e:
+- Invia notifica Telegram quando un'asta inizia (mostra_interesse → in_corso)
+- Invia notifica quando un'asta conclude (in_corso → conclusa)
+
 ## Caratteristiche Principali
 
 ### Gestione Aste
@@ -51,39 +101,6 @@ Una piattaforma web completa per la gestione di un campionato di fantacalcio. Co
 - Comunicazioni dirette tra amministrazione e squadre
 - Sistema webhook per aggiornamenti dal database
 
-## Tech Stack
-
-### Backend
-- **Framework**: Flask 3.0.0 - microframework Python leggero e scalabile
-- **Linguaggio**: Python 3.11
-- **Gestione Database**: SQLAlchemy ORM + psycopg2
-- **Server**: Gunicorn web server con preload per prestazioni
-- **Sessioni**: Flask-Session con database backend
-
-### Database
-- **Sistema**: PostgreSQL (Supabase Hosted)
-- **Connection Pooling**: ThreadedConnectionPool per gestione efficiente connessioni
-- **Integrazione**: Webhook real-time per aggiornamenti aste
-- **Gestione Transazioni**: Isolation level REPEATABLE_READ per integrità dati
-
-### Frontend
-- **Template Engine**: Jinja2 (integrato Flask)
-- **Styling**: CSS custom + dark mode
-- **Interattività**: JavaScript vanilla
-- **Interfaccia Responsiva**: HTML5 semantico
-
-### Integrazioni Esterne
-- **Telegram API**: Notifiche real-time e gestione bot
-- **OpenAI / NVIDIA API**: Chatbot regolamentare con modello Deepseek
-- **Supabase**: Hosting PostgreSQL con webhook
-
-### DevOps & Deployment
-- **Containerization**: Docker + Docker Compose
-- **Base Image**: Python 3.11-slim
-- **Dipendenze di Sistema**: gcc, postgresql-client
-- **Orchestration**: Docker Compose per ambiente locale
-- **Procfile**: Supporto Heroku per deployment in cloud
-
 ## Struttura del Progetto
 
 ```
@@ -107,21 +124,6 @@ Una piattaforma web completa per la gestione di un campionato di fantacalcio. Co
 ├── static/                   # Asset statici (CSS, JS, immagini)
 └── TelegramBot/             # Script utilità Telegram bot
 ```
-
-## Backend Database (Supabase)
-
-L'applicazione utilizza **Supabase** per l'hosting del database PostgreSQL e sfrutta le seguenti funzionalità:
-
-- **Tables Principali**: squadra, giocatore, asta, prestito, scambio
-- **Real-time Webhooks**: Configurati per aggiornamenti dello stato aste
-- **Connection Pool**: Gestione efficiente connessioni con minconn=1, maxconn=5
-- **Authentication URL**: Ereditata dalla stringa di connessione
-
-### Webhook Implementati
-
-Il webhook `/webhook/update_stato_asta` riceve aggiornamenti da Supabase quando cambia lo stato di un'asta e:
-- Invia notifica Telegram quando un'asta inizia (mostra_interesse → in_corso)
-- Invia notifica quando un'asta conclude (in_corso → conclusa)
 
 ## Deployment in Cloud
 
