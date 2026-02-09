@@ -172,7 +172,9 @@ def squadre():
         cur.execute('''
                     SELECT nome 
                     FROM squadra 
-                    WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
+                    WHERE nome <> 'Svincolato' 
+                    ORDER BY nome ASC;
+        ''')
         squadre = [row["nome"] for row in cur.fetchall()]
 
         return render_template("squadre.html", squadre=squadre)
@@ -195,23 +197,26 @@ def dashboard_squadra(nome_squadra):
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # STADIO
+        # STADIO E CREDITI
         cur.execute('''
-                    SELECT nome, proprietario, livello 
-                    FROM stadio 
-                    WHERE proprietario = %s;
+                    SELECT s.nome AS stadio_nome, 
+                           s.proprietario, 
+                           s.livello, 
+                           sq.username, 
+                           sq.crediti 
+                    FROM stadio s 
+                    JOIN squadra sq ON s.proprietario = sq.nome
+                    WHERE sq.nome = %s;
         ''', (nome_squadra,))
-        stadio = cur.fetchone()
-
-        # CREDITI
-        cur.execute('''
-                    SELECT username, crediti 
-                    FROM squadra 
-                    WHERE nome = %s;
-        ''', (nome_squadra,))
-        squadra_raw = cur.fetchone()
-        username = squadra_raw["username"]
-        crediti = squadra_raw["crediti"]
+        result = cur.fetchone()
+        
+        stadio = {
+            "nome": result["stadio_nome"],
+            "proprietario": result["proprietario"],
+            "livello": result["livello"]
+        }
+        username = result["username"]
+        crediti = result["crediti"]
 
         # CONTEGGIO SLOT OCCUPATI
         slot_occupati = get_slot_occupati(conn, nome_squadra)
@@ -257,15 +262,6 @@ def dashboard_squadra(nome_squadra):
                 "quot_att_mantra": g['quot_att_mantra']
             })
 
-        # CONTEGGIO PRESTITI IN
-        cur.execute('''
-                    SELECT COUNT(id) AS prestiti_in_num
-                    FROM giocatore
-                    WHERE squadra_att = %s 
-                        AND tipo_contratto = 'Fanta-Prestito';
-        ''', (nome_squadra,))
-        prestiti_in_num = cur.fetchone()["prestiti_in_num"]
-
         # PRESTITI IN
         prestiti_in = []
         cur.execute('''
@@ -275,6 +271,8 @@ def dashboard_squadra(nome_squadra):
                         AND tipo_contratto = 'Fanta-Prestito';
         ''', (nome_squadra,))
         prestiti_in_raw = cur.fetchall()
+        
+        prestiti_in_num = len(prestiti_in_raw)
 
         for g in prestiti_in_raw:
             ruolo = g['ruolo'].strip("{}")
