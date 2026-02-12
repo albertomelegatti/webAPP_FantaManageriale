@@ -4,23 +4,16 @@
 <div class="container mt-5">
     <div class="text-center">
         <h1 class="mb-4">Home admin</h1>
+    </div>
 
-        <!-- Bottone Gestione Crediti -->
-        <a href="{{ url_for('admin.admin_crediti') }}" class="btn btn-primary btn-lg">Gestione Crediti</a>
-
-        <!-- Bottone Invio Messaggi -->
-         <a href="{{ url_for('admin.invia_comunicazione') }}" class="btn btn-primary btn-lg">Invio Messaggio</a>
-
-        <!-- Bottone Gestione Richieste Modifica COntratto -->
-         <a href="{{ url_for('admin.richiesta_modifica_contratto') }}" class="btn btn-primary btn-lg">Richieste Modifica Contratto</a>
-        
-        <div class="mt-3">
-            <a href="/logout" class="btn btn-lg mb-3" 
-               style="background-color: #6f42c1; border-color: #6f42c1; color: white;">
-                <i class="bi bi-box-arrow-right"></i> Logout
-            </a>
-        </div>
-        
+    <!-- Bottoni disposti in grid responsive come la homepage -->
+    <div class="buttons">
+        <a href="{{ url_for('admin.admin_crediti') }}" class="btn">Gestione Crediti</a>
+        <a href="{{ url_for('admin.invia_comunicazione') }}" class="btn">Invio Messaggio</a>
+        <a href="{{ url_for('admin.richiesta_modifica_contratto') }}" class="btn">Richieste Modifica Contratto</a>
+        <a href="/logout" class="btn btn-purple">
+            <i class="bi bi-box-arrow-right"></i> Logout
+        </a>
     </div>
 </div>
 {% endblock %}

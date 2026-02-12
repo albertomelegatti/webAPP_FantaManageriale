@@ -34,56 +34,53 @@ def user_aste(nome_squadra):
             if asta_id:
 
                 # Controllo che l'asta non sia scaduta nel mentre che la pagina era aperta
-                tempo_scaduto = False
+                # Usa FOR UPDATE per lockare la riga ed evitare race condition
                 cur.execute('''
-                            SELECT stato
+                            SELECT stato, partecipanti
                             FROM asta
-                            WHERE id = %s;
+                            WHERE id = %s
+                            FOR UPDATE;
                 ''', (asta_id,))
-                stato = cur.fetchone()['stato']
+                asta_data = cur.fetchone()
+                
+                if not asta_data:
+                    flash("❌ Asta non trovata.", "danger")
+                    return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
+                    
+                stato = asta_data['stato']
 
                 if stato != 'mostra_interesse':
-                    tempo_scaduto = True
                     flash("❌ Iscrizione fallita, tempo scaduto.", "danger")
+                    conn.commit()
                     return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
 
+                # Controllo se l'utente loggato è già iscritto all'asta
+                gia_iscritto = nome_squadra in asta_data['partecipanti']
                 
-                if tempo_scaduto == False:
-                    # Controllo se l'utente loggato è già iscritto all'asta, a volte capita che un utente possa iscriversi due volte.
+                # Se non gia iscritto, iscriviti
+                if not gia_iscritto:
                     cur.execute('''
-                                SELECT %s = ANY(partecipanti) AS gia_iscritto
-                                FROM asta
+                                UPDATE asta
+                                SET partecipanti = array_append(partecipanti, %s)
                                 WHERE id = %s;
                     ''', (nome_squadra, asta_id))
-                    gia_iscritto = cur.fetchone()["gia_iscritto"]
-                
-                    # Se non gia iscritto, iscriviti
-                    if not gia_iscritto:
-                        cur.execute('''
-                                    UPDATE asta
-                                    SET partecipanti = array_append(partecipanti, %s)
-                                    WHERE id = %s;
-                        ''', (nome_squadra, asta_id))
-                        conn.commit()
-
-                        # Recupero info id giocatore dell'asta
-                        cur.execute('''
-                                    SELECT giocatore 
-                                    FROM asta 
-                                    WHERE id = %s;
-                        ''', (asta_id,))
-                        id_giocatore = cur.fetchone()['giocatore']
-
-                        # Recupero info sul nome del giocatore
-                        cur.execute('''
-                                    SELECT nome
-                                    FROM giocatore
-                                    WHERE id = %s;
-                        ''', (id_giocatore,))
-                        nome_giocatore = cur.fetchone()['nome']
-
-                        flash(f"✅ Ti sei iscritto all'asta per { nome_giocatore }.", "success")
-                        return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
+                    
+                    # Recupero info giocatore dell'asta (senza fare query aggiuntiva)
+                    cur.execute('''
+                                SELECT g.nome
+                                FROM giocatore g
+                                WHERE g.id = (SELECT giocatore FROM asta WHERE id = %s);
+                    ''', (asta_id,))
+                    nome_giocatore_row = cur.fetchone()
+                    nome_giocatore = nome_giocatore_row['nome'] if nome_giocatore_row else "sconosciuto"
+                    
+                    conn.commit()
+                    flash(f"✅ Ti sei iscritto all'asta per {nome_giocatore}.", "success")
+                    return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
+                else:
+                    conn.commit()
+                    flash("❌ Sei già iscritto a questa asta.", "warning")
+                    return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
             
 
             
@@ -251,16 +248,18 @@ def nuova_asta(nome_squadra):
                 telegram_utils.nuova_asta(conn, asta_id)
                 return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
             
+            
+            
             # Asta per giocatore già presente nel database
             giocatore_scelto = request.form.get("giocatore", "").strip()
             if giocatore_scelto and giocatore_scelto not in giocatori_disponibili_per_asta:
                 flash("❌ Giocatore non valido o già in un'asta.", "danger")
                 return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
 
+
             # Gestione asta per giocatore esistente - continua solo se c'è un giocatore selezionato
             if giocatore_scelto:
                 try:
-                    # Locka il giocatore per evitare race condition
                     cur.execute('''
                                 SELECT id 
                                 FROM giocatore 
@@ -330,33 +329,66 @@ def singola_asta_attiva(asta_id, nome_squadra):
             asta_id_rinuncia = request.form.get("bottone_rinuncia")
             if asta_id_rinuncia:
                 cur.execute('''
-                            UPDATE asta
-                            SET partecipanti = array_remove(partecipanti, %s)
-                            WHERE id = %s;
-                ''', (nome_squadra, asta_id_rinuncia))
-                conn.commit()
-                flash("✅ Hai rinunciato all'asta.", "success")
+                            SELECT stato
+                            FROM asta
+                            WHERE id = %s
+                            FOR UPDATE;
+                ''', (asta_id_rinuncia,))
+                asta_check = cur.fetchone()
+                
+                if asta_check and asta_check['stato'] in ('mostra_interesse', 'in_corso'):
+                    cur.execute('''
+                                UPDATE asta
+                                SET partecipanti = array_remove(partecipanti, %s)
+                                WHERE id = %s;
+                    ''', (nome_squadra, asta_id_rinuncia))
+                    conn.commit()
+                    flash("✅ Hai rinunciato all'asta.", "success")
+                else:
+                    flash("❌ Non puoi rinunciare a questa asta.", "danger")
                 return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
 
             # Bottone RILANCIA OFFERTA
             nuova_offerta = request.form.get("bottone_rilancia")
             if nuova_offerta:
+                try:
+                    nuova_offerta = int(nuova_offerta)
+                except ValueError:
+                    flash("❌ Valore offerta non valido.", "danger")
+                    return redirect(url_for("aste.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
+                    
                 # Blocca la riga dell'asta per aggiornamenti concorrenti
                 cur.execute('''
-                            SELECT ultima_offerta, squadra_vincente, stato
+                            SELECT ultima_offerta, squadra_vincente, stato, tempo_fine_asta
                             FROM asta 
                             WHERE id = %s FOR UPDATE;
                 ''', (asta_id,))
                 asta_dati = cur.fetchone()
 
-                # Controllo sullo stato dell'asta prima del rilancio
-                if asta_dati['stato'] != 'in_corso':
-                    flash("Tempo scaduto, asta terminata.", "danger")
+                if not asta_dati:
+                    flash("❌ Asta non trovata.", "danger")
+                    conn.commit()
                     return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
 
+                # Controllo sullo stato dell'asta prima del rilancio
+                if asta_dati['stato'] != 'in_corso':
+                    flash("❌ Tempo scaduto, asta terminata.", "danger")
+                    conn.commit()
+                    return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
+                
+                # Controllo che il tempo non sia effettivamente scaduto
+                import datetime as dt_module
+                tempo_fine = asta_dati['tempo_fine_asta']
+                if isinstance(tempo_fine, str):
+                    tempo_fine = dt_module.datetime.fromisoformat(tempo_fine.replace('Z', '+00:00')).replace(tzinfo=None)
+                
+                if dt_module.datetime.now() > tempo_fine:
+                    flash("❌ Asta scaduta, non puoi piazzare altre offerte.", "danger")
+                    conn.commit()
+                    return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
 
                 # Controllo sui valori dell'asta prima di rilanciare
-                if asta_dati['ultima_offerta'] < int(nuova_offerta) and asta_dati['squadra_vincente']:
+                if asta_dati['ultima_offerta'] and asta_dati['ultima_offerta'] < nuova_offerta and asta_dati['squadra_vincente']:
 
                     cur.execute('''
                         UPDATE asta
@@ -370,7 +402,8 @@ def singola_asta_attiva(asta_id, nome_squadra):
                     telegram_utils.asta_rilanciata(conn, asta_id)
                     return redirect(url_for("aste.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
                 
-                flash("❌ Attenzione, valori non aggiornati, verrai reindirizzato alla pagina aggiornata.", "danger")
+                flash("❌ Offerta non valida. Verifica il valore e riprova.", "danger")
+                conn.commit()
                 return redirect(url_for("aste.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
 
 

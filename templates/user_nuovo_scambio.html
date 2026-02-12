@@ -551,6 +551,60 @@ document.addEventListener("DOMContentLoaded", () => {
     loan1Body.classList.toggle('d-none', !document.getElementById('enable_prestito1').checked);
     loan2Body.classList.toggle('d-none', !document.getElementById('enable_prestito2').checked);
 
+    function updateAvailablePlayersForLoan() {
+        // Ottiene i giocatori selezionati nello scambio
+        const giocatoriOfferti = selectOfferti.items.map(id => String(id));
+        const giocatoriRichiesti = selectRichiesti.items.map(id => String(id));
+        
+        // Filtra i giocatori disponibili per i prestiti offerti (escludi quelli in giocatori_offerti)
+        const availableForLoanOff = allOptions.filter(g => 
+            !giocatoriOfferti.includes(String(g.id)) && g.squadra_att === nome_squadra
+        );
+        
+        // Filtra i giocatori disponibili per i prestiti richiesti (escludi quelli in giocatori_richiesti)
+        const availableForLoanRich = allOptions.filter(g => 
+            !giocatoriRichiesti.includes(String(g.id))
+        );
+        
+        // Aggiorna selectPrestito1Off
+        selectPrestito1Off.clearOptions();
+        selectPrestito1Off.clearCache();
+        availableForLoanOff.forEach(g => {
+            selectPrestito1Off.addOption({ value: g.id, text: g.nome });
+        });
+        selectPrestito1Off.refreshOptions(false);
+        
+        // Aggiorna selectPrestito2Off
+        selectPrestito2Off.clearOptions();
+        selectPrestito2Off.clearCache();
+        availableForLoanOff.forEach(g => {
+            selectPrestito2Off.addOption({ value: g.id, text: g.nome });
+        });
+        selectPrestito2Off.refreshOptions(false);
+        
+        // Aggiorna selectPrestito1Rich (prende da allOptions dato che la controparte è già filtrata dal backend)
+        selectPrestito1Rich.clearOptions();
+        selectPrestito1Rich.clearCache();
+        availableForLoanRich.forEach(g => {
+            // Filtra solo se è della squadra giusta
+            if (selectSquadra.value && g.squadra_att === selectSquadra.value) {
+                selectPrestito1Rich.addOption({ value: g.id, text: g.nome });
+            }
+        });
+        selectPrestito1Rich.refreshOptions(false);
+        
+        // Aggiorna selectPrestito2Rich
+        selectPrestito2Rich.clearOptions();
+        selectPrestito2Rich.clearCache();
+        availableForLoanRich.forEach(g => {
+            // Filtra solo se è della squadra giusta
+            if (selectSquadra.value && g.squadra_att === selectSquadra.value) {
+                selectPrestito2Rich.addOption({ value: g.id, text: g.nome });
+            }
+        });
+        selectPrestito2Rich.refreshOptions(false);
+    }
+
     function updateMaxItems() {
         const destOption = selectSquadra.options[selectSquadra.selectedIndex];
         const destFreeSlots = destOption ? parseInt(destOption.dataset.slotLiberi) || 0 : 0;
@@ -583,15 +637,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const myFreeSlots = 2 - mySlotPrestiti;  // 2 = nessun occupato, 1 = uno occupato, 0 = tutti occupati
         const destFreeSlots = 2 - destSlotPrestiti;
         
-        // Prestito 1 OFFERTO: abilitato se ho almeno 1 slot libero (myFreeSlots >= 1)
-        const prestito1OffDisabled = myFreeSlots < 1;
-        // Prestito 2 OFFERTO: abilitato solo se ho 2 slot liberi (myFreeSlots >= 2)
-        const prestito2OffDisabled = myFreeSlots < 2;
+        // Prestito OFFERTO (io presto un mio giocatore): dipende da slot liberi della CONTROPARTE
+        const prestito1OffDisabled = destFreeSlots < 1;
+        const prestito2OffDisabled = destFreeSlots < 2;
         
-        // Prestito 1 RICHIESTO: abilitato se controparte ha almeno 1 slot libero
-        const prestito1RichDisabled = destFreeSlots < 1;
-        // Prestito 2 RICHIESTO: abilitato solo se controparte ha 2 slot liberi
-        const prestito2RichDisabled = destFreeSlots < 2;
+        // Prestito RICHIESTO (io ricevo un giocatore della controparte): dipende da slot liberi MIEi
+        const prestito1RichDisabled = myFreeSlots < 1;
+        const prestito2RichDisabled = myFreeSlots < 2;
         
         // Disabilita pannelli e campi PRESTITO 1 OFFERTO
         const tradeSidePrestito1Off = document.getElementById('trade-side-prestito1-offerto');
@@ -679,7 +731,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
             if (destFreeSlots === 0) {
                 const destName = selectSquadra.value || 'Squadra destinataria';
-                warningText += `${destName} non può ricevere altri prestiti (slot: ${destSlotPrestiti}/2).`;
+                warningText += `${destName} non può ricevere altri prestiti (slot: ${destSlotPrestiti}/2) - non puoi offrire prestiti.`;
             } else if (destFreeSlots === 1) {
                 const destName = selectSquadra.value || 'Squadra destinataria';
                 warningText += `${destName} può ricevere solo 1 prestito (slot: ${destSlotPrestiti}/2).`;
@@ -783,8 +835,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    selectOfferti.on('change', () => { updateMaxItems(); updateSlotsCard(); });
-    selectRichiesti.on('change', () => { updateMaxItems(); updateSlotsCard(); });
+    selectOfferti.on('change', () => { updateMaxItems(); updateSlotsCard(); updateAvailablePlayersForLoan(); });
+    selectRichiesti.on('change', () => { updateMaxItems(); updateSlotsCard(); updateAvailablePlayersForLoan(); });
     selectPrestito1Rich.on('change', updateSlotsCard);
     selectPrestito1Off.on('change', updateSlotsCard);
     selectPrestito2Rich.on('change', updateSlotsCard);
@@ -849,6 +901,7 @@ document.addEventListener("DOMContentLoaded", () => {
         updateMaxItems();
         updateSlotsCard();
         checkLoanSlotsAvailability();
+        updateAvailablePlayersForLoan();
     });
 
     form.addEventListener('submit', (event) => {
@@ -889,6 +942,24 @@ document.addEventListener("DOMContentLoaded", () => {
         if (mieiDopo > 30 || destDopo > 30) {
             event.preventDefault();
             alert('La trattativa supera il limite di 30 slot per una delle squadre.');
+            return;
+        }
+
+        // Validazione slot prestiti
+        const destSlotPrestiti = parseInt(selectedOption.dataset.slotPrestiti) || 0;
+        const mieiPrestitiDopo = mySlotPrestiti + loanRichiesti;
+        const destPrestitiDopo = destSlotPrestiti + loanOfferti;
+
+        if (mieiPrestitiDopo > 2) {
+            event.preventDefault();
+            alert(`❌ ${nome_squadra} non può avere più di 2 prestiti. Attualmente: ${mySlotPrestiti}, dopo lo scambio: ${mieiPrestitiDopo}`);
+            return;
+        }
+
+        if (destPrestitiDopo > 2) {
+            event.preventDefault();
+            const destName = selectSquadra.value || 'Squadra destinataria';
+            alert(`❌ ${destName} non può avere più di 2 prestiti. Attualmente: ${destSlotPrestiti}, dopo lo scambio: ${destPrestitiDopo}`);
             return;
         }
     });

@@ -205,6 +205,15 @@ def nuovo_scambio(nome_squadra):
                 flash("Devi richiedere almeno un giocatore o dei crediti.", "warning")
                 return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
             
+            # Validazione: crediti offerti non superano crediti disponibili
+            crediti_squad = get_crediti_squadra(conn, nome_squadra)
+            offerta_tot = get_offerta_totale(conn, nome_squadra)
+            crediti_max_offribili = crediti_squad - offerta_tot
+            
+            if crediti_offerti > crediti_max_offribili:
+                flash(f"❌ Crediti insufficienti. Puoi offrire massimo {crediti_max_offribili} crediti.", "danger")
+                return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
+            
 
 
 
@@ -303,9 +312,9 @@ def nuovo_scambio(nome_squadra):
         cur.execute('''
             SELECT nome, crediti 
             FROM squadra 
-            WHERE nome <> 'Svincolato'
+            WHERE nome NOT IN ('Svincolati', %s)
             ORDER BY nome;
-        ''')
+        ''', (nome_squadra,))
         squadre_raw = cur.fetchall()
 
         squadre = []
@@ -441,6 +450,38 @@ def controlla_scambio(id, conn):
         if slot_dest_finali > 30:
             return False
 
+        # Controllo che le squadre non superino 2 prestiti disponibili
+        prestiti_prop_attuali = get_slot_prestiti_in(conn, squadra_proponente)
+        prestiti_dest_attuali = get_slot_prestiti_in(conn, squadra_destinataria)
+
+        # Conteggio prestiti collegati allo scambio
+        prestiti_offerti_count = 0
+        prestiti_richiesti_count = 0
+
+        if scambio['prestito_associato']:
+            cur.execute('''
+                        SELECT squadra_prestante, squadra_ricevente
+                        FROM prestito
+                        WHERE id = ANY(%s) AND stato = 'in_attesa';
+            ''', (scambio['prestito_associato'],))
+            prestiti_collegati = cur.fetchall()
+            
+            for prestito in prestiti_collegati:
+                if prestito['squadra_prestante'] == squadra_proponente:
+                    prestiti_offerti_count += 1
+                else:
+                    prestiti_richiesti_count += 1
+
+        # Verifica prestiti post-scambio
+        prestiti_prop_finali = prestiti_prop_attuali + prestiti_richiesti_count
+        prestiti_dest_finali = prestiti_dest_attuali + prestiti_offerti_count
+
+        if prestiti_prop_finali > 2:
+            return False
+
+        if prestiti_dest_finali > 2:
+            return False
+
         return True
 
     except Exception as e:
@@ -459,7 +500,7 @@ def effettua_scambio(id, conn, nome_squadra):
     # Se lo scambio non è valido non fare niente
     if controlla_scambio(id, conn) == False:
         flash("❌ Non è possibile avviare questo scambio.", "danger")
-        return
+        return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
     
 
     # Se lo scambio è valido, esegui tutti i passaggi.
@@ -602,11 +643,10 @@ def effettua_scambio(id, conn, nome_squadra):
         return True
     
     except Exception as e:
-        if conn:
-            conn.rollback()
+        conn.rollback()
         print(f"Errore durante l'esecuzione dello scambio: {e}")
         flash("❌ Errore nell'esecuzione dello scambio. Rivedere i valori dello scambio.", "danger")
-        return False
+        return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
     
     finally:
         cur.close()

@@ -7,7 +7,7 @@ from flask_session import Session
 from psycopg2.extras import RealDictCursor
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from admin import admin_bp
+from admin import admin_bp, configure_logging
 from user import user_bp, format_partecipanti, formatta_data
 from user_aste import aste_bp
 from user_mercato import mercato_bp
@@ -23,6 +23,7 @@ app = Flask(__name__)
 
 load_dotenv()
 init_pool()
+configure_logging()  # Configura i log per escludere CSS e JS
 
 app.secret_key = os.getenv("SECRET_KEY", "chiave_segreta_default_per_sviluppo")
 
@@ -171,7 +172,9 @@ def squadre():
         cur.execute('''
                     SELECT nome 
                     FROM squadra 
-                    WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
+                    WHERE nome <> 'Svincolato' 
+                    ORDER BY nome ASC;
+        ''')
         squadre = [row["nome"] for row in cur.fetchall()]
 
         return render_template("squadre.html", squadre=squadre)
@@ -194,23 +197,26 @@ def dashboard_squadra(nome_squadra):
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # STADIO
+        # STADIO E CREDITI
         cur.execute('''
-                    SELECT nome, proprietario, livello 
-                    FROM stadio 
-                    WHERE proprietario = %s;
+                    SELECT s.nome AS stadio_nome, 
+                           s.proprietario, 
+                           s.livello, 
+                           sq.username, 
+                           sq.crediti 
+                    FROM stadio s 
+                    JOIN squadra sq ON s.proprietario = sq.nome
+                    WHERE sq.nome = %s;
         ''', (nome_squadra,))
-        stadio = cur.fetchone()
-
-        # CREDITI
-        cur.execute('''
-                    SELECT username, crediti 
-                    FROM squadra 
-                    WHERE nome = %s;
-        ''', (nome_squadra,))
-        squadra_raw = cur.fetchone()
-        username = squadra_raw["username"]
-        crediti = squadra_raw["crediti"]
+        result = cur.fetchone()
+        
+        stadio = {
+            "nome": result["stadio_nome"],
+            "proprietario": result["proprietario"],
+            "livello": result["livello"]
+        }
+        username = result["username"]
+        crediti = result["crediti"]
 
         # CONTEGGIO SLOT OCCUPATI
         slot_occupati = get_slot_occupati(conn, nome_squadra)
@@ -256,15 +262,6 @@ def dashboard_squadra(nome_squadra):
                 "quot_att_mantra": g['quot_att_mantra']
             })
 
-        # CONTEGGIO PRESTITI IN
-        cur.execute('''
-                    SELECT COUNT(id) AS prestiti_in_num
-                    FROM giocatore
-                    WHERE squadra_att = %s 
-                        AND tipo_contratto = 'Fanta-Prestito';
-        ''', (nome_squadra,))
-        prestiti_in_num = cur.fetchone()["prestiti_in_num"]
-
         # PRESTITI IN
         prestiti_in = []
         cur.execute('''
@@ -274,6 +271,8 @@ def dashboard_squadra(nome_squadra):
                         AND tipo_contratto = 'Fanta-Prestito';
         ''', (nome_squadra,))
         prestiti_in_raw = cur.fetchall()
+        
+        prestiti_in_num = len(prestiti_in_raw)
 
         for g in prestiti_in_raw:
             ruolo = g['ruolo'].strip("{}")
@@ -472,8 +471,58 @@ def crediti_stadi_slot():
 
 @app.route("/listone")
 def listone():
-    link_fantacalcio_it = "https://www.fantacalcio.it/quotazioni-fantacalcio"
-    return redirect(link_fantacalcio_it)
+    
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cur.execute('''
+                    SELECT *
+                    FROM giocatore
+                    ORDER BY id;            
+        ''')
+        giocatori_raw = cur.fetchall()
+        giocatori = []
+        
+        for g in giocatori_raw:
+            ruolo = g['ruolo'].strip("{}")
+            giocatori.append({
+                "nome": g['nome'],
+                "squadra_att": g['squadra_att'],
+                "detentore_cartellino": g['detentore_cartellino'],
+                "quot_att_mantra": g['quot_att_mantra'],
+                "tipo_contratto": g['tipo_contratto'],
+                "ruolo": ruolo,
+                "costo": g['costo']
+            })
+            
+        return render_template("listone.html", giocatori=giocatori)
+    
+    except Exception as e:
+        print("Errore listone:", e)
+        flash("❌ Errore nel caricamento del listone.", "danger")
+        return redirect(url_for('home'))
+    
+    finally:
+        release_connection(conn, cur)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 
 @app.route("/aste")
