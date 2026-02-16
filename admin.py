@@ -29,14 +29,29 @@ def configure_logging():
     
     # Configura i log per escludere file CSS, JS e le immagini.
     # Chiama questa funzione in main.py dopo la creazione dell'app.
+    # Funziona sia in sviluppo che in produzione (Render).
     
-    # Ottieni il logger di werkzeug (Flask's built-in logger)
-    log = logging.getLogger('werkzeug')
-    
-    # Aggiungi il filtro personalizzato
-    log.addFilter(ExcludeStaticFilesFilter())
-    
-    print("✅ Logging configurato: file CSS, JS e immagini escluse dai log")
+    try:
+        # Ottieni il logger di werkzeug (Flask's built-in logger)
+        log = logging.getLogger('werkzeug')
+        
+        # Crea un istanza del filtro
+        filter_obj = ExcludeStaticFilesFilter()
+        
+        # Aggiungi il filtro al logger
+        log.addFilter(filter_obj)
+        
+        # Aggiungi il filtro anche agli handler specifici (se esistono)
+        if hasattr(log, 'handlers') and log.handlers:
+            for handler in log.handlers:
+                handler.addFilter(filter_obj)
+        
+        print("✅ Logging configurato: file CSS, JS e immagini escluse dai log")
+        
+    except Exception as e:
+        # Se qualcosa va male, semplicemente continua
+        # (utile per ambienti cloud dove il logging funziona diversamente)
+        print(f"⚠️ Configurazione logging non completata: {e} (continuo comunque)")
 
 # Rotta per area admin
 @admin_bp.route("/")
