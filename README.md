@@ -1,4 +1,4 @@
-# Fanta Manageriale
+# Web App Fantacalcio Manageriale
 
 Una piattaforma web completa per la gestione di un campionato di fantacalcio. Consente alle squadre di partecipare ad aste, gestire trasferimenti di giocatori, organizzare prestiti e coordinare scambi, il tutto attraverso un'interfaccia intuitiva con notifiche in tempo reale via Telegram.
 
