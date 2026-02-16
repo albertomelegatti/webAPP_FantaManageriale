@@ -1,5 +1,6 @@
 import psycopg2
 import time
+import logging
 import telegram_utils
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from user import formatta_data
@@ -8,6 +9,34 @@ from psycopg2.extras import RealDictCursor
 from psycopg2 import extensions
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+
+
+class ExcludeStaticFilesFilter(logging.Filter):
+    
+    # Filtra i log per escludere le richieste di file CSS e JS.
+    # Riduce il rumore nei log durante lo sviluppo.
+    
+    def filter(self, record):
+        # Esclude i log per file CSS e JS
+        if record.getMessage():
+            msg = record.getMessage()
+            if '.css' in msg or '.js' in msg or '.ico' in msg or 'favicon' in msg or '.png' in msg or '.jpg' in msg or '.jpeg' in msg:
+                return False
+        return True
+
+
+def configure_logging():
+    
+    # Configura i log per escludere file CSS, JS e le immagini.
+    # Chiama questa funzione in main.py dopo la creazione dell'app.
+    
+    # Ottieni il logger di werkzeug (Flask's built-in logger)
+    log = logging.getLogger('werkzeug')
+    
+    # Aggiungi il filtro personalizzato
+    log.addFilter(ExcludeStaticFilesFilter())
+    
+    print("✅ Logging configurato: file CSS, JS e immagini escluse dai log")
 
 # Rotta per area admin
 @admin_bp.route("/")
