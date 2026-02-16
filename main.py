@@ -7,7 +7,7 @@ from flask_session import Session
 from psycopg2.extras import RealDictCursor
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from admin import admin_bp
+from admin import admin_bp, configure_logging
 from user import user_bp, format_partecipanti, formatta_data
 from user_aste import aste_bp
 from user_mercato import mercato_bp
@@ -23,6 +23,7 @@ app = Flask(__name__)
 
 load_dotenv()
 init_pool()
+configure_logging()
 
 app.secret_key = os.getenv("SECRET_KEY", "chiave_segreta_default_per_sviluppo")
 
