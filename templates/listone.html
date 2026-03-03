@@ -1,45 +1,342 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container">
-    <div class="row">
-        <!-- Colonna Giocatori -->
-        <div class="col-md-12">
-            <h2>Giocatori</h2>
-            <div class="table-responsive">
-                <table class="table table-sm table-striped small smart-table">
-                    <thead>
-                        <tr>
-                            <th>Id</th>
-                            <th>Nome</th>
-                            <th>Ruolo</th>
-                            <th>Contratto</th>
-                            <th>Squadra attuale</th>
-                            <th>Detentore cartellino</th>
-                            <th>Club</th>
-                            <th>QA</th>
-                            <th>Costo</th>
-                            
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for giocatore in giocatori %}
-                        <tr>
-                            <td>{{ giocatore.id }}</td>
-                            <td>{{ giocatore.nome}}</td>
-                            <td>{{ giocatore.ruolo}}</td>
-                            <td>{{ giocatore.tipo_contratto}}</td>
-                            <td>{{ giocatore.squadra_att}}</td>
-                            <td>{{ giocatore.detentore_cartellino}}</td>
-                            <td>{{ giocatore.club}}</td>
-                            <td>{{ giocatore.quot_att}}</td>
-                            <td>{{ giocatore.costo}}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+<div class="container my-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3">Listone Giocatori</h2>
+            <div class="card shadow p-3">
+                <!-- Filtri -->
+                <div class="row mb-4">
+                    <div class="col-12 col-md-3">
+                        <label for="filterRuolo" class="form-label"><strong>Filtra per Ruolo:</strong></label>
+                        <select id="filterRuolo" class="form-select">
+                            <option value="">-- Tutti i ruoli --</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label for="filterSquadra" class="form-label"><strong>Filtra per Squadra:</strong></label>
+                        <select id="filterSquadra" class="form-select">
+                            <option value="">-- Tutte le squadre --</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label for="filterDetentore" class="form-label"><strong>Filtra per Detentore:</strong></label>
+                        <select id="filterDetentore" class="form-select">
+                            <option value="">-- Tutti i detentori --</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label for="filterNome" class="form-label"><strong>Cerca Giocatore:</strong></label>
+                        <input type="text" id="filterNome" class="form-control" placeholder="Nome...">
+                    </div>
+                </div>
+
+                <!-- Elemento nascosto per contenere i dati JSON -->
+                <div id="giocatori-json-data" style="display: none;">{{ giocatori|tojson }}</div>
+
+                <!-- Tabella giocatori -->
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0 table-striped table-hover" id="listoneTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="cursor: pointer; user-select: none;" onclick="sortTable(0)">
+                                    Nome 
+                                    <span id="sortIcon0" style="margin-left: 5px;"></span>
+                                </th>
+                                <th>Ruolo</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="listoneBody">
+                            {% for g in giocatori %}
+                            <tr class="giocatore-row" 
+                                data-giocatore-id="{{ loop.index0 }}"
+                                data-nome="{{ g.nome.lower() }}"
+                                data-ruolo="{{ g.ruolo.lower() }}"
+                                data-squadra="{{ g.squadra_att.lower() }}"
+                                data-detentore="{{ g.detentore_cartellino.lower() }}"
+                                data-costo="{{ g.costo }}">
+                                <td>{{ g.nome }}</td>
+                                <td>{{ g.ruolo }}</td>
+                                <td class="text-center"><button type="button" class="btn btn-xs btn-outline-secondary view-details-btn">Dettagli</button></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Messaggio nessun risultato -->
+                <div id="noResults" class="alert alert-info mt-3" style="display: none;">
+                    Nessun giocatore trovato con i filtri selezionati.
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- CSS per i dettagli espandibili -->
+<style>
+    .details-row {
+        background-color: #f8f9fa;
+    }
+
+    .details-row td {
+        padding: 20px !important;
+    }
+
+    .giocatore-details {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #dee2e6;
+        padding: 4px 0;
+    }
+
+    .detail-label {
+        font-weight: bold;
+        color: #495057;
+        font-size: 0.8rem;
+        flex: 0 0 auto;
+        margin-right: 10px;
+    }
+
+    .detail-value {
+        color: #212529;
+        font-size: 0.85rem;
+        text-align: right;
+        flex: 1;
+    }
+
+    /* Dark Mode Support */
+    body.dark-mode .detail-item {
+        border-bottom-color: #555;
+    }
+
+    body.dark-mode .detail-label {
+        color: #e0e0e0;
+    }
+
+    body.dark-mode .detail-value {
+        color: #ffffff;
+    }
+</style>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let sortIndex = -1;
+let sortDirection = 'asc';
+
+function sortTable(columnIndex) {
+    const listoneBody = document.getElementById('listoneBody');
+    const rows = Array.from(listoneBody.querySelectorAll('tr:not(.details-row)'));
+    
+    // Se clicchiamo la stessa colonna, invertiamo l'ordinamento
+    if (sortIndex === columnIndex) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortIndex = columnIndex;
+        sortDirection = 'asc';
+    }
+    
+    rows.sort((a, b) => {
+        let aValue, bValue;
+        
+        if (columnIndex === 0) {
+            // Nome
+            aValue = a.getAttribute('data-nome');
+            bValue = b.getAttribute('data-nome');
+        }
+        
+        if (typeof aValue === 'string') {
+            return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        } else {
+            return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+    });
+    
+    // Reinserisci le righe ordinate (senza quelle di dettagli)
+    rows.forEach(row => listoneBody.appendChild(row));
+    
+    // Aggiorna le icone di ordinamento
+    updateSortIcons();
+}
+
+function updateSortIcons() {
+    document.getElementById('sortIcon0').textContent = sortIndex === 0 ? (sortDirection === 'asc' ? '▲' : '▼') : '';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Leggi i dati JSON dei giocatori
+    const giocatoriDataElement = document.getElementById('giocatori-json-data');
+    if (!giocatoriDataElement) {
+        console.error('Elemento giocatori-json-data non trovato.');
+        return;
+    }
+    
+    let giocatori_data = [];
+    try {
+        giocatori_data = JSON.parse(giocatoriDataElement.textContent);
+    } catch (e) {
+        console.error('Errore nel parsing dei dati JSON dei giocatori:', e);
+        return;
+    }
+    
+    const filterRuolo = document.getElementById('filterRuolo');
+    const filterSquadra = document.getElementById('filterSquadra');
+    const filterDetentore = document.getElementById('filterDetentore');
+    const filterNome = document.getElementById('filterNome');
+    const listoneBody = document.getElementById('listoneBody');
+    const noResults = document.getElementById('noResults');
+    const rows = listoneBody.querySelectorAll('tr.giocatore-row');
+
+    // Popola i select con i valori univoci
+    const ruoli = new Set();
+    const squadre = new Set();
+    const detentori = new Set();
+
+    rows.forEach(row => {
+        const ruolo = row.getAttribute('data-ruolo');
+        const squadra = row.getAttribute('data-squadra');
+        const detentore = row.getAttribute('data-detentore');
+        if (ruolo) ruoli.add(ruolo);
+        if (squadra) squadre.add(squadra);
+        if (detentore) detentori.add(detentore);
+    });
+
+    Array.from(ruoli).sort().forEach(ruolo => {
+        const option = document.createElement('option');
+        option.value = ruolo;
+        option.textContent = ruolo.charAt(0).toUpperCase() + ruolo.slice(1);
+        filterRuolo.appendChild(option);
+    });
+
+    Array.from(squadre).sort().forEach(squadra => {
+        const option = document.createElement('option');
+        option.value = squadra;
+        option.textContent = squadra.charAt(0).toUpperCase() + squadra.slice(1);
+        filterSquadra.appendChild(option);
+    });
+
+    Array.from(detentori).sort().forEach(detentore => {
+        const option = document.createElement('option');
+        option.value = detentore;
+        option.textContent = detentore.charAt(0).toUpperCase() + detentore.slice(1);
+        filterDetentore.appendChild(option);
+    });
+
+    // Funzione di filtro
+    function applyFilters() {
+        const selectedRuolo = filterRuolo.value.toLowerCase();
+        const selectedSquadra = filterSquadra.value.toLowerCase();
+        const selectedDetentore = filterDetentore.value.toLowerCase();
+        const searchNome = filterNome.value.toLowerCase();
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const rowRuolo = row.getAttribute('data-ruolo');
+            const rowSquadra = row.getAttribute('data-squadra');
+            const rowDetentore = row.getAttribute('data-detentore');
+            const rowNome = row.getAttribute('data-nome');
+
+            const matchRuolo = !selectedRuolo || rowRuolo === selectedRuolo;
+            const matchSquadra = !selectedSquadra || rowSquadra === selectedSquadra;
+            const matchDetentore = !selectedDetentore || rowDetentore === selectedDetentore;
+            const matchNome = !searchNome || rowNome.includes(searchNome);
+
+            if (matchRuolo && matchSquadra && matchDetentore && matchNome) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Mostra messaggio se nessun risultato
+        noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+
+    // Event listeners per i filtri
+    filterRuolo.addEventListener('change', applyFilters);
+    filterSquadra.addEventListener('change', applyFilters);
+    filterDetentore.addEventListener('change', applyFilters);
+    filterNome.addEventListener('input', applyFilters);
+
+    // Event listeners per i bottoni "Dettagli"
+    const detailsButtons = document.querySelectorAll('.view-details-btn');
+    detailsButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const giocatoreRow = this.closest('.giocatore-row');
+            const giocatoreId = parseInt(giocatoreRow.getAttribute('data-giocatore-id'));
+
+            // Controlla se la riga cliccata è già aperta
+            const isAlreadyOpen = giocatoreRow.nextElementSibling?.classList.contains('details-row');
+
+            // Chiudi tutte le altre righe aperte
+            listoneBody.querySelectorAll('.details-row').forEach(row => {
+                row.remove();
+            });
+
+            // Se era già aperta, ci fermiamo qui (effetto toggle)
+            if (isAlreadyOpen) {
+                return;
+            }
+            
+            const giocatore = giocatori_data[giocatoreId];
+            if (!giocatore) {
+                alert("Errore: dati del giocatore non trovati.");
+                return;
+            }
+
+            const detailsHtml = generateDetailsHtml(giocatore);
+            const detailsRow = document.createElement('tr');
+            detailsRow.className = 'details-row';
+            const cell = document.createElement('td');
+            cell.colSpan = giocatoreRow.cells.length;
+            cell.innerHTML = detailsHtml;
+            detailsRow.appendChild(cell);
+
+            giocatoreRow.parentNode.insertBefore(detailsRow, giocatoreRow.nextSibling);
+        });
+    });
+
+    function generateDetailsHtml(giocatore) {
+        return `
+            <div class="giocatore-details">
+                <div class="detail-item">
+                    <div class="detail-label">Squadra Attuale</div>
+                    <div class="detail-value">${giocatore.squadra_att}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Costo</div>
+                    <div class="detail-value">${giocatore.costo}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Detentore Cartellino</div>
+                    <div class="detail-value">${giocatore.detentore_cartellino}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Quota Attuale</div>
+                    <div class="detail-value">${giocatore.quot_att_mantra}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Tipo Contratto</div>
+                    <div class="detail-value">${giocatore.tipo_contratto}</div>
+                </div>
+            </div>
+        `;
+    }
+});
+</script>
 {% endblock %}
