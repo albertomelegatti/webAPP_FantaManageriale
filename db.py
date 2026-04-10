@@ -51,11 +51,8 @@ def init_pool():
 def log_pool_status(action):
     #Stampa lo stato corrente del pool
     global pool
-    if pool:
-        used = len(pool._used)
-        free = len(pool._pool)
-        print(f"📊 [POOL STATUS] {action} | Attive: {used} | Libere: {free}")
-    else:
+    
+    if not pool:
         print("⚠️ Pool non inizializzato.")
 
 
@@ -188,10 +185,10 @@ def check_connection():
 
 
 def keep_awake():
-    """
-    Funzione che mantiene la web app e il database attivi.
-    Effettua una query di test e rilascia subito la connessione.
-    """
+    
+    # Funzione che mantiene la web app e il database attivi.
+    # Effettua una query di test e rilascia subito la connessione.
+    
     conn = None
     try:
         conn = get_connection()
@@ -205,7 +202,7 @@ def keep_awake():
 
 
 class DatabaseConnection:
-    """Context manager per gestire connessioni al database in modo sicuro"""
+    # Context manager per gestire connessioni al database in modo sicuro
     
     def __init__(self):
         self.conn = None
