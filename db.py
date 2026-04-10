@@ -116,7 +116,7 @@ def release_connection(conn=None, cur=None):
                 # Prova a fare rollback prima di restituire al pool
                 try:
                     conn.rollback()
-                    print(f"[DB] Connection rolled back successfully")
+                    # print(f"[DB] Connection rolled back successfully")
                 except Exception as e:
                     print(f"⚠️ Errore durante rollback: {e}")
                     # Prova comunque a restituire la connessione
