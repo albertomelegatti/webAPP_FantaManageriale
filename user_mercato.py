@@ -1,10 +1,11 @@
 import psycopg2
+from datetime import datetime, time
 import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from user import format_giocatori, formatta_data
-from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati
+from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati, get_slot_prestiti_in
 
 
 mercato_bp = Blueprint('mercato', __name__, url_prefix='/mercato')
@@ -27,12 +28,7 @@ def user_mercato(nome_squadra):
             # Bottone ANNULLA scambio
             scambio_id = request.form.get("annulla_scambio")
             if scambio_id:
-                cur.execute('''
-                            UPDATE scambio
-                            SET stato = 'annullato' 
-                            WHERE id = %s;
-                ''', (scambio_id,))
-                conn.commit()
+                annulla_scambio(scambio_id, conn)
 
 
             # Bottone ACCETTA scambio
@@ -45,14 +41,7 @@ def user_mercato(nome_squadra):
             # Bottone RIFIUTA scambio
             scambio_id = request.form.get("rifiuta_scambio")
             if scambio_id:
-                cur.execute('''
-                            UPDATE scambio
-                            SET stato= 'rifiutato',
-                                data_risposta = NOW() AT TIME ZONE 'Europe/Rome'
-                            WHERE id = %s;
-                ''', (scambio_id,))
-                conn.commit()
-                telegram_utils.scambio_risposta(conn, id, "Rifiutato")
+                rifiuta_scambio(scambio_id, conn)
 
 
 
@@ -62,38 +51,25 @@ def user_mercato(nome_squadra):
         offerta_totale = get_offerta_totale(conn, nome_squadra)
         offerta_massima_possibile = crediti - offerta_totale
 
-        scambi_raw = []
-        scambi = []
-
         # Scarico le informazioni sugli scambi della squadra loggata
         cur.execute('''
                     SELECT *
                     FROM scambio
                     WHERE squadra_proponente = %s
-                    OR squadra_destinataria = %s;
+                    OR squadra_destinataria = %s
+                    ORDER BY data_proposta DESC;
         ''', (nome_squadra, nome_squadra))
         scambi_raw = cur.fetchall()
 
-        for s in scambi_raw:
-
-            valido = None
-            if s['squadra_destinataria'] == nome_squadra and s['stato'] == 'in_attesa':
-                valido = controlla_scambio(s['id'], conn)
-
-            scambi.append({
-                "scambio_id": s['id'],
-                "squadra_proponente": s['squadra_proponente'],
-                "squadra_destinataria": s['squadra_destinataria'],
-                "giocatori_offerti": format_giocatori(conn, s['giocatori_offerti']),
-                "giocatori_richiesti": format_giocatori(conn, s['giocatori_richiesti']),
-                "crediti_offerti": s['crediti_offerti'],
-                "crediti_richiesti": s['crediti_richiesti'],
-                "messaggio": s['messaggio'],
-                "stato": s['stato'],
-                "data_proposta": formatta_data(s['data_proposta']),
-                "data_risposta": formatta_data(s['data_risposta']),
-                "valido": valido
-            })
+        scambi = []
+        for s_raw in scambi_raw:
+            s_dict = dict(s_raw)
+            s_dict['giocatori_offerti_nomi'] = format_giocatori(s_dict['giocatori_offerti'])
+            s_dict['giocatori_richiesti_nomi'] = format_giocatori(s_dict['giocatori_richiesti'])
+            prestiti_offerti, prestiti_richiesti = format_prestito(conn, s_dict['prestito_associato'], s_dict['squadra_proponente'])
+            s_dict['prestiti_offerti_formattati'] = prestiti_offerti
+            s_dict['prestiti_richiesti_formattati'] = prestiti_richiesti
+            scambi.append(s_dict)
         
     except Exception as e:
         print("Errore:", e)
@@ -104,6 +80,50 @@ def user_mercato(nome_squadra):
         release_connection(conn, cur)
 
     return render_template("user_mercato.html", nome_squadra=nome_squadra, crediti=crediti, offerta_massima_possibile=offerta_massima_possibile, scambi=scambi)
+
+
+
+
+@mercato_bp.route("/visualizza_proposta/<scambio_id>", methods=["GET", "POST"])
+def visualizza_proposta(scambio_id):
+    conn = None
+    cur = None
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cur.execute('''
+                    SELECT *
+                    FROM scambio
+                    WHERE id = %s;
+        ''', (scambio_id,))
+        scambio_raw = cur.fetchone()
+        
+        scambio = {
+            "scambio_id": scambio_raw['id'],
+            "squadra_proponente": scambio_raw['squadra_proponente'],
+            "data_proposta": formatta_data(scambio_raw['data_proposta']),
+            "messaggio": scambio_raw['messaggio'],
+            "stato": scambio_raw['stato'],
+            "crediti_offerti": scambio_raw['crediti_offerti'],
+            "crediti_richiesti": scambio_raw['crediti_richiesti'],
+            "giocatori_offerti": format_giocatori(scambio_raw['giocatori_offerti']),
+            "giocatori_richiesti": format_giocatori(scambio_raw['giocatori_richiesti']),
+            "prestito_associato": format_prestito(conn, scambio_raw['prestito_associato'])
+        }
+        
+        return render_template("visualizza_proposta.html", scambio=scambio)
+    
+    except Exception as e:
+        print("Errore:", e)
+        flash("❌ Errore durante il caricamento della proposta.", "danger")
+
+    finally:
+        release_connection(conn, cur)
+        
+        
+
 
 
 
@@ -125,6 +145,53 @@ def nuovo_scambio(nome_squadra):
             giocatori_richiesti = [int(g) for g in request.form.getlist("giocatori_richiesti") if g.isdigit()]
             messaggio = (request.form.get("messaggio") or "").strip()
 
+            # Nuovi campi prestito (due blocchi opzionali)
+            enable_prestito1 = request.form.get("enable_prestito1") is not None
+            enable_prestito2 = request.form.get("enable_prestito2") is not None
+
+            # Prestito 1
+            p1_richiesto = request.form.get("prestito1_richiesto")
+            p1_offerto = request.form.get("prestito1_offerto")
+            p1_tipo_richiesto = (request.form.get("prestito1_tipo_richiesto") or "").strip()
+            p1_tipo_offerto = (request.form.get("prestito1_tipo_offerto") or "").strip()
+            p1_riscatto_rich = int(request.form.get("prestito1_riscatto_richiesto") or 0)
+            p1_riscatto_off = int(request.form.get("prestito1_riscatto_offerto") or 0)
+
+            # Prestito 2
+            p2_richiesto = request.form.get("prestito2_richiesto")
+            p2_offerto = request.form.get("prestito2_offerto")
+            p2_tipo_richiesto = (request.form.get("prestito2_tipo_richiesto") or "").strip()
+            p2_tipo_offerto = (request.form.get("prestito2_tipo_offerto") or "").strip()
+            p2_riscatto_rich = int(request.form.get("prestito2_riscatto_richiesto") or 0)
+            p2_riscatto_off = int(request.form.get("prestito2_riscatto_offerto") or 0)
+
+            def map_tipo(val):
+                if not val:
+                    return ''
+                elif val == 'Secco':
+                    return 'secco'
+                elif val in ('Con diritto di riscatto', 'Diritto'):
+                    return 'diritto_di_riscatto'
+                elif val in ('Con obbligo di riscatto', 'Obbligo'):
+                    return 'obbligo_di_riscatto'
+                return ''
+
+            # Se secco, forza riscatto a 0
+            if map_tipo(p1_tipo_richiesto) == 'secco':
+                p1_riscatto_rich = 0
+            if map_tipo(p1_tipo_offerto) == 'secco':
+                p1_riscatto_off = 0
+            if map_tipo(p2_tipo_richiesto) == 'secco':
+                p2_riscatto_rich = 0
+            if map_tipo(p2_tipo_offerto) == 'secco':
+                p2_riscatto_off = 0
+
+            # Data di fine default: 2 luglio alle 23:59:59 (prima data utile futura)
+            today = datetime.now()
+            target_year = today.year if today < datetime(today.year, 7, 2) else today.year + 1
+
+            default_data_fine = datetime(target_year, 7, 2, 23, 59, 59)
+
             # Validazioni base
             if not squadra_destinataria:
                 flash("Seleziona una squadra destinataria.", "warning")
@@ -137,6 +204,67 @@ def nuovo_scambio(nome_squadra):
             if not giocatori_richiesti and crediti_richiesti == 0:
                 flash("Devi richiedere almeno un giocatore o dei crediti.", "warning")
                 return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
+            
+
+
+
+            # Inserisci eventuali prestiti collegati (costo_prestito=0)
+            def crea_prestito(giocatore_id, squadra_prestante, squadra_ricevente, tipo_txt, riscatto):
+
+                if not giocatore_id or not tipo_txt:
+                    return None
+                
+                tipo_db = map_tipo(tipo_txt)
+                if tipo_db == 'secco':
+                    riscatto = 0
+
+                cur.execute('''
+                    INSERT INTO prestito (
+                        giocatore, squadra_prestante, squadra_ricevente, stato, data_inizio, data_fine, costo_prestito, tipo_prestito, crediti_riscatto, note
+                    ) VALUES (%s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome', %s, %s, %s, %s, %s)
+                    RETURNING id;
+                ''', (
+                    int(giocatore_id),
+                    squadra_prestante,
+                    squadra_ricevente,
+                    default_data_fine,
+                    0,
+                    tipo_db,
+                    int(riscatto or 0),
+                    ''
+                ))
+                return cur.fetchone()['id']
+            
+            
+            
+
+
+            created_prestiti = []
+
+            if enable_prestito1:
+                if p1_richiesto:
+                    created_prestiti.append(
+                        crea_prestito(p1_richiesto, squadra_destinataria, nome_squadra, p1_tipo_richiesto, p1_riscatto_rich)
+                    )
+                if p1_offerto:
+                    created_prestiti.append(
+                        crea_prestito(p1_offerto, nome_squadra, squadra_destinataria, p1_tipo_offerto, p1_riscatto_off)
+                    )
+
+            if enable_prestito2:
+                if p2_richiesto:
+                    created_prestiti.append(
+                        crea_prestito(p2_richiesto, squadra_destinataria, nome_squadra, p2_tipo_richiesto, p2_riscatto_rich)
+                    )
+                if p2_offerto:
+                    created_prestiti.append(
+                        crea_prestito(p2_offerto, nome_squadra, squadra_destinataria, p2_tipo_offerto, p2_riscatto_off)
+                    )
+
+
+            if len(created_prestiti) == 0:
+                created_prestiti = None
+
 
             # Inserisci la proposta di scambio
             cur.execute('''
@@ -144,9 +272,9 @@ def nuovo_scambio(nome_squadra):
                     squadra_proponente, squadra_destinataria, 
                     crediti_offerti, crediti_richiesti, 
                     giocatori_offerti, giocatori_richiesti, 
-                    messaggio, stato, data_proposta
+                    messaggio, stato, data_proposta, prestito_associato
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome')
+                VALUES (%s, %s, %s, %s, %s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome', %s)
                 RETURNING id;
             ''', (
                 nome_squadra,
@@ -155,16 +283,21 @@ def nuovo_scambio(nome_squadra):
                 crediti_richiesti,
                 giocatori_offerti,
                 giocatori_richiesti,
-                messaggio
+                messaggio,
+                created_prestiti
             ))
             id_scambio = cur.fetchone()['id']
 
             conn.commit()
-            flash("✅ Proposta di scambio inviata con successo!", "success")
+
+
+            flash("✅ Proposta inviata con successo!", "success")
             telegram_utils.nuovo_scambio(conn, id_scambio)
+
             return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
 
 
+        # Sezione GET
 
         # Recupera tutte le squadre (tranne "Svincolato")
         cur.execute('''
@@ -181,34 +314,42 @@ def nuovo_scambio(nome_squadra):
 
         for s in squadre_raw:
             slot_occupati = int(get_slot_occupati(conn, s["nome"]))
+            slot_prestiti = int(get_slot_prestiti_in(conn, s["nome"]))
             offerta_massima_possibile = max(s["crediti"] - offerta_totale, 0)
 
             squadre.append({
                 "nome": s["nome"],
                 "offerta_massima_possibile": offerta_massima_possibile,
-                "slot_liberi": max(30 - slot_occupati, 0)
+                "slot_liberi": max(30 - slot_occupati, 0),
+                "slot_prestiti": slot_prestiti
             })
 
             if s["nome"] == nome_squadra:
                 crediti_effettivi = offerta_massima_possibile
 
-        # Slot liberi della squadra loggata
+        # Slot liberi e prestiti della squadra loggata
         slot_liberi_miei = max(30 - int(get_slot_occupati(conn, nome_squadra)), 0)
+        slot_prestiti_miei = int(get_slot_prestiti_in(conn, nome_squadra))
 
         # Recupera tutti i giocatori validi (non svincolati, non prestiti, non hold)
         cur.execute('''
-            SELECT id, nome, squadra_att
-            FROM giocatore
-            WHERE squadra_att IS NOT NULL
-              AND squadra_att != 'Svincolati'
-              AND tipo_contratto NOT IN ('Fanta-Prestito', 'Hold')
-            ORDER BY squadra_att, nome;
+                SELECT id, nome, squadra_att, tipo_contratto
+                FROM giocatore
+                WHERE squadra_att IS NOT NULL
+                    AND squadra_att != 'Svincolati'
+                    AND tipo_contratto NOT IN ('Fanta-Prestito', 'Hold')
+                ORDER BY squadra_att, nome;
         ''')
         giocatori_raw = cur.fetchall()
 
         miei_giocatori = [g for g in giocatori_raw if g["squadra_att"] == nome_squadra]
         giocatori = [
-            {"id": g["id"], "nome": g["nome"], "squadra_att": g["squadra_att"]}
+            {
+                "id": g["id"],
+                "nome": g["nome"],
+                "squadra_att": g["squadra_att"],
+                "tipo_contratto": g["tipo_contratto"]
+            }
             for g in giocatori_raw
         ]
 
@@ -219,7 +360,8 @@ def nuovo_scambio(nome_squadra):
             giocatori=giocatori,
             miei_giocatori=miei_giocatori,
             crediti_effettivi=crediti_effettivi,
-            slot_liberi_miei=slot_liberi_miei
+            slot_liberi_miei=slot_liberi_miei,
+            slot_prestiti_miei=slot_prestiti_miei
         )
 
     except Exception as e:
@@ -247,7 +389,7 @@ def controlla_scambio(id, conn):
 
         if scambio['stato'] != 'in_attesa':
             return False
- 
+
         
         squadra_proponente = scambio["squadra_proponente"]
         squadra_destinataria = scambio["squadra_destinataria"]
@@ -303,9 +445,10 @@ def controlla_scambio(id, conn):
 
     except Exception as e:
         print(f"Errore: {e}")
+        return False
 
     finally:
-        release_connection(None, cur)
+        cur.close()
 
 
 
@@ -408,6 +551,51 @@ def effettua_scambio(id, conn, nome_squadra):
                     WHERE id = %s;
         ''', (id,))
         
+        # Attiva eventuali prestiti collegati allo scambio
+        prestiti_collegati = []
+        if scambio and scambio['prestito_associato']:
+            cur.execute('''
+                        SELECT id, giocatore, squadra_ricevente, squadra_prestante
+                        FROM prestito
+                        WHERE id = ANY(%s) AND stato = 'in_attesa';
+            ''', (scambio['prestito_associato'],))
+            prestiti_collegati = cur.fetchall()
+        
+        for prestito in prestiti_collegati:
+            # Attiva il prestito (stato = 'in_corso' come in attiva_prestito)
+            cur.execute('''
+                        UPDATE prestito
+                        SET stato = 'in_corso'
+                        WHERE id = %s;
+            ''', (prestito['id'],))
+            
+            # Aggiorna il contratto del giocatore in prestito
+            cur.execute('''
+                        UPDATE giocatore
+                        SET tipo_contratto = 'Fanta-Prestito',
+                            squadra_att = %s
+                        WHERE id = %s;
+            ''', (prestito['squadra_ricevente'], prestito['giocatore']))
+            
+            # Rifiuta altri prestiti in attesa per lo stesso giocatore dalla stessa squadra prestante
+            cur.execute('''
+                        UPDATE prestito
+                        SET stato = 'rifiutato'
+                        WHERE squadra_prestante = %s
+                            AND giocatore = %s
+                            AND stato = 'in_attesa'
+                            AND id <> %s;
+            ''', (prestito['squadra_prestante'], prestito['giocatore'], prestito['id']))
+            
+            # Annulla altri scambi che coinvolgono questo giocatore
+            cur.execute('''
+                        UPDATE scambio
+                        SET stato = 'annullato'
+                        WHERE (%s = ANY(giocatori_offerti) OR %s = ANY(giocatori_richiesti))
+                            AND stato = 'in_attesa'
+                            AND id <> %s;
+            ''', (prestito['giocatore'], prestito['giocatore'], id))
+        
         conn.commit()
         flash(f"✅ Scambio completato con successo tra {squadra_proponente} e {squadra_destinataria}", "success")
         telegram_utils.scambio_risposta(conn, id, "Accettato")
@@ -421,5 +609,146 @@ def effettua_scambio(id, conn, nome_squadra):
         return False
     
     finally:
-        # La connessione è None perchè viene rilasciata dalla pagina del mercato
-        release_connection(None, cur)
+        cur.close()
+        
+        
+        
+        
+        
+def annulla_scambio(scambio_id, conn):
+    
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Recupera gli ID dei prestiti associati prima di annullare lo scambio
+        cur.execute('''
+                    SELECT prestito_associato, stato
+                    FROM scambio 
+                    WHERE id = %s
+                    FOR UPDATE;
+        ''', (scambio_id,))
+        scambio = cur.fetchone()
+        
+        # Controllo se lo scambio è ancora annullabile
+        if not scambio or scambio['stato'] != 'in_attesa':
+            conn.rollback()
+            return
+        
+        # Aggiorno lo stato
+        cur.execute('''
+                    UPDATE scambio 
+                    SET stato = 'annullato' 
+                    WHERE id = %s;
+        ''', (scambio_id,))
+        
+        # Annulla anche i prestiti collegati, se ce ne sono
+        if scambio and scambio['prestito_associato']:
+            cur.execute('''
+                        UPDATE prestito
+                        SET stato = 'annullato'
+                        WHERE id = ANY(%s) AND stato = 'in_attesa';
+            ''', (scambio['prestito_associato'],))
+        
+        conn.commit()
+    
+    except Exception as e:
+        print(f"Errore durante l'annullamento dello scambio: {e}")
+        conn.rollback()
+        return False
+
+    finally:
+        cur.close()
+        
+        
+
+def rifiuta_scambio(scambio_id, conn):
+
+    cur = None
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        cur.execute('''
+                    SELECT prestito_associato 
+                    FROM scambio 
+                    WHERE id = %s
+        ''', (scambio_id,))
+        scambio = cur.fetchone()
+        
+        # Aggiorno lo stato
+        cur.execute('''
+                    UPDATE scambio
+                    SET stato= 'rifiutato',
+                        data_risposta = NOW() AT TIME ZONE 'Europe/Rome'
+                    WHERE id = %s;
+        ''', (scambio_id,))
+        
+        # Rifiuta anche i prestiti collegati
+        if scambio and scambio['prestito_associato']:
+            cur.execute('''
+                        UPDATE prestito
+                        SET stato = 'rifiutato'
+                        WHERE id = ANY(%s) AND stato = 'in_attesa';
+            ''', (scambio['prestito_associato'],))
+        conn.commit()
+        telegram_utils.scambio_risposta(conn, scambio_id, "Rifiutato")
+        
+    except Exception as e:
+        print(f"Errore durante il rifiuto dello scambio: {e}")
+        conn.rollback()
+    
+    finally:
+        cur.close()
+
+
+
+
+
+
+
+
+
+def format_prestito(conn, lista_prestiti, squadra_proponente):
+    if not lista_prestiti:
+        return "", ""
+    
+    prestiti_offerti = []
+    prestiti_richiesti = []
+    cur = None
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        for prestito_id in lista_prestiti:
+            cur.execute('''
+                        SELECT g.nome, p.tipo_prestito, p.crediti_riscatto, p.squadra_prestante
+                        FROM prestito p
+                        JOIN giocatore g
+                        ON p.giocatore = g.id
+                        WHERE p.id = %s;
+            ''', (prestito_id,))
+            info_prestito = cur.fetchone()
+            
+            if info_prestito:
+                giocatore = info_prestito['nome']
+                tipo_prestito = info_prestito['tipo_prestito']
+                crediti_riscatto = info_prestito['crediti_riscatto']
+                
+                tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
+                tipo_str = tipo_map.get(tipo_prestito, tipo_prestito)
+                riscatto_str = f" (risc. {crediti_riscatto})" if crediti_riscatto and crediti_riscatto > 0 else ""
+                
+                prestito_str = f"• {giocatore} [Prestito {tipo_str}{riscatto_str}]"
+                
+                # Smista i prestiti in base a chi è la squadra prestante
+                if info_prestito['squadra_prestante'] == squadra_proponente:
+                    prestiti_offerti.append(prestito_str)
+                else:
+                    prestiti_richiesti.append(prestito_str)
+        
+        return "\n".join(prestiti_offerti), "\n".join(prestiti_richiesti)
+    
+    except Exception as e:
+        print(f"Errore in format_prestito: {e}")
+        return "", ""
+    
+    finally:
+        cur.close()

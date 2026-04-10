@@ -384,10 +384,10 @@ def dashboard_squadra(nome_squadra):
         # MOVIMENTI DI MERCATO
         mercato = []
         cur.execute('''
-                    SELECT data, evento, stagione
-                    FROM movimenti_squadra
-                    WHERE evento ILIKE %s
-                    ORDER BY data DESC;
+                SELECT data, evento, stagione
+                FROM movimenti_squadra
+                WHERE evento ILIKE %s and evento not ilike '%%🏷️ ASTA%%'
+                ORDER BY data DESC;
         ''', (f'%{nome_squadra}%',))
         mercato_raw = cur.fetchall()
 
@@ -440,6 +440,7 @@ def movimenti_mercato():
         cur.execute('''
                     SELECT data, evento, stagione
                     FROM movimenti_squadra
+                    WHERE evento NOT ILIKE '%%🏷️ ASTA%%'
                     ORDER BY data DESC;
         ''')
         mercato_raw = cur.fetchall()

@@ -23,6 +23,21 @@ def squadra_login(nome_squadra):
     return render_template("squadra_login.html", nome_squadra=nome_squadra, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num)
 
 
+@user_bp.route("/mercato_menu/<nome_squadra>")
+def user_mercato_menu(nome_squadra):
+    return render_template("user_mercato_menu.html", nome_squadra=nome_squadra)
+
+
+@user_bp.route("/prestiti_menu/<nome_squadra>")
+def user_prestiti_menu(nome_squadra):
+    return render_template("user_prestiti_menu.html", nome_squadra=nome_squadra)
+
+
+@user_bp.route("/rosa_menu/<nome_squadra>")
+def user_rosa_menu(nome_squadra):
+    return render_template("user_rosa_menu.html", nome_squadra=nome_squadra)
+
+
 
 def format_partecipanti(partecipanti):
     if not partecipanti:
@@ -34,17 +49,19 @@ def format_partecipanti(partecipanti):
     
 
 
-def format_giocatori(conn, giocatori):
+def format_giocatori(giocatori):
     if not giocatori:
         return ""
     
     if isinstance(giocatori, int):
         giocatori = [giocatori]
     
+    conn = None
     cur = None
     nomi_ordinati = []
 
     try:
+        conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
@@ -69,7 +86,7 @@ def format_giocatori(conn, giocatori):
         return "Errore nel recupero dei giocatori"
 
     finally:
-        cur.close()
+        release_connection(conn, cur)
     
     if not nomi_ordinati:
         return ""
