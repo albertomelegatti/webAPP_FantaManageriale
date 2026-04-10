@@ -1,6 +1,7 @@
 import psycopg2
 import telegram_utils
 import os
+import gc
 from dotenv import load_dotenv
 from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify
 from flask_session import Session
@@ -32,12 +33,20 @@ if db_url and db_url.startswith("postgres://"):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 20,
+    'pool_recycle': 3600,
+    'pool_pre_ping': True,
+}
 db = SQLAlchemy(app)
 
 app.config['SESSION_TYPE'] = 'sqlalchemy'
 app.config['SESSION_SQLALCHEMY'] = db
 app.config['SESSION_PERMANENT'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 365
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 30  # 30 giorni invece di 365
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 Session(app)
 
 # Inizializza il dizionario telegram al lancio dell'app
@@ -52,18 +61,87 @@ app.register_blueprint(rosa_bp)
 app.register_blueprint(webhook_bp)
 
 
+@app.before_request
+def before_request():
+    """Pulisci la sessione prima di ogni request"""
+    try:
+        db.session.rollback()
+        db.session.remove()
+    except Exception:
+        pass
+
+
 @app.teardown_appcontext
 def teardown_db(exception):
-    if exception:
-        db.session.rollback()
-    db.session.remove()
+    """Cleanup della sessione dopo ogni request"""
+    try:
+        if exception:
+            print(f"[ERROR] Exception in request: {exception}")
+            try:
+                db.session.rollback()
+            except Exception as e:
+                print(f"[ERROR] Rollback failed: {e}")
+        
+        # Sempre rimuovi la sessione
+        try:
+            db.session.remove()
+        except Exception as e:
+            print(f"[ERROR] Session remove failed: {e}")
+    
+    except Exception as e:
+        print(f"[ERROR] Teardown failed: {e}")
+    
+    finally:
+        # Garbage collection forzato per liberare memoria
+        gc.collect()
 
+
+@app.errorhandler(Exception)
+def handle_exception(error):
+    """Error handler globale per tutte le eccezioni"""
+    print(f"[EXCEPTION HANDLER] Caught exception: {type(error).__name__}: {error}")
+    try:
+        db.session.rollback()
+        db.session.remove()
+    except Exception as e:
+        print(f"[ERROR] Failed to clean session in error handler: {e}")
+    
+    gc.collect()
+    
+    # Restituisci errore 500
+    flash("❌ Errore interno del server. Contatta l'amministratore.", "danger")
+    return redirect(url_for('home')), 500
+
+
+@app.errorhandler(500)
+def handle_500(error):
+    """Handler specifico per errori 500"""
+    try:
+        db.session.rollback()
+        db.session.remove()
+    except Exception as e:
+        print(f"[ERROR] Failed to clean session in 500 handler: {e}")
+    return redirect(url_for('home')), 500
 
 
 # Pagina principale
 @app.route("/")
 def home():
     return render_template("index.html")
+
+
+# Health check endpoint per Render
+@app.route("/health")
+def health_check():
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT 1;")
+        release_connection(conn, cur)
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        print(f"Health check failed: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # Rotta per login admin

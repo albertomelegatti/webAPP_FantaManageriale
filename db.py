@@ -35,9 +35,10 @@ def init_pool():
 
     try:
         pool = psycopg2.pool.ThreadedConnectionPool(
-            minconn = 2,
-            maxconn = 20,
-            **params
+            minconn = 5,
+            maxconn = 50,
+            **params,
+            connect_timeout=10
         )
         print("✅ Pool di connessioni Supabase inizializzato con successo!")
         return pool
@@ -68,15 +69,17 @@ def get_connection():
         raise Exception("Connection pool non inizializzato. Chiama init_pool() prima.")
     
     retries = 0
+    log_pool_status("BEFORE_GETCONN")
 
     while retries < max_retries:
         try:
-            conn = pool.getconn()
+            conn = pool.getconn(timeout=5)
             conn.rollback()
             conn.autocommit = False
             # Verifica che la connessione sia ancora viva
             with conn.cursor() as cur:
                 cur.execute("SELECT 1;")
+            log_pool_status("CONNECTION_OK")
             return conn
         
         except OperationalError as e:
@@ -103,19 +106,34 @@ def release_connection(conn=None, cur=None):
         return
 
     try:
+        # Chiudi il cursore per primo
         if cur:
             try:
                 cur.close()
             except Exception as e:
                 print(f"⚠️ Impossibile chiudere il cursore: {e}")
 
+        # Poi gestisci la connessione
         try:
             if not conn.closed:
+                # Prova a fare rollback prima di restituire al pool
                 try:
                     conn.rollback()
-                except Exception:
-                    pass
-                pool.putconn(conn, close=False)
+                    print(f"[DB] Connection rolled back successfully")
+                except Exception as e:
+                    print(f"⚠️ Errore durante rollback: {e}")
+                    # Prova comunque a restituire la connessione
+                
+                # Restituisci la connessione al pool
+                try:
+                    pool.putconn(conn, close=False)
+                except Exception as e:
+                    print(f"⚠️ Errore durante putconn: {e}")
+                    # Chiudi la connessione se non riesci a metterla nel pool
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
         except Exception as e:
             print(f"⚠️ Errore durante il rilascio connessione al pool: {e}")
             try:
@@ -126,7 +144,8 @@ def release_connection(conn=None, cur=None):
     except Exception as e:
         print(f"⚠️ Errore imprevisto durante release_connection: {e}")
         try:
-            conn.close()
+            if conn and not conn.closed:
+                conn.close()
         except Exception:
             pass
 
@@ -183,3 +202,39 @@ def keep_awake():
     finally:
         if conn:
             release_connection(conn)
+
+
+class DatabaseConnection:
+    """Context manager per gestire connessioni al database in modo sicuro"""
+    
+    def __init__(self):
+        self.conn = None
+        self.cur = None
+    
+    def __enter__(self):
+        """Acquisisce una connessione dal pool"""
+        self.conn = get_connection()
+        self.cur = self.conn.cursor(cursor_factory=RealDictCursor)
+        return self.conn, self.cur
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Rilascia la connessione al pool"""
+        try:
+            if exc_type:
+                print(f"[DatabaseConnection] Exception occurred: {exc_type.__name__}: {exc_val}")
+                if self.conn and not self.conn.closed:
+                    self.conn.rollback()
+            elif self.conn and not self.conn.closed:
+                self.conn.commit()
+        except Exception as e:
+            print(f"[DatabaseConnection] Error in exit: {e}")
+            if self.conn and not self.conn.closed:
+                try:
+                    self.conn.rollback()
+                except Exception:
+                    pass
+        finally:
+            release_connection(self.conn, self.cur)
+        
+        return False  # Propaga le eccezioni
+
