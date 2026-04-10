@@ -9,7 +9,6 @@ from psycopg2 import extensions
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
-
 # Rotta per area admin
 @admin_bp.route("/")
 def admin_home():
