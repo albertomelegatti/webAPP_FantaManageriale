@@ -207,7 +207,7 @@
                     <div class="card-body loan-body d-none" id="loan1-body">
                         <div class="row g-4">
                             <div class="col-lg-6">
-                                <div class="trade-side offer">
+                                <div class="trade-side offer" id="trade-side-prestito1-offerto">
                                     <span class="trade-side-label">🔵 PRESTITO OFFERTO</span>
                                     <div class="mb-3">
                                         <label for="prestito1_offerto" class="form-label fw-semibold">Giocatore</label>
@@ -241,7 +241,7 @@
                                 </div>
                             </div>
                             <div class="col-lg-6">
-                                <div class="trade-side">
+                                <div class="trade-side" id="trade-side-prestito1-richiesto">
                                     <span class="trade-side-label">🟢 PRESTITO RICHIESTO</span>
                                     <div class="mb-3">
                                         <label for="prestito1_richiesto" class="form-label fw-semibold">Giocatore</label>
@@ -288,7 +288,7 @@
                     <div class="card-body loan-body d-none" id="loan2-body">
                         <div class="row g-4">
                             <div class="col-lg-6">
-                                <div class="trade-side offer">
+                                <div class="trade-side offer" id="trade-side-prestito2-offerto">
                                     <span class="trade-side-label">🔵 PRESTITO OFFERTO</span>
                                     <div class="mb-3">
                                         <label for="prestito2_offerto" class="form-label fw-semibold">Giocatore</label>
@@ -322,7 +322,7 @@
                                 </div>
                             </div>
                             <div class="col-lg-6">
-                                <div class="trade-side">
+                                <div class="trade-side" id="trade-side-prestito2-richiesto">
                                     <span class="trade-side-label">🟢 PRESTITO RICHIESTO</span>
                                     <div class="mb-3">
                                         <label for="prestito2_richiesto" class="form-label fw-semibold">Giocatore</label>
@@ -373,25 +373,6 @@
                 </button>
             </div>
         </div>
-
-        <!-- Mobile sticky summary bar -->
-        <div class="mobile-summary-bar soft-card bg-light d-md-none">
-            <div class="d-flex align-items-center justify-content-between">
-                <div>
-                    <div class="mobile-summary-title">Riepilogo rapido</div>
-                    <div class="mobile-summary-values">
-                        <span>Slot: <strong id="mobile-miei-slot-after">—</strong></span>
-                        <span>Crediti: <strong id="mobile-miei-crediti-after">—</strong></span>
-                    </div>
-                </div>
-                <a href="#step-4" class="btn btn-success btn-sm">Vai a invio</a>
-            </div>
-            <div class="small text-muted mt-1">
-                Dopo lo scambio • <span id="mobile-dest-team">Controparte</span>: 
-                Slot <strong id="mobile-dest-slot-after">—</strong> • 
-                Crediti <strong id="mobile-dest-crediti-after">—</strong>
-            </div>
-        </div>
     </form>
 </div>
 
@@ -407,6 +388,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const dd = String(date.getDate()).padStart(2, '0');
         return `${yyyy}-${mm}-${dd}`;
     }
+
+    const nome_squadra = "{{ nome_squadra }}";
 
     // Imposta il valore di default al prossimo 2 luglio per i campi data prestito
     const oggi = new Date();
@@ -580,6 +563,145 @@ document.addEventListener("DOMContentLoaded", () => {
 
         maxOffertiSpan.textContent = maxOffertiSuggeriti;
         maxRichiestiSpan.textContent = maxRichiestiSuggeriti;
+
+        // Controlla disponibilità slot prestiti
+        checkLoanSlotsAvailability();
+    }
+
+    function checkLoanSlotsAvailability() {
+        const destOption = selectSquadra.options[selectSquadra.selectedIndex];
+        const destSlotPrestiti = destOption ? parseInt(destOption.dataset.slotPrestiti) || 0 : 0;
+
+        const enable_prestito1 = document.getElementById('enable_prestito1');
+        const enable_prestito2 = document.getElementById('enable_prestito2');
+        
+        // Le checkbox non vengono mai disabilitate
+        enable_prestito1.disabled = false;
+        enable_prestito2.disabled = false;
+        
+        // Calcola slot liberi per ciascuna squadra
+        const myFreeSlots = 2 - mySlotPrestiti;  // 2 = nessun occupato, 1 = uno occupato, 0 = tutti occupati
+        const destFreeSlots = 2 - destSlotPrestiti;
+        
+        // Prestito 1 OFFERTO: abilitato se ho almeno 1 slot libero (myFreeSlots >= 1)
+        const prestito1OffDisabled = myFreeSlots < 1;
+        // Prestito 2 OFFERTO: abilitato solo se ho 2 slot liberi (myFreeSlots >= 2)
+        const prestito2OffDisabled = myFreeSlots < 2;
+        
+        // Prestito 1 RICHIESTO: abilitato se controparte ha almeno 1 slot libero
+        const prestito1RichDisabled = destFreeSlots < 1;
+        // Prestito 2 RICHIESTO: abilitato solo se controparte ha 2 slot liberi
+        const prestito2RichDisabled = destFreeSlots < 2;
+        
+        // Disabilita pannelli e campi PRESTITO 1 OFFERTO
+        const tradeSidePrestito1Off = document.getElementById('trade-side-prestito1-offerto');
+        const prestito1Off = document.getElementById('prestito1_offerto');
+        const prestito1TipoOff = document.getElementById('prestito1_tipo_offerto');
+        const prestito1RiscattoOff = document.getElementById('prestito1_riscatto_offerto');
+        
+        if (prestito1OffDisabled) {
+            tradeSidePrestito1Off.classList.add('disabled-section');
+            prestito1Off.disabled = true;
+            prestito1TipoOff.disabled = true;
+            prestito1RiscattoOff.disabled = true;
+        } else {
+            tradeSidePrestito1Off.classList.remove('disabled-section');
+            prestito1Off.disabled = false;
+            prestito1TipoOff.disabled = false;
+            prestito1RiscattoOff.disabled = false;
+        }
+        
+        // Disabilita pannelli e campi PRESTITO 1 RICHIESTO
+        const tradeSidePrestito1Rich = document.getElementById('trade-side-prestito1-richiesto');
+        const prestito1Rich = document.getElementById('prestito1_richiesto');
+        const prestito1TipoRich = document.getElementById('prestito1_tipo_richiesto');
+        const prestito1RiscattoRich = document.getElementById('prestito1_riscatto_richiesto');
+        
+        if (prestito1RichDisabled) {
+            tradeSidePrestito1Rich.classList.add('disabled-section');
+            prestito1Rich.disabled = true;
+            prestito1TipoRich.disabled = true;
+            prestito1RiscattoRich.disabled = true;
+        } else {
+            tradeSidePrestito1Rich.classList.remove('disabled-section');
+            prestito1Rich.disabled = false;
+            prestito1TipoRich.disabled = false;
+            prestito1RiscattoRich.disabled = false;
+        }
+        
+        // Disabilita pannelli e campi PRESTITO 2 OFFERTO
+        const tradeSidePrestito2Off = document.getElementById('trade-side-prestito2-offerto');
+        const prestito2Off = document.getElementById('prestito2_offerto');
+        const prestito2TipoOff = document.getElementById('prestito2_tipo_offerto');
+        const prestito2RiscattoOff = document.getElementById('prestito2_riscatto_offerto');
+        
+        if (prestito2OffDisabled) {
+            tradeSidePrestito2Off.classList.add('disabled-section');
+            prestito2Off.disabled = true;
+            prestito2TipoOff.disabled = true;
+            prestito2RiscattoOff.disabled = true;
+        } else {
+            tradeSidePrestito2Off.classList.remove('disabled-section');
+            prestito2Off.disabled = false;
+            prestito2TipoOff.disabled = false;
+            prestito2RiscattoOff.disabled = false;
+        }
+        
+        // Disabilita pannelli e campi PRESTITO 2 RICHIESTO
+        const tradeSidePrestito2Rich = document.getElementById('trade-side-prestito2-richiesto');
+        const prestito2Rich = document.getElementById('prestito2_richiesto');
+        const prestito2TipoRich = document.getElementById('prestito2_tipo_richiesto');
+        const prestito2RiscattoRich = document.getElementById('prestito2_riscatto_richiesto');
+        
+        if (prestito2RichDisabled) {
+            tradeSidePrestito2Rich.classList.add('disabled-section');
+            prestito2Rich.disabled = true;
+            prestito2TipoRich.disabled = true;
+            prestito2RiscattoRich.disabled = true;
+        } else {
+            tradeSidePrestito2Rich.classList.remove('disabled-section');
+            prestito2Rich.disabled = false;
+            prestito2TipoRich.disabled = false;
+            prestito2RiscattoRich.disabled = false;
+        }
+        
+        // Mostra/nascondi messaggi di avvertenza
+        let warningMsg = document.getElementById('loan-slots-warning');
+        const hasWarnings = myFreeSlots === 0 || destFreeSlots === 0 || myFreeSlots === 1 || destFreeSlots === 1;
+        
+        if (hasWarnings) {
+            let warningText = '⚠️ ';
+            if (myFreeSlots === 0) {
+                warningText += `${nome_squadra} non può ricevere altri prestiti (slot: ${mySlotPrestiti}/2). `;
+            } else if (myFreeSlots === 1) {
+                warningText += `${nome_squadra} può ricevere solo 1 prestito (slot: ${mySlotPrestiti}/2). `;
+            }
+            
+            if (destFreeSlots === 0) {
+                const destName = selectSquadra.value || 'Squadra destinataria';
+                warningText += `${destName} non può ricevere altri prestiti (slot: ${destSlotPrestiti}/2).`;
+            } else if (destFreeSlots === 1) {
+                const destName = selectSquadra.value || 'Squadra destinataria';
+                warningText += `${destName} può ricevere solo 1 prestito (slot: ${destSlotPrestiti}/2).`;
+            }
+            
+            if (!warningMsg) {
+                warningMsg = document.createElement('div');
+                warningMsg.id = 'loan-slots-warning';
+                warningMsg.className = 'alert alert-warning mb-3';
+                warningMsg.innerHTML = warningText;
+                
+                const step3 = document.getElementById('step-3');
+                const cardBody = step3.querySelector('.card-body');
+                cardBody.insertBefore(warningMsg, cardBody.firstChild.nextSibling);
+            } else {
+                warningMsg.innerHTML = warningText;
+            }
+        } else {
+            if (warningMsg) {
+                warningMsg.remove();
+            }
+        }
     }
 
     function updateSlotsCard() {
@@ -726,6 +848,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         updateMaxItems();
         updateSlotsCard();
+        checkLoanSlotsAvailability();
     });
 
     form.addEventListener('submit', (event) => {

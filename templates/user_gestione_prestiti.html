@@ -1,6 +1,85 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<style>
+    /* Stile per la riga dei dettagli per rimuovere i bordi della tabella */
+    .details-row > td {
+        padding: 0 !important;
+        border: none !important;
+        background-color: transparent !important;
+    }
+
+    /* Contenitore principale della visualizzazione dei dettagli del prestito */
+    .loan-details-container {
+        padding: 1.25rem;
+        margin: 0.5rem 0;
+        border-radius: 0.75rem;
+        background-color: var(--color-background-card, #ffffff);
+        border: 1px solid var(--color-border-primary, #dee2e6);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+
+    body.dark-mode .loan-details-container {
+        background-color: var(--color-background-card);
+        border-color: var(--color-border-primary);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Layout per i dettagli */
+    .loan-details-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+        align-items: start;
+        margin-bottom: 1rem;
+    }
+
+    /* Card per singola informazione */
+    .loan-detail-item {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        background-color: var(--color-background-body, #f8f9fa);
+    }
+    
+    body.dark-mode .loan-detail-item {
+        background-color: #1f1f1f;
+    }
+
+    .loan-detail-label {
+        font-weight: 600;
+        color: var(--color-text-primary);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .loan-detail-value {
+        color: var(--color-text-primary);
+        font-size: 0.95rem;
+    }
+
+    /* Contenitore per i bottoni di azione */
+    .loan-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--color-border-primary, #dee2e6);
+    }
+
+    /* Responsive per schermi più piccoli */
+    @media (max-width: 768px) {
+        .loan-details-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        .loan-details-container { padding: 1rem; }
+        .loan-detail-item { padding: 1rem; }
+    }
+</style>
+
 <div class="container mt-5">
 
     <!-- HEADER CON TITOLO -->
@@ -18,101 +97,39 @@
         </h5>
     </div>
 
+    <!-- Elemento nascosto con i dati dei prestiti in JSON -->
+    <script type="application/json" id="prestiti-in-json-data">
+    {{ prestiti_in|tojson }}
+    </script>
+    <script type="application/json" id="prestiti-out-json-data">
+    {{ prestiti_out|tojson }}
+    </script>
+
     <!-- PRESTITI IN ENTRATA -->
     <div class="card mb-4 shadow-sm">
         <div class="card-header text-white" style="background-color: #17a2b8;">
             Prestiti in entrata
         </div>
         <div class="card-body table-responsive bg-light">
-            <table class="table table-striped table-hover align-middle">
+            <table class="table table-striped table-hover align-middle" data-action-url="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" data-loan-type="in">
                 <thead class="table-light">
                     <tr>
                         <th>Giocatore</th>
                         <th>Squadra prestante</th>
-                        <th>Data inizio</th>
                         <th>Data fine</th>
-                        <th>Tipo</th>
-                        <th>Costo</th>
-                        <th>Riscatto</th>
-                        <th>Azioni</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for p in prestiti_in %}
-                    <tr>
-                        <td>
-                            {{ p.giocatori }}
-                            {% if p.note %}
-                                <br><small class="text-muted">📝 {{ p.note }}</small>
-                            {% endif %}
-                        </td>
+                    <tr class="loan-row" data-loan-id="{{ p.id_prestito }}">
+                        <td>{{ p.giocatori }}</td>
                         <td>{{ p.squadra_prestante }}</td>
-                        <td>{{ p.data_inizio }}</td>
                         <td>{{ p.data_fine }}</td>
-                        <td>{{ p.tipo_prestito if p.tipo_prestito else '-' }}</td>
-                        <td>{{ p.costo_prestito }}</td>
-                        <td>{{ p.crediti_riscatto }}</td>
-                        <td class="text-center">
-                            {% if p.stato == 'in_corso' %}
-                                {% if (p.tipo_prestito == 'diritto_di_riscatto' or p.tipo_prestito == 'obbligo_di_riscatto') and p.crediti_riscatto > 0 %}
-                                    <!-- Bottoni RISCATTA e CHIEDI TERMINAZIONE sulla stessa riga -->
-                                    <div class="d-flex flex-row gap-2 justify-content-center">
-                                        <form method="POST" 
-                                              action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
-                                              onsubmit="return confirm('Vuoi riscattare {{ p.giocatori }} pagando {{ p.crediti_riscatto }} crediti?');">
-                                            <input type="hidden" name="riscatta_giocatore" value="{{ p.id_prestito }}">
-                                            <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-info">
-                                                💰 Riscatta ({{ p.crediti_riscatto }} crediti)        
-                                            </button>
-                                {% endif %}
-                                            
-                                </form>
-                                <form method="POST" 
-                                        action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
-                                        onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
-                                    <input type="hidden" name="richiedi_terminazione" value="{{ p.id_prestito }}">
-                                    <button type="submit" class="btn btn-sm fw-semibold"
-                                    style="background-color:#dc3545; border-color:#dc3545; color:white; padding:0.25rem 0.5rem;">       
-                                        Chiedi terminazione anticipata
-                                    </button>
-                                </form>
-                            </div>
-                            {% elif p.stato == 'richiesta_di_terminazione' and p.richiedente_terminazione != nome_squadra %}
-                                <div class="d-flex flex-column flex-md-row gap-2 justify-content-center w-100">
-                                    <!-- Bottone ACCETTA -->
-                                    <form method="POST" 
-                                          action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
-                                          onsubmit="return confirm('Vuoi accettare la terminazione anticipata del prestito per {{ p.giocatori }}?');">
-                                        <input type="hidden" name="accetta_terminazione" value="{{ p.id_prestito }}">
-                                        <button type="submit" class="btn btn-sm btn-success py-1 px-2 fw-semibold w-100"
-                                                style="background-color: #28a745; border-color: #28a745;">
-                                            ✅ Accetta
-                                        </button>
-                                    </form>
-                                
-                                    <!-- Bottone RIFIUTA -->
-                                    <form method="POST" 
-                                          action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
-                                          onsubmit="return confirm('Vuoi rifiutare la terminazione anticipata del prestito per {{ p.giocatori }}?');">
-                                        <input type="hidden" name="rifiuta_terminazione" value="{{ p.id_prestito }}">
-                                        <button type="submit" class="btn btn-sm btn-danger py-1 px-2 fw-semibold w-100"
-                                                style="background-color: #dc3545; border-color: #dc3545;">
-                                            ❌ Rifiuta
-                                        </button>
-                                    </form>
-                                </div>
-                                {% else %}
-
-
-
-                                <span class="text-muted small">In attesa</span>
-                            {% endif %}
-                        </td>
+                        <td class="text-center"><button type="button" class="btn btn-sm btn-info view-loan-btn">Vedi</button></td>
                     </tr>
                     {% else %}
-                    <tr>
-                        <td colspan="8" class="text-center text-muted">Nessun prestito in entrata</td>
-                    </tr>
+                    <tr><td colspan="4" class="text-center text-muted">Nessun prestito in entrata</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -125,66 +142,25 @@
             Prestiti in uscita
         </div>
         <div class="card-body table-responsive bg-light">
-            <table class="table table-striped table-hover align-middle">
+            <table class="table table-striped table-hover align-middle" data-action-url="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" data-loan-type="out">
                 <thead class="table-light">
                     <tr>
                         <th>Giocatore</th>
                         <th>Squadra ricevente</th>
-                        <th>Data inizio</th>
                         <th>Data fine</th>
-                        <th>Tipo</th>
-                        <th>Costo</th>
-                        <th>Riscatto</th>
-                        <th>Azioni</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for p in prestiti_out %}
-                    <tr>
-                        <td>
-                            {{ p.giocatori }}
-                            {% if p.note %}
-                                <br><small class="text-muted">📝 {{ p.note }}</small>
-                            {% endif %}
-                        </td>
+                    <tr class="loan-row" data-loan-id="{{ p.id_prestito }}">
+                        <td>{{ p.giocatori }}</td>
                         <td>{{ p.squadra_ricevente }}</td>
-                        <td>{{ p.data_inizio }}</td>
                         <td>{{ p.data_fine }}</td>
-                        <td>{{ p.tipo_prestito if p.tipo_prestito else '-' }}</td>
-                        <td>{{ p.costo_prestito }}</td>
-                        <td>{{ p.crediti_riscatto }}</td>
-                        <td class="text-center">
-                            {% if p.stato == 'in_corso' %}
-                                <form method="POST" 
-                                      action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
-                                      onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per {{ p.giocatori }}?');">
-                                    <input type="hidden" name="richiedi_terminazione" value="{{ p.id_prestito }}">
-                                    <button type="submit" class="btn btn-sm fw-semibold"
-                                    style="background-color:#dc3545; border-color:#dc3545; color:white; padding:0.25rem 0.5rem;"
-                                        {% if slot_giocatori >= 30 %}
-                                            disabled title="Non puoi richiedere il rientro del giocatore perché hai gli slot pieni (30/30)"
-                                        {% endif %}>
-                                        Chiedi terminazione anticipata
-                                    </button>
-                                </form>
-                            {% elif p.stato == 'richiesta_di_terminazione' and p.richiedente_terminazione != nome_squadra %}
-                                <form method="POST" 
-                                      action="{{ url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra) }}" 
-                                      onsubmit="return confirm('Vuoi accettare la terminazione anticipata del prestito per {{ p.giocatori }}?');">
-                                    <input type="hidden" name="accetta_terminazione" value="{{ p.id_prestito }}">
-                                    <button type="submit" class="btn btn-sm fw-semibold py-1 px-2 btn-danger w-100">
-                                        Accetta terminazione anticipata
-                                    </button>
-                                </form>
-                            {% else %}
-                                <span class="text-muted small">In attesa</span>
-                            {% endif %}
-                        </td>
+                        <td class="text-center"><button type="button" class="btn btn-sm btn-info view-loan-btn">Vedi</button></td>
                     </tr>
                     {% else %}
-                    <tr>
-                        <td colspan="8" class="text-center text-muted">Nessun prestito in uscita</td>
-                    </tr>
+                    <tr><td colspan="4" class="text-center text-muted">Nessun prestito in uscita</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -193,4 +169,169 @@
 
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Carica i dati JSON dai dati nascosti
+    const prestitiInElement = document.getElementById('prestiti-in-json-data');
+    const prestitiOutElement = document.getElementById('prestiti-out-json-data');
+    
+    let prestiti_in = [];
+    let prestiti_out = [];
+    
+    try {
+        if (prestitiInElement) {
+            prestiti_in = JSON.parse(prestitiInElement.textContent);
+        }
+        if (prestitiOutElement) {
+            prestiti_out = JSON.parse(prestitiOutElement.textContent);
+        }
+    } catch (e) {
+        console.error('Errore nel parsing dei dati JSON dei prestiti:', e);
+    }
+    
+    // Crea una mappa per accesso veloce
+    const loansMap = {};
+    prestiti_in.forEach(loan => {
+        loansMap[loan.id_prestito] = { ...loan, type: 'in' };
+    });
+    prestiti_out.forEach(loan => {
+        loansMap[loan.id_prestito] = { ...loan, type: 'out' };
+    });
+    
+    const nomeSquadra = "{{ nome_squadra }}";
+    const buttons = document.querySelectorAll('.view-loan-btn');
+    
+    console.log('Bottoni trovati:', buttons.length);
+    console.log('Prestiti caricati - IN:', prestiti_in.length, 'OUT:', prestiti_out.length);
+
+    buttons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const loanRow = this.closest('.loan-row');
+            const loanId = loanRow.dataset.loanId;
+            const table = loanRow.closest('table');
+            const actionUrl = table.dataset.actionUrl;
+            const loanType = table.dataset.loanType;
+
+            console.log('Cliccato prestito:', loanId, 'Tipo:', loanType);
+
+            // Controlla se la riga cliccata è già aperta
+            const isAlreadyOpen = loanRow.nextElementSibling?.classList.contains('details-row');
+
+            // Chiudi tutte le altre righe aperte nella stessa tabella
+            table.querySelectorAll('.details-row').forEach(row => {
+                row.remove();
+            });
+
+            // Se era già aperta, ci fermiamo qui (effetto toggle)
+            if (isAlreadyOpen) {
+                return;
+            }
+            
+            const loanData = loansMap[loanId];
+            if (!loanData) {
+                console.error('Prestito non trovato:', loanId);
+                alert("Errore: dati del prestito non trovati.");
+                return;
+            }
+
+            const detailsHtml = generateDetailsHtml(loanData, nomeSquadra, actionUrl, loanType);
+            const detailsRow = document.createElement('tr');
+            detailsRow.className = 'details-row';
+            const cell = document.createElement('td');
+            cell.colSpan = loanRow.cells.length;
+            cell.innerHTML = detailsHtml;
+            detailsRow.appendChild(cell);
+
+            loanRow.parentNode.insertBefore(detailsRow, loanRow.nextSibling);
+        });
+    });
+
+    function generateDetailsHtml(loan, currentUserTeam, actionUrl, loanType) {
+        const isIncoming = loanType === 'in';
+
+        // Mapping dei tipi di prestito
+        const tipoMap = {
+            'secco': 'Secco',
+            'diritto_di_riscatto': 'Diritto di riscatto',
+            'obbligo_di_riscatto': 'Obbligo di riscatto'
+        };
+        const tipoStr = tipoMap[loan.tipo_prestito] || loan.tipo_prestito;
+
+        let buttonsHtml = '';
+        
+        if (loan.stato === 'in_corso') {
+            if (isIncoming) {
+                if ((loan.tipo_prestito === 'diritto_di_riscatto' || loan.tipo_prestito === 'obbligo_di_riscatto') && loan.crediti_riscatto > 0) {
+                    buttonsHtml += `
+                        <form method="POST" action="${actionUrl}" onsubmit="return confirm('Vuoi riscattare ${loan.giocatori} pagando ${loan.crediti_riscatto} crediti?');">
+                            <input type="hidden" name="riscatta_giocatore" value="${loan.id_prestito}">
+                            <button type="submit" class="btn btn-info btn-sm">
+                                💰 Riscatta (${loan.crediti_riscatto} crediti)        
+                            </button>
+                        </form>`;
+                }
+                buttonsHtml += `
+                    <form method="POST" action="${actionUrl}" onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per ${loan.giocatori}?');">
+                        <input type="hidden" name="richiedi_terminazione" value="${loan.id_prestito}">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            Chiedi terminazione anticipata
+                        </button>
+                    </form>`;
+            } else {
+                buttonsHtml = `
+                    <form method="POST" action="${actionUrl}" onsubmit="return confirm('Vuoi richiedere la terminazione anticipata del prestito per ${loan.giocatori}?');">
+                        <input type="hidden" name="richiedi_terminazione" value="${loan.id_prestito}">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            Chiedi terminazione anticipata
+                        </button>
+                    </form>`;
+            }
+        } else if (loan.stato === 'richiesta_di_terminazione' && loan.richiedente_terminazione !== currentUserTeam) {
+            buttonsHtml = `
+                <form method="POST" action="${actionUrl}" onsubmit="return confirm('Vuoi accettare la terminazione anticipata del prestito per ${loan.giocatori}?');">
+                    <input type="hidden" name="accetta_terminazione" value="${loan.id_prestito}">
+                    <button type="submit" class="btn btn-success btn-sm">
+                        ✅ Accetta
+                    </button>
+                </form>
+                <form method="POST" action="${actionUrl}" onsubmit="return confirm('Vuoi rifiutare la terminazione anticipata del prestito per ${loan.giocatori}?');">
+                    <input type="hidden" name="rifiuta_terminazione" value="${loan.id_prestito}">
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        ❌ Rifiuta
+                    </button>
+                </form>`;
+        }
+
+        // Template HTML finale
+        return `
+            <div class="loan-details-container">
+                <div class="loan-details-grid">
+                    <!-- Info prestito -->
+                    <div class="loan-detail-item">
+                        <div class="loan-detail-label">Tipo prestito</div>
+                        <div class="loan-detail-value">${tipoStr}</div>
+                        <div class="loan-detail-label mt-3">Costo prestito</div>
+                        <div class="loan-detail-value">${loan.costo_prestito} crediti</div>
+                        <div class="loan-detail-label mt-3">Crediti riscatto</div>
+                        <div class="loan-detail-value">${loan.crediti_riscatto || '-'} crediti</div>
+                        <div class="loan-detail-label mt-3">Stato</div>
+                        <div class="loan-detail-value">
+                            <span class="badge ${loan.stato === 'in_corso' ? 'bg-success' : loan.stato === 'richiesta_di_terminazione' ? 'bg-warning' : 'bg-secondary'}">
+                                ${loan.stato === 'in_corso' ? 'In corso' : loan.stato === 'richiesta_di_terminazione' ? 'Richiesta terminazione' : loan.stato}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                ${buttonsHtml ? `<div class="loan-actions">${buttonsHtml}</div>` : ''}
+            </div>
+        `;
+    }
+});
+</script>
 {% endblock %}

@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 from db import get_connection, release_connection
 from user import format_giocatori, formatta_data
 
-
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 
 load_dotenv(dotenv_path=env_path)
@@ -291,7 +290,6 @@ def scambio_risposta(conn, id_scambio, risposta):
         squadra_destinataria = info_scambio['squadra_destinataria']
         giocatori_offerti_raw = format_giocatori(info_scambio['giocatori_offerti'])
         giocatori_richiesti_raw = format_giocatori(info_scambio['giocatori_richiesti'])
-        # Splitti per virgola e aggiungi bullet e [Definitivo] per ogni giocatore
         giocatori_offerti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_offerti_raw.split(',') if g.strip()]
         giocatori_richiesti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_richiesti_raw.split(',') if g.strip()]
         crediti_offerti = info_scambio['crediti_offerti'] or 0
@@ -632,11 +630,13 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
                     La tua richiesta di terminare in anticipo il prestito del giocatore: {giocatore} è stata accettata.
             ''')
             send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
+            
             text_to_send = textwrap.dedent(f'''
                     📢 COMUNICAZIONE UFFICIALE: 
                     Le squadre {squadra_prestante} e {squadra_ricevente} si sono accordate per terminare anticipatamente il prestito del giocatore: {giocatore}.
             ''')
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+
 
         else:
             text_to_send = textwrap.dedent(f'''
@@ -819,49 +819,6 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
     
     finally:
         cur.close()
-
-
-
-def format_prestito(conn, lista_prestiti):
-    if not lista_prestiti:
-        return ""
-    
-    formatted_prestiti = []
-    cur = None
-    try:
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        for prestito_id in lista_prestiti:
-            cur.execute('''
-                        SELECT g.nome, p.tipo_prestito, p.crediti_riscatto
-                        FROM prestito p
-                        JOIN giocatore g
-                        ON p.giocatore = g.id
-                        WHERE p.id = %s;
-            ''', (prestito_id,))
-            info_prestito = cur.fetchone()
-            
-            if info_prestito:
-                giocatore = info_prestito['nome']
-                tipo_prestito = info_prestito['tipo_prestito']
-                crediti_riscatto = info_prestito['crediti_riscatto']
-                
-                tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
-                tipo_str = tipo_map.get(tipo_prestito, tipo_prestito)
-                riscatto_str = f" (risc. {crediti_riscatto})" if crediti_riscatto and crediti_riscatto > 0 else ""
-                
-                prestito_str = f"• {giocatore} [Prestito {tipo_str}{riscatto_str}]"
-                formatted_prestiti.append(prestito_str)
-        
-        return "\n".join(formatted_prestiti)
-    
-    except Exception as e:
-        print(f"Errore in format_prestito: {e}")
-        return ""
-    
-    finally:
-        cur.close()
-
 
 
 
