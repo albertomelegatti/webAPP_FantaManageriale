@@ -33,8 +33,8 @@ WHERE p.giocatore = g.id
 
 UPDATE prestito
 SET stato = 'terminato'
-WHERE tipo_prestito = 'diritto_di_riscatto'
-  AND stato = 'in_corso'
+WHERE stato = 'in_corso'
+  AND tipo_prestito = 'diritto_di_riscatto'
   AND data_fine <= NOW() AT TIME ZONE 'Europe/Rome';
 
 
@@ -42,7 +42,7 @@ WHERE tipo_prestito = 'diritto_di_riscatto'
 -- 3.1 Tipo prestito = OBBLIGO DI RISCATTO
 UPDATE giocatore g
 SET
-    squadra_att = p.squadra_ricevente,
+    detentore_cartellino = p.squadra_ricevente,
     tipo_contratto = 'Indeterminato'
 FROM prestito p
 WHERE p.giocatore = g.id
@@ -61,16 +61,16 @@ UPDATE squadra s
 SET
     s.crediti = s.crediti - p.costo_riscatto
 FROM prestito p
-WHERE p.squadra_ricevente = s.nome_squadra
+WHERE p.squadra_ricevente = s.nome
   AND p.tipo_prestito = 'obbligo_di_riscatto'
   AND p.stato = 'riscattato'
   AND p.data_fine <= NOW() AT TIME ZONE 'Europe/Rome';
 
 UPDATE squadra s
 SET
-    s.crediti = s.crediti + p.costo_riscatto
+    s.crediti = s.crediti + p.crediti_riscatto
 FROM prestito p
-WHERE p.squadra_prestante = s.nome_squadra
+WHERE p.squadra_prestante = s.nome
   AND p.tipo_prestito = 'obbligo_di_riscatto'
   AND p.stato = 'riscattato'
   AND p.data_fine <= NOW() AT TIME ZONE 'Europe/Rome';
@@ -79,7 +79,6 @@ WHERE p.squadra_prestante = s.nome_squadra
 UPDATE prestito
 SET
     stato = 'terminato'
-WHERE tipo_prestito = 'obbligo_di_riscatto'
-  AND stato = 'riscattato'
+WHERE stato = 'riscattato'
   AND data_fine <= NOW() AT TIME ZONE 'Europe/Rome';
 
