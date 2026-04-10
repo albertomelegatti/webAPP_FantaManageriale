@@ -11,17 +11,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
-
 aste_bp = Blueprint('aste', __name__, url_prefix='/aste')
-
 
 
 # Pagina gestione aste utente
 @aste_bp.route("/aste/<nome_squadra>", methods=["GET", "POST"])
 def user_aste(nome_squadra):
+
     conn = None
     cur = None
+
     try:
         conn = get_connection()
         conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
@@ -49,13 +48,22 @@ def user_aste(nome_squadra):
 
                 
                 if tempo_scaduto == False:
-                    # Controllo se l'utente loggato è già iscritto all'asta, a volte capita che un utente possa iscriversi due volte.
+                    # Recupero info asta
                     cur.execute('''
-                                SELECT %s = ANY(partecipanti) AS gia_iscritto
-                                FROM asta
-                                WHERE id = %s;
+                                SELECT %s = ANY(a.partecipanti) AS gia_iscritto, g.nome
+                                FROM asta a
+                                JOIN giocatore g ON a.giocatore = g.id
+                                WHERE a.id = %s;
                     ''', (nome_squadra, asta_id))
-                    gia_iscritto = cur.fetchone()["gia_iscritto"]
+                    info_asta = cur.fetchone()
+
+                    if info_asta:
+                        gia_iscritto = info_asta['gia_iscritto']
+                        nome_giocatore = info_asta['nome']
+                    else:
+                        flash("❌ Errore durante l'iscrizione all'asta.", "danger")
+                        return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
+
                 
                     # Se non gia iscritto, iscriviti
                     if not gia_iscritto:
@@ -65,22 +73,6 @@ def user_aste(nome_squadra):
                                     WHERE id = %s;
                         ''', (nome_squadra, asta_id))
                         conn.commit()
-
-                        # Recupero info id giocatore dell'asta
-                        cur.execute('''
-                                    SELECT giocatore 
-                                    FROM asta 
-                                    WHERE id = %s;
-                        ''', (asta_id,))
-                        id_giocatore = cur.fetchone()['giocatore']
-
-                        # Recupero info sul nome del giocatore
-                        cur.execute('''
-                                    SELECT nome
-                                    FROM giocatore
-                                    WHERE id = %s;
-                        ''', (id_giocatore,))
-                        nome_giocatore = cur.fetchone()['nome']
 
                         flash(f"✅ Ti sei iscritto all'asta per { nome_giocatore }.", "success")
                         return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
@@ -94,8 +86,8 @@ def user_aste(nome_squadra):
                     FROM asta a
                     JOIN giocatore g ON a.giocatore = g.id
                     WHERE (a.stato = 'in_corso' AND %s = ANY(a.partecipanti)) 
-                    OR a.stato = 'mostra_interesse'
-                    OR (a.stato = 'conclusa' AND a.squadra_vincente = %s)
+                        OR a.stato = 'mostra_interesse'
+                        OR (a.stato = 'conclusa' AND a.squadra_vincente = %s)
                     ORDER BY a.tempo_fine_asta DESC;
         ''', (nome_squadra, nome_squadra))
         aste_raw = cur.fetchall()
@@ -316,6 +308,7 @@ def nuova_asta(nome_squadra):
 
 @aste_bp.route("/singola_asta_attiva/<int:asta_id>/<nome_squadra>", methods=["GET", "POST"])
 def singola_asta_attiva(asta_id, nome_squadra):
+
     asta = None
     conn = None
     cur = None
@@ -335,8 +328,10 @@ def singola_asta_attiva(asta_id, nome_squadra):
                             WHERE id = %s;
                 ''', (nome_squadra, asta_id_rinuncia))
                 conn.commit()
+
                 flash("✅ Hai rinunciato all'asta.", "success")
                 return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
+
 
             # Bottone RILANCIA OFFERTA
             nuova_offerta = request.form.get("bottone_rilancia")

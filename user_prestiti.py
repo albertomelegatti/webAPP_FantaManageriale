@@ -12,6 +12,7 @@ prestiti_bp = Blueprint('prestiti', __name__, url_prefix='/prestiti')
 
 @prestiti_bp.route("/prestiti/<nome_squadra>", methods=["GET", "POST"])
 def user_prestiti(nome_squadra):
+
     conn = None
     cur = None
     crediti = 0
