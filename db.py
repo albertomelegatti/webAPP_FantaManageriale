@@ -30,15 +30,15 @@ def init_pool():
         "password": result.password,
         "host": result.hostname,
         "port": result.port,
-        "dbname": "postgres"
+        "dbname": "postgres",
+        "connect_timeout": 10
     }
 
     try:
         pool = psycopg2.pool.ThreadedConnectionPool(
             minconn = 5,
             maxconn = 50,
-            **params,
-            connect_timeout=10
+            **params
         )
         print("✅ Pool di connessioni Supabase inizializzato con successo!")
         return pool
@@ -73,7 +73,7 @@ def get_connection():
 
     while retries < max_retries:
         try:
-            conn = pool.getconn(timeout=5)
+            conn = pool.getconn()
             conn.rollback()
             conn.autocommit = False
             # Verifica che la connessione sia ancora viva
