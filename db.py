@@ -35,8 +35,8 @@ def init_pool():
 
     try:
         pool = psycopg2.pool.ThreadedConnectionPool(
-            minconn = 2,
-            maxconn = 20,
+            minconn = 1,
+            maxconn = 5,
             **params
         )
         print("✅ Pool di connessioni Supabase inizializzato con successo!")

@@ -23,6 +23,21 @@ def squadra_login(nome_squadra):
     return render_template("squadra_login.html", nome_squadra=nome_squadra, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num)
 
 
+@user_bp.route("/mercato_menu/<nome_squadra>")
+def user_mercato_menu(nome_squadra):
+    return render_template("user_mercato_menu.html", nome_squadra=nome_squadra)
+
+
+@user_bp.route("/prestiti_menu/<nome_squadra>")
+def user_prestiti_menu(nome_squadra):
+    return render_template("user_prestiti_menu.html", nome_squadra=nome_squadra)
+
+
+@user_bp.route("/rosa_menu/<nome_squadra>")
+def user_rosa_menu(nome_squadra):
+    return render_template("user_rosa_menu.html", nome_squadra=nome_squadra)
+
+
 
 def format_partecipanti(partecipanti):
     if not partecipanti:

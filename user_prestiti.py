@@ -63,7 +63,7 @@ def user_prestiti(nome_squadra):
         offerta_totale = get_offerta_totale(conn, nome_squadra)
         crediti_disponibili = crediti - offerta_totale
 
-
+        # Selezione dei prestiti che non sono associati con nessuno scambio
         cur.execute('''
                     SELECT *, p.id AS prestito_id, 
                            p.note,
@@ -73,7 +73,12 @@ def user_prestiti(nome_squadra):
                     FROM prestito p
                     JOIN giocatore g ON p.giocatore = g.id
                     WHERE (p.squadra_prestante = %s OR p.squadra_ricevente = %s)
-                        AND p.stato = 'in_attesa';
+                        AND p.stato = 'in_attesa'
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM scambio s
+                            WHERE p.id = ANY(s.prestito_associato)
+                        );
         ''', (nome_squadra, nome_squadra))
         prestiti_raw = cur.fetchall()
 
@@ -103,7 +108,7 @@ def user_prestiti(nome_squadra):
 
     except Exception as e:
         print(f"❌ Errore durante il caricamento della pagina 'prestiti': {e}")
-        return render_template("user_prestiti.html", nome_squadra=nome_squadra)
+        return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=0, crediti_disponibili=0, prestiti=[], prestiti_in_num=0, block_button=False)
     
     finally:
         release_connection(conn, cur)
@@ -224,7 +229,7 @@ def nuovo_prestito(nome_squadra):
 
     except Exception as e:
         print(f"❌ Errore durante il caricamento della pagina 'nuovo_prestito': {e}")
-        return render_template("user_prestiti.html", nome_squadra=nome_squadra)
+        return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=0, crediti_disponibili=0, prestiti=[], prestiti_in_num=0, block_button=False)
     
     finally:
         release_connection(conn, cur)
@@ -288,7 +293,7 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
 
     except Exception as e:
         print(f"❌ Errore durante l'attivazione del prestito: {e}")
-        return render_template("user_prestiti.html", nome_squadra=nome_squadra)
+        return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=0, crediti_disponibili=0, prestiti=[], prestiti_in_num=0, block_button=False)
     
     finally:
         release_connection(conn, cur)

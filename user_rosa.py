@@ -10,10 +10,6 @@ from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attu
 
 rosa_bp = Blueprint('rosa', __name__, url_prefix='/rosa')
 
-@rosa_bp.route("/gestione_rosa/<nome_squadra>")
-def user_gestione_rosa(nome_squadra):
-    return render_template("user_gestione_rosa.html", nome_squadra=nome_squadra)
-
 
 @rosa_bp.route("/user_primavera/<nome_squadra>", methods=["GET", "POST"])
 def user_primavera(nome_squadra):
@@ -216,7 +212,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
 
             flash("✅ Richiesta di modifica contratto inviata con successo.", "success")
             telegram_utils.richiesta_modifica_contratto(conn, nome_squadra, id_giocatore, messaggio)
-            return redirect(url_for("rosa.user_gestione_rosa", nome_squadra=nome_squadra))
+            return redirect(url_for("rosa.user_tagli", nome_squadra=nome_squadra))
 
         cur.execute('''
                     SELECT nome, tipo_contratto
@@ -227,7 +223,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
 
         if not giocatore_raw:
             flash(f"❌ Giocatore con id {id_giocatore} non trovato.", "danger")
-            return redirect(url_for('rosa.user_gestione_rosa', nome_squadra=nome_squadra))
+            return redirect(url_for('rosa.user_tagli', nome_squadra=nome_squadra))
 
         nome_giocatore = giocatore_raw['nome']
         tipo_contratto = giocatore_raw['tipo_contratto']
@@ -241,7 +237,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
     except Exception as e:
         print(f"Errore durante la richiesta di modifica contratto: {e}")
         flash("❌ Errore durante la richiesta di modifica contratto.", "danger")
-        return redirect(url_for('rosa.user_gestione_rosa', nome_squadra=nome_squadra))
+        return redirect(url_for('rosa.user_tagli', nome_squadra=nome_squadra))
 
     finally:
         release_connection(conn, cur)
@@ -412,7 +408,7 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
             return
 
         # Verifica che il tipo sia "Con diritto di riscatto" o "Con obbligo di riscatto"
-        if prestito['tipo_prestito'] not in ('Con diritto di riscatto', 'Con obbligo di riscatto'):
+        if prestito['tipo_prestito'] not in ('obbligo_di_riscatto', 'diritto_di_riscatto'):
             flash("❌ Questo prestito non ha diritto di riscatto.", "danger")
             return
 
@@ -430,7 +426,7 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
         # 2. Aggiornare il prestito come "riscattato"
         cur.execute('''
                     UPDATE prestito
-                    SET stato = 'riscattato',
+                    SET stato = 'terminato',
                         data_fine = (NOW() AT TIME ZONE 'Europe/Rome'),
                         richiedente_terminazione = NULL
                     WHERE id = %s;
@@ -495,8 +491,7 @@ def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
         flash("❌ Errore nel controllo del prestito, riprovare.", "danger")
 
     finally:
-        release_connection(None, cur)
-
+        cur.close()
 
 
 

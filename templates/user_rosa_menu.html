@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center">
+        <h1 class="mb-4">Gestione Rosa di {{ nome_squadra }}</h1>
+
+        <div class="d-grid gap-3 mx-auto" style="max-width: 300px;">
+            <a href="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg d-flex align-items-center justify-content-center" style="height: 72px;">
+                🧾 Gestione Contratti
+            </a>
+            <a href="{{ url_for('rosa.user_primavera', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg d-flex align-items-center justify-content-center" style="height: 72px;">
+                🌱 Primavera
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
