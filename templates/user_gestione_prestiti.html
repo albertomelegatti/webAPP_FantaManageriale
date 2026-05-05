@@ -317,9 +317,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="loan-detail-label">Tipo prestito</div>
                         <div class="loan-detail-value">${tipoStr}</div>
                         <div class="loan-detail-label mt-3">Costo prestito</div>
-                        <div class="loan-detail-value">${loan.costo_prestito} crediti</div>
+                        <div class="loan-detail-value">${loan.costo_prestito ?? 0} crediti</div>
+                        ${loan.tipo_prestito !== 'secco' ? `
                         <div class="loan-detail-label mt-3">Crediti riscatto</div>
-                        <div class="loan-detail-value">${loan.crediti_riscatto || '-'} crediti</div>
+                        <div class="loan-detail-value">${loan.crediti_riscatto ?? '-'} crediti</div>
+                        ` : ''}
                         <div class="loan-detail-label mt-3">Stato</div>
                         <div class="loan-detail-value">
                             <span class="badge ${loan.stato === 'in_corso' ? 'bg-success' : loan.stato === 'richiesta_di_terminazione' ? 'bg-warning' : 'bg-secondary'}">
