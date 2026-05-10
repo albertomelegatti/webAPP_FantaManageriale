@@ -81,4 +81,12 @@ BEGIN
   WHERE tipo_prestito = 'obbligo_di_riscatto'
     AND stato = 'riscattato'
     AND data_fine <= NOW() AT TIME ZONE 'Europe/Rome';
+
+# Gestione Prestiti Reali
+  UPDATE giocatore
+  SET 
+      squadra_att = detentore_cartellino,
+      tipo_contratto = 'Indeterminato'
+  WHERE g.tipo_contratto = 'Prestito Reale'
+
 END;
