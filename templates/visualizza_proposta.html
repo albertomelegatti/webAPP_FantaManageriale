@@ -27,8 +27,11 @@
                     {% if scambio.crediti_offerti %}
                         <p><strong>Crediti offerti:</strong> {{ scambio.crediti_offerti }}</p>
                     {% endif %}
-                    {% if not scambio.giocatori_offerti and not scambio.crediti_offerti %}
-                        <p class="text-muted">Nessuna offerta in giocatori o crediti.</p>
+                    {% if scambio.pick_offerta %}
+                        <p><strong>Pick offerte:</strong> {{ scambio.pick_offerta }}</p>
+                    {% endif %}
+                    {% if not scambio.giocatori_offerti and not scambio.crediti_offerti and not scambio.pick_offerta %}
+                        <p class="text-muted">Nessuna offerta in giocatori, crediti o pick.</p>
                     {% endif %}
                 </div>
 
@@ -42,8 +45,11 @@
                     {% if scambio.crediti_richiesti %}
                         <p><strong>Crediti richiesti:</strong> {{ scambio.crediti_richiesti }}</p>
                     {% endif %}
-                    {% if not scambio.giocatori_richiesti and not scambio.crediti_richiesti %}
-                        <p class="text-muted">Nessuna richiesta in giocatori o crediti.</p>
+                    {% if scambio.pick_richiesta %}
+                        <p><strong>Pick richieste:</strong> {{ scambio.pick_richiesta }}</p>
+                    {% endif %}
+                    {% if not scambio.giocatori_richiesti and not scambio.crediti_richiesti and not scambio.pick_richiesta %}
+                        <p class="text-muted">Nessuna richiesta in giocatori, crediti o pick.</p>
                     {% endif %}
                 </div>
             </div>

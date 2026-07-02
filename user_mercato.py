@@ -11,6 +11,48 @@ from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati, 
 mercato_bp = Blueprint('mercato', __name__, url_prefix='/mercato')
 
 
+def format_pick(pick_ids, conn):
+    # Formatta una lista di IDs di pick dal draft in nomi leggibili (es. '1, 2, 3')
+    
+    if not pick_ids:
+        return ""
+    
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute('''
+            SELECT id, giro, numero, detentore_att
+            FROM draft
+            WHERE id = ANY(%s)
+            ORDER BY giro, numero;
+        ''', (pick_ids,))
+        picks = cur.fetchall()
+        
+        pick_names = [f"Giro {p['giro']}, Pick {p['numero']} ({p['detentore_att']})" for p in picks]
+        return ", ".join(pick_names)
+    
+    except Exception as e:
+        print(f"Errore nel formattare le pick: {e}")
+        return ""
+
+
+
+
+def validate_pick_ids(pick_ids, conn):
+    # Valida che gli ID delle pick esistano effettivamente nella tabella draft
+    if not pick_ids:
+        return True
+    
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT COUNT(*) as cnt FROM draft WHERE id = ANY(%s)", (pick_ids,))
+        result = cur.fetchone()
+        return result['cnt'] == len(pick_ids)
+    
+    except Exception as e:
+        print(f"Errore nella validazione delle pick: {e}")
+        return False
+
+
 @mercato_bp.route("/mercato/<nome_squadra>", methods=["GET", "POST"])
 def user_mercato(nome_squadra):
     conn = None
@@ -66,6 +108,8 @@ def user_mercato(nome_squadra):
             s_dict = dict(s_raw)
             s_dict['giocatori_offerti_nomi'] = format_giocatori(s_dict['giocatori_offerti'])
             s_dict['giocatori_richiesti_nomi'] = format_giocatori(s_dict['giocatori_richiesti'])
+            s_dict['pick_offerta_nomi'] = format_pick(s_dict['pick_offerta'], conn)
+            s_dict['pick_richiesta_nomi'] = format_pick(s_dict['pick_richiesta'], conn)
             prestiti_offerti, prestiti_richiesti = format_prestito(conn, s_dict['prestito_associato'], s_dict['squadra_proponente'])
             s_dict['prestiti_offerti_formattati'] = prestiti_offerti
             s_dict['prestiti_richiesti_formattati'] = prestiti_richiesti
@@ -110,6 +154,8 @@ def visualizza_proposta(scambio_id):
             "crediti_richiesti": scambio_raw['crediti_richiesti'],
             "giocatori_offerti": format_giocatori(scambio_raw['giocatori_offerti']),
             "giocatori_richiesti": format_giocatori(scambio_raw['giocatori_richiesti']),
+            "pick_offerta": format_pick(scambio_raw['pick_offerta'], conn),
+            "pick_richiesta": format_pick(scambio_raw['pick_richiesta'], conn),
             "prestito_associato": format_prestito(conn, scambio_raw['prestito_associato'])
         }
         
@@ -143,7 +189,18 @@ def nuovo_scambio(nome_squadra):
             crediti_richiesti = int(request.form.get("crediti_richiesti") or 0)
             giocatori_offerti = [int(g) for g in request.form.getlist("giocatori_offerti") if g.isdigit()]
             giocatori_richiesti = [int(g) for g in request.form.getlist("giocatori_richiesti") if g.isdigit()]
+            pick_offerta = [int(p) for p in request.form.getlist("pick_offerta") if p.isdigit()]
+            pick_richiesta = [int(p) for p in request.form.getlist("pick_richiesta") if p.isdigit()]
             messaggio = (request.form.get("messaggio") or "").strip()
+
+            # Validazione delle pick
+            if pick_offerta and not validate_pick_ids(pick_offerta, conn):
+                flash("❌ Una o più pick offerte non valide.", "danger")
+                return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
+            
+            if pick_richiesta and not validate_pick_ids(pick_richiesta, conn):
+                flash("❌ Una o più pick richieste non valide.", "danger")
+                return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
 
             # Nuovi campi prestito (due blocchi opzionali)
             enable_prestito1 = request.form.get("enable_prestito1") is not None
@@ -272,9 +329,10 @@ def nuovo_scambio(nome_squadra):
                     squadra_proponente, squadra_destinataria, 
                     crediti_offerti, crediti_richiesti, 
                     giocatori_offerti, giocatori_richiesti, 
+                    pick_offerta, pick_richiesta,
                     messaggio, stato, data_proposta, prestito_associato
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome', %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome', %s)
                 RETURNING id;
             ''', (
                 nome_squadra,
@@ -283,6 +341,8 @@ def nuovo_scambio(nome_squadra):
                 crediti_richiesti,
                 giocatori_offerti,
                 giocatori_richiesti,
+                pick_offerta,
+                pick_richiesta,
                 messaggio,
                 created_prestiti
             ))
@@ -353,12 +413,32 @@ def nuovo_scambio(nome_squadra):
             for g in giocatori_raw
         ]
 
+        # Recupera tutte le pick dal draft
+        cur.execute('''
+                SELECT id, giro, numero, detentore_att, detentore_originale
+                FROM draft
+                ORDER BY giro, numero;
+        ''')
+        pick_raw = cur.fetchall()
+
+        mie_pick = [p for p in pick_raw if p["detentore_att"] == nome_squadra]
+        pick_list = [
+            {
+                "id": p["id"],
+                "label": f"Giro {p['giro']}, Pick {p['numero']} ({p['detentore_att']})",
+                "detentore_att": p["detentore_att"]
+            }
+            for p in pick_raw
+        ]
+
         return render_template(
             "user_nuovo_scambio.html",
             nome_squadra=nome_squadra,
             squadre=squadre,
             giocatori=giocatori,
             miei_giocatori=miei_giocatori,
+            mie_pick=mie_pick,
+            pick_list=pick_list,
             crediti_effettivi=crediti_effettivi,
             slot_liberi_miei=slot_liberi_miei,
             slot_prestiti_miei=slot_prestiti_miei

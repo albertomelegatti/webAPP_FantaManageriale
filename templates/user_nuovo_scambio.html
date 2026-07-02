@@ -157,6 +157,19 @@
                                        placeholder="Inserisci importo">
                                 <div class="help-text">Massimo {{ crediti_effettivi }} crediti</div>
                             </div>
+
+                            <div class="mb-4">
+                                <label for="pick_offerta" class="form-label fw-semibold">
+                                    🎫 Pick Draft
+                                    <span class="badge bg-primary">Mie: {{ mie_pick|length }}</span>
+                                </label>
+                                <select multiple name="pick_offerta" id="pick_offerta" class="form-select" size="4">
+                                    {% for p in mie_pick %}
+                                        <option value="{{ p.id }}">Giro {{ p.giro }}, Pick {{ p.numero }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="help-text">Seleziona una o più pick dalla tua collezione</div>
+                            </div>
                         </div>
                     </div>
 
@@ -183,6 +196,16 @@
                                 </label>
                                 <input type="number" min="0" name="crediti_richiesti" id="crediti_richiesti" 
                                        class="form-control form-control-lg" disabled placeholder="Inserisci importo">
+                                <div class="help-text">Prima seleziona una controparte</div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="pick_richiesta" class="form-label fw-semibold">
+                                    🎫 Pick Draft
+                                    <span class="badge bg-success">Disponibili: <span id="max_pick_richieste">0</span></span>
+                                </label>
+                                <select multiple name="pick_richiesta" id="pick_richiesta" class="form-select" size="4" disabled>
+                                </select>
                                 <div class="help-text">Prima seleziona una controparte</div>
                             </div>
                         </div>
@@ -459,6 +482,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const allOptions = JSON.parse('{{ giocatori|tojson|safe }}');
     const contractById = new Map(allOptions.map(g => [String(g.id), g.tipo_contratto]));
 
+    const allPick = JSON.parse('{{ pick_list|tojson|safe }}');
+
     // Scambio selects
     const selectOfferti = new TomSelect("#giocatori_offerti", {
         plugins: ['remove_button'],
@@ -474,6 +499,22 @@ document.addEventListener("DOMContentLoaded", () => {
         maxItems: 0
     });
     selectRichiesti.disable();
+
+    // Pick selects
+    const selectPickOfferta = new TomSelect("#pick_offerta", {
+        plugins: ['remove_button'],
+        placeholder: "Pick da offrire",
+        create: false,
+        maxItems: 30
+    });
+
+    const selectPickRichiesta = new TomSelect("#pick_richiesta", {
+        plugins: ['remove_button'],
+        placeholder: "Pick da richiedere",
+        create: false,
+        maxItems: 30
+    });
+    selectPickRichiesta.disable();
 
     // Prestiti selects (single item)
     const selectPrestito1Rich = new TomSelect('#prestito1_richiesto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
@@ -797,15 +838,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const selectedOption = selectSquadra.options[selectSquadra.selectedIndex];
 
         selectRichiesti.clearOptions();
+        selectPickRichiesta.clearOptions();
         selectPrestito1Rich.clearOptions();
         selectPrestito2Rich.clearOptions();
 
         if (!squadraSelezionata) {
             selectRichiesti.disable();
+            selectPickRichiesta.disable();
             selectPrestito1Rich.disable();
             selectPrestito2Rich.disable();
             creditiRichiestiInput.disabled = true;
             maxRichiestiSpan.textContent = 0;
+            document.getElementById('max_pick_richieste').textContent = 0;
             destTeamLabel.textContent = 'Controparte';
                         document.getElementById('crediti-richiesti-max-badge').textContent = 'Max: 0';
             updateMaxItems();
@@ -825,11 +869,18 @@ document.addEventListener("DOMContentLoaded", () => {
             selectPrestito2Rich.addOption({ value: g.id, text: g.nome });
         });
 
+        const pickFiltrate = allPick.filter(p => p.detentore_att === squadraSelezionata);
+        pickFiltrate.forEach(p => {
+            selectPickRichiesta.addOption({ value: p.id, text: p.label });
+        });
+
         selectRichiesti.enable();
+        selectPickRichiesta.enable();
         selectPrestito1Rich.enable();
         selectPrestito2Rich.enable();
 
         selectRichiesti.refreshOptions(false);
+        selectPickRichiesta.refreshOptions(false);
         selectPrestito1Rich.refreshOptions(false);
         selectPrestito2Rich.refreshOptions(false);
 
@@ -839,6 +890,7 @@ document.addEventListener("DOMContentLoaded", () => {
         creditiRichiestiInput.value = '';
         creditiRichiestiInput.placeholder = `Max: ${maxCrediti}`;
         document.getElementById('crediti-richiesti-max-badge').textContent = `Max: ${maxCrediti}`;
+        document.getElementById('max_pick_richieste').textContent = pickFiltrate.length;
         
         // Update step indicators
         document.querySelectorAll('.step-number').forEach((step, index) => {

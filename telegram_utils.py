@@ -11,14 +11,45 @@ from user import format_giocatori, formatta_data
 
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 
-load_dotenv(dotenv_path=env_path)
+load_dotenv(dotenv_path=env_path, override=True)
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 # Flag per abilitare/disabilitare notifiche (default on).
-NOTIFICATIONS_ENABLED = os.getenv("NOTIFICHE_ATTIVE") == 'True'
+def _env_flag(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in ("1", "true", "yes", "on")
+
+
+NOTIFICATIONS_ENABLED = _env_flag("NOTIFICHE_ATTIVE", default=True)
 
 # Cache per i telegram IDs (lazy loading)f
 _TELEGRAM_IDS_CACHE = None
+
+
+def format_pick(pick_ids, conn):
+    """Formatta una lista di IDs di pick dal draft in nomi leggibili (es. 'Giro 1, Pick 1, ...')"""
+    if not pick_ids:
+        return ""
+    
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute('''
+            SELECT id, giro, numero, detentore_att
+            FROM draft
+            WHERE id = ANY(%s)
+            ORDER BY giro, numero;
+        ''', (pick_ids,))
+        picks = cur.fetchall()
+        
+        pick_names = [f"Giro {p['giro']}, Pick {p['numero']} ({p['detentore_att']})" for p in picks]
+        return ", ".join(pick_names)
+    
+    except Exception as e:
+        print(f"Errore nel formattare le pick: {e}")
+        return ""
+
 
 if not TOKEN:
     print("❌ Token non trovato nel file .env")
@@ -185,7 +216,7 @@ def nuovo_scambio(conn, id_scambio):
 
         cur.execute('''
                     SELECT squadra_proponente, squadra_destinataria, giocatori_offerti, giocatori_richiesti, 
-                           crediti_offerti, crediti_richiesti, messaggio, prestito_associato
+                           crediti_offerti, crediti_richiesti, messaggio, prestito_associato, pick_offerta, pick_richiesta
                     FROM scambio
                     WHERE id = %s;
         ''', (id_scambio,))
@@ -204,6 +235,8 @@ def nuovo_scambio(conn, id_scambio):
         crediti_offerti = info_scambio['crediti_offerti'] or 0
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
         messaggio = info_scambio['messaggio'] or ""
+        pick_offerta_ids = info_scambio['pick_offerta'] or []
+        pick_richiesta_ids = info_scambio['pick_richiesta'] or []
         
         prestito_associato_ids = info_scambio['prestito_associato']
         prestiti_offerti = []
@@ -236,10 +269,16 @@ def nuovo_scambio(conn, id_scambio):
         offerta_text = "\n".join(giocatori_offerti_list)
         if prestiti_offerti:
             offerta_text += "\n" + "\n".join(prestiti_offerti)
+        if pick_offerta_ids:
+            pick_offerta_formatted = [f"• {p}" for p in format_pick(pick_offerta_ids, conn).split(",") if p.strip()]
+            offerta_text += "\n" + "\n".join(pick_offerta_formatted)
         
         richiesta_text = "\n".join(giocatori_richiesti_list)
         if prestiti_richiesti:
             richiesta_text += "\n" + "\n".join(prestiti_richiesti)
+        if pick_richiesta_ids:
+            pick_richiesta_formatted = [f"• {p}" for p in format_pick(pick_richiesta_ids, conn).split(",") if p.strip()]
+            richiesta_text += "\n" + "\n".join(pick_richiesta_formatted)
 
         text_to_send = f'''🟢 NUOVA PROPOSTA DI SCAMBIO
 La squadra {squadra_proponente} ti ha inviato una proposta di scambio
@@ -276,7 +315,7 @@ def scambio_risposta(conn, id_scambio, risposta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT squadra_proponente, squadra_destinataria, giocatori_offerti, giocatori_richiesti, crediti_offerti, crediti_richiesti, messaggio, prestito_associato
+                    SELECT squadra_proponente, squadra_destinataria, giocatori_offerti, giocatori_richiesti, crediti_offerti, crediti_richiesti, messaggio, prestito_associato, pick_offerta, pick_richiesta
                     FROM scambio
                     WHERE id = %s;
         ''', (id_scambio,))
@@ -295,6 +334,8 @@ def scambio_risposta(conn, id_scambio, risposta):
         crediti_offerti = info_scambio['crediti_offerti'] or 0
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
         messaggio = info_scambio['messaggio'] or "Nessuna Condizione."
+        pick_offerta_ids = info_scambio['pick_offerta'] or []
+        pick_richiesta_ids = info_scambio['pick_richiesta'] or []
         prestito_associato_ids = info_scambio['prestito_associato']
 
 
@@ -326,10 +367,16 @@ def scambio_risposta(conn, id_scambio, risposta):
         offerta_text = "\n".join(giocatori_offerti_list)
         if prestiti_offerti:
             offerta_text += "\n" + "\n".join(prestiti_offerti)
+        if pick_offerta_ids:
+            pick_offerta_formatted = [f"• {p}" for p in format_pick(pick_offerta_ids, conn).split(",") if p.strip()]
+            offerta_text += "\n" + "\n".join(pick_offerta_formatted)
         
         richiesta_text = "\n".join(giocatori_richiesti_list)
         if prestiti_richiesti:
             richiesta_text += "\n" + "\n".join(prestiti_richiesti)
+        if pick_richiesta_ids:
+            pick_richiesta_formatted = [f"• {p}" for p in format_pick(pick_richiesta_ids, conn).split(",") if p.strip()]
+            richiesta_text += "\n" + "\n".join(pick_richiesta_formatted)
 
         if risposta == "Accettato":
             text_to_send = f'''SCAMBIO ACCETTATO
@@ -657,7 +704,7 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
     
 def taglio_giocatore(conn, nome_squadra, giocatore, costo_taglio):
 
-    if not nome_squadra or not giocatore or not costo_taglio:
+    if not nome_squadra or not giocatore or costo_taglio is None:
         print("Errore, mancano dei parametri.")
         return
     
@@ -834,6 +881,11 @@ def salva_movimento(text_to_send):
         
         text_to_send = text_to_send.replace('\n', ' ').strip()
 
+        cur.execute("SELECT MAX(id) FROM movimenti_squadra")
+        max_id = cur.fetchone()[0]
+        if max_id is not None:
+            cur.execute("SELECT setval('movimenti_squadra_id_seq', %s, true)", (max_id,))
+
         cur.execute('''
                     INSERT INTO movimenti_squadra (evento, data, stagione)
                     VALUES (%s, NOW(), %s)
@@ -861,7 +913,7 @@ def send_message(id=None, nome_squadra=None, text_to_send=None):
         return
 
     if not NOTIFICATIONS_ENABLED:
-        print("ℹ️ Notifiche disattivate (NOTIFICHE_ATTIVE=0)")
+        print("ℹ️ Notifiche disattivate (NOTIFICHE_ATTIVE=false)")
         return
 
 
