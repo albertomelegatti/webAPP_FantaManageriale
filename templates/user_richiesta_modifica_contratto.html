@@ -26,10 +26,11 @@
                                     <option value="Indeterminato">Indeterminato</option>
                                     {% endif %}
                                     {% if tipo_contratto != 'Svincolato' %}
-                                    <option value="Svincolato">Scadenza Contratto</option>
-                                    <option value="Svincolato">Retrocessione</option>
-                                    <option value="Svincolato">Ritorno all'estero</option>
-                                    <option value="Svincolato">Taglio Gratuito</option>
+                                    <option value="Svincolato">Trasferimento Reale</option>
+                                    <option value="Scadenza Contratto">Scadenza Contratto</option>
+                                    <option value="Retrocessione">Retrocessione</option>
+                                    <option value="Ritorno all'estero">Ritorno all'estero</option>
+                                    <option value="Taglio Gratuito">Taglio Gratuito</option>
                                     {% endif %}
                                     {% if tipo_contratto != 'Prestito Reale' %}
                                     <option value="Prestito Reale">Prestito Reale</option>
@@ -39,7 +40,7 @@
                                     {% endif %}
                                 </select>
                                 <div class="form-text">
-                                    Queste opzioni vengono trattate come trasferimento reale e impostano automaticamente i crediti richiesti a 0.
+                                    Hold, Scadenza Contratto, Retrocessione, Ritorno all'estero e Taglio Gratuito impostano automaticamente i crediti richiesti a 0.
                                 </div>
                             </div>
                             <div class="mb-3">
@@ -78,12 +79,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function aggiornaCrediti() {
-        const trasferimentoReale = contrattoSelect.value === 'Svincolato';
+        const bloccaCrediti = ['Hold', 'Scadenza Contratto', 'Retrocessione', 'Ritorno all\'estero', 'Taglio Gratuito'].includes(contrattoSelect.value);
 
-        creditiInput.readOnly = trasferimentoReale;
-        creditiInput.classList.toggle('bg-light', trasferimentoReale);
+        creditiInput.readOnly = bloccaCrediti;
+        creditiInput.classList.toggle('bg-light', bloccaCrediti);
 
-        if (trasferimentoReale) {
+        if (bloccaCrediti) {
             creditiInput.value = 0;
         }
     }

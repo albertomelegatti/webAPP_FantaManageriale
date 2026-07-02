@@ -10,6 +10,8 @@ from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attu
 
 rosa_bp = Blueprint('rosa', __name__, url_prefix='/rosa')
 
+ZERO_CREDITS_CONTRACTS = {'Hold', 'Scadenza Contratto', 'Retrocessione', "Ritorno all'estero", 'Taglio Gratuito'}
+
 
 @rosa_bp.route("/user_primavera/<nome_squadra>", methods=["GET", "POST"])
 def user_primavera(nome_squadra):
@@ -187,7 +189,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
 
         if request.method == "POST":
             nuovo_tipo_contratto = request.form.get("nuovo_contratto")
-            crediti_richiesti = 0 if nuovo_tipo_contratto == "Svincolato" else int(request.form.get("crediti_richiesti") or 0)
+            crediti_richiesti = 0 if nuovo_tipo_contratto in ZERO_CREDITS_CONTRACTS else int(request.form.get("crediti_richiesti") or 0)
             messaggio = (request.form.get("messaggio") or "").strip()
 
             cur.execute("SELECT tipo_contratto FROM giocatore WHERE id = %s", (id_giocatore,))
