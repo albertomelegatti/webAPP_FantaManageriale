@@ -146,7 +146,7 @@ def richiesta_modifica_contratto():
                 row = cur.fetchone()
                 id_giocatore = row['giocatore']
                 nuovo_contratto = row['contratto_richiesto']
-                crediti_richiesti = row['crediti_richiesti']
+                crediti_richiesti = 0 if nuovo_contratto == 'Svincolato' else row['crediti_richiesti']
                 squadra_richiedente = row['squadra_richiedente']
 
                 # Logica per aggiornare squadra_attuale e detentore_cartellino
@@ -159,7 +159,7 @@ def richiesta_modifica_contratto():
                                     squadra_att = %s,
                                     detentore_cartellino = %s
                                 WHERE id = %s;
-                    ''', (nuovo_contratto, 'Svincolato', 'Svincolato', id_giocatore))
+                    ''', ('Svincolato', 'Svincolato', 'Svincolato', id_giocatore))
                 elif nuovo_contratto == 'Prestito Reale':
                     # Se il contratto è "Prestito Reale", 
                     # squadra attuale va a "Svincolato"

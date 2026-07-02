@@ -187,7 +187,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
 
         if request.method == "POST":
             nuovo_tipo_contratto = request.form.get("nuovo_contratto")
-            crediti_richiesti = int(request.form.get("crediti_richiesti") or 0)
+            crediti_richiesti = 0 if nuovo_tipo_contratto == "Svincolato" else int(request.form.get("crediti_richiesti") or 0)
             messaggio = (request.form.get("messaggio") or "").strip()
 
             cur.execute("SELECT tipo_contratto FROM giocatore WHERE id = %s", (id_giocatore,))

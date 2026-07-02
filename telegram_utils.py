@@ -803,7 +803,7 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT r.squadra_richiedente, g.nome, g.tipo_contratto, r.crediti_richiesti
+                    SELECT r.squadra_richiedente, g.nome, g.tipo_contratto, r.crediti_richiesti, r.contratto_richiesto
                     FROM richiesta_modifica_contratto AS r
                         JOIN giocatore AS g
                             ON r.giocatore = g.id
@@ -814,14 +814,23 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         giocatore = info_richiesta['nome']
         tipo_contratto = info_richiesta['tipo_contratto']
         squadra_richiedente = info_richiesta['squadra_richiedente']
+        contratto_richiesto = info_richiesta['contratto_richiesto']
+        crediti_richiesti = 0 if contratto_richiesto == 'Svincolato' else info_richiesta['crediti_richiesti']
 
 
         if risposta == "Accettato":
-            text_to_send = textwrap.dedent(f'''
-                    📝 Modifica del contratto ACCETTATA
-                    L'admin di Lega ha accettato la tua richiesta di modifica del contratto del giocatore: {giocatore}.
-                    Nuovo contratto: {tipo_contratto}.
-            ''')
+            if contratto_richiesto == 'Svincolato':
+                text_to_send = textwrap.dedent(f'''
+                        📝 Modifica del contratto ACCETTATA
+                        L'admin di Lega ha accettato la tua richiesta di modifica del contratto del giocatore: {giocatore}.
+                        Nuovo contratto: {tipo_contratto}.
+                ''')
+            else:
+                text_to_send = textwrap.dedent(f'''
+                        📝 Modifica del contratto ACCETTATA
+                        L'admin di Lega ha accettato la tua richiesta di modifica del contratto del giocatore: {giocatore}.
+                        Nuovo contratto: {tipo_contratto}.
+                ''')
 
         else:
             text_to_send = textwrap.dedent(f'''
@@ -835,10 +844,10 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         # invia notifica a tutte le squadre
         if risposta == "Accettato":
 
-            if tipo_contratto == "Svincolato":
+            if contratto_richiesto == 'Svincolato':
                 text_to_send = textwrap.dedent(f'''
                         📢 COMUNICAZIONE UFFICIALE: 
-                        📝La squadra {squadra_richiedente} svincola {giocatore} a causa del suo trasferimento/svincolo e recupera {info_richiesta['crediti_richiesti']} crediti. 
+                        📝La squadra {squadra_richiedente} conclude un trasferimento reale per {giocatore} e recupera {crediti_richiesti} crediti. 
                 ''')
 
             elif tipo_contratto == "Prestito Reale":

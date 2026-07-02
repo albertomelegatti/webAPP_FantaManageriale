@@ -26,7 +26,10 @@
                                     <option value="Indeterminato">Indeterminato</option>
                                     {% endif %}
                                     {% if tipo_contratto != 'Svincolato' %}
-                                    <option value="Svincolato">Trasferimento Reale</option>
+                                    <option value="Svincolato">Scadenza Contratto</option>
+                                    <option value="Svincolato">Retrocessione</option>
+                                    <option value="Svincolato">Ritorno all'estero</option>
+                                    <option value="Svincolato">Taglio Gratuito</option>
                                     {% endif %}
                                     {% if tipo_contratto != 'Prestito Reale' %}
                                     <option value="Prestito Reale">Prestito Reale</option>
@@ -35,10 +38,13 @@
                                     <option value="Hold">Hold</option>
                                     {% endif %}
                                 </select>
+                                <div class="form-text">
+                                    Queste opzioni vengono trattate come trasferimento reale e impostano automaticamente i crediti richiesti a 0.
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label for="crediti_richiesti" class="form-label"><strong>Crediti Richiesti:</strong></label>
-                                <input type="number" class="form-control" id="crediti_richiesti" name="crediti_richiesti" min="0" placeholder="Inserisci i crediti richiesti per il giocatore">
+                                <input type="number" class="form-control" id="crediti_richiesti" name="crediti_richiesti" min="0" value="0" placeholder="Inserisci i crediti richiesti per il giocatore">
                             </div>
                             <div class="mb-3">
                                 <label for="messaggio" class="form-label"><strong>Messaggio (Opzionale):</strong></label>
@@ -62,4 +68,28 @@
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const contrattoSelect = document.getElementById('nuovo_contratto');
+    const creditiInput = document.getElementById('crediti_richiesti');
+
+    if (!contrattoSelect || !creditiInput) {
+        return;
+    }
+
+    function aggiornaCrediti() {
+        const trasferimentoReale = contrattoSelect.value === 'Svincolato';
+
+        creditiInput.readOnly = trasferimentoReale;
+        creditiInput.classList.toggle('bg-light', trasferimentoReale);
+
+        if (trasferimentoReale) {
+            creditiInput.value = 0;
+        }
+    }
+
+    contrattoSelect.addEventListener('change', aggiornaCrediti);
+    aggiornaCrediti();
+});
+</script>
 {% endblock %}
