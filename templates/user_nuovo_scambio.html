@@ -163,9 +163,9 @@
                                     🎫 Pick Draft
                                     <span class="badge bg-primary">Mie: {{ mie_pick|length }}</span>
                                 </label>
-                                <select multiple name="pick_offerta" id="pick_offerta" class="form-select" size="4">
+                                <select multiple name="pick_offerta" id="pick_offerta" class="form-select">
                                     {% for p in mie_pick %}
-                                        <option value="{{ p.id }}">Giro {{ p.giro }}, Pick {{ p.numero }}</option>
+                                        <option value="{{ p.id }}">{{ p.anno }} - {{ p.giro }}</option>
                                     {% endfor %}
                                 </select>
                                 <div class="help-text">Seleziona una o più pick dalla tua collezione</div>
@@ -204,7 +204,7 @@
                                     🎫 Pick Draft
                                     <span class="badge bg-success">Disponibili: <span id="max_pick_richieste">0</span></span>
                                 </label>
-                                <select multiple name="pick_richiesta" id="pick_richiesta" class="form-select" size="4" disabled>
+                                <select multiple name="pick_richiesta" id="pick_richiesta" class="form-select" disabled>
                                 </select>
                                 <div class="help-text">Prima seleziona una controparte</div>
                             </div>
@@ -414,18 +414,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const nome_squadra = "{{ nome_squadra }}";
 
-    // Imposta il valore di default al prossimo 2 luglio per i campi data prestito
+    // Imposta il valore di default al prossimo 1 luglio per i campi data prestito
     const oggi = new Date();
     const annoCorrente = oggi.getFullYear();
-    const luglioDiQuestAnno = new Date(annoCorrente, 6, 2); // mese 6 = luglio (0-indexed)
+    const luglioDiQuestAnno = new Date(annoCorrente, 6, 1); // mese 6 = luglio (0-indexed)
     
     let defaultDate;
     if (oggi <= luglioDiQuestAnno) {
-        // Se oggi è prima o uguale al 2 luglio di quest'anno, usa luglio di quest'anno
+        // Se oggi è prima o uguale al 1 luglio di quest'anno, usa luglio di quest'anno
         defaultDate = formatDateToString(luglioDiQuestAnno);
     } else {
         // Altrimenti usa luglio dell'anno prossimo
-        defaultDate = formatDateToString(new Date(annoCorrente + 1, 6, 2));
+        defaultDate = formatDateToString(new Date(annoCorrente + 1, 6, 1));
     }
 
     // Imposta il valore di default per i campi data prestito
@@ -483,6 +483,26 @@ document.addEventListener("DOMContentLoaded", () => {
     const contractById = new Map(allOptions.map(g => [String(g.id), g.tipo_contratto]));
 
     const allPick = JSON.parse('{{ pick_list|tojson|safe }}');
+
+    function getPickDisplayText(pick) {
+        const annoRaw = pick?.anno ?? '';
+        const anno = String(annoRaw).slice(0, 4) || 'N/D';
+        const giro = pick?.giro ?? '-';
+        return `${anno} - ${giro}`;
+    }
+
+    function normalizeTeamName(value) {
+        return (value || '').trim().toLowerCase();
+    }
+
+    // Uniforma le label delle pick offerte in formato "anno - giro"
+    const pickOffertaNative = document.getElementById('pick_offerta');
+    Array.from(pickOffertaNative.options).forEach(option => {
+        const pick = allPick.find(p => String(p.id) === String(option.value));
+        if (pick) {
+            option.text = getPickDisplayText(pick);
+        }
+    });
 
     // Scambio selects
     const selectOfferti = new TomSelect("#giocatori_offerti", {
@@ -869,9 +889,15 @@ document.addEventListener("DOMContentLoaded", () => {
             selectPrestito2Rich.addOption({ value: g.id, text: g.nome });
         });
 
-        const pickFiltrate = allPick.filter(p => p.detentore_att === squadraSelezionata);
+        const squadraNorm = normalizeTeamName(squadraSelezionata);
+        const pickFiltrate = allPick.filter(p => {
+            if (p.detentore_att_norm) {
+                return p.detentore_att_norm === squadraNorm;
+            }
+            return normalizeTeamName(p.detentore_att) === squadraNorm;
+        });
         pickFiltrate.forEach(p => {
-            selectPickRichiesta.addOption({ value: p.id, text: p.label });
+            selectPickRichiesta.addOption({ value: p.id, text: getPickDisplayText(p) });
         });
 
         selectRichiesti.enable();

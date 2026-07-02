@@ -1,6 +1,6 @@
 import psycopg2
 import telegram_utils
-from datetime import datetime, time
+from datetime import datetime
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
@@ -8,6 +8,13 @@ from user import formatta_data
 from queries import get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in, sposta_crediti
 
 prestiti_bp = Blueprint('prestiti', __name__, url_prefix='/prestiti')
+
+
+def _get_allowed_prestito_years(reference_date=None):
+    reference_date = reference_date or datetime.now()
+    cutoff = datetime(reference_date.year, 7, 1, 23, 59, 59)
+    first_year = reference_date.year if reference_date <= cutoff else reference_date.year + 1
+    return [first_year, first_year + 1], first_year
 
 
 @prestiti_bp.route("/prestiti/<nome_squadra>", methods=["GET", "POST"])
@@ -126,6 +133,8 @@ def nuovo_prestito(nome_squadra):
     crediti_disponibili = 0
     giocatori = []
     squadre = []
+    anni_scadenza, anno_default_scadenza = _get_allowed_prestito_years()
+    default_data_fine = f"{anno_default_scadenza}-07-01"
 
     try:
         conn = get_connection()
@@ -134,7 +143,7 @@ def nuovo_prestito(nome_squadra):
         if request.method == "POST":
             squadra_prestante = request.form.get("squadra_prestante")
             giocatore_richiesto = request.form.get("giocatore_richiesto")
-            data_fine = request.form.get("data_fine")
+            data_fine = request.form.get("data_fine") or request.form.get("data_fine_anno")
             note = request.form.get("note", "").strip()
             costo_prestito = request.form.get("costo_prestito", 0)
             tipo_prestito = request.form.get("tipo_prestito", "").strip()
@@ -167,8 +176,17 @@ def nuovo_prestito(nome_squadra):
                 flash("❌ Errore: seleziona una squadra, un giocatore e una data di fine prestito.", "danger")
                 return redirect(url_for("user.nuovo_prestito", nome_squadra=nome_squadra))
             
-            data_fine = datetime.strptime(data_fine, "%Y-%m-%d")
-            data_fine = datetime.combine(data_fine.date(), time(hour=23, minute=59, second=59))
+            if len(data_fine) == 4 and data_fine.isdigit():
+                anno_scadenza = int(data_fine)
+            else:
+                data_fine_parsed = datetime.strptime(data_fine, "%Y-%m-%d")
+                anno_scadenza = data_fine_parsed.year
+
+            if anno_scadenza not in anni_scadenza:
+                flash("❌ Errore: seleziona uno degli anni di scadenza disponibili.", "danger")
+                return redirect(url_for("user.nuovo_prestito", nome_squadra=nome_squadra))
+
+            data_fine = datetime(anno_scadenza, 7, 1, 23, 59, 59)
 
             cur.execute('''
                         INSERT INTO prestito (
@@ -233,7 +251,17 @@ def nuovo_prestito(nome_squadra):
     finally:
         release_connection(conn, cur)
 
-    return render_template("user_nuovo_prestito.html", nome_squadra=nome_squadra, crediti=crediti, crediti_disponibili=crediti_disponibili, giocatori=giocatori, squadre=squadre)
+    return render_template(
+        "user_nuovo_prestito.html",
+        nome_squadra=nome_squadra,
+        crediti=crediti,
+        crediti_disponibili=crediti_disponibili,
+        giocatori=giocatori,
+        squadre=squadre,
+        anni_scadenza=anni_scadenza,
+        anno_default_scadenza=anno_default_scadenza,
+        default_data_fine=default_data_fine,
+    )
 
 
 

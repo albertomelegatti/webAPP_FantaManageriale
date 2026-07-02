@@ -139,6 +139,36 @@
                 </div>
             </div>
 
+            <div class="card shadow p-3 mb-3">
+                <h4>Draft</h4>
+                <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                    <table class="table table-sm mb-0 table-striped">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Detentore originale</th>
+                                <th>Anno</th>
+                                <th>Numero</th>
+                                <th>Giocatore scelto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in draft_pick %}
+                            <tr>
+                                <td>{{ p.detentore_originale }}</td>
+                                <td>{{ p.anno }}</td>
+                                <td>{{ p.numero }}</td>
+                                <td>{{ p.giocatore_scelto }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Nessuna pick disponibile</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 

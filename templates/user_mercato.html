@@ -318,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const isReceiver = scambio.squadra_destinataria === currentUserTeam;
 
         // --- Funzione helper per creare il contenuto di una sezione (offerta o richiesta) ---
-        function buildTradeContent(players, credits, loanPlayers) {
+        function buildTradeContent(players, credits, picks, loanPlayers) {
             let items = [];
             if (players) {
                 items.push(`<strong>Giocatori:</strong> ${players}`);
@@ -326,14 +326,27 @@ document.addEventListener('DOMContentLoaded', function() {
             if (credits) {
                 items.push(`<strong>Crediti:</strong> ${credits}`);
             }
+            if (picks && picks.trim()) {
+                items.push(`<strong>Pick:</strong> ${picks}`);
+            }
             if (loanPlayers && loanPlayers.trim()) {
                 items.push(`<strong>Prestiti:</strong><br>${loanPlayers.replace(/\n/g, '<br>')}`);
             }
             return items.length > 0 ? items.join('<br>') : '<span class="text-muted">Nessun elemento</span>';
         }
 
-        const offerta = buildTradeContent(scambio.giocatori_offerti_nomi, scambio.crediti_offerti, scambio.prestiti_offerti_formattati);
-        const richiesta = buildTradeContent(scambio.giocatori_richiesti_nomi, scambio.crediti_richiesti, scambio.prestiti_richiesti_formattati);
+        const offerta = buildTradeContent(
+            scambio.giocatori_offerti_nomi,
+            scambio.crediti_offerti,
+            scambio.pick_offerta_nomi,
+            scambio.prestiti_offerti_formattati
+        );
+        const richiesta = buildTradeContent(
+            scambio.giocatori_richiesti_nomi,
+            scambio.crediti_richiesti,
+            scambio.pick_richiesta_nomi,
+            scambio.prestiti_richiesti_formattati
+        );
         
         // Determina quali bottoni mostrare
         let buttonsHtml = '';

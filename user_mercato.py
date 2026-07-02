@@ -20,14 +20,19 @@ def format_pick(pick_ids, conn):
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute('''
-            SELECT id, giro, numero, detentore_att
+            SELECT id, anno, giro, numero, detentore_att
             FROM draft
             WHERE id = ANY(%s)
-            ORDER BY giro, numero;
+            ORDER BY anno, giro, numero;
         ''', (pick_ids,))
         picks = cur.fetchall()
-        
-        pick_names = [f"Giro {p['giro']}, Pick {p['numero']} ({p['detentore_att']})" for p in picks]
+
+        def extract_year(value):
+            if value is None:
+                return "N/D"
+            return str(value.year if hasattr(value, "year") else value)
+
+        pick_names = [f"{extract_year(p['anno'])} - Giro: {p['giro']}°" for p in picks]
         return ", ".join(pick_names)
     
     except Exception as e:
@@ -243,11 +248,11 @@ def nuovo_scambio(nome_squadra):
             if map_tipo(p2_tipo_offerto) == 'secco':
                 p2_riscatto_off = 0
 
-            # Data di fine default: 2 luglio alle 23:59:59 (prima data utile futura)
+            # Data di fine default: 1 luglio alle 23:59:59 (prima data utile futura)
             today = datetime.now()
-            target_year = today.year if today < datetime(today.year, 7, 2) else today.year + 1
+            target_year = today.year if today < datetime(today.year, 7, 1, 23, 59, 59) else today.year + 1
 
-            default_data_fine = datetime(target_year, 7, 2, 23, 59, 59)
+            default_data_fine = datetime(target_year, 7, 1, 23, 59, 59)
 
             # Validazioni base
             if not squadra_destinataria:
@@ -415,18 +420,43 @@ def nuovo_scambio(nome_squadra):
 
         # Recupera tutte le pick dal draft
         cur.execute('''
-                SELECT id, giro, numero, detentore_att, detentore_originale
+            SELECT id, anno, giro, numero, detentore_att, detentore_originale
                 FROM draft
-                ORDER BY giro, numero;
+            WHERE id_giocatore_scelto IS NULL
+                ORDER BY anno, giro, numero;
         ''')
         pick_raw = cur.fetchall()
 
-        mie_pick = [p for p in pick_raw if p["detentore_att"] == nome_squadra]
+        def normalize_team_name(value):
+            return (value or "").strip().casefold()
+
+        def extract_year(value):
+            if value is None:
+                return None
+            return value.year if hasattr(value, "year") else value
+
+        team_name_norm = normalize_team_name(nome_squadra)
+        mie_pick = [
+            {
+                "id": p["id"],
+                "anno": extract_year(p["anno"]),
+                "giro": p["giro"],
+                "numero": p["numero"],
+                "detentore_att": p["detentore_att"],
+                "detentore_originale": p["detentore_originale"]
+            }
+            for p in pick_raw
+            if normalize_team_name(p["detentore_att"]) == team_name_norm
+        ]
         pick_list = [
             {
                 "id": p["id"],
+                "anno": extract_year(p["anno"]),
+                "giro": p["giro"],
+                "numero": p["numero"],
                 "label": f"Giro {p['giro']}, Pick {p['numero']} ({p['detentore_att']})",
-                "detentore_att": p["detentore_att"]
+                "detentore_att": p["detentore_att"],
+                "detentore_att_norm": normalize_team_name(p["detentore_att"])
             }
             for p in pick_raw
         ]
@@ -477,6 +507,8 @@ def controlla_scambio(id, conn):
         crediti_richiesti = scambio["crediti_richiesti"] or 0
         giocatori_offerti = scambio["giocatori_offerti"] or []
         giocatori_richiesti = scambio["giocatori_richiesti"] or []
+        pick_offerta = scambio["pick_offerta"] or []
+        pick_richiesta = scambio["pick_richiesta"] or []
 
         # Controllo che le squadre abbiano abbastanza crediti per effettuare lo scambio
         cur.execute('''
@@ -571,6 +603,8 @@ def effettua_scambio(id, conn, nome_squadra):
         crediti_richiesti = scambio["crediti_richiesti"] or 0
         giocatori_offerti = scambio["giocatori_offerti"] or []
         giocatori_richiesti = scambio["giocatori_richiesti"] or []
+        pick_offerta = scambio["pick_offerta"] or []
+        pick_richiesta = scambio["pick_richiesta"] or []
 
         
         # Eseguo il trasferimento dei giocatori
@@ -608,6 +642,21 @@ def effettua_scambio(id, conn, nome_squadra):
                             AND stato = 'in_attesa'
                             AND id <> %s;
             ''', (giocatore_id, giocatore_id, id))
+
+        # Eseguo il trasferimento delle pick del draft
+        for pick_id in pick_offerta:
+            cur.execute('''
+                        UPDATE draft
+                        SET detentore_att = %s
+                        WHERE id = %s;
+            ''', (squadra_destinataria, pick_id))
+
+        for pick_id in pick_richiesta:
+            cur.execute('''
+                        UPDATE draft
+                        SET detentore_att = %s
+                        WHERE id = %s;
+            ''', (squadra_proponente, pick_id))
         
         # Aggiorno i crediti delle due squadre
         cur.execute('''

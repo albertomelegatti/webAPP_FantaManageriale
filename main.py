@@ -363,6 +363,27 @@ def dashboard_squadra(nome_squadra):
                 "detentore_cartellino": g["detentore_cartellino"]
             })
 
+        # DRAFT - pick detenute dalla squadra
+        draft_pick = []
+        cur.execute('''
+                    SELECT d.detentore_originale, d.anno, d.numero, g.nome AS giocatore_scelto
+                    FROM draft d
+                    LEFT JOIN giocatore g
+                        ON d.id_giocatore_scelto = g.id
+                    WHERE d.detentore_att = %s
+                    ORDER BY d.anno, d.numero;
+        ''', (nome_squadra,))
+        draft_pick_raw = cur.fetchall()
+
+        for p in draft_pick_raw:
+            anno = p['anno'].year if hasattr(p['anno'], 'year') else p['anno']
+            draft_pick.append({
+                "detentore_originale": p["detentore_originale"],
+                "anno": anno,
+                "numero": p["numero"],
+                "giocatore_scelto": p["giocatore_scelto"] or "—"
+            })
+
         # PRESTITI OUT
         prestiti_out = []
         cur.execute('''
@@ -406,6 +427,7 @@ def dashboard_squadra(nome_squadra):
             primavera=primavera,
             prestiti_in=prestiti_in,
             prestiti_in_num=prestiti_in_num,
+            draft_pick=draft_pick,
             prestiti_out=prestiti_out,
             stadio=stadio,
             username=username,
