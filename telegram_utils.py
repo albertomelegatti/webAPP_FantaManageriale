@@ -14,9 +14,6 @@ env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path=env_path, override=True)
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-ZERO_CREDITS_CONTRACTS = {'Hold', 'Scadenza Contratto', 'Retrocessione', "Ritorno all'estero", 'Taglio Gratuito'}
-REAL_TRANSFER_CONTRACTS = {'Svincolato', 'Scadenza Contratto', 'Retrocessione', "Ritorno all'estero", 'Taglio Gratuito'}
-
 # Flag per abilitare/disabilitare notifiche (default on).
 def _env_flag(name, default=False):
     value = os.getenv(name)
@@ -818,20 +815,14 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         tipo_contratto = info_richiesta['tipo_contratto']
         squadra_richiedente = info_richiesta['squadra_richiedente']
         contratto_richiesto = info_richiesta['contratto_richiesto']
-        crediti_richiesti = 0 if contratto_richiesto in ZERO_CREDITS_CONTRACTS else info_richiesta['crediti_richiesti']
+        crediti_richiesti = 0 if contratto_richiesto == 'Svincolato' else info_richiesta['crediti_richiesti']
 
 
         if risposta == "Accettato":
-            if contratto_richiesto in REAL_TRANSFER_CONTRACTS:
+            if contratto_richiesto == 'Svincolato':
                 text_to_send = textwrap.dedent(f'''
                         📝 Modifica del contratto ACCETTATA
                         L'admin di Lega ha accettato la tua richiesta di modifica del contratto del giocatore: {giocatore}.
-                        Nuovo contratto: {tipo_contratto}.
-                ''')
-            elif contratto_richiesto == 'Hold':
-                text_to_send = textwrap.dedent(f'''
-                        📝 Modifica del contratto ACCETTATA
-                        L'admin di Lega ha accettato la tua richiesta di HOLD del giocatore: {giocatore}.
                         Nuovo contratto: {tipo_contratto}.
                 ''')
             else:
@@ -853,15 +844,10 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         # invia notifica a tutte le squadre
         if risposta == "Accettato":
 
-            if contratto_richiesto in REAL_TRANSFER_CONTRACTS:
+            if contratto_richiesto == 'Svincolato':
                 text_to_send = textwrap.dedent(f'''
                         📢 COMUNICAZIONE UFFICIALE: 
                         📝La squadra {squadra_richiedente} conclude un trasferimento reale per {giocatore} e recupera {crediti_richiesti} crediti. 
-                ''')
-            elif contratto_richiesto == 'Hold':
-                text_to_send = textwrap.dedent(f'''
-                        📢 COMUNICAZIONE UFFICIALE: 
-                        📝La squadra {squadra_richiedente} esercita l'HOLD sul giocatore {giocatore}. 
                 ''')
 
             elif tipo_contratto == "Prestito Reale":
@@ -882,7 +868,7 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
                         📝La squadra {squadra_richiedente} modifica il contratto di {giocatore} a {tipo_contratto}. 
                 ''')
 
-        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+            send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
             
     except Exception as e:
         print(f"Errore: {e}")

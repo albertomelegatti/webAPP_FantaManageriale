@@ -9,9 +9,6 @@ from psycopg2 import extensions
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
-ZERO_CREDITS_CONTRACTS = {'Hold', 'Scadenza Contratto', 'Retrocessione', "Ritorno all'estero", 'Taglio Gratuito'}
-REAL_TRANSFER_CONTRACTS = {'Svincolato', 'Scadenza Contratto', 'Retrocessione', "Ritorno all'estero", 'Taglio Gratuito'}
-
 # Rotta per area admin
 @admin_bp.route("/")
 def admin_home():
@@ -149,11 +146,11 @@ def richiesta_modifica_contratto():
                 row = cur.fetchone()
                 id_giocatore = row['giocatore']
                 nuovo_contratto = row['contratto_richiesto']
-                crediti_richiesti = 0 if nuovo_contratto in ZERO_CREDITS_CONTRACTS else row['crediti_richiesti']
+                crediti_richiesti = 0 if nuovo_contratto == 'Svincolato' else row['crediti_richiesti']
                 squadra_richiedente = row['squadra_richiedente']
 
                 # Logica per aggiornare squadra_attuale e detentore_cartellino
-                if nuovo_contratto in REAL_TRANSFER_CONTRACTS:
+                if nuovo_contratto == 'Svincolato':
                     # Se il contratto è "Svincolato", 
                     # squadra attuale e detentore cartellino vanno a "Svincolato"
                     cur.execute('''
@@ -181,22 +178,6 @@ def richiesta_modifica_contratto():
                                     squadra_att = %s
                                 WHERE id = %s;
                     ''', (nuovo_contratto, squadra_richiedente, id_giocatore))
-                elif nuovo_contratto == 'Hold':
-                    # Hold non cambia la squadra e non assegna crediti
-                    cur.execute('''
-                                UPDATE giocatore
-                                SET tipo_contratto = %s
-                                WHERE id = %s;
-                    ''', (nuovo_contratto, id_giocatore))
-                elif nuovo_contratto in ZERO_CREDITS_CONTRACTS:
-                    # Le varianti di trasferimento reale usano il comportamento dello svincolo
-                    cur.execute('''
-                                UPDATE giocatore
-                                SET tipo_contratto = %s,
-                                    squadra_att = %s,
-                                    detentore_cartellino = %s
-                                WHERE id = %s;
-                    ''', ('Svincolato', 'Svincolato', 'Svincolato', id_giocatore))
                 else:
                     # Per altri tipi di contratto, aggiorna solo il tipo di contratto
                     cur.execute('''
