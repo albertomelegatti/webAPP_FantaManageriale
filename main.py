@@ -2,12 +2,15 @@ import psycopg2
 import telegram_utils
 import os
 import gc
+from datetime import datetime
+from io import BytesIO
 from dotenv import load_dotenv
-from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify
+from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify, send_file
 from flask_session import Session
 from psycopg2.extras import RealDictCursor
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from openpyxl import Workbook
 from admin import admin_bp
 from user import user_bp, format_partecipanti, formatta_data
 from user_aste import aste_bp
@@ -573,8 +576,52 @@ def crediti_stadi_slot():
 
 @app.route("/listone")
 def listone():
-    link_fantacalcio_it = "https://www.fantacalcio.it/quotazioni-fantacalcio"
-    return redirect(link_fantacalcio_it)
+    conn = None
+    cur = None
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("""
+            SELECT *
+            FROM giocatore
+            ORDER BY id;
+        """)
+        giocatori = cur.fetchall()
+
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Giocatori"
+
+        if giocatori:
+            headers = list(giocatori[0].keys())
+            sheet.append(headers)
+
+            for giocatore in giocatori:
+                sheet.append([giocatore.get(colonna) for colonna in headers])
+        else:
+            sheet.append(["Nessun giocatore trovato"])
+
+        output = BytesIO()
+        workbook.save(output)
+        output.seek(0)
+
+        nome_file = f"listone_giocatori_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=nome_file,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    except Exception as e:
+        print("Errore esportazione listone:", e)
+        flash("❌ Errore durante la generazione del file Excel.", "danger")
+        return redirect(url_for('home'))
+
+    finally:
+        release_connection(conn, cur)
 
 
 @app.route("/aste")
