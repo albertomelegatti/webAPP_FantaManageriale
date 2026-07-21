@@ -133,22 +133,22 @@ def asta_iniziata(conn, id_asta):
 
 
 
-def asta_rilanciata(conn, id_asta):
-
+def asta_rilanciata(id_asta):
+    conn = None
+    cur = None
     try:
+        conn = get_connection() # Prende una nuova connessione dedicata
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        # Recupero info per scrivere il messaggio
+        
         cur.execute('''
-                    SELECT g.nome, a.squadra_vincente, a.ultima_offerta, a.partecipanti
-                    FROM asta a
-                    JOIN giocatore g
-                        ON a.giocatore = g.id
-                    WHERE a.id = %s;
+            SELECT g.nome, a.squadra_vincente, a.ultima_offerta, a.partecipanti
+            FROM asta a
+            JOIN giocatore g ON a.giocatore = g.id
+            WHERE a.id = %s;
         ''', (id_asta,))
         info_asta = cur.fetchone()
 
         if not info_asta:
-            print(f"Nessuna asta trovata con id {id_asta}")
             return
 
         giocatore = info_asta['nome']
@@ -156,20 +156,20 @@ def asta_rilanciata(conn, id_asta):
         ultima_offerta = info_asta['ultima_offerta']
 
         text_to_send = textwrap.dedent(f'''
-                🏷️ ASTA: {giocatore}
-                La squadra {squadra_che_ha_rilanciato} ha rilanciato l'offerta!
-                💰 Offerta attuale: {ultima_offerta} crediti.
+            🏷️ ASTA: {giocatore}
+            La squadra {squadra_che_ha_rilanciato} ha rilanciato l'offerta!
+            💰 Offerta attuale: {ultima_offerta} crediti.
         ''')
 
         for partecipante in info_asta['partecipanti']:
             send_message(nome_squadra=partecipante, text_to_send=text_to_send)
-            time.sleep(2)  # Delay per evitare spam
+            time.sleep(1.5)  # Ora questo sleep gira in background e non blocca il sito!
 
     except Exception as e:
-        print(f"Errore: {e}")
-    
+        print(f"Errore invio notifiche Telegram: {e}")
     finally:
-        cur.close()
+        if conn:
+            release_connection(conn, cur)
 
 
 
