@@ -1,126 +1,6 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<style>
-    /* Stile per la riga dei dettagli per rimuovere i bordi della tabella */
-    .details-row > td {
-        padding: 0 !important;
-        border: none !important;
-        background-color: transparent !important;
-    }
-
-    /* Contenitore principale della visualizzazione dei dettagli dello scambio */
-    .trade-details-container {
-        padding: 1.25rem; /* Ridotto per compattezza */
-        margin: 0.5rem 0;
-        border-radius: 0.75rem;
-        background-color: var(--color-background-card, #ffffff);
-        border: 1px solid var(--color-border-primary, #dee2e6);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s ease;
-    }
-
-    body.dark-mode .trade-details-container {
-        background-color: var(--color-background-card);
-        border-color: var(--color-border-primary);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    }
-
-    /* Layout a griglia per le sezioni "Offerta" e "Richiesta" */
-    .trade-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.25rem; /* Ridotto */
-        align-items: start;
-    }
-
-    /* Card per singola sezione (Offerta/Richiesta) */
-    .trade-side {
-        padding: 1rem; /* Ridotto */
-        border-radius: 0.5rem;
-        background-color: var(--color-background-body, #f8f9fa);
-    }
-    
-    body.dark-mode .trade-side {
-        background-color: #1f1f1f;
-    }
-
-    /* Titolo della sezione */
-    .trade-side-title {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem; /* Ridotto */
-        font-size: 1rem; /* Ridotto */
-        font-weight: 600;
-        margin-bottom: 0.75rem; /* Ridotto */
-        color: var(--color-text-primary);
-    }
-
-    .trade-side-title .icon {
-        font-size: 1.2rem; /* Ridotto */
-    }
-    
-    /* Colori specifici per icone e titoli */
-    .trade-side.offer .trade-side-title { color: #28a745; }
-    .trade-side.request .trade-side-title { color: #007bff; }
-    body.dark-mode .trade-side.offer .trade-side-title { color: #7CFC00; }
-    body.dark-mode .trade-side.request .trade-side-title { color: #8ab4f8; }
-
-    /* Contenuto della card */
-    .trade-content {
-        color: var(--color-text-primary);
-        font-size: 0.9rem; /* Ridotto */
-        line-height: 1.5; /* Leggermente ridotto */
-    }
-    
-    .trade-content strong {
-        font-weight: 600;
-    }
-
-    .trade-content .text-muted {
-        color: var(--color-text-muted, #6c757d);
-        font-style: italic;
-    }
-
-    /* Contenitore per i bottoni di azione */
-    .trade-actions {
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-        flex-wrap: wrap;
-        margin-top: 1.25rem; /* Ridotto */
-        padding-top: 1.25rem; /* Ridotto */
-        border-top: 1px solid var(--color-border-primary, #dee2e6);
-    }
-
-    /* Messaggio di avviso per proposte non valide */
-    .alert-invalid {
-        background-color: #f8d7da;
-        border: 1px solid #f5c6cb;
-        color: #721c24;
-        border-radius: 0.375rem;
-        padding: 0.75rem 1.25rem;
-        font-size: 0.85rem; /* Ridotto */
-        text-align: center;
-        width: 100%;
-    }
-
-    body.dark-mode .alert-invalid {
-        background-color: #5d2b2f;
-        border-color: #a74d56;
-        color: #f5c6cb;
-    }
-
-    /* Responsive per schermi più piccoli */
-    @media (max-width: 768px) {
-        .trade-grid {
-            grid-template-columns: 1fr;
-            gap: 1rem;
-        }
-        .trade-details-container { padding: 1rem; }
-        .trade-side { padding: 1rem; }
-    }
-</style>
 
 <div class="container mt-5">
 
@@ -170,7 +50,7 @@
                     <tr class="proposal-row" data-scambio-id="{{ scambio.id }}">
                         <td>{{ scambio.data_proposta.strftime('%d/%m/%Y') }}</td>
                         <td>{{ scambio.squadra_destinataria }}</td>
-                        <td class="text-center"><button type="button" class="btn btn-sm btn-info view-proposal-btn">Vedi</button></td>
+                        <td class="text-center"><button type="button" class="btn btn-xs btn-outline-secondary view-proposal-btn">Vedi</button></td>
                     </tr>
                     {% else %}
                     <tr><td colspan="3" class="text-center text-muted">Nessuna proposta di scambio attiva</td></tr>
@@ -197,7 +77,7 @@
                      <tr class="proposal-row" data-scambio-id="{{ scambio.id }}">
                         <td>{{ scambio.data_proposta.strftime('%d/%m/%Y') }}</td>
                         <td>{{ scambio.squadra_proponente }}</td>
-                        <td class="text-center"><button type="button" class="btn btn-sm btn-info view-proposal-btn">Vedi</button></td>
+                        <td class="text-center"><button type="button" class="btn btn-xs btn-outline-secondary view-proposal-btn">👁️ Vedi</button></td>
                     </tr>
                     {% else %}
                     <tr><td colspan="3" class="text-center text-muted">Nessuno scambio ricevuto</td></tr>
@@ -233,7 +113,7 @@
                                 {{ scambio.stato|capitalize }}
                             </span>
                         </td>
-                        <td class="text-center"><button type="button" class="btn btn-sm btn-secondary view-proposal-btn">Vedi</button></td>
+                        <td class="text-center"><button type="button" class="btn btn-xs btn-outline-secondary view-proposal-btn">Vedi</button></td>
                     </tr>
                     {% else %}
                     <tr><td colspan="4" class="text-center text-muted">Nessuno scambio nello storico</td></tr>

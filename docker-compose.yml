@@ -1,0 +1,16 @@
+services:
+  web:
+    build: .
+    container_name: fantamanageriale_web
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - DATABASE_URL=${DATABASE_URL}
+      - PYTHONUNBUFFERED=1
+      # Add other env variables as needed
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+    volumes:
+      - .:/app
+    command: gunicorn --preload main:app --timeout 120 --bind 0.0.0.0:5000

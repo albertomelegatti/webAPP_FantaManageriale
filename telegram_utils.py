@@ -2,6 +2,8 @@ import requests
 import os
 import time
 import textwrap
+import queue
+import threading
 from datetime import datetime
 from flask import current_app
 from psycopg2.extras import RealDictCursor
@@ -23,9 +25,52 @@ def _env_flag(name, default=False):
 
 
 NOTIFICATIONS_ENABLED = _env_flag("NOTIFICHE_ATTIVE", default=True)
+TELEGRAM_SEND_DELAY_SECONDS = 1.0
+TELEGRAM_REQUEST_TIMEOUT_SECONDS = 5.0
 
 # Cache per i telegram IDs (lazy loading)f
 _TELEGRAM_IDS_CACHE = None
+_TELEGRAM_QUEUE = queue.Queue()
+_TELEGRAM_WORKER_STARTED = False
+_TELEGRAM_WORKER_LOCK = threading.Lock()
+
+
+def _ensure_telegram_worker():
+    global _TELEGRAM_WORKER_STARTED
+
+    if _TELEGRAM_WORKER_STARTED:
+        return
+
+    with _TELEGRAM_WORKER_LOCK:
+        if _TELEGRAM_WORKER_STARTED:
+            return
+
+        threading.Thread(target=_telegram_worker, daemon=True).start()
+        _TELEGRAM_WORKER_STARTED = True
+
+
+def _telegram_worker():
+    while True:
+        chat_id, text_to_send = _TELEGRAM_QUEUE.get()
+
+        try:
+            payload = {"chat_id": chat_id, "text": text_to_send}
+            try:
+                r = requests.post(url, json=payload, timeout=TELEGRAM_REQUEST_TIMEOUT_SECONDS)
+                if r.status_code == 200:
+                    print(f"✅ Messaggio inviato a {chat_id}")
+                else:
+                    print(f"❌ Errore per {chat_id}: {r.text}")
+            except requests.exceptions.RequestException as e:
+                print(f"❌ Errore di Rete per {chat_id}: {e}")
+        finally:
+            time.sleep(TELEGRAM_SEND_DELAY_SECONDS)
+            _TELEGRAM_QUEUE.task_done()
+
+
+def _enqueue_telegram_message(chat_id, text_to_send):
+    _ensure_telegram_worker()
+    _TELEGRAM_QUEUE.put((chat_id, text_to_send))
 
 
 def format_pick(pick_ids, conn):
@@ -122,7 +167,6 @@ def asta_iniziata(conn, id_asta):
 
         for partecipante in partecipanti:
             send_message(nome_squadra=partecipante, text_to_send=text_to_send)
-            time.sleep(2)  # Delay per evitare spam 
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -163,7 +207,6 @@ def asta_rilanciata(conn, id_asta):
 
         for partecipante in info_asta['partecipanti']:
             send_message(nome_squadra=partecipante, text_to_send=text_to_send)
-            time.sleep(2)  # Delay per evitare spam
 
     except Exception as e:
         print(f"Errore: {e}")
@@ -379,49 +422,52 @@ def scambio_risposta(conn, id_scambio, risposta):
             richiesta_text += "\n" + "\n".join(pick_richiesta_formatted)
 
         if risposta == "Accettato":
-            text_to_send = f'''SCAMBIO ACCETTATO
-La squadra {squadra_destinataria} ha accettato la tua offerta di scambio.
+            text_to_send = textwrap.dedent(f'''\
+                    SCAMBIO ACCETTATO
+                    La squadra {squadra_destinataria} ha accettato la tua offerta di scambio.
 
-Offerta:
-{offerta_text}
-💰 Crediti offerti: {crediti_offerti}
+                    Offerta:
+                    {offerta_text}
+                    💰 Crediti offerti: {crediti_offerti}
 
-Richiesta:
-{richiesta_text}
-💰 Crediti richiesti: {crediti_richiesti}
-'''
+                    Richiesta:
+                    {richiesta_text}
+                    💰 Crediti richiesti: {crediti_richiesti}
+            ''')
             send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
-            # invia notifica a tutte le squadre
-            text_to_send = f'''📢 SCAMBIO UFFICIALE: 🔥
-Le squadre {squadra_proponente} e {squadra_destinataria} hanno concluso un scambio:
+            # Invia notifica a tutte le squadre
+            text_to_send = textwrap.dedent(f'''\
+                    📢 SCAMBIO UFFICIALE: 🔥
+                    Le squadre {squadra_proponente} e {squadra_destinataria} hanno concluso un scambio:
 
-✅ {squadra_proponente} riceve:
-⚽
-{richiesta_text}
-🪙 {crediti_richiesti} crediti
+                    ✅ {squadra_proponente} riceve:
+                    ⚽
+                    {richiesta_text}
+                    🪙 {crediti_richiesti} crediti
 
-✅ {squadra_destinataria} riceve:
-⚽
-{offerta_text}
-🪙 {crediti_offerti} crediti
+                    ✅ {squadra_destinataria} riceve:
+                    ⚽
+                    {offerta_text}
+                    🪙 {crediti_offerti} crediti
 
-📝 Condizioni/Bonus: {messaggio}
-'''
+                    📝 Condizioni/Bonus: {messaggio}
+            ''')
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
 
         else:
-            text_to_send = f'''SCAMBIO RIFIUTATO
-La squadra {squadra_destinataria} ha rifiutato la tua offerta di scambio.
+            text_to_send = textwrap.dedent(f'''\
+                    SCAMBIO RIFIUTATO
+                    La squadra {squadra_destinataria} ha rifiutato la tua offerta di scambio.
 
-Offerta:
-{offerta_text}
-💰 Crediti offerti: {crediti_offerti}
+                    Offerta:
+                    {offerta_text}
+                    💰 Crediti offerti: {crediti_offerti}
 
-Richiesta:
-{richiesta_text}
-💰 Crediti richiesti: {crediti_richiesti}
-'''
+                    Richiesta:
+                    {richiesta_text}
+                    💰 Crediti richiesti: {crediti_richiesti}
+            ''')
             send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
     except Exception as e:
@@ -781,7 +827,6 @@ def richiesta_modifica_contratto(conn, squadra_richiedente, id_giocatore, messag
         id_admin = id_admin_raw['id_telegram']
         
         send_message(id=id_admin[0], text_to_send=text_to_send) # Mura
-        time.sleep(1)
         send_message(id=id_admin[1], text_to_send=text_to_send) # Theo
 
     except Exception as e:
@@ -920,23 +965,8 @@ def send_message(id=None, nome_squadra=None, text_to_send=None):
     if id is not None:
         if id == 903944311:
             text_to_send = "Messaggio di routine per non far bannare il bot da Telegram."
-        
-        chat_id = id
-        payload = {"chat_id": chat_id, "text": text_to_send}
 
-        
-        try:
-            r = requests.post(url, json=payload)
-            if r.status_code == 200:
-                print(f"✅ Messaggio inviato a {chat_id}")
-            else:
-                print(f"❌ Errore per {chat_id}: {r.text}")
-        
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Errore di Rete per {chat_id}: {e}")
-            
-        
-
+        _enqueue_telegram_message(id, text_to_send)
         return
 
 
@@ -959,19 +989,7 @@ def send_message(id=None, nome_squadra=None, text_to_send=None):
 
     # Fase di invio dei messaggi
     for chat_id in CHAT_IDS:
-        payload = {"chat_id": chat_id, "text": text_to_send}
-
-        try:
-            r = requests.post(url, json=payload)
-            if r.status_code == 200:
-                print(f"✅ Messaggio inviato a {chat_id}")
-            else:
-                print(f"❌ Errore per {chat_id}: {r.text}")
-        
-            time.sleep(1)
-
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Errore di Rete per {chat_id}: {e}")
+        _enqueue_telegram_message(chat_id, text_to_send)
 
     return
 

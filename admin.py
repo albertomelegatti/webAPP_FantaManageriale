@@ -1,6 +1,7 @@
 import psycopg2
 import time
 import telegram_utils
+import logging
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from user import formatta_data
 from db import get_connection, release_connection
