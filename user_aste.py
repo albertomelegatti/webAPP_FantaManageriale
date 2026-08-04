@@ -375,17 +375,6 @@ def singola_asta_attiva(asta_id, nome_squadra):
                     flash("❌ Tempo scaduto, asta terminata.", "danger")
                     conn.commit()
                     return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
-                
-                # Controllo che il tempo non sia effettivamente scaduto
-                import datetime as dt_module
-                tempo_fine = asta_dati['tempo_fine_asta']
-                if isinstance(tempo_fine, str):
-                    tempo_fine = dt_module.datetime.fromisoformat(tempo_fine.replace('Z', '+00:00')).replace(tzinfo=None)
-                
-                if dt_module.datetime.now() > tempo_fine:
-                    flash("❌ Asta scaduta, non puoi piazzare altre offerte.", "danger")
-                    conn.commit()
-                    return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
 
                 # Controllo sui valori dell'asta prima di rilanciare
                 if asta_dati['ultima_offerta'] and asta_dati['ultima_offerta'] < nuova_offerta and asta_dati['squadra_vincente']:
