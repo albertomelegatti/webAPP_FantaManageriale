@@ -50,17 +50,15 @@
 
                 <!-- Data di scadenza -->
                 <div class="mb-3">
-                    <label for="data_fine" class="form-label fw-semibold">Data di scadenza del prestito</label>
-                    <input 
-                        type="date" 
-                        id="data_fine" 
-                        name="data_fine" 
-                        class="form-control" 
-                        required
-                        min="{{ current_date }}"
-                    >
+                    <label for="data_fine_anno" class="form-label fw-semibold">Anno di scadenza del prestito</label>
+                    <select id="data_fine_anno" name="data_fine_anno" class="form-select" required>
+                        {% for anno in anni_scadenza %}
+                            <option value="{{ anno }}" {% if anno == anno_default_scadenza %}selected{% endif %}>{{ anno }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" id="data_fine" name="data_fine" value="{{ default_data_fine }}">
                     <div class="form-text text-muted">
-                        Per facilitare il riscatto consigliamo di impostare la data di scadenza al 2 luglio, quando gli slot dei giocatori retrocessi vi si saranno liberati.<br>
+                        La scadenza verrà salvata automaticamente all'1 luglio alle 23:59:59 dell'anno selezionato.<br>
                     </div>
                 </div>
 
@@ -182,34 +180,16 @@ document.addEventListener("DOMContentLoaded", () => {
         selectGiocatore.refreshOptions(false);
     });
 
-    // Funzione per formattare una data in YYYY-MM-DD
-    function formatDateToString(date) {
-        const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, '0');
-        const dd = String(date.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
+    const selectAnnoScadenza = document.getElementById('data_fine_anno');
+    const dataFineHidden = document.getElementById('data_fine');
+
+    function aggiornaDataFine() {
+        const anno = selectAnnoScadenza.value;
+        dataFineHidden.value = `${anno}-07-01`;
     }
 
-    // Imposta la data minima (domani) per il campo data_fine
-    const oggi = new Date();
-    const domani = new Date(oggi);
-    domani.setDate(domani.getDate() + 1); // aggiunge 1 giorno
-    const domaniStr = formatDateToString(domani);
-    document.getElementById('data_fine').setAttribute('min', domaniStr);
-
-    // Imposta il valore di default: il primo 2 giugno disponibile
-    const annoCorrente = oggi.getFullYear();
-    const giunoDiQuestAnno = new Date(annoCorrente, 6, 2); // mese 6 = luglio (0-indexed)
-    
-    let defaultDate;
-    if (oggi <= giunoDiQuestAnno) {
-        // Se oggi è prima o uguale al 2 giugno di quest'anno, usa giugno di quest'anno
-        defaultDate = formatDateToString(giunoDiQuestAnno);
-    } else {
-        // Altrimenti usa giugno dell'anno prossimo
-        defaultDate = formatDateToString(new Date(annoCorrente + 1, 6, 2));
-    }
-    document.getElementById('data_fine').value = defaultDate;
+    selectAnnoScadenza.addEventListener('change', aggiornaDataFine);
+    aggiornaDataFine();
 });
 </script>
 

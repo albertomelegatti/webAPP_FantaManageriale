@@ -1,12 +1,16 @@
 import psycopg2
 import telegram_utils
 import os
+import gc
+from datetime import datetime
+from io import BytesIO
 from dotenv import load_dotenv
-from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify
+from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify, send_file
 from flask_session import Session
 from psycopg2.extras import RealDictCursor
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from openpyxl import Workbook
 from admin import admin_bp
 from user import user_bp, format_partecipanti, formatta_data
 from user_aste import aste_bp
@@ -32,12 +36,21 @@ if db_url and db_url.startswith("postgres://"):
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 5,
+    'max_overflow': 0,
+    'pool_recycle': 3600,
+    'pool_pre_ping': True,
+}
 db = SQLAlchemy(app)
 
 app.config['SESSION_TYPE'] = 'sqlalchemy'
 app.config['SESSION_SQLALCHEMY'] = db
 app.config['SESSION_PERMANENT'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 365
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 30  # 30 giorni invece di 365
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 Session(app)
 
 # Inizializza il dizionario telegram al lancio dell'app
@@ -52,18 +65,87 @@ app.register_blueprint(rosa_bp)
 app.register_blueprint(webhook_bp)
 
 
+@app.before_request
+def before_request():
+    """Pulisci la sessione prima di ogni request"""
+    try:
+        db.session.rollback()
+        db.session.remove()
+    except Exception:
+        pass
+
+
 @app.teardown_appcontext
 def teardown_db(exception):
-    if exception:
-        db.session.rollback()
-    db.session.remove()
+    """Cleanup della sessione dopo ogni request"""
+    try:
+        if exception:
+            print(f"[ERROR] Exception in request: {exception}")
+            try:
+                db.session.rollback()
+            except Exception as e:
+                print(f"[ERROR] Rollback failed: {e}")
+        
+        # Sempre rimuovi la sessione
+        try:
+            db.session.remove()
+        except Exception as e:
+            print(f"[ERROR] Session remove failed: {e}")
+    
+    except Exception as e:
+        print(f"[ERROR] Teardown failed: {e}")
+    
+    finally:
+        # Garbage collection forzato per liberare memoria
+        gc.collect()
 
+
+@app.errorhandler(Exception)
+def handle_exception(error):
+    """Error handler globale per tutte le eccezioni"""
+    print(f"[EXCEPTION HANDLER] Caught exception: {type(error).__name__}: {error}")
+    try:
+        db.session.rollback()
+        db.session.remove()
+    except Exception as e:
+        print(f"[ERROR] Failed to clean session in error handler: {e}")
+    
+    gc.collect()
+    
+    # Restituisci errore 500
+    flash("❌ Errore interno del server. Contatta l'amministratore.", "danger")
+    return redirect(url_for('home')), 500
+
+
+@app.errorhandler(500)
+def handle_500(error):
+    """Handler specifico per errori 500"""
+    try:
+        db.session.rollback()
+        db.session.remove()
+    except Exception as e:
+        print(f"[ERROR] Failed to clean session in 500 handler: {e}")
+    return redirect(url_for('home')), 500
 
 
 # Pagina principale
 @app.route("/")
 def home():
     return render_template("index.html")
+
+
+# Health check endpoint per Render
+@app.route("/health")
+def health_check():
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT 1;")
+        release_connection(conn, cur)
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        print(f"Health check failed: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # Rotta per login admin
@@ -282,6 +364,27 @@ def dashboard_squadra(nome_squadra):
                 "detentore_cartellino": g["detentore_cartellino"]
             })
 
+        # DRAFT - pick detenute dalla squadra
+        draft_pick = []
+        cur.execute('''
+                    SELECT d.detentore_originale, d.anno, d.numero, g.nome AS giocatore_scelto
+                    FROM draft d
+                    LEFT JOIN giocatore g
+                        ON d.id_giocatore_scelto = g.id
+                    WHERE d.detentore_att = %s
+                    ORDER BY d.anno, d.numero;
+        ''', (nome_squadra,))
+        draft_pick_raw = cur.fetchall()
+
+        for p in draft_pick_raw:
+            anno = p['anno'].year if hasattr(p['anno'], 'year') else p['anno']
+            draft_pick.append({
+                "detentore_originale": p["detentore_originale"],
+                "anno": anno,
+                "numero": p["numero"],
+                "giocatore_scelto": p["giocatore_scelto"] or "—"
+            })
+
         # PRESTITI OUT
         prestiti_out = []
         cur.execute('''
@@ -325,6 +428,7 @@ def dashboard_squadra(nome_squadra):
             primavera=primavera,
             prestiti_in=prestiti_in,
             prestiti_in_num=prestiti_in_num,
+            draft_pick=draft_pick,
             prestiti_out=prestiti_out,
             stadio=stadio,
             username=username,
@@ -470,58 +574,52 @@ def crediti_stadi_slot():
 
 @app.route("/listone")
 def listone():
-    
     conn = None
     cur = None
+
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        cur.execute('''
-                    SELECT *
-                    FROM giocatore
-                    ORDER BY id;            
-        ''')
-        giocatori_raw = cur.fetchall()
-        giocatori = []
-        
-        for g in giocatori_raw:
-            ruolo = g['ruolo'].strip("{}")
-            giocatori.append({
-                "nome": g['nome'],
-                "squadra_att": g['squadra_att'],
-                "detentore_cartellino": g['detentore_cartellino'],
-                "quot_att_mantra": g['quot_att_mantra'],
-                "tipo_contratto": g['tipo_contratto'],
-                "ruolo": ruolo,
-                "costo": g['costo']
-            })
-            
-        return render_template("listone.html", giocatori=giocatori)
-    
+
+        cur.execute("""
+            SELECT *
+            FROM giocatore
+            ORDER BY id;
+        """)
+        giocatori = cur.fetchall()
+
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Giocatori"
+
+        if giocatori:
+            headers = list(giocatori[0].keys())
+            sheet.append(headers)
+
+            for giocatore in giocatori:
+                sheet.append([giocatore.get(colonna) for colonna in headers])
+        else:
+            sheet.append(["Nessun giocatore trovato"])
+
+        output = BytesIO()
+        workbook.save(output)
+        output.seek(0)
+
+        nome_file = f"listone_giocatori_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=nome_file,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
     except Exception as e:
-        print("Errore listone:", e)
-        flash("❌ Errore nel caricamento del listone.", "danger")
+        print("Errore esportazione listone:", e)
+        flash("❌ Errore durante la generazione del file Excel.", "danger")
         return redirect(url_for('home'))
-    
+
     finally:
         release_connection(conn, cur)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
 
 @app.route("/aste")

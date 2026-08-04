@@ -11,6 +11,53 @@ from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati, 
 mercato_bp = Blueprint('mercato', __name__, url_prefix='/mercato')
 
 
+def format_pick(pick_ids, conn):
+    # Formatta una lista di IDs di pick dal draft in nomi leggibili (es. '1, 2, 3')
+    
+    if not pick_ids:
+        return ""
+    
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute('''
+            SELECT id, anno, giro, numero, detentore_att
+            FROM draft
+            WHERE id = ANY(%s)
+            ORDER BY anno, giro, numero;
+        ''', (pick_ids,))
+        picks = cur.fetchall()
+
+        def extract_year(value):
+            if value is None:
+                return "N/D"
+            return str(value.year if hasattr(value, "year") else value)
+
+        pick_names = [f"{extract_year(p['anno'])} - Giro: {p['giro']}°" for p in picks]
+        return ", ".join(pick_names)
+    
+    except Exception as e:
+        print(f"Errore nel formattare le pick: {e}")
+        return ""
+
+
+
+
+def validate_pick_ids(pick_ids, conn):
+    # Valida che gli ID delle pick esistano effettivamente nella tabella draft
+    if not pick_ids:
+        return True
+    
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT COUNT(*) as cnt FROM draft WHERE id = ANY(%s)", (pick_ids,))
+        result = cur.fetchone()
+        return result['cnt'] == len(pick_ids)
+    
+    except Exception as e:
+        print(f"Errore nella validazione delle pick: {e}")
+        return False
+
+
 @mercato_bp.route("/mercato/<nome_squadra>", methods=["GET", "POST"])
 def user_mercato(nome_squadra):
     conn = None
@@ -66,6 +113,8 @@ def user_mercato(nome_squadra):
             s_dict = dict(s_raw)
             s_dict['giocatori_offerti_nomi'] = format_giocatori(s_dict['giocatori_offerti'])
             s_dict['giocatori_richiesti_nomi'] = format_giocatori(s_dict['giocatori_richiesti'])
+            s_dict['pick_offerta_nomi'] = format_pick(s_dict['pick_offerta'], conn)
+            s_dict['pick_richiesta_nomi'] = format_pick(s_dict['pick_richiesta'], conn)
             prestiti_offerti, prestiti_richiesti = format_prestito(conn, s_dict['prestito_associato'], s_dict['squadra_proponente'])
             s_dict['prestiti_offerti_formattati'] = prestiti_offerti
             s_dict['prestiti_richiesti_formattati'] = prestiti_richiesti
@@ -110,6 +159,8 @@ def visualizza_proposta(scambio_id):
             "crediti_richiesti": scambio_raw['crediti_richiesti'],
             "giocatori_offerti": format_giocatori(scambio_raw['giocatori_offerti']),
             "giocatori_richiesti": format_giocatori(scambio_raw['giocatori_richiesti']),
+            "pick_offerta": format_pick(scambio_raw['pick_offerta'], conn),
+            "pick_richiesta": format_pick(scambio_raw['pick_richiesta'], conn),
             "prestito_associato": format_prestito(conn, scambio_raw['prestito_associato'])
         }
         
@@ -143,7 +194,18 @@ def nuovo_scambio(nome_squadra):
             crediti_richiesti = int(request.form.get("crediti_richiesti") or 0)
             giocatori_offerti = [int(g) for g in request.form.getlist("giocatori_offerti") if g.isdigit()]
             giocatori_richiesti = [int(g) for g in request.form.getlist("giocatori_richiesti") if g.isdigit()]
+            pick_offerta = [int(p) for p in request.form.getlist("pick_offerta") if p.isdigit()]
+            pick_richiesta = [int(p) for p in request.form.getlist("pick_richiesta") if p.isdigit()]
             messaggio = (request.form.get("messaggio") or "").strip()
+
+            # Validazione delle pick
+            if pick_offerta and not validate_pick_ids(pick_offerta, conn):
+                flash("❌ Una o più pick offerte non valide.", "danger")
+                return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
+            
+            if pick_richiesta and not validate_pick_ids(pick_richiesta, conn):
+                flash("❌ Una o più pick richieste non valide.", "danger")
+                return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
 
             # Nuovi campi prestito (due blocchi opzionali)
             enable_prestito1 = request.form.get("enable_prestito1") is not None
@@ -186,11 +248,11 @@ def nuovo_scambio(nome_squadra):
             if map_tipo(p2_tipo_offerto) == 'secco':
                 p2_riscatto_off = 0
 
-            # Data di fine default: 2 luglio alle 23:59:59 (prima data utile futura)
+            # Data di fine default: 1 luglio alle 23:59:59 (prima data utile futura)
             today = datetime.now()
-            target_year = today.year if today < datetime(today.year, 7, 2) else today.year + 1
+            target_year = today.year if today < datetime(today.year, 7, 1, 23, 59, 59) else today.year + 1
 
-            default_data_fine = datetime(target_year, 7, 2, 23, 59, 59)
+            default_data_fine = datetime(target_year, 7, 1, 23, 59, 59)
 
             # Validazioni base
             if not squadra_destinataria:
@@ -281,9 +343,10 @@ def nuovo_scambio(nome_squadra):
                     squadra_proponente, squadra_destinataria, 
                     crediti_offerti, crediti_richiesti, 
                     giocatori_offerti, giocatori_richiesti, 
+                    pick_offerta, pick_richiesta,
                     messaggio, stato, data_proposta, prestito_associato
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome', %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome', %s)
                 RETURNING id;
             ''', (
                 nome_squadra,
@@ -292,6 +355,8 @@ def nuovo_scambio(nome_squadra):
                 crediti_richiesti,
                 giocatori_offerti,
                 giocatori_richiesti,
+                pick_offerta,
+                pick_richiesta,
                 messaggio,
                 created_prestiti
             ))
@@ -362,12 +427,57 @@ def nuovo_scambio(nome_squadra):
             for g in giocatori_raw
         ]
 
+        # Recupera tutte le pick dal draft
+        cur.execute('''
+            SELECT id, anno, giro, numero, detentore_att, detentore_originale
+                FROM draft
+            WHERE id_giocatore_scelto IS NULL
+                ORDER BY anno, giro, numero;
+        ''')
+        pick_raw = cur.fetchall()
+
+        def normalize_team_name(value):
+            return (value or "").strip().casefold()
+
+        def extract_year(value):
+            if value is None:
+                return None
+            return value.year if hasattr(value, "year") else value
+
+        team_name_norm = normalize_team_name(nome_squadra)
+        mie_pick = [
+            {
+                "id": p["id"],
+                "anno": extract_year(p["anno"]),
+                "giro": p["giro"],
+                "numero": p["numero"],
+                "detentore_att": p["detentore_att"],
+                "detentore_originale": p["detentore_originale"]
+            }
+            for p in pick_raw
+            if normalize_team_name(p["detentore_att"]) == team_name_norm
+        ]
+        pick_list = [
+            {
+                "id": p["id"],
+                "anno": extract_year(p["anno"]),
+                "giro": p["giro"],
+                "numero": p["numero"],
+                "label": f"Giro {p['giro']}, Pick {p['numero']} ({p['detentore_att']})",
+                "detentore_att": p["detentore_att"],
+                "detentore_att_norm": normalize_team_name(p["detentore_att"])
+            }
+            for p in pick_raw
+        ]
+
         return render_template(
             "user_nuovo_scambio.html",
             nome_squadra=nome_squadra,
             squadre=squadre,
             giocatori=giocatori,
             miei_giocatori=miei_giocatori,
+            mie_pick=mie_pick,
+            pick_list=pick_list,
             crediti_effettivi=crediti_effettivi,
             slot_liberi_miei=slot_liberi_miei,
             slot_prestiti_miei=slot_prestiti_miei
@@ -406,6 +516,8 @@ def controlla_scambio(id, conn):
         crediti_richiesti = scambio["crediti_richiesti"] or 0
         giocatori_offerti = scambio["giocatori_offerti"] or []
         giocatori_richiesti = scambio["giocatori_richiesti"] or []
+        pick_offerta = scambio["pick_offerta"] or []
+        pick_richiesta = scambio["pick_richiesta"] or []
 
         # Controllo che le squadre abbiano abbastanza crediti per effettuare lo scambio
         cur.execute('''
@@ -532,6 +644,8 @@ def effettua_scambio(id, conn, nome_squadra):
         crediti_richiesti = scambio["crediti_richiesti"] or 0
         giocatori_offerti = scambio["giocatori_offerti"] or []
         giocatori_richiesti = scambio["giocatori_richiesti"] or []
+        pick_offerta = scambio["pick_offerta"] or []
+        pick_richiesta = scambio["pick_richiesta"] or []
 
         
         # Eseguo il trasferimento dei giocatori
@@ -569,6 +683,21 @@ def effettua_scambio(id, conn, nome_squadra):
                             AND stato = 'in_attesa'
                             AND id <> %s;
             ''', (giocatore_id, giocatore_id, id))
+
+        # Eseguo il trasferimento delle pick del draft
+        for pick_id in pick_offerta:
+            cur.execute('''
+                        UPDATE draft
+                        SET detentore_att = %s
+                        WHERE id = %s;
+            ''', (squadra_destinataria, pick_id))
+
+        for pick_id in pick_richiesta:
+            cur.execute('''
+                        UPDATE draft
+                        SET detentore_att = %s
+                        WHERE id = %s;
+            ''', (squadra_proponente, pick_id))
         
         # Aggiorno i crediti delle due squadre
         cur.execute('''

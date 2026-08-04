@@ -30,7 +30,8 @@ def init_pool():
         "password": result.password,
         "host": result.hostname,
         "port": result.port,
-        "dbname": "postgres"
+        "dbname": "postgres",
+        "connect_timeout": 10
     }
 
     try:
@@ -50,11 +51,8 @@ def init_pool():
 def log_pool_status(action):
     #Stampa lo stato corrente del pool
     global pool
-    if pool:
-        used = len(pool._used)
-        free = len(pool._pool)
-        print(f"📊 [POOL STATUS] {action} | Attive: {used} | Libere: {free}")
-    else:
+    
+    if not pool:
         print("⚠️ Pool non inizializzato.")
 
 
@@ -68,6 +66,7 @@ def get_connection():
         raise Exception("Connection pool non inizializzato. Chiama init_pool() prima.")
     
     retries = 0
+    log_pool_status("BEFORE_GETCONN")
 
     while retries < max_retries:
         try:
@@ -77,6 +76,7 @@ def get_connection():
             # Verifica che la connessione sia ancora viva
             with conn.cursor() as cur:
                 cur.execute("SELECT 1;")
+            log_pool_status("CONNECTION_OK")
             return conn
         
         except OperationalError as e:
@@ -125,31 +125,32 @@ def release_connection(conn=None, cur=None):
         return
     
     try:
-        # Annulla transazioni aperte (rollback di sicurezza)
-        if not conn.closed:
+        # Chiudi il cursore per primo
+        if cur:
             try:
                 conn.rollback()
             except Exception as e:
-                print(f"⚠️ Errore nel rollback: {e}")
-            
-            # Rimetti la connessione nel pool
-            try:
-                pool.putconn(conn, close=False)
-            except Exception as e:
-                print(f"⚠️ Errore nel rilascio al pool: {e}")
-                # Se fallisce il putconn, chiudi direttamente
+                print(f"⚠️ Impossibile chiudere il cursore: {e}")
+
+        try:
+            if not conn.closed:
                 try:
-                    conn.close()
+                    conn.rollback()
                 except Exception:
                     pass
-        else:
-            # Connessione già chiusa
-            print("⚠️ Connessione già chiusa, non rimessa nel pool")
-            
+                pool.putconn(conn, close=False)
+        except Exception as e:
+            print(f"⚠️ Errore durante il rilascio connessione al pool: {e}")
+            try:
+                conn.close()
+            except Exception:
+                pass
+
     except Exception as e:
         print(f"⚠️ Errore imprevisto in release_connection: {e}")
         try:
-            conn.close()
+            if conn and not conn.closed:
+                conn.close()
         except Exception:
             pass
 
@@ -192,10 +193,10 @@ def check_connection():
 
 
 def keep_awake():
-    """
-    Funzione che mantiene la web app e il database attivi.
-    Effettua una query di test e rilascia subito la connessione.
-    """
+    
+    # Funzione che mantiene la web app e il database attivi.
+    # Effettua una query di test e rilascia subito la connessione.
+    
     conn = None
     try:
         conn = get_connection()
@@ -206,3 +207,39 @@ def keep_awake():
     finally:
         if conn:
             release_connection(conn)
+
+
+class DatabaseConnection:
+    # Context manager per gestire connessioni al database in modo sicuro
+    
+    def __init__(self):
+        self.conn = None
+        self.cur = None
+    
+    def __enter__(self):
+        """Acquisisce una connessione dal pool"""
+        self.conn = get_connection()
+        self.cur = self.conn.cursor(cursor_factory=RealDictCursor)
+        return self.conn, self.cur
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Rilascia la connessione al pool"""
+        try:
+            if exc_type:
+                print(f"[DatabaseConnection] Exception occurred: {exc_type.__name__}: {exc_val}")
+                if self.conn and not self.conn.closed:
+                    self.conn.rollback()
+            elif self.conn and not self.conn.closed:
+                self.conn.commit()
+        except Exception as e:
+            print(f"[DatabaseConnection] Error in exit: {e}")
+            if self.conn and not self.conn.closed:
+                try:
+                    self.conn.rollback()
+                except Exception:
+                    pass
+        finally:
+            release_connection(self.conn, self.cur)
+        
+        return False  # Propaga le eccezioni
+
