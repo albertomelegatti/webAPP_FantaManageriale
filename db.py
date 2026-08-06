@@ -97,48 +97,40 @@ def get_connection():
 
 
 def release_connection(conn=None, cur=None):
-    
-    # Rilascia la connessione al pool e chiude il cursore.
-    # Gestisce gracefully i casi in cui conn o cur non sono validi.
-    
+
     global pool
-    
-    # 1. Chiudi sempre il cursore per primo (se presente)
-    if cur:
-        try:
-            cur.close()
-        except Exception as e:
-            print(f"⚠️ Errore nella chiusura del cursore: {e}")
-    
-    # 2. Se non c'è pool, non possiamo fare nulla
-    if not pool:
-        print("⚠️ Pool non disponibile, impossibile rilasciare la connessione")
-        if conn:
-            try:
-                conn.close()  # Chiudi direttamente
-            except Exception:
-                pass
+    if not pool or not conn:
         return
-    
-    # 3. Rilascia la connessione al pool
-    if not conn:
-        return
-    
+
     try:
         # Chiudi il cursore per primo
         if cur:
             try:
-                conn.rollback()
+                cur.close()
             except Exception as e:
                 print(f"⚠️ Impossibile chiudere il cursore: {e}")
 
+        # Poi gestisci la connessione
         try:
             if not conn.closed:
+                # Prova a fare rollback prima di restituire al pool
                 try:
                     conn.rollback()
-                except Exception:
-                    pass
-                pool.putconn(conn, close=False)
+                    # print(f"[DB] Connection rolled back successfully")
+                except Exception as e:
+                    print(f"⚠️ Errore durante rollback: {e}")
+                    # Prova comunque a restituire la connessione
+                
+                # Restituisci la connessione al pool
+                try:
+                    pool.putconn(conn, close=False)
+                except Exception as e:
+                    print(f"⚠️ Errore durante putconn: {e}")
+                    # Chiudi la connessione se non riesci a metterla nel pool
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
         except Exception as e:
             print(f"⚠️ Errore durante il rilascio connessione al pool: {e}")
             try:
@@ -147,7 +139,7 @@ def release_connection(conn=None, cur=None):
                 pass
 
     except Exception as e:
-        print(f"⚠️ Errore imprevisto in release_connection: {e}")
+        print(f"⚠️ Errore imprevisto durante release_connection: {e}")
         try:
             if conn and not conn.closed:
                 conn.close()
