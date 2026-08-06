@@ -380,7 +380,9 @@ def nuovo_scambio(nome_squadra):
         for s in squadre_raw:
             slot_occupati = int(get_slot_occupati(conn, s["nome"]))
             slot_prestiti = int(get_slot_prestiti_in(conn, s["nome"]))
-            offerta_massima_possibile = max(s["crediti"] - offerta_totale, 0)
+            # Calcola l'offerta totale per la squadra corrente (non usare l'offerta della squadra loggata)
+            offerta_totale_squadra = int(get_offerta_totale(conn, s["nome"]))
+            offerta_massima_possibile = max(s["crediti"] - offerta_totale_squadra, 0)
 
             squadre.append({
                 "nome": s["nome"],
