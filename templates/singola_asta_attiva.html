@@ -62,7 +62,8 @@
                 onsubmit="return confirm('Sei sicuro di voler rinunciare all\'asta per {{ asta.giocatore }}?');">
                 <input type="hidden" name="bottone_rinuncia" value="{{ asta.id }}">
                 <button type="submit"
-                        class="btn btn-sm btn-danger fw-semibold"
+                        class="btn btn-sm fw-semibold"
+                        style="background-color:#dc3545; border-color:#dc3545; color:white; padding:0.25rem 0.75rem;"
                         {% if asta.squadra_vincente == nome_squadra %}disabled{% endif %}>
                     Rinuncia
                 </button>

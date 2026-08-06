@@ -174,7 +174,7 @@ def nuovo_prestito(nome_squadra):
 
             if not squadra_prestante or not giocatore_richiesto or not data_fine:
                 flash("❌ Errore: seleziona una squadra, un giocatore e una data di fine prestito.", "danger")
-                return redirect(url_for("prestiti.nuovo_prestito", nome_squadra=nome_squadra))
+                return redirect(url_for("user.nuovo_prestito", nome_squadra=nome_squadra))
             
             if len(data_fine) == 4 and data_fine.isdigit():
                 anno_scadenza = int(data_fine)
@@ -277,31 +277,15 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
     cur = None
     try:
         conn = get_connection()
-        conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        # Recupero info prestito con lock
+        # Recupero info prestito
         cur.execute('''
                     SELECT *
                     FROM prestito
-                    WHERE id = %s
-                    FOR UPDATE;
+                    WHERE id = %s;
         ''', (id_prestito_da_attivare,))
         prestito = cur.fetchone()
-        
-        if not prestito:
-            flash("❌ Prestito non trovato.", "danger")
-            return redirect(url_for("prestiti.user_prestiti", nome_squadra=nome_squadra))
-        
-        if prestito['stato'] != 'in_attesa':
-            flash("❌ Il prestito non è più valido.", "danger")
-            return redirect(url_for("prestiti.user_prestiti", nome_squadra=nome_squadra))
-        
-        # Validazione: controllare che la squadra ricevente abbia crediti sufficienti
-        crediti_disponibili = get_crediti_squadra(conn, prestito['squadra_ricevente'])
-        if crediti_disponibili < prestito['costo_prestito']:
-            flash(f"❌ Crediti insufficienti. Necessari {prestito['costo_prestito']}, disponibili {crediti_disponibili}.", "danger")
-            return redirect(url_for("prestiti.user_prestiti", nome_squadra=nome_squadra))
 
         # Cambio di stato
         cur.execute('''
@@ -335,9 +319,8 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
 
 
     except Exception as e:
-        conn.rollback()
         print(f"❌ Errore durante l'attivazione del prestito: {e}")
-        flash("❌ Errore durante l'attivazione del prestito.", "danger")
+        return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=0, crediti_disponibili=0, prestiti=[], prestiti_in_num=0, block_button=False)
     
     finally:
         release_connection(conn, cur)

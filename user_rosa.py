@@ -166,7 +166,8 @@ def user_tagli(nome_squadra):
     except Exception as e:
         print(f"Errore durante il caricamento o il taglio dei giocatori: {e}")
         flash("❌ Errore durante il caricamento o il taglio dei giocatori.", "danger")
-        conn.rollback()
+        if conn:
+            conn.rollback()
 
     finally:
         release_connection(conn, cur)
