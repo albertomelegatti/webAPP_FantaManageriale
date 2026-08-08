@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center mb-4">
+        <h1 class="mb-3">Vetrina</h1>
+        <p class="text-muted mb-0">
+            Giocatori messi in vetrina da tutte le squadre.
+        </p>
+    </div>
+
+    <div class="card shadow-sm mx-auto vetrina-card">
+        <div class="card-body">
+
+            {% if giocatori and giocatori|length > 0 %}
+
+            <div class="row g-2 mb-3">
+                <div class="col-12 col-md-4">
+                    <select id="filtro-squadra" class="form-select">
+                        <option value="">Tutte le squadre</option>
+                        {% for squadra in squadre %}
+                        <option value="{{ squadra.nome }}">{{ squadra.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 col-md-4">
+                    <select id="filtro-stato" class="form-select">
+                        <option value="">Tutti gli stati</option>
+                        <option value="prestabile">Prestabile</option>
+                        <option value="vendibile">Vendibile</option>
+                        <option value="cedibile">Cedibile</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Card per squadra: stesso markup per desktop e mobile, righe interne diverse -->
+            <div class="row g-3" id="gruppi-vetrina">
+                {% for nome_squadra, giocatori_squadra in giocatori|sort(attribute='detentore_cartellino')|groupby('detentore_cartellino') %}
+                <div class="col-12 col-lg-6" data-squadra="{{ nome_squadra }}">
+                    <div class="card h-100 vetrina-squadra-card">
+                        <div class="card-header fw-semibold">
+                            {{ nome_squadra }}
+                            <span class="badge bg-secondary float-end">{{ giocatori_squadra|length }}</span>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            {% for giocatore in giocatori_squadra %}
+                            <li class="list-group-item vetrina-item px-2 py-1" data-stato="{{ giocatore.stato }}">
+
+                                <!-- DESKTOP: riga estesa con colonne -->
+                                <div class="d-none d-lg-flex align-items-center gap-2">
+                                    <div class="text-start" style="width: 150px; flex-shrink: 0;">
+                                        <div class="fw-semibold text-truncate">{{ giocatore.nome }}</div>
+                                        <div class="fw-bold text-muted" style="font-size: 0.75rem;">{{ giocatore.ruolo }}</div>
+                                    </div>
+                                    <div class="text-muted text-center" style="width: 45px; flex-shrink: 0; font-size: 0.85rem;">
+                                        {{ giocatore.quot_att_mantra }}
+                                    </div>
+                                    <div style="width: 100px; flex-shrink: 0;">
+                                        {% if giocatore.stato == 'prestabile' %}
+                                            <span class="badge bg-warning text-dark">Prestabile</span>
+                                        {% elif giocatore.stato == 'vendibile' %}
+                                            <span class="badge bg-success">Vendibile</span>
+                                        {% elif giocatore.stato == 'cedibile' %}
+                                            <span class="badge bg-danger">Cedibile</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-start flex-grow-1" style="min-width: 0;">
+                                        <div class="text-muted text-truncate" style="font-size: 0.85rem;">{{ giocatore.note or '-' }}</div>
+                                        <div class="text-muted" style="font-size: 0.7rem;">{{ giocatore.data_inserimento or '-' }}</div>
+                                    </div>
+                                </div>
+
+                                <!-- MOBILE: riga compatta -->
+                                <div class="d-lg-none d-flex align-items-start gap-2">
+                                    <div class="text-start" style="min-width: 0; flex-shrink: 0;">
+                                        <span class="fw-semibold" style="font-size: 0.8rem;">{{ giocatore.nome }}</span>
+                                        <span class="fw-bold text-muted" style="font-size: 0.7rem;"> · {{ giocatore.ruolo }}</span>
+                                    </div>
+                                    {% if giocatore.stato == 'prestabile' %}
+                                        <span class="badge bg-warning text-dark flex-shrink-0" style="font-size: 0.65rem;">Prestabile</span>
+                                    {% elif giocatore.stato == 'vendibile' %}
+                                        <span class="badge bg-success flex-shrink-0" style="font-size: 0.65rem;">Vendibile</span>
+                                    {% elif giocatore.stato == 'cedibile' %}
+                                        <span class="badge bg-danger flex-shrink-0" style="font-size: 0.65rem;">Cedibile</span>
+                                    {% endif %}
+                                    <div class="flex-grow-1" style="min-width: 0;">
+                                        {% if giocatore.note %}
+                                        <div class="text-muted text-truncate" style="font-size: 0.7rem;">{{ giocatore.note }}</div>
+                                        {% endif %}
+                                        <div class="text-muted" style="font-size: 0.65rem;">{{ giocatore.data_inserimento or '-' }}</div>
+                                    </div>
+                                </div>
+
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="text-center text-muted small mt-3 d-none" id="nessun-risultato">
+                Nessun giocatore corrisponde ai filtri selezionati.
+            </div>
+
+            {% else %}
+                <div class="alert alert-info mb-0 text-center">
+                    Nessun giocatore attualmente in vetrina.
+                </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const filtroSquadra = document.getElementById('filtro-squadra');
+    const filtroStato = document.getElementById('filtro-stato');
+    if (!filtroSquadra || !filtroStato) return;
+
+    function applicaFiltri() {
+        const squadra = filtroSquadra.value;
+        const stato = filtroStato.value;
+        let visibiliCount = 0;
+
+        document.querySelectorAll('#gruppi-vetrina > [data-squadra]').forEach(function (colWrapper) {
+            const matchSquadra = !squadra || colWrapper.dataset.squadra === squadra;
+            let visibiliNelGruppo = 0;
+
+            colWrapper.querySelectorAll('.vetrina-item').forEach(function (item) {
+                const matchStato = !stato || item.dataset.stato === stato;
+                const visibile = matchSquadra && matchStato;
+                item.classList.toggle('d-none', !visibile);
+                if (visibile) visibiliNelGruppo++;
+            });
+
+            colWrapper.classList.toggle('d-none', visibiliNelGruppo === 0);
+            visibiliCount += visibiliNelGruppo;
+        });
+
+        document.getElementById('nessun-risultato')?.classList.toggle('d-none', visibiliCount > 0);
+    }
+
+    filtroSquadra.addEventListener('change', applicaFiltri);
+    filtroStato.addEventListener('change', applicaFiltri);
+})();
+</script>
+{% endblock %}

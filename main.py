@@ -18,6 +18,7 @@ from user_mercato import mercato_bp
 from user_prestiti import prestiti_bp
 from user_rosa import rosa_bp
 from webhook import webhook_bp
+from vetrina import vetrina_bp
 from db import get_connection, release_connection, init_pool
 from telegram_utils import get_all_telegram_ids
 from queries import get_slot_giocatori, get_slot_occupati
@@ -63,6 +64,7 @@ app.register_blueprint(mercato_bp)
 app.register_blueprint(prestiti_bp)
 app.register_blueprint(rosa_bp)
 app.register_blueprint(webhook_bp)
+app.register_blueprint(vetrina_bp)
 
 
 @app.before_request
@@ -99,7 +101,7 @@ def teardown_db(exception):
         # Garbage collection forzato per liberare memoria
         gc.collect()
 
-
+'''
 @app.errorhandler(Exception)
 def handle_exception(error):
     """Error handler globale per tutte le eccezioni"""
@@ -115,7 +117,7 @@ def handle_exception(error):
     # Restituisci errore 500
     flash("❌ Errore interno del server. Contatta l'amministratore.", "danger")
     return redirect(url_for('home')), 500
-
+'''
 
 @app.errorhandler(500)
 def handle_500(error):
