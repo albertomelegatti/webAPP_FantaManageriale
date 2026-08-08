@@ -85,6 +85,114 @@ def user_primavera(nome_squadra):
 
 
 
+@rosa_bp.route("/user_vetrina/<nome_squadra>", methods=["GET", "POST"])
+def user_vetrina(nome_squadra):
+
+    conn = None
+    cur = None
+    rosa = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        if request.method == "POST":
+            id_giocatori = request.form.getlist("id_giocatore")
+            stati_vetrina = request.form.getlist("stato_vetrina")
+            note_vetrina = request.form.getlist("note")
+
+            for id_giocatore, stato_vetrina, note in zip(id_giocatori, stati_vetrina, note_vetrina):
+                if not id_giocatore:
+                    continue
+
+                nota_pulita = (note or "").strip()
+
+                cur.execute(
+                    '''
+                    SELECT 1
+                    FROM vetrina
+                    WHERE id_giocatore = %s;
+                    ''',
+                    (id_giocatore,)
+                )
+                vetrina_esiste = cur.fetchone() is not None
+
+                if not stato_vetrina:
+                    if vetrina_esiste:
+                        cur.execute(
+                            '''
+                            DELETE FROM vetrina
+                            WHERE id_giocatore = %s;
+                            ''',
+                            (id_giocatore,)
+                        )
+                    continue
+
+                if vetrina_esiste:
+                    cur.execute(
+                        '''
+                        UPDATE vetrina
+                        SET stato = %s,
+                            note = %s
+                        WHERE id_giocatore = %s;
+                        ''',
+                        (stato_vetrina, nota_pulita or None, id_giocatore)
+                    )
+                else:
+                    cur.execute(
+                        '''
+                        INSERT INTO vetrina (id_giocatore, stato, note)
+                        VALUES (%s, %s, %s);
+                        ''',
+                        (id_giocatore, stato_vetrina, nota_pulita or None)
+                    )
+
+            conn.commit()
+            flash("✅ Vetrina aggiornata con successo.", "success")
+            return redirect(url_for("rosa.user_vetrina", nome_squadra=nome_squadra))
+
+
+        # Sezione GET
+
+        cur.execute('''
+                    SELECT
+                        g.id,
+                        g.nome,
+                        g.ruolo,
+                        g.quot_att_mantra,
+                        g.tipo_contratto,
+                        v.stato AS stato_vetrina,
+                        v.note AS note
+                    FROM giocatore g
+                    LEFT JOIN vetrina v
+                        ON v.id_giocatore = g.id
+                    WHERE g.detentore_cartellino = %s
+                    ORDER BY g.ruolo, g.nome;
+        ''', (nome_squadra,))
+        rosa_raw = cur.fetchall()
+
+        for giocatore in rosa_raw:
+            ruolo = giocatore['ruolo'].strip("{}")
+            rosa.append({
+                "id": giocatore["id"],
+                "nome": giocatore["nome"],
+                "ruolo": ruolo,
+                "quot_att_mantra": giocatore["quot_att_mantra"],
+                "tipo_contratto": giocatore["tipo_contratto"],
+                "stato_vetrina": giocatore["stato_vetrina"],
+                "note": giocatore["note"],
+            })
+
+    except Exception as e:
+        print(f"Errore durante l'aggiornamento dello stato vetrina: {e}")
+        flash("❌ Errore durante l'aggiornamento dello stato vetrina.", "danger")
+        if conn:
+            conn.rollback()
+
+    finally:
+        release_connection(conn, cur)
+        
+    return render_template("user_vetrina.html", nome_squadra=nome_squadra, rosa=rosa)
 
 
 @rosa_bp.route("/user_tagli/<nome_squadra>", methods=["GET", "POST"])

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center mb-4">
+        <h1 class="mb-3">Vetrina - {{ nome_squadra }}</h1>
+        <p class="text-muted mb-0">
+            Imposta per ogni giocatore lo stato di vetrina e aggiungi eventuali note.
+        </p>
+    </div>
+
+    <div class="card shadow-sm mx-auto">
+        <div class="card-body">
+            {% if rosa and rosa|length > 0 %}
+            <form method="POST" action="{{ url_for('rosa.user_vetrina', nome_squadra=nome_squadra) }}">
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Giocatore</th>
+                                <th>Ruolo</th>
+                                <th>QA</th>
+                                <th>Contratto</th>
+                                <th>Stato vetrina</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for giocatore in rosa %}
+                            <tr>
+                                <td>
+                                    <strong>{{ giocatore.nome }}</strong>
+                                    <input type="hidden" name="id_giocatore" value="{{ giocatore.id }}">
+                                </td>
+                                <td>{{ giocatore.ruolo }}</td>
+                                <td>{{ giocatore.quot_att_mantra }}</td>
+                                <td>{{ giocatore.tipo_contratto }}</td>
+                                <td style="min-width: 170px;">
+                                    <select class="form-select" name="stato_vetrina">
+                                        <option value="" disabled {% if not giocatore.stato_vetrina %}selected{% endif %}>Seleziona...</option>
+                                        <option value="prestabile" {% if giocatore.stato_vetrina == 'prestabile' %}selected{% endif %}>Prestabile</option>
+                                        <option value="vendibile" {% if giocatore.stato_vetrina == 'vendibile' %}selected{% endif %}>Vendibile</option>
+                                        <option value="cedibile" {% if giocatore.stato_vetrina == 'cedibile' %}selected{% endif %}>Cedibile</option>
+                                    </select>
+                                </td>
+                                <td style="min-width: 280px;">
+                                    <textarea class="form-control" name="note" rows="2" placeholder="Aggiungi una nota...">{{ giocatore.note }}</textarea>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                    <a href="{{ url_for('dashboard_squadra', nome_squadra=nome_squadra) }}" class="btn btn-outline-secondary">
+                        Annulla
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        Salva
+                    </button>
+                </div>
+            </form>
+            {% else %}
+                <div class="alert alert-info mb-0 text-center">
+                    Nessun giocatore disponibile nella rosa.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
