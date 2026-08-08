@@ -11,6 +11,10 @@
         <a href="{{ url_for('crediti_stadi_slot') }}" class="btn">Crediti, Stadi <br>e Slot</a>
         <a href="{{ url_for('listone') }}" class="btn">Listone</a>
         <a href="{{ url_for('aste') }}" class="btn">Aste</a>
+        <a href="{{ url_for('vetrina.vetrina') }}" class="btn btn-nuovo">
+            Vetrina
+            <span class="badge-nuovo">Nuovo</span>
+        </a>
         <a href="{{ url_for('movimenti_mercato') }}" class="btn">Movimenti <br>di Mercato</a>
         <a href="{{ url_for('chat_page') }}" class="btn">Chatbot <br>regolamento</a>
     </div>
@@ -20,4 +24,32 @@
         <a href="/scarica_regolamento" class="btn-small">Regolamento</a>
     </div>
 </div>
+
+<style>
+.btn-nuovo {
+    position: relative;
+    overflow: visible;
+}
+
+.badge-nuovo {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: #dc3545;
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    line-height: 1.2;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    animation: pulse-nuovo 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse-nuovo {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+}
+</style>
 {% endblock %}

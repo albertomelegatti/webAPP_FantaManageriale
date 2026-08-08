@@ -26,6 +26,11 @@ body.dark-mode {
     
     /* SFONDO GENERALE MANTENUTO SCURO */
     --color-background-body: #121212; 
+    --bs-body-bg: var(--color-background-body);
+    --bs-body-color: var(--color-text-primary);
+    --bs-secondary-color: var(--color-text-muted);
+    --bs-border-color: var(--color-border-primary);
+    --bs-tertiary-color: var(--color-text-muted);
     
     /* SCHIARITI: Card, Navbar, Header */
     --color-background-card: #282828;
@@ -77,6 +82,52 @@ body.dark-mode i {
 body.dark-mode .card {
     background-color: var(--color-background-card);
     border: 1px solid var(--color-border-primary);
+}
+
+body.dark-mode .vetrina-card {
+    background-color: var(--color-background-card);
+    border-color: var(--color-border-primary);
+}
+
+body.dark-mode .vetrina-mobile-item {
+    background-color: var(--color-background-card);
+    border-color: var(--color-border-primary) !important;
+}
+
+body.dark-mode .vetrina-mobile-list .text-body-secondary,
+body.dark-mode .vetrina-mobile-list .text-body-emphasis,
+body.dark-mode .vetrina-card .text-muted,
+body.dark-mode .vetrina-card .small {
+    color: var(--color-text-primary) !important;
+}
+
+body.dark-mode .vetrina-card .form-control,
+body.dark-mode .vetrina-card .form-select,
+body.dark-mode .vetrina-card textarea,
+body.dark-mode .vetrina-card select {
+    background-color: var(--color-background-card-header);
+    border-color: var(--color-border-primary);
+    color: var(--color-text-primary);
+}
+
+body.dark-mode .vetrina-card .form-control::placeholder {
+    color: var(--color-text-muted);
+}
+
+body.dark-mode .vetrina-card .form-select option {
+    background-color: var(--color-background-card);
+    color: var(--color-text-primary);
+}
+
+body.dark-mode .vetrina-card .btn-outline-secondary {
+    color: var(--color-text-primary);
+    border-color: var(--color-border-primary);
+    background-color: transparent;
+}
+
+body.dark-mode .vetrina-card .btn-outline-secondary:hover {
+    background-color: var(--color-background-card-header);
+    color: var(--color-text-primary);
 }
 
 /* Card header - STILE BASE */
