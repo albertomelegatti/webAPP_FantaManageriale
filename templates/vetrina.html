@@ -32,14 +32,27 @@
                     </select>
                 </div>
                 <div class="col-12 col-md-4">
-                    <select id="filtro-ruolo" class="form-select">
-                        <option value="">Tutti i ruoli</option>
-                        {% for ruolo, _ in giocatori|sort(attribute='ruolo')|groupby('ruolo') %}
-                        {% if ruolo %}
-                        <option value="{{ ruolo }}">{{ ruolo }}</option>
-                        {% endif %}
-                        {% endfor %}
-                    </select>
+                    <div class="dropdown">
+                        <button class="form-select text-start" type="button"
+                                id="filtro-ruolo-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                                aria-expanded="false">
+                            Tutti i ruoli
+                        </button>
+                        <ul class="dropdown-menu w-100 p-2" id="filtro-ruolo-menu"
+                            style="max-height: 280px; overflow-y: auto;" aria-labelledby="filtro-ruolo-btn">
+                            {% for ruolo, _ in giocatori|sort(attribute='ruolo')|groupby('ruolo') %}
+                            {% if ruolo %}
+                            <li>
+                                <div class="form-check py-1">
+                                    <input class="form-check-input filtro-ruolo-checkbox" type="checkbox"
+                                           value="{{ ruolo }}" id="ruolo-check-{{ loop.index }}">
+                                    <label class="form-check-label" for="ruolo-check-{{ loop.index }}">{{ ruolo }}</label>
+                                </div>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
                 </div>
             </div>
 
@@ -128,16 +141,66 @@
 </div>
 
 <script>
-(function () {
+document.addEventListener('DOMContentLoaded', function () {
     const filtroSquadra = document.getElementById('filtro-squadra');
     const filtroStato = document.getElementById('filtro-stato');
-    const filtroRuolo = document.getElementById('filtro-ruolo');
-    if (!filtroSquadra || !filtroStato || !filtroRuolo) return;
+    const filtroRuoloBtn = document.getElementById('filtro-ruolo-btn');
+    const filtroRuoloMenu = document.getElementById('filtro-ruolo-menu');
+    const filtroRuoloReset = document.getElementById('filtro-ruolo-reset');
+    if (!filtroSquadra || !filtroStato || !filtroRuoloBtn || !filtroRuoloMenu) return;
+
+    const ruoloPriority = window.RUOLO_PRIORITY || {};
+
+    function normalizeRuolo(value) {
+        return (value || '').trim().toUpperCase().replace(/\s/g, '');
+    }
+
+    function ordinaFiltroRuolo() {
+        // Ordina solo i <li> che contengono una checkbox ruolo, lasciando
+        // invariati eventuali elementi di intestazione (es. "Deseleziona tutto").
+        const items = Array.from(filtroRuoloMenu.querySelectorAll('li')).filter(function (li) {
+            return li.querySelector('.filtro-ruolo-checkbox');
+        });
+
+        items.sort(function (a, b) {
+            const keyA = normalizeRuolo(a.querySelector('.filtro-ruolo-checkbox').value);
+            const keyB = normalizeRuolo(b.querySelector('.filtro-ruolo-checkbox').value);
+            const priorityA = ruoloPriority[keyA] || 99;
+            const priorityB = ruoloPriority[keyB] || 99;
+
+            if (priorityA !== priorityB) return priorityA - priorityB;
+            return keyA.localeCompare(keyB, 'it');
+        });
+
+        items.forEach(function (item) {
+            filtroRuoloMenu.appendChild(item);
+        });
+    }
+
+    ordinaFiltroRuolo();
+
+    function getRuoliSelezionati() {
+        return Array.from(filtroRuoloMenu.querySelectorAll('.filtro-ruolo-checkbox:checked'))
+            .map(function (cb) { return normalizeRuolo(cb.value); });
+    }
+
+    function aggiornaTestoBottone() {
+        const checkboxes = Array.from(filtroRuoloMenu.querySelectorAll('.filtro-ruolo-checkbox'));
+        const selezionati = checkboxes.filter(function (cb) { return cb.checked; });
+
+        if (selezionati.length === 0) {
+            filtroRuoloBtn.textContent = 'Tutti i ruoli';
+        } else if (selezionati.length === 1) {
+            filtroRuoloBtn.textContent = selezionati[0].value;
+        } else {
+            filtroRuoloBtn.textContent = selezionati.length + ' ruoli selezionati';
+        }
+    }
 
     function applicaFiltri() {
         const squadra = filtroSquadra.value;
         const stato = filtroStato.value;
-        const ruolo = filtroRuolo.value;
+        const ruoliSelezionati = getRuoliSelezionati();
         let visibiliCount = 0;
 
         document.querySelectorAll('#gruppi-vetrina > [data-squadra]').forEach(function (colWrapper) {
@@ -146,7 +209,8 @@
 
             colWrapper.querySelectorAll('.vetrina-item').forEach(function (item) {
                 const matchStato = !stato || item.dataset.stato === stato;
-                const matchRuolo = !ruolo || item.dataset.ruolo === ruolo;
+                const matchRuolo = ruoliSelezionati.length === 0 ||
+                    ruoliSelezionati.indexOf(normalizeRuolo(item.dataset.ruolo)) !== -1;
                 const visibile = matchSquadra && matchStato && matchRuolo;
                 item.classList.toggle('d-none', !visibile);
                 if (visibile) visibiliNelGruppo++;
@@ -161,7 +225,23 @@
 
     filtroSquadra.addEventListener('change', applicaFiltri);
     filtroStato.addEventListener('change', applicaFiltri);
-    filtroRuolo.addEventListener('change', applicaFiltri);
-})();
+
+    filtroRuoloMenu.addEventListener('change', function (e) {
+        if (e.target.classList.contains('filtro-ruolo-checkbox')) {
+            aggiornaTestoBottone();
+            applicaFiltri();
+        }
+    });
+
+    if (filtroRuoloReset) {
+        filtroRuoloReset.addEventListener('click', function () {
+            filtroRuoloMenu.querySelectorAll('.filtro-ruolo-checkbox').forEach(function (cb) {
+                cb.checked = false;
+            });
+            aggiornaTestoBottone();
+            applicaFiltri();
+        });
+    }
+});
 </script>
 {% endblock %}

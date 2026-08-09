@@ -1,6 +1,4 @@
-$(document).ready(function() {
-
-    const ruoloPriority = {
+const RUOLO_PRIORITY = {
         'POR': 1,
         'DD,E': 2,
         'DD,DC': 3,
@@ -29,12 +27,16 @@ $(document).ready(function() {
         'T': 26,
         'A': 27,
         'PC': 28
-    };
+};
+
+window.RUOLO_PRIORITY = RUOLO_PRIORITY;
+
+$(document).ready(function() {
 
     $.fn.dataTable.ext.type.order['ruolo-mantra-pre'] = function(data) {
         const key = data.trim().toUpperCase().replace(/\s/g, '');
         
-        return ruoloPriority[key] || 99;
+        return RUOLO_PRIORITY[key] || 99;
     };
 
 
