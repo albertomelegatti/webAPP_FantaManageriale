@@ -31,6 +31,16 @@
                         <option value="cedibile">Cedibile</option>
                     </select>
                 </div>
+                <div class="col-12 col-md-4">
+                    <select id="filtro-ruolo" class="form-select">
+                        <option value="">Tutti i ruoli</option>
+                        {% for ruolo, _ in giocatori|sort(attribute='ruolo')|groupby('ruolo') %}
+                        {% if ruolo %}
+                        <option value="{{ ruolo }}">{{ ruolo }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
 
             <!-- Card per squadra: stesso markup per desktop e mobile, righe interne diverse -->
@@ -44,7 +54,7 @@
                         </div>
                         <ul class="list-group list-group-flush">
                             {% for giocatore in giocatori_squadra %}
-                            <li class="list-group-item vetrina-item px-2 py-1" data-stato="{{ giocatore.stato }}">
+                            <li class="list-group-item vetrina-item px-2 py-1" data-stato="{{ giocatore.stato }}" data-ruolo="{{ giocatore.ruolo }}">
 
                                 <!-- DESKTOP: riga estesa con colonne -->
                                 <div class="d-none d-lg-flex align-items-center gap-2">
@@ -71,23 +81,27 @@
                                 </div>
 
                                 <!-- MOBILE: riga compatta -->
-                                <div class="d-lg-none d-flex align-items-start gap-2">
-                                    <div class="text-start" style="min-width: 0; flex-shrink: 0;">
-                                        <span class="fw-semibold" style="font-size: 0.8rem;">{{ giocatore.nome }}</span>
-                                        <span class="fw-bold text-muted" style="font-size: 0.7rem;"> · {{ giocatore.ruolo }}</span>
-                                    </div>
-                                    {% if giocatore.stato == 'prestabile' %}
-                                        <span class="badge bg-warning text-dark flex-shrink-0" style="font-size: 0.65rem;">Prestabile</span>
-                                    {% elif giocatore.stato == 'vendibile' %}
-                                        <span class="badge bg-success flex-shrink-0" style="font-size: 0.65rem;">Vendibile</span>
-                                    {% elif giocatore.stato == 'cedibile' %}
-                                        <span class="badge bg-danger flex-shrink-0" style="font-size: 0.65rem;">Cedibile</span>
-                                    {% endif %}
-                                    <div class="flex-grow-1" style="min-width: 0;">
-                                        {% if giocatore.note %}
-                                        <div class="text-muted text-truncate" style="font-size: 0.7rem;">{{ giocatore.note }}</div>
-                                        {% endif %}
-                                        <div class="text-muted" style="font-size: 0.65rem;">{{ giocatore.data_inserimento or '-' }}</div>
+                                <div class="d-lg-none">
+                                    <div class="d-flex align-items-start justify-content-between gap-2">
+                                        <div class="text-start flex-grow-1" style="min-width: 0;">
+                                            <div>
+                                                <span class="fw-semibold" style="font-size: 0.8rem;">{{ giocatore.nome }}</span>
+                                                <span class="fw-bold text-muted" style="font-size: 0.7rem;"> · {{ giocatore.ruolo }}</span>
+                                            </div>
+                                            {% if giocatore.note %}
+                                            <div class="text-muted" style="font-size: 0.7rem; white-space: normal; word-break: break-word;">{{ giocatore.note }}</div>
+                                            {% endif %}
+                                            <div class="text-muted" style="font-size: 0.65rem;">{{ giocatore.data_inserimento or '-' }}</div>
+                                        </div>
+                                        <div class="flex-shrink-0">
+                                            {% if giocatore.stato == 'prestabile' %}
+                                                <span class="badge bg-warning text-dark" style="font-size: 0.65rem;">Prestabile</span>
+                                            {% elif giocatore.stato == 'vendibile' %}
+                                                <span class="badge bg-success" style="font-size: 0.65rem;">Vendibile</span>
+                                            {% elif giocatore.stato == 'cedibile' %}
+                                                <span class="badge bg-danger" style="font-size: 0.65rem;">Cedibile</span>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -117,11 +131,13 @@
 (function () {
     const filtroSquadra = document.getElementById('filtro-squadra');
     const filtroStato = document.getElementById('filtro-stato');
-    if (!filtroSquadra || !filtroStato) return;
+    const filtroRuolo = document.getElementById('filtro-ruolo');
+    if (!filtroSquadra || !filtroStato || !filtroRuolo) return;
 
     function applicaFiltri() {
         const squadra = filtroSquadra.value;
         const stato = filtroStato.value;
+        const ruolo = filtroRuolo.value;
         let visibiliCount = 0;
 
         document.querySelectorAll('#gruppi-vetrina > [data-squadra]').forEach(function (colWrapper) {
@@ -130,7 +146,8 @@
 
             colWrapper.querySelectorAll('.vetrina-item').forEach(function (item) {
                 const matchStato = !stato || item.dataset.stato === stato;
-                const visibile = matchSquadra && matchStato;
+                const matchRuolo = !ruolo || item.dataset.ruolo === ruolo;
+                const visibile = matchSquadra && matchStato && matchRuolo;
                 item.classList.toggle('d-none', !visibile);
                 if (visibile) visibiliNelGruppo++;
             });
@@ -144,6 +161,7 @@
 
     filtroSquadra.addEventListener('change', applicaFiltri);
     filtroStato.addEventListener('change', applicaFiltri);
+    filtroRuolo.addEventListener('change', applicaFiltri);
 })();
 </script>
 {% endblock %}
