@@ -403,7 +403,7 @@ def nuovo_scambio(nome_squadra):
                 SELECT id, nome, squadra_att, tipo_contratto
                 FROM giocatore
                 WHERE squadra_att IS NOT NULL
-                    AND squadra_att != 'Svincolati'
+                    AND squadra_att <> 'Svincolato'
                     AND tipo_contratto NOT IN ('Fanta-Prestito', 'Hold')
                 ORDER BY squadra_att, nome;
         ''')

@@ -245,8 +245,11 @@ def nuovo_prestito(nome_squadra):
             })
 
     except Exception as e:
+        if conn:
+            conn.rollback()
         print(f"❌ Errore durante il caricamento della pagina 'nuovo_prestito': {e}")
-        return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=0, crediti_disponibili=0, prestiti=[], prestiti_in_num=0, block_button=False)
+        flash("❌ Si è verificato un errore durante l'invio della richiesta. Riprova.", "danger")
+        return redirect(url_for("prestiti.nuovo_prestito", nome_squadra=nome_squadra))
     
     finally:
         release_connection(conn, cur)
