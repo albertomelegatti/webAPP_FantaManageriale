@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
+{% set giocatori_filtrati = giocatori|rejectattr('detentore_cartellino', 'equalto', 'Svincolato')|list %}
 <div class="container mt-5">
     <div class="text-center mb-4">
         <h1 class="mb-3">Vetrina</h1>
@@ -12,13 +13,13 @@
     <div class="card shadow-sm mx-auto vetrina-card">
         <div class="card-body">
 
-            {% if giocatori and giocatori|length > 0 %}
+            {% if giocatori_filtrati and giocatori_filtrati|length > 0 %}
 
             <div class="row g-2 mb-3">
                 <div class="col-12 col-md-4">
                     <select id="filtro-squadra" class="form-select">
                         <option value="">Tutte le squadre</option>
-                        {% for squadra in squadre %}
+                        {% for squadra in squadre if squadra.nome != 'Svincolato' %}
                         <option value="{{ squadra.nome }}">{{ squadra.nome }}</option>
                         {% endfor %}
                     </select>
@@ -40,7 +41,7 @@
                         </button>
                         <ul class="dropdown-menu w-100 p-2" id="filtro-ruolo-menu"
                             style="max-height: 280px; overflow-y: auto;" aria-labelledby="filtro-ruolo-btn">
-                            {% for ruolo, _ in giocatori|sort(attribute='ruolo')|groupby('ruolo') %}
+                            {% for ruolo, _ in giocatori_filtrati|sort(attribute='ruolo')|groupby('ruolo') %}
                             {% if ruolo %}
                             <li>
                                 <div class="form-check py-1">
@@ -58,7 +59,7 @@
 
             <!-- Card per squadra: stesso markup per desktop e mobile, righe interne diverse -->
             <div class="row g-3" id="gruppi-vetrina">
-                {% for nome_squadra, giocatori_squadra in giocatori|sort(attribute='detentore_cartellino')|groupby('detentore_cartellino') %}
+                {% for nome_squadra, giocatori_squadra in giocatori_filtrati|sort(attribute='detentore_cartellino')|groupby('detentore_cartellino') %}
                 <div class="col-12 col-lg-6" data-squadra="{{ nome_squadra }}">
                     <div class="card h-100 vetrina-squadra-card">
                         <div class="card-header fw-semibold">
