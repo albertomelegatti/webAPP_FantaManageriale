@@ -23,6 +23,7 @@ def vetrina():
             SELECT g.nome, g.ruolo, g.detentore_cartellino, g.quot_att_mantra, v.stato, v.note, v.data_inserimento
             FROM giocatore g
             JOIN vetrina v ON g.id = v.id_giocatore
+            WHERE g.squadra_att <> 'Svincolato' AND g.detentore_cartellino <> 'Svincolato'
             ORDER BY g.nome;
         ''')
         giocatori_vetrina = cur.fetchall()
@@ -43,6 +44,7 @@ def vetrina():
         cur.execute('''
             SELECT nome
             FROM squadra
+            WHERE nome <> 'Svincolato'
             ORDER BY nome;
         ''')
         squadre = cur.fetchall()
