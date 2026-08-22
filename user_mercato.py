@@ -277,12 +277,17 @@ def nuovo_scambio(nome_squadra):
                 flash("Seleziona una squadra destinataria.", "warning")
                 return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
 
-            if not giocatori_offerti and crediti_offerti == 0:
-                flash("Devi offrire almeno un giocatore o dei crediti.", "warning")
-                return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
+            offerta_vuota = (
+                not giocatori_offerti and crediti_offerti == 0 and not pick_offerta
+                and not (enable_prestito1 and p1_offerto) and not (enable_prestito2 and p2_offerto)
+            )
+            richiesta_vuota = (
+                not giocatori_richiesti and crediti_richiesti == 0 and not pick_richiesta
+                and not (enable_prestito1 and p1_richiesto) and not (enable_prestito2 and p2_richiesto)
+            )
 
-            if not giocatori_richiesti and crediti_richiesti == 0:
-                flash("Devi richiedere almeno un giocatore o dei crediti.", "warning")
+            if offerta_vuota and richiesta_vuota:
+                flash("La proposta non può essere completamente vuota: offri o richiedi almeno un giocatore, dei crediti, una pick o un prestito.", "warning")
                 return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
 
             # Validazione slot prestiti: il giocatore "richiesto" arriva in prestito a me,
