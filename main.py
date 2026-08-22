@@ -1,14 +1,12 @@
 import psycopg2
 import telegram_utils
 import os
-import gc
 from datetime import datetime
 from io import BytesIO
 from dotenv import load_dotenv
 from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify, send_file
-from flask_session import Session
+from flask_compress import Compress
 from psycopg2.extras import RealDictCursor
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from openpyxl import Workbook
 from admin import admin_bp
@@ -21,7 +19,7 @@ from webhook import webhook_bp
 from vetrina import vetrina_bp
 from db import get_connection, release_connection, init_pool
 from telegram_utils import get_all_telegram_ids
-from queries import get_slot_giocatori, get_slot_occupati
+from queries import get_slot_giocatori, get_slot_aste
 from chatbot import get_answer
 
 app = Flask(__name__)
@@ -31,28 +29,15 @@ init_pool()
 
 app.secret_key = os.getenv("SECRET_KEY", "chiave_segreta_default_per_sviluppo")
 
-db_url = os.getenv("DATABASE_URL")
-if db_url and db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'pool_size': 5,
-    'max_overflow': 0,
-    'pool_recycle': 3600,
-    'pool_pre_ping': True,
-}
-db = SQLAlchemy(app)
-
-app.config['SESSION_TYPE'] = 'sqlalchemy'
-app.config['SESSION_SQLALCHEMY'] = db
 app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 30  # 30 giorni invece di 365
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-Session(app)
+
+# Cache lato browser per gli asset statici (CSS/JS/immagini) e compressione gzip/br delle risposte
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 1  # 1 giorno di cache su immagini statiche
+Compress(app)
 
 # Inizializza il dizionario telegram al lancio dell'app
 app.config['SQUADRE_TELEGRAM_IDS'] = get_all_telegram_ids()
@@ -67,66 +52,9 @@ app.register_blueprint(webhook_bp)
 app.register_blueprint(vetrina_bp)
 
 
-@app.before_request
-def before_request():
-    """Pulisci la sessione prima di ogni request"""
-    try:
-        db.session.rollback()
-        db.session.remove()
-    except Exception:
-        pass
-
-
-@app.teardown_appcontext
-def teardown_db(exception):
-    """Cleanup della sessione dopo ogni request"""
-    try:
-        if exception:
-            print(f"[ERROR] Exception in request: {exception}")
-            try:
-                db.session.rollback()
-            except Exception as e:
-                print(f"[ERROR] Rollback failed: {e}")
-        
-        # Sempre rimuovi la sessione
-        try:
-            db.session.remove()
-        except Exception as e:
-            print(f"[ERROR] Session remove failed: {e}")
-    
-    except Exception as e:
-        print(f"[ERROR] Teardown failed: {e}")
-    
-    finally:
-        # Garbage collection forzato per liberare memoria
-        gc.collect()
-
-'''
-@app.errorhandler(Exception)
-def handle_exception(error):
-    """Error handler globale per tutte le eccezioni"""
-    print(f"[EXCEPTION HANDLER] Caught exception: {type(error).__name__}: {error}")
-    try:
-        db.session.rollback()
-        db.session.remove()
-    except Exception as e:
-        print(f"[ERROR] Failed to clean session in error handler: {e}")
-    
-    gc.collect()
-    
-    # Restituisci errore 500
-    flash("❌ Errore interno del server. Contatta l'amministratore.", "danger")
-    return redirect(url_for('home')), 500
-'''
-
 @app.errorhandler(500)
 def handle_500(error):
     """Handler specifico per errori 500"""
-    try:
-        db.session.rollback()
-        db.session.remove()
-    except Exception as e:
-        print(f"[ERROR] Failed to clean session in 500 handler: {e}")
     return redirect(url_for('home')), 500
 
 
@@ -296,11 +224,10 @@ def dashboard_squadra(nome_squadra):
         username = squadra_raw["username"]
         crediti = squadra_raw["crediti"]
 
-        # CONTEGGIO SLOT OCCUPATI
-        slot_occupati = get_slot_occupati(conn, nome_squadra)
-        
-        # CONTEGGIO SLOT GIOCATORI
+        # CONTEGGIO SLOT GIOCATORI E ASTE (slot_occupati = somma dei due, evita di ricalcolare slot_giocatori due volte)
         slot_giocatori = get_slot_giocatori(conn, nome_squadra)
+        slot_aste = get_slot_aste(conn, nome_squadra)
+        slot_occupati = slot_giocatori + slot_aste
 
         # ROSA
         rosa = []
@@ -340,21 +267,12 @@ def dashboard_squadra(nome_squadra):
                 "quot_att_mantra": g['quot_att_mantra']
             })
 
-        # CONTEGGIO PRESTITI IN
-        cur.execute('''
-                    SELECT COUNT(id) AS prestiti_in_num
-                    FROM giocatore
-                    WHERE squadra_att = %s 
-                        AND tipo_contratto = 'Fanta-Prestito';
-        ''', (nome_squadra,))
-        prestiti_in_num = cur.fetchone()["prestiti_in_num"]
-
-        # PRESTITI IN
+        # PRESTITI IN (prestiti_in_num ricavato da len(), evita una COUNT separata con la stessa WHERE)
         prestiti_in = []
         cur.execute('''
                     SELECT nome, ruolo, quot_att_mantra, detentore_cartellino
-                    FROM giocatore 
-                    WHERE squadra_att = %s 
+                    FROM giocatore
+                    WHERE squadra_att = %s
                         AND tipo_contratto = 'Fanta-Prestito';
         ''', (nome_squadra,))
         prestiti_in_raw = cur.fetchall()
@@ -367,6 +285,8 @@ def dashboard_squadra(nome_squadra):
                 "quot_att_mantra": g['quot_att_mantra'],
                 "detentore_cartellino": g["detentore_cartellino"]
             })
+
+        prestiti_in_num = len(prestiti_in)
 
         # DRAFT - pick detenute dalla squadra
         draft_pick = []

@@ -2,7 +2,7 @@ from flask import Blueprint, render_template
 from db import get_connection, release_connection
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
-from queries import get_slot_occupati, get_slot_aste, get_slot_giocatori, get_slot_prestiti_in
+from queries import get_slot_aste, get_slot_giocatori, get_slot_prestiti_in
 
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
@@ -15,7 +15,7 @@ def squadra_login(nome_squadra):
     
     slot_giocatori = get_slot_giocatori(conn, nome_squadra)
     slot_aste = get_slot_aste(conn, nome_squadra)
-    slot_occupati = get_slot_occupati(conn, nome_squadra)
+    slot_occupati = slot_giocatori + slot_aste
     prestiti_in_num = get_slot_prestiti_in(conn, nome_squadra)
 
     release_connection(conn, None)
