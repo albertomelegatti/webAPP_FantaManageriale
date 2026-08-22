@@ -54,6 +54,12 @@
                 </div>
             </div>
 
+            {% if scambio.messaggio %}
+            <hr class="my-4">
+            <h3>Note</h3>
+            <p style="white-space: pre-line; overflow-wrap: anywhere;">{{ scambio.messaggio }}</p>
+            {% endif %}
+
             <hr class="my-4">
 
             <!-- Bottoni Azione -->
