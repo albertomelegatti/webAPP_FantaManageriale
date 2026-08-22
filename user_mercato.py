@@ -161,7 +161,7 @@ def visualizza_proposta(scambio_id):
             "giocatori_richiesti": format_giocatori(scambio_raw['giocatori_richiesti']),
             "pick_offerta": format_pick(scambio_raw['pick_offerta'], conn),
             "pick_richiesta": format_pick(scambio_raw['pick_richiesta'], conn),
-            "prestito_associato": format_prestito(conn, scambio_raw['prestito_associato'])
+            "prestito_associato": format_prestito(conn, scambio_raw['prestito_associato'], scambio_raw['squadra_proponente'])
         }
         
         return render_template("visualizza_proposta.html", scambio=scambio)
@@ -377,11 +377,47 @@ def nuovo_scambio(nome_squadra):
         crediti_effettivi = 0
         offerta_totale = get_offerta_totale(conn, nome_squadra)
 
+        # Conteggi per TUTTE le squadre in poche query aggregate, invece di 4 query per squadra nel ciclo
+        cur.execute('''
+            SELECT squadra_att, COUNT(id) AS slot_giocatori
+            FROM giocatore
+            WHERE tipo_contratto IN ('Hold', 'Indeterminato')
+            GROUP BY squadra_att;
+        ''')
+        slot_giocatori_map = {r["squadra_att"]: r["slot_giocatori"] for r in cur.fetchall()}
+
+        cur.execute('''
+            SELECT squadra, COUNT(*) AS slot_aste
+            FROM asta, UNNEST(partecipanti) AS squadra
+            WHERE stato <> 'conclusa'
+            GROUP BY squadra;
+        ''')
+        slot_aste_map = {r["squadra"]: r["slot_aste"] for r in cur.fetchall()}
+
+        cur.execute('''
+            SELECT squadra_att, COUNT(id) AS slot_prestiti
+            FROM giocatore
+            WHERE tipo_contratto = 'Fanta-Prestito'
+            GROUP BY squadra_att;
+        ''')
+        slot_prestiti_map = {r["squadra_att"]: r["slot_prestiti"] for r in cur.fetchall()}
+
+        cur.execute('''
+            SELECT squadra_vincente, SUM(ultima_offerta) AS offerta_totale
+            FROM asta
+            WHERE stato = 'in_corso'
+            GROUP BY squadra_vincente;
+        ''')
+        offerta_totale_map = {r["squadra_vincente"]: r["offerta_totale"] or 0 for r in cur.fetchall()}
+
+        def get_occupied_slots(nome):
+            return int(slot_giocatori_map.get(nome, 0)) + int(slot_aste_map.get(nome, 0))
+
         for s in squadre_raw:
-            slot_occupati = int(get_slot_occupati(conn, s["nome"]))
-            slot_prestiti = int(get_slot_prestiti_in(conn, s["nome"]))
+            slot_occupati = get_occupied_slots(s["nome"])
+            slot_prestiti = int(slot_prestiti_map.get(s["nome"], 0))
             # Calcola l'offerta totale per la squadra corrente (non usare l'offerta della squadra loggata)
-            offerta_totale_squadra = int(get_offerta_totale(conn, s["nome"]))
+            offerta_totale_squadra = int(offerta_totale_map.get(s["nome"], 0))
             offerta_massima_possibile = max(s["crediti"] - offerta_totale_squadra, 0)
 
             squadre.append({
@@ -394,9 +430,9 @@ def nuovo_scambio(nome_squadra):
             if s["nome"] == nome_squadra:
                 crediti_effettivi = offerta_massima_possibile
 
-        # Slot liberi e prestiti della squadra loggata
-        slot_liberi_miei = max(30 - int(get_slot_occupati(conn, nome_squadra)), 0)
-        slot_prestiti_miei = int(get_slot_prestiti_in(conn, nome_squadra))
+        # Slot liberi e prestiti della squadra loggata (riusa le mappe già calcolate sopra)
+        slot_liberi_miei = max(30 - get_occupied_slots(nome_squadra), 0)
+        slot_prestiti_miei = int(slot_prestiti_map.get(nome_squadra, 0))
 
         # Recupera tutti i giocatori validi (non svincolati, non prestiti, non hold)
         cur.execute('''
@@ -841,45 +877,49 @@ def rifiuta_scambio(scambio_id, conn):
 def format_prestito(conn, lista_prestiti, squadra_proponente):
     if not lista_prestiti:
         return "", ""
-    
+
     prestiti_offerti = []
     prestiti_richiesti = []
     cur = None
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
+        # Una sola query batch invece di una query per ogni prestito nel ciclo
+        cur.execute('''
+                    SELECT p.id, g.nome, p.tipo_prestito, p.crediti_riscatto, p.squadra_prestante
+                    FROM prestito p
+                    JOIN giocatore g
+                    ON p.giocatore = g.id
+                    WHERE p.id = ANY(%s);
+        ''', (lista_prestiti,))
+        info_map = {row['id']: row for row in cur.fetchall()}
+
+        tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
+
         for prestito_id in lista_prestiti:
-            cur.execute('''
-                        SELECT g.nome, p.tipo_prestito, p.crediti_riscatto, p.squadra_prestante
-                        FROM prestito p
-                        JOIN giocatore g
-                        ON p.giocatore = g.id
-                        WHERE p.id = %s;
-            ''', (prestito_id,))
-            info_prestito = cur.fetchone()
-            
+            info_prestito = info_map.get(prestito_id)
+
             if info_prestito:
                 giocatore = info_prestito['nome']
                 tipo_prestito = info_prestito['tipo_prestito']
                 crediti_riscatto = info_prestito['crediti_riscatto']
-                
-                tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
+
                 tipo_str = tipo_map.get(tipo_prestito, tipo_prestito)
                 riscatto_str = f" (risc. {crediti_riscatto})" if crediti_riscatto and crediti_riscatto > 0 else ""
-                
+
                 prestito_str = f"• {giocatore} [Prestito {tipo_str}{riscatto_str}]"
-                
+
                 # Smista i prestiti in base a chi è la squadra prestante
                 if info_prestito['squadra_prestante'] == squadra_proponente:
                     prestiti_offerti.append(prestito_str)
                 else:
                     prestiti_richiesti.append(prestito_str)
-        
+
         return "\n".join(prestiti_offerti), "\n".join(prestiti_richiesti)
-    
+
     except Exception as e:
         print(f"Errore in format_prestito: {e}")
         return "", ""
-    
+
     finally:
         cur.close()
