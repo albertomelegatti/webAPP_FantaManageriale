@@ -1,122 +1,56 @@
-{% extends 'base.html' %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="text-center mb-4">
-        <h1 class="mb-3">Vetrina - {{ nome_squadra }}</h1>
-        <p class="text-muted mb-0">
-            Imposta per ogni giocatore lo stato di vetrina e aggiungi eventuali note.
-        </p>
-    </div>
+{% import '_macros.html' as m %}
+<h2 class="mb-1 text-lg font-bold">Vetrina - {{ nome_squadra }}</h2>
+<p class="mb-4 text-sm text-muted">Imposta per ogni giocatore lo stato di vetrina e aggiungi eventuali note.</p>
 
-    <div class="card shadow-sm mx-auto vetrina-card">
-        <div class="card-body">
+<div id="vetrina-flash-container" class="mb-4"></div>
 
-            <!-- Contenitore per il messaggio di errore stile flash, generato via JS -->
-            <div id="vetrina-flash-container"></div>
+{% if rosa and rosa|length > 0 %}
+<form method="POST" action="{{ url_for('rosa.user_vetrina', nome_squadra=nome_squadra) }}" id="vetrina-form" novalidate>
+    <input type="hidden" name="vetrina_data" id="vetrina-data-input">
 
-            {% if rosa and rosa|length > 0 %}
-            <form method="POST" action="{{ url_for('rosa.user_vetrina', nome_squadra=nome_squadra) }}" id="vetrina-form" novalidate>
-
-                <!-- Campo unico con tutti i dati serializzati in JSON, popolato via JS al submit -->
-                <input type="hidden" name="vetrina_data" id="vetrina-data-input">
-
-                <!-- DESKTOP/TABLET: tabella -->
-                <div class="table-responsive d-none d-lg-block" data-view="desktop">
-                    <table class="table table-striped align-middle vetrina-table">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Giocatore</th>
-                                <th>Ruolo</th>
-                                <th>Stato vetrina</th>
-                                <th>Note</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for giocatore in rosa %}
-                            <tr class="vetrina-row" data-id="{{ giocatore.id }}" data-nome="{{ giocatore.nome }}">
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <strong>{{ giocatore.nome }}</strong>
-                                        {% if giocatore.stato_vetrina == 'prestabile' %}
-                                            <span class="badge bg-warning text-dark">Prestabile</span>
-                                        {% elif giocatore.stato_vetrina == 'vendibile' %}
-                                            <span class="badge bg-success">Vendibile</span>
-                                        {% elif giocatore.stato_vetrina == 'cedibile' %}
-                                            <span class="badge bg-danger">Cedibile</span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                <td>{{ giocatore.ruolo or '-' }}</td>
-                                <td style="min-width: 170px;">
-                                    <select class="form-select vetrina-stato-input">
-                                        <option value="" {% if not giocatore.stato_vetrina %}selected{% endif %}>Seleziona...</option>
-                                        <option value="prestabile" {% if giocatore.stato_vetrina == 'prestabile' %}selected{% endif %}>Prestabile</option>
-                                        <option value="vendibile" {% if giocatore.stato_vetrina == 'vendibile' %}selected{% endif %}>Vendibile</option>
-                                        <option value="cedibile" {% if giocatore.stato_vetrina == 'cedibile' %}selected{% endif %}>Cedibile</option>
-                                        {% if giocatore.stato_vetrina %}
-                                            <option value="rimuovi">🗑️ Rimuovi da vetrina</option>
-                                        {% endif %}
-                                    </select>
-                                </td>
-                                <td style="min-width: 280px;">
-                                    <textarea class="form-control vetrina-note-input" rows="2" placeholder="Aggiungi una nota...">{{ giocatore.note or '' }}</textarea>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+    <div class="flex flex-col gap-2">
+        {% for giocatore in rosa %}
+        <div class="vetrina-row rounded-2xl border border-line bg-panel p-3" data-id="{{ giocatore.id }}" data-nome="{{ giocatore.nome }}">
+            <div class="flex items-center gap-2">
+                <div class="flex min-w-0 flex-1 items-center">
+                    <span class="min-w-0 truncate font-medium">{{ giocatore.nome }}</span>
+                    <span class="ml-1 shrink-0">{{ m.ruolo_colorato(giocatore.ruolo) }}</span>
+                    <span class="mx-1 shrink-0 text-muted">-</span>
+                    <span class="shrink-0">{{ m.club_abbr(giocatore.club) }}</span>
                 </div>
+                <select class="vetrina-stato-input w-28 shrink-0 rounded-xl border border-line bg-panel-2 px-2 py-2 text-xs">
+                    <option value="" {% if not giocatore.stato_vetrina %}selected{% endif %}>Seleziona...</option>
+                    <option value="prestabile" {% if giocatore.stato_vetrina == 'prestabile' %}selected{% endif %}>Prestabile</option>
+                    <option value="vendibile" {% if giocatore.stato_vetrina == 'vendibile' %}selected{% endif %}>Vendibile</option>
+                    <option value="cedibile" {% if giocatore.stato_vetrina == 'cedibile' %}selected{% endif %}>Cedibile</option>
+                    {% if giocatore.stato_vetrina %}
+                    <option value="rimuovi">Rimuovi da vetrina</option>
+                    {% endif %}
+                </select>
+            </div>
 
-                <!-- MOBILE: righe compatte -->
-                <div class="d-lg-none d-flex flex-column gap-1 vetrina-mobile-list" data-view="mobile">
-                    {% for giocatore in rosa %}
-                    <div class="border rounded d-flex align-items-center gap-2 px-2 py-1 vetrina-mobile-item vetrina-row" data-id="{{ giocatore.id }}" data-nome="{{ giocatore.nome }}">
-
-                        <div class="flex-shrink-0" style="width: 110px; line-height: 1.1;">
-                            <div class="small fw-semibold text-body-emphasis" style="font-size: 0.8rem;">{{ giocatore.nome }}</div>
-                            <div class="text-body-secondary" style="font-size: 0.7rem;">{{ giocatore.ruolo }}</div>
-                            {% if giocatore.stato_vetrina == 'prestabile' %}
-                                <span class="badge bg-warning text-dark" style="font-size: 0.6rem;">Prestabile</span>
-                            {% elif giocatore.stato_vetrina == 'vendibile' %}
-                                <span class="badge bg-success" style="font-size: 0.6rem;">Vendibile</span>
-                            {% elif giocatore.stato_vetrina == 'cedibile' %}
-                                <span class="badge bg-danger" style="font-size: 0.6rem;">Cedibile</span>
-                            {% endif %}
-                        </div>
-
-                        <select class="form-select form-select-sm flex-shrink-0 vetrina-stato-input" style="width: 95px; font-size: 0.7rem;">
-                            <option value="" {% if not giocatore.stato_vetrina %}selected{% endif %}>Stato...</option>
-                            <option value="prestabile" {% if giocatore.stato_vetrina == 'prestabile' %}selected{% endif %}>Prestabile</option>
-                            <option value="vendibile" {% if giocatore.stato_vetrina == 'vendibile' %}selected{% endif %}>Vendibile</option>
-                            <option value="cedibile" {% if giocatore.stato_vetrina == 'cedibile' %}selected{% endif %}>Cedibile</option>
-                            {% if giocatore.stato_vetrina %}
-                                <option value="rimuovi">🗑️ Rimuovi</option>
-                            {% endif %}
-                        </select>
-
-                        <input type="text" class="form-control form-control-sm flex-grow-1 vetrina-note-input" placeholder="Nota..." value="{{ giocatore.note or '' }}">
-                    </div>
-                    {% endfor %}
-                </div>
-
-                <div class="d-flex justify-content-end gap-2 mt-3">
-                    <a href="{{ url_for('dashboard_squadra', nome_squadra=nome_squadra) }}" class="btn btn-outline-secondary">
-                        Annulla
-                    </a>
-                    <button type="submit" class="btn btn-primary">
-                        Salva
-                    </button>
-                </div>
-            </form>
-            {% else %}
-                <div class="alert alert-info mb-0 text-center">
-                    Nessun giocatore disponibile nella rosa.
-                </div>
-            {% endif %}
+            <textarea class="vetrina-note-input mt-2 w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm outline-none focus:border-accent"
+                      rows="2" placeholder="Aggiungi una nota...">{{ giocatore.note or '' }}</textarea>
         </div>
+        {% endfor %}
     </div>
-</div>
+
+    <div class="mt-4 flex justify-end gap-2">
+        <a href="{{ url_for('dashboard_squadra', nome_squadra=nome_squadra) }}"
+           class="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-muted">
+            Annulla
+        </a>
+        <button type="submit" class="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white">
+            Salva
+        </button>
+    </div>
+</form>
+{% else %}
+<p class="py-4 text-center text-sm text-muted">Nessun giocatore disponibile nella rosa.</p>
+{% endif %}
 
 <script>
 document.getElementById('vetrina-form')?.addEventListener('submit', function (event) {
@@ -124,43 +58,32 @@ document.getElementById('vetrina-form')?.addEventListener('submit', function (ev
     const flashContainer = document.getElementById('vetrina-flash-container');
     flashContainer.innerHTML = '';
 
-    const isDesktop = window.matchMedia('(min-width: 992px)').matches;
-    const activeView = isDesktop ? 'desktop' : 'mobile';
-    const activeSection = form.querySelector(`[data-view="${activeView}"]`);
-
     const nomiMancanti = [];
     const datiGiocatori = [];
 
-    if (activeSection) {
-        activeSection.querySelectorAll('.vetrina-row').forEach(row => {
-            const select = row.querySelector('.vetrina-stato-input');
-            const noteField = row.querySelector('.vetrina-note-input');
-            const statoValue = select?.value || '';
-            const noteValue = (noteField?.value || '').trim();
+    form.querySelectorAll('.vetrina-row').forEach(row => {
+        const select = row.querySelector('.vetrina-stato-input');
+        const noteField = row.querySelector('.vetrina-note-input');
+        const statoValue = select?.value || '';
+        const noteValue = (noteField?.value || '').trim();
 
-            if (noteValue !== '' && statoValue === '') {
-                nomiMancanti.push(row.dataset.nome);
-            }
+        if (noteValue !== '' && statoValue === '') {
+            nomiMancanti.push(row.dataset.nome);
+        }
 
-            datiGiocatori.push({
-                id: row.dataset.id,
-                stato: statoValue,
-                note: noteValue
-            });
+        datiGiocatori.push({
+            id: row.dataset.id,
+            stato: statoValue,
+            note: noteValue
         });
-    }
+    });
 
     if (nomiMancanti.length > 0) {
         event.preventDefault();
 
         const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
-        alertDiv.setAttribute('role', 'alert');
-        alertDiv.innerHTML = `
-            Hai inserito una nota senza selezionare uno stato vetrina per: <strong>${nomiMancanti.join(', ')}</strong>.
-            Seleziona uno stato per procedere.
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
-        `;
+        alertDiv.className = 'rounded-xl border border-ko/40 bg-ko/10 px-4 py-3 text-sm';
+        alertDiv.innerHTML = `Hai inserito una nota senza selezionare uno stato vetrina per: <strong>${nomiMancanti.join(', ')}</strong>. Seleziona uno stato per procedere.`;
         flashContainer.prepend(alertDiv);
         flashContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;

@@ -7,7 +7,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection, resync_sequence
 from user import formatta_data
-from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori, get_nome_giocatore, sposta_crediti, decadi_vetrina
+from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori, get_nome_giocatore, sposta_crediti, decadi_vetrina, ruolo_sort_key
 
 rosa_bp = Blueprint('rosa', __name__, url_prefix='/rosa')
 
@@ -59,7 +59,7 @@ def user_primavera(nome_squadra):
 
         # Selezione dei giocatori in primavera
         cur.execute('''
-                    SELECT id, nome, ruolo, quot_att_mantra
+                    SELECT id, nome, ruolo, club, quot_att_mantra
                     FROM giocatore
                     WHERE squadra_att = %s
                     AND tipo_contratto = 'Primavera';
@@ -73,9 +73,12 @@ def user_primavera(nome_squadra):
                 "id": p['id'],
                 "nome": p['nome'],
                 "ruolo": ruolo,
+                "club": p['club'],
                 "quot_att_mantra": p['quot_att_mantra'],
                 "esiste_gia_una_richiesta": esiste_gia_una_richiesta(conn, p['id'])
             })
+
+        primavera.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
 
     except Exception as e:
         print(f"Errore durante il caricamento della primavera.")
@@ -198,6 +201,7 @@ def user_vetrina(nome_squadra):
                         g.id,
                         g.nome,
                         g.ruolo,
+                        g.club,
                         g.quot_att_mantra,
                         g.tipo_contratto,
                         v.stato AS stato_vetrina,
@@ -206,7 +210,7 @@ def user_vetrina(nome_squadra):
                     LEFT JOIN vetrina v
                         ON v.id_giocatore = g.id
                     WHERE g.detentore_cartellino = %s
-                    ORDER BY g.ruolo, g.nome;
+                    ORDER BY g.nome;
         ''', (nome_squadra,))
         rosa_raw = cur.fetchall()
 
@@ -216,11 +220,14 @@ def user_vetrina(nome_squadra):
                 "id": giocatore["id"],
                 "nome": giocatore["nome"],
                 "ruolo": ruolo,
+                "club": giocatore.get("club"),
                 "quot_att_mantra": giocatore.get("quot_att_mantra"),
                 "tipo_contratto": giocatore.get("tipo_contratto"),
                 "stato_vetrina": giocatore.get("stato_vetrina"),
                 "note": giocatore.get("note"),
             })
+
+        rosa.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
 
     except Exception as e:
         print(f"Errore durante l'aggiornamento dello stato vetrina: {e}")
@@ -292,11 +299,11 @@ def user_tagli(nome_squadra):
 
 
         cur.execute('''
-                    SELECT id, nome, ruolo, quot_att_mantra
+                    SELECT id, nome, ruolo, club, quot_att_mantra
                     FROM giocatore
-                    WHERE detentore_cartellino = %s 
+                    WHERE detentore_cartellino = %s
                         AND tipo_contratto <> 'Primavera'
-                    ORDER BY ruolo, nome;
+                    ORDER BY nome;
         ''', (nome_squadra,))
         rosa_raw = cur.fetchall()
 
@@ -307,9 +314,12 @@ def user_tagli(nome_squadra):
                 "id": r['id'],
                 "nome": r['nome'],
                 "ruolo": ruolo,
+                "club": r['club'],
                 "quot_att_mantra": r['quot_att_mantra'],
                 "esiste_gia_una_richiesta": esiste_gia_una_richiesta(conn, r['id'])
             })
+
+        rosa.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
 
     except Exception as e:
         print(f"Errore durante il caricamento o il taglio dei giocatori: {e}")
@@ -486,6 +496,8 @@ def user_gestione_prestiti(nome_squadra):
             prestiti_in.append({
                 "id_prestito": p['id_prestito'],
                 "giocatori": p['nome'],
+                "ruolo": (p['ruolo'] or "").strip("{}"),
+                "club": p['club'],
                 "squadra_prestante": p['squadra_prestante'],
                 "squadra_ricevente": p['squadra_ricevente'],
                 "stato": p['stato'],
@@ -524,6 +536,8 @@ def user_gestione_prestiti(nome_squadra):
             prestiti_out.append({
                 "id_prestito": p['id_prestito'],
                 "giocatori": p['nome'],
+                "ruolo": (p['ruolo'] or "").strip("{}"),
+                "club": p['club'],
                 "squadra_prestante": p['squadra_prestante'],
                 "squadra_ricevente": p['squadra_ricevente'],
                 "stato": p['stato'],

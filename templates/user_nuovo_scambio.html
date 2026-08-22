@@ -1,437 +1,306 @@
-{% extends 'base.html' %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="container-fluid py-4 negotiation-page">
-
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-        <div>
-            <h1 class="mb-1">💼 Nuova Trattativa di Mercato</h1>
-            <p class="mb-0 text-muted">Crea una proposta di scambio | <strong>{{ nome_squadra }}</strong></p>
-        </div>
-        <a href="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}" class="btn btn-outline-light btn-lg">← Indietro</a>
+<div class="mb-4 flex items-center justify-between gap-2">
+    <div>
+        <h2 class="text-lg font-bold">Nuova Trattativa di Mercato</h2>
+        <p class="text-sm text-muted">{{ nome_squadra }}</p>
     </div>
-
-    <!-- Step Indicator -->
-    <div class="step-indicator">
-        <div class="step-item">
-            <span class="step-number active">1</span>
-            <span>Controparte</span>
-        </div>
-        <span class="step-arrow">→</span>
-        <div class="step-item">
-            <span class="step-number">2</span>
-            <span>Scambio</span>
-        </div>
-        <span class="step-arrow">→</span>
-        <div class="step-item">
-            <span class="step-number">3</span>
-            <span>Prestiti (opzionale)</span>
-        </div>
-        <span class="step-arrow">→</span>
-        <div class="step-item">
-            <span class="step-number">4</span>
-            <span>Invia</span>
-        </div>
-    </div>
-
-    <div class="alert alert-info mb-4 info-box">
-        <strong>💡 Suggerimento:</strong> La scadenza dei prestiti è fissata automaticamente all'<strong>1 luglio</strong>: puoi scegliere solo l'anno.
-    </div>
-
-    <form method="POST" action="{{ url_for('mercato.nuovo_scambio', nome_squadra=nome_squadra) }}"
-          class="negotiation-form"
-          data-slot-liberi-miei="{{ slot_liberi_miei }}"
-          data-crediti-miei="{{ crediti_effettivi }}"
-          data-slot-prestiti-miei="{{ slot_prestiti_miei }}">
-
-        <!-- STEP 1: Seleziona Controparte -->
-        <div class="card soft-card mb-4 section-card active" id="step-1">
-            <div class="card-body">
-                <h4 class="mb-3">📋 Step 1: Seleziona la squadra con cui trattare</h4>
-                <div class="row g-3 align-items-end">
-                    <div class="col-lg-8">
-                        <label for="squadra_destinataria" class="form-label fw-semibold">Controparte</label>
-                        <select id="squadra_destinataria" name="squadra_destinataria" class="form-select form-select-lg" required>
-                            <option value="" selected disabled>-- Seleziona una squadra --</option>
-                            {% for s in squadre %}
-                                {% if s.nome != nome_squadra %}
-                                    <option value="{{ s.nome }}"
-                                            data-max-crediti="{{ s.offerta_massima_possibile }}"
-                                            data-slot-liberi="{{ s.slot_liberi }}"
-                                            data-slot-prestiti="{{ s.slot_prestiti }}">
-                                        {{ s.nome }}
-                                    </option>
-                                {% endif %}
-                            {% endfor %}
-                        </select>
-                        <div class="help-text">Scegli la squadra con cui vuoi avviare una trattativa</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Riepilogo Slot & Crediti -->
-        <div class="card soft-card mb-4">
-            <div class="card-body">
-                <h5 class="mb-3">📊 Riepilogo Risorse</h5>
-                <div class="row g-4">
-                    <div class="col-lg-6">
-                        <div class="p-3 bg-light rounded">
-                            <h6 class="fw-bold mb-3 text-primary">{{ nome_squadra }}</h6>
-                            <div class="slot-summary">
-                                <div class="slot-summary-item">
-                                    <div class="slot-summary-label">Slot Rosa</div>
-                                    <div class="slot-summary-value" id="card-miei-slot-now">—</div>
-                                    <div class="slot-summary-label">→ <span id="card-miei-slot-after">—</span></div>
-                                </div>
-                                <div class="slot-summary-item">
-                                    <div class="slot-summary-label">Slot Prestiti</div>
-                                    <div class="slot-summary-value" id="card-miei-prestiti-now">—</div>
-                                    <div class="slot-summary-label">→ <span id="card-miei-prestiti-after">—</span></div>
-                                </div>
-                                <div class="slot-summary-item">
-                                    <div class="slot-summary-label">Crediti</div>
-                                    <div class="slot-summary-value" id="card-miei-crediti-now">—</div>
-                                    <div class="slot-summary-label">→ <span id="card-miei-crediti-after">—</span></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-6">
-                        <div class="p-3 bg-light rounded">
-                            <h6 class="fw-bold mb-3 text-success"><span id="card-dest-team">Controparte</span></h6>
-                            <div class="slot-summary">
-                                <div class="slot-summary-item">
-                                    <div class="slot-summary-label">Slot Rosa</div>
-                                    <div class="slot-summary-value" id="card-dest-slot-now">—</div>
-                                    <div class="slot-summary-label">→ <span id="card-dest-slot-after">—</span></div>
-                                </div>
-                                <div class="slot-summary-item">
-                                    <div class="slot-summary-label">Slot Prestiti</div>
-                                    <div class="slot-summary-value" id="card-dest-prestiti-now">—</div>
-                                    <div class="slot-summary-label">→ <span id="card-dest-prestiti-after">—</span></div>
-                                </div>
-                                <div class="slot-summary-item">
-                                    <div class="slot-summary-label">Crediti</div>
-                                    <div class="slot-summary-value" id="card-dest-crediti-now">—</div>
-                                    <div class="slot-summary-label">→ <span id="card-dest-crediti-after">—</span></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- STEP 2: Scambio Giocatori e Crediti -->
-        <div class="card soft-card mb-4 section-card" id="step-2">
-            <div class="card-body">
-                <h4 class="mb-4">⚽ Step 2: Definisci lo Scambio</h4>
-                
-                <div class="row g-4">
-                    <!-- Cosa Offri -->
-                    <div class="col-lg-6">
-                        <div class="trade-side offer">
-                            <span class="trade-side-label">🔵 COSA OFFRI</span>
-                            
-                            <div class="mb-4">
-                                <label for="giocatori_offerti" class="form-label fw-semibold">
-                                    👥 Giocatori 
-                                    <span class="badge bg-primary">Max: <span id="max_offerti">{{ miei_giocatori|length }}</span></span>
-                                </label>
-                                <select multiple name="giocatori_offerti" id="giocatori_offerti" class="form-select" size="6">
-                                    {% for g in miei_giocatori %}
-                                        <option value="{{ g.id }}">{{ g.nome }}</option>
-                                    {% endfor %}
-                                </select>
-                                <div class="help-text">Seleziona uno o più giocatori dalla tua rosa</div>
-                            </div>
-                            
-                            <div>
-                                <label for="crediti_offerti" class="form-label fw-semibold">
-                                    💰 Crediti 
-                                    <span class="badge bg-primary">Disponibili: {{ crediti_effettivi }}</span>
-                                </label>
-                                <input type="number" min="0" name="crediti_offerti" id="crediti_offerti" 
-                                       class="form-control form-control-lg" max="{{ crediti_effettivi }}" 
-                                       placeholder="Inserisci importo">
-                                <div class="help-text">Massimo {{ crediti_effettivi }} crediti</div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="pick_offerta" class="form-label fw-semibold">
-                                    🎫 Pick Draft
-                                    <span class="badge bg-primary">Mie: {{ mie_pick|length }}</span>
-                                </label>
-                                <select multiple name="pick_offerta" id="pick_offerta" class="form-select">
-                                    {% for p in mie_pick %}
-                                        <option value="{{ p.id }}">{{ p.anno }} - {{ p.giro }}</option>
-                                    {% endfor %}
-                                </select>
-                                <div class="help-text">Seleziona una o più pick dalla tua collezione</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Cosa Richiedi -->
-                    <div class="col-lg-6">
-                        <div class="trade-side">
-                            <span class="trade-side-label">🟢 COSA RICHIEDI</span>
-                            
-                            <div class="mb-4">
-                                <label for="giocatori_richiesti" class="form-label fw-semibold">
-                                    👥 Giocatori 
-                                    <span class="badge bg-success">Max: <span id="max_richiesti">0</span></span>
-                                </label>
-                                <select multiple name="giocatori_richiesti" id="giocatori_richiesti" 
-                                        class="form-select" size="6" disabled>
-                                </select>
-                                <div class="help-text">Prima seleziona una controparte</div>
-                            </div>
-                            
-                            <div>
-                                <label for="crediti_richiesti" class="form-label fw-semibold">
-                                    💰 Crediti
-                                    <span class="badge bg-success" id="crediti-richiesti-max-badge">Max: 0</span>
-                                </label>
-                                <input type="number" min="0" name="crediti_richiesti" id="crediti_richiesti" 
-                                       class="form-control form-control-lg" disabled placeholder="Inserisci importo">
-                                <div class="help-text">Prima seleziona una controparte</div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="pick_richiesta" class="form-label fw-semibold">
-                                    🎫 Pick Draft
-                                    <span class="badge bg-success">Disponibili: <span id="max_pick_richieste">0</span></span>
-                                </label>
-                                <select multiple name="pick_richiesta" id="pick_richiesta" class="form-select" disabled>
-                                </select>
-                                <div class="help-text">Prima seleziona una controparte</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card soft-card mb-4 section-card" id="step-3">
-            <div class="card-body">
-                <h4 class="mb-3">🤝 Step 3: Aggiungi Prestiti (Opzionale)</h4>
-                <!-- Prestito 1 -->
-                <div class="card mb-3 loan-card" id="loan1">
-                    <div class="card-header loan-toggle d-flex align-items-center gap-2 bg-success text-white" 
-                        onclick="document.getElementById('enable_prestito1').click()">
-                        <input type="checkbox" id="enable_prestito1" name="enable_prestito1" 
-                               class="form-check-input m-0" onclick="event.stopPropagation()">
-                        <label for="enable_prestito1" class="form-check-label fw-semibold mb-0">
-                            ➕ Prestito #1
-                        </label>
-                    </div>
-                    <div class="card-body loan-body d-none" id="loan1-body">
-                        <div class="row g-4">
-                            <div class="col-lg-6">
-                                <div class="trade-side offer" id="trade-side-prestito1-offerto">
-                                    <span class="trade-side-label">🔵 PRESTITO OFFERTO</span>
-                                    <div class="mb-3">
-                                        <label for="prestito1_offerto" class="form-label fw-semibold">Giocatore</label>
-                                        <select id="prestito1_offerto" name="prestito1_offerto" class="form-select" disabled>
-                                            <option value="">Seleziona giocatore</option>
-                                            {% for g in miei_giocatori %}
-                                                <option value="{{ g.id }}">{{ g.nome }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="prestito1_tipo_offerto" class="form-label fw-semibold">Tipo Prestito</label>
-                                        <select id="prestito1_tipo_offerto" name="prestito1_tipo_offerto" class="form-select" disabled>
-                                            <option value="">-- Seleziona --</option>
-                                            <option value="Secco" selected>Secco</option>
-                                            <option value="Diritto">Con diritto di riscatto</option>
-                                            <option value="Obbligo">Con obbligo di riscatto</option>
-                                        </select>
-                                    </div>
-                                    <div class="row g-2">
-                                        <div class="col-md-6">
-                                            <label for="prestito1_data_fine_offerta_anno" class="form-label fw-semibold">Anno Fine</label>
-                                            <select id="prestito1_data_fine_offerta_anno" name="prestito1_data_fine_offerta_anno" class="form-select">
-                                                {% for anno in anni_scadenza %}
-                                                    <option value="{{ anno }}" {% if anno == anno_default_scadenza %}selected{% endif %}>{{ anno }}</option>
-                                                {% endfor %}
-                                            </select>
-                                            <input type="hidden" id="prestito1_data_fine_offerta" name="prestito1_data_fine_offerta" value="{{ anno_default_scadenza }}-07-01">
-                                            <div class="form-text text-muted">Scadenza all'1 luglio.</div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="prestito1_riscatto_offerto" class="form-label fw-semibold">Riscatto</label>
-                                            <input type="number" min="0" id="prestito1_riscatto_offerto" name="prestito1_riscatto_offerto" 
-                                                   class="form-control" placeholder="0" disabled>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="trade-side" id="trade-side-prestito1-richiesto">
-                                    <span class="trade-side-label">🟢 PRESTITO RICHIESTO</span>
-                                    <div class="mb-3">
-                                        <label for="prestito1_richiesto" class="form-label fw-semibold">Giocatore</label>
-                                        <select id="prestito1_richiesto" name="prestito1_richiesto" class="form-select" disabled>
-                                            <option value="">Seleziona giocatore</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="prestito1_tipo_richiesto" class="form-label fw-semibold">Tipo Prestito</label>
-                                        <select id="prestito1_tipo_richiesto" name="prestito1_tipo_richiesto" class="form-select" disabled>
-                                            <option value="">-- Seleziona --</option>
-                                            <option value="Secco" selected>Secco</option>
-                                            <option value="Diritto">Con diritto di riscatto</option>
-                                            <option value="Obbligo">Con obbligo di riscatto</option>
-                                        </select>
-                                    </div>
-                                    <div class="row g-2">
-                                        <div class="col-md-6">
-                                            <label for="prestito1_data_fine_richiesta_anno" class="form-label fw-semibold">Anno Fine</label>
-                                            <select id="prestito1_data_fine_richiesta_anno" name="prestito1_data_fine_richiesta_anno" class="form-select">
-                                                {% for anno in anni_scadenza %}
-                                                    <option value="{{ anno }}" {% if anno == anno_default_scadenza %}selected{% endif %}>{{ anno }}</option>
-                                                {% endfor %}
-                                            </select>
-                                            <input type="hidden" id="prestito1_data_fine_richiesta" name="prestito1_data_fine_richiesta" value="{{ anno_default_scadenza }}-07-01">
-                                            <div class="form-text text-muted">Scadenza all'1 luglio.</div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="prestito1_riscatto_richiesto" class="form-label fw-semibold">Riscatto</label>
-                                            <input type="number" min="0" id="prestito1_riscatto_richiesto" name="prestito1_riscatto_richiesto" 
-                                                   class="form-control" placeholder="0" disabled>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            <!-- Prestito 2 -->
-            <div class="card mb-3 loan-card" id="loan2">
-                    <div class="card-header loan-toggle d-flex align-items-center gap-2 bg-success text-white" 
-                        onclick="document.getElementById('enable_prestito2').click()">
-                        <input type="checkbox" id="enable_prestito2" name="enable_prestito2" 
-                               class="form-check-input m-0" onclick="event.stopPropagation()">
-                        <label for="enable_prestito2" class="form-check-label fw-semibold mb-0">
-                            ➕ Prestito #2
-                        </label>
-                    </div>
-                    <div class="card-body loan-body d-none" id="loan2-body">
-                        <div class="row g-4">
-                            <div class="col-lg-6">
-                                <div class="trade-side offer" id="trade-side-prestito2-offerto">
-                                    <span class="trade-side-label">🔵 PRESTITO OFFERTO</span>
-                                    <div class="mb-3">
-                                        <label for="prestito2_offerto" class="form-label fw-semibold">Giocatore</label>
-                                        <select id="prestito2_offerto" name="prestito2_offerto" class="form-select" disabled>
-                                            <option value="">Seleziona giocatore</option>
-                                            {% for g in miei_giocatori %}
-                                                <option value="{{ g.id }}">{{ g.nome }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="prestito2_tipo_offerto" class="form-label fw-semibold">Tipo Prestito</label>
-                                        <select id="prestito2_tipo_offerto" name="prestito2_tipo_offerto" class="form-select" disabled>
-                                            <option value="">-- Seleziona --</option>
-                                            <option value="Secco" selected>Secco</option>
-                                            <option value="Diritto">Con diritto di riscatto</option>
-                                            <option value="Obbligo">Con obbligo di riscatto</option>
-                                        </select>
-                                    </div>
-                                    <div class="row g-2">
-                                        <div class="col-md-6">
-                                            <label for="prestito2_data_fine_offerta_anno" class="form-label fw-semibold">Anno Fine</label>
-                                            <select id="prestito2_data_fine_offerta_anno" name="prestito2_data_fine_offerta_anno" class="form-select">
-                                                {% for anno in anni_scadenza %}
-                                                    <option value="{{ anno }}" {% if anno == anno_default_scadenza %}selected{% endif %}>{{ anno }}</option>
-                                                {% endfor %}
-                                            </select>
-                                            <input type="hidden" id="prestito2_data_fine_offerta" name="prestito2_data_fine_offerta" value="{{ anno_default_scadenza }}-07-01">
-                                            <div class="form-text text-muted">Scadenza all'1 luglio.</div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="prestito2_riscatto_offerto" class="form-label fw-semibold">Riscatto</label>
-                                            <input type="number" min="0" id="prestito2_riscatto_offerto" name="prestito2_riscatto_offerto" 
-                                                   class="form-control" placeholder="0" disabled>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="trade-side" id="trade-side-prestito2-richiesto">
-                                    <span class="trade-side-label">🟢 PRESTITO RICHIESTO</span>
-                                    <div class="mb-3">
-                                        <label for="prestito2_richiesto" class="form-label fw-semibold">Giocatore</label>
-                                        <select id="prestito2_richiesto" name="prestito2_richiesto" class="form-select" disabled>
-                                            <option value="">Seleziona giocatore</option>
-                                        </select>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="prestito2_tipo_richiesto" class="form-label fw-semibold">Tipo Prestito</label>
-                                        <select id="prestito2_tipo_richiesto" name="prestito2_tipo_richiesto" class="form-select" disabled>
-                                            <option value="">-- Seleziona --</option>
-                                            <option value="Secco" selected>Secco</option>
-                                            <option value="Diritto">Con diritto di riscatto</option>
-                                            <option value="Obbligo">Con obbligo di riscatto</option>
-                                        </select>
-                                    </div>
-                                    <div class="row g-2">
-                                        <div class="col-md-6">
-                                            <label for="prestito2_data_fine_richiesta_anno" class="form-label fw-semibold">Anno Fine</label>
-                                            <select id="prestito2_data_fine_richiesta_anno" name="prestito2_data_fine_richiesta_anno" class="form-select">
-                                                {% for anno in anni_scadenza %}
-                                                    <option value="{{ anno }}" {% if anno == anno_default_scadenza %}selected{% endif %}>{{ anno }}</option>
-                                                {% endfor %}
-                                            </select>
-                                            <input type="hidden" id="prestito2_data_fine_richiesta" name="prestito2_data_fine_richiesta" value="{{ anno_default_scadenza }}-07-01">
-                                            <div class="form-text text-muted">Scadenza all'1 luglio.</div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="prestito2_riscatto_richiesto" class="form-label fw-semibold">Riscatto</label>
-                                            <input type="number" min="0" id="prestito2_riscatto_richiesto" name="prestito2_riscatto_richiesto" 
-                                                   class="form-control" placeholder="0" disabled>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="step-divider" role="separator" aria-hidden="true"></div>
-        <!-- STEP 4: Messaggio e Invio -->
-        <div class="card soft-card mb-4 section-card" id="step-4">
-            <div class="card-body">
-                <h4 class="mb-3">💬 Step 4: Messaggio e Invio</h4>
-                <label for="messaggio" class="form-label fw-semibold">Messaggio opzionale</label>
-                <textarea name="messaggio" id="messaggio" class="form-control" rows="4" 
-                          placeholder="Aggiungi note, condizioni speciali o dettagli sulla trattativa..."></textarea>
-                <div class="help-text mb-4">Usa questo spazio per spiegare meglio la tua proposta o aggiungere clausole particolari</div>
-                
-                <button type="submit" class="btn btn-success btn-lg w-100 py-3">
-                    <strong>📤 Invia Proposta di Scambio</strong>
-                </button>
-            </div>
-        </div>
-    </form>
+    <a href="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}" class="text-sm text-muted hover:text-accent">← Indietro</a>
 </div>
 
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<div class="mb-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 rounded-2xl border border-line bg-panel p-3 text-xs">
+    <div class="flex items-center gap-1.5">
+        <span id="step-badge-1" class="flex h-6 w-6 items-center justify-center rounded-full bg-panel-2 text-[11px] font-bold text-muted transition-colors">1</span>
+        <span id="step-label-1" class="text-muted">Controparte</span>
+    </div>
+    <span class="text-muted">→</span>
+    <div class="flex items-center gap-1.5">
+        <span id="step-badge-2" class="flex h-6 w-6 items-center justify-center rounded-full bg-panel-2 text-[11px] font-bold text-muted transition-colors">2</span>
+        <span id="step-label-2" class="text-muted">Scambio</span>
+    </div>
+    <span class="text-muted">→</span>
+    <div class="flex items-center gap-1.5">
+        <span id="step-badge-3" class="flex h-6 w-6 items-center justify-center rounded-full bg-panel-2 text-[11px] font-bold text-muted transition-colors">3</span>
+        <span id="step-label-3" class="text-muted">Prestiti (opzionale)</span>
+    </div>
+    <span class="text-muted">→</span>
+    <div class="flex items-center gap-1.5">
+        <span id="step-badge-4" class="flex h-6 w-6 items-center justify-center rounded-full bg-panel-2 text-[11px] font-bold text-muted transition-colors">4</span>
+        <span id="step-label-4" class="text-muted">Invia</span>
+    </div>
+</div>
+
+<div class="mb-4 rounded-2xl border border-line bg-panel p-4 text-sm">
+    <span class="font-bold text-accent">Suggerimento:</span>
+    <span class="text-muted">La scadenza dei prestiti è fissata automaticamente all'<strong class="text-text">1 luglio</strong>: puoi scegliere solo l'anno.</span>
+</div>
+
+<form method="POST" action="{{ url_for('mercato.nuovo_scambio', nome_squadra=nome_squadra) }}"
+      class="negotiation-form flex flex-col gap-4"
+      data-slot-liberi-miei="{{ slot_liberi_miei }}"
+      data-crediti-miei="{{ crediti_effettivi }}"
+      data-slot-prestiti-miei="{{ slot_prestiti_miei }}">
+
+    <!-- STEP 1: Controparte -->
+    <div class="rounded-2xl border border-line bg-panel p-4" id="step-1">
+        <h4 class="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-accent"></span> 1. Seleziona la controparte
+        </h4>
+        <select id="squadra_destinataria" name="squadra_destinataria" required
+                class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-sm">
+            <option value="" selected disabled>-- Seleziona una squadra --</option>
+            {% for s in squadre %}
+                {% if s.nome != nome_squadra %}
+                <option value="{{ s.nome }}"
+                        data-max-crediti="{{ s.offerta_massima_possibile }}"
+                        data-slot-liberi="{{ s.slot_liberi }}"
+                        data-slot-prestiti="{{ s.slot_prestiti }}">
+                    {{ s.nome }}
+                </option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Riepilogo Risorse -->
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div class="rounded-2xl border border-line bg-panel p-4">
+            <div class="mb-2 text-sm font-bold text-accent">{{ nome_squadra }}</div>
+            <div class="flex flex-col divide-y divide-line text-sm">
+                <div class="flex items-center justify-between py-1.5">
+                    <span class="text-muted">Slot Rosa</span>
+                    <span class="font-semibold"><span id="card-miei-slot-now">—</span> → <span id="card-miei-slot-after">—</span></span>
+                </div>
+                <div class="flex items-center justify-between py-1.5">
+                    <span class="text-muted">Slot Prestiti</span>
+                    <span class="font-semibold"><span id="card-miei-prestiti-now">—</span> → <span id="card-miei-prestiti-after">—</span></span>
+                </div>
+                <div class="flex items-center justify-between py-1.5">
+                    <span class="text-muted">Crediti</span>
+                    <span class="font-semibold"><span id="card-miei-crediti-now">—</span> → <span id="card-miei-crediti-after">—</span></span>
+                </div>
+            </div>
+        </div>
+        <div class="rounded-2xl border border-line bg-panel p-4">
+            <div class="mb-2 text-sm font-bold text-ok" id="card-dest-team">Controparte</div>
+            <div class="flex flex-col divide-y divide-line text-sm">
+                <div class="flex items-center justify-between py-1.5">
+                    <span class="text-muted">Slot Rosa</span>
+                    <span class="font-semibold"><span id="card-dest-slot-now">—</span> → <span id="card-dest-slot-after">—</span></span>
+                </div>
+                <div class="flex items-center justify-between py-1.5">
+                    <span class="text-muted">Slot Prestiti</span>
+                    <span class="font-semibold"><span id="card-dest-prestiti-now">—</span> → <span id="card-dest-prestiti-after">—</span></span>
+                </div>
+                <div class="flex items-center justify-between py-1.5">
+                    <span class="text-muted">Crediti</span>
+                    <span class="font-semibold"><span id="card-dest-crediti-now">—</span> → <span id="card-dest-crediti-after">—</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 2: Scambio -->
+    <div class="rounded-2xl border border-line bg-panel p-4" id="step-2">
+        <h4 class="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-accent"></span> 2. Definisci lo scambio
+        </h4>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <!-- Cosa Offri -->
+            <div class="rounded-xl border border-accent/30 bg-accent/5 p-3">
+                <div class="mb-3 text-xs font-bold uppercase tracking-wide text-accent">Cosa offri</div>
+
+                <label for="giocatori_offerti" class="mb-1 block text-xs font-semibold text-muted">
+                    Giocatori <span class="text-text">(max <span id="max_offerti">{{ miei_giocatori|length }}</span>)</span>
+                </label>
+                <select multiple name="giocatori_offerti" id="giocatori_offerti">
+                    {% for g in miei_giocatori %}
+                    <option value="{{ g.id }}">{{ g.nome }}</option>
+                    {% endfor %}
+                </select>
+
+                <label for="crediti_offerti" class="mb-1 mt-3 block text-xs font-semibold text-muted">
+                    Crediti <span class="text-text">(disponibili {{ crediti_effettivi }})</span>
+                </label>
+                <input type="number" min="0" name="crediti_offerti" id="crediti_offerti"
+                       max="{{ crediti_effettivi }}" placeholder="Inserisci importo"
+                       class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm outline-none focus:border-accent">
+
+                <label for="pick_offerta" class="mb-1 mt-3 block text-xs font-semibold text-muted">
+                    Pick Draft <span class="text-text">(mie {{ mie_pick|length }})</span>
+                </label>
+                <select multiple name="pick_offerta" id="pick_offerta">
+                    {% for p in mie_pick %}
+                    <option value="{{ p.id }}">{{ p.anno }} - {{ p.giro }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Cosa Richiedi -->
+            <div class="rounded-xl border border-ok/30 bg-ok/5 p-3">
+                <div class="mb-3 text-xs font-bold uppercase tracking-wide text-ok">Cosa richiedi</div>
+
+                <label for="giocatori_richiesti" class="mb-1 block text-xs font-semibold text-muted">
+                    Giocatori <span class="text-text">(max <span id="max_richiesti">0</span>)</span>
+                </label>
+                <select multiple name="giocatori_richiesti" id="giocatori_richiesti" disabled></select>
+                <p class="mt-1 text-[11px] text-muted">Prima seleziona una controparte</p>
+
+                <label for="crediti_richiesti" class="mb-1 mt-3 block text-xs font-semibold text-muted">
+                    Crediti <span class="text-text" id="crediti-richiesti-max-badge">(max 0)</span>
+                </label>
+                <input type="number" min="0" name="crediti_richiesti" id="crediti_richiesti" disabled
+                       placeholder="Inserisci importo"
+                       class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm outline-none focus:border-accent disabled:opacity-50">
+
+                <label for="pick_richiesta" class="mb-1 mt-3 block text-xs font-semibold text-muted">
+                    Pick Draft <span class="text-text">(disponibili <span id="max_pick_richieste">0</span>)</span>
+                </label>
+                <select multiple name="pick_richiesta" id="pick_richiesta" disabled></select>
+            </div>
+        </div>
+    </div>
+
+    <!-- STEP 3: Prestiti -->
+    <div class="rounded-2xl border border-line bg-panel p-4" id="step-3">
+        <h4 class="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-crit"></span> 3. Aggiungi prestiti (opzionale)
+        </h4>
+
+        {% for n in [1, 2] %}
+        <div class="mb-3 overflow-hidden rounded-xl border border-line last:mb-0" id="loan{{ n }}">
+            <label class="loan-toggle flex cursor-pointer items-center gap-2 bg-panel-2 px-3 py-2.5">
+                <input type="checkbox" id="enable_prestito{{ n }}" name="enable_prestito{{ n }}" class="h-4 w-4 accent-accent">
+                <span class="text-sm font-semibold">Prestito #{{ n }}</span>
+            </label>
+            <div class="hidden grid-cols-1 gap-4 p-3 sm:grid-cols-2" id="loan{{ n }}-body">
+                <div class="rounded-xl border border-accent/30 bg-accent/5 p-3" id="trade-side-prestito{{ n }}-offerto">
+                    <div class="mb-2 text-xs font-bold uppercase tracking-wide text-accent">Prestito offerto</div>
+                    <label class="mb-1 block text-xs font-semibold text-muted">Giocatore</label>
+                    <select id="prestito{{ n }}_offerto" name="prestito{{ n }}_offerto" disabled>
+                        <option value="">Seleziona giocatore</option>
+                        {% for g in miei_giocatori %}
+                        <option value="{{ g.id }}">{{ g.nome }}</option>
+                        {% endfor %}
+                    </select>
+                    <label class="mb-1 mt-2 block text-xs font-semibold text-muted">Tipo Prestito</label>
+                    <select id="prestito{{ n }}_tipo_offerto" name="prestito{{ n }}_tipo_offerto" disabled
+                            class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+                        <option value="">-- Seleziona --</option>
+                        <option value="Secco" selected>Secco</option>
+                        <option value="Diritto">Con diritto di riscatto</option>
+                        <option value="Obbligo">Con obbligo di riscatto</option>
+                    </select>
+                    <div class="mt-2 grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-muted">Anno Fine</label>
+                            <select id="prestito{{ n }}_data_fine_offerta_anno" name="prestito{{ n }}_data_fine_offerta_anno"
+                                    class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+                                {% for anno in anni_scadenza %}
+                                <option value="{{ anno }}" {% if anno == anno_default_scadenza %}selected{% endif %}>{{ anno }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" id="prestito{{ n }}_data_fine_offerta" name="prestito{{ n }}_data_fine_offerta" value="{{ anno_default_scadenza }}-07-01">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-muted">Riscatto</label>
+                            <input type="number" min="0" id="prestito{{ n }}_riscatto_offerto" name="prestito{{ n }}_riscatto_offerto"
+                                   placeholder="0" disabled
+                                   class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm disabled:opacity-50">
+                        </div>
+                    </div>
+                </div>
+                <div class="rounded-xl border border-ok/30 bg-ok/5 p-3" id="trade-side-prestito{{ n }}-richiesto">
+                    <div class="mb-2 text-xs font-bold uppercase tracking-wide text-ok">Prestito richiesto</div>
+                    <label class="mb-1 block text-xs font-semibold text-muted">Giocatore</label>
+                    <select id="prestito{{ n }}_richiesto" name="prestito{{ n }}_richiesto" disabled>
+                        <option value="">Seleziona giocatore</option>
+                    </select>
+                    <label class="mb-1 mt-2 block text-xs font-semibold text-muted">Tipo Prestito</label>
+                    <select id="prestito{{ n }}_tipo_richiesto" name="prestito{{ n }}_tipo_richiesto" disabled
+                            class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+                        <option value="">-- Seleziona --</option>
+                        <option value="Secco" selected>Secco</option>
+                        <option value="Diritto">Con diritto di riscatto</option>
+                        <option value="Obbligo">Con obbligo di riscatto</option>
+                    </select>
+                    <div class="mt-2 grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-muted">Anno Fine</label>
+                            <select id="prestito{{ n }}_data_fine_richiesta_anno" name="prestito{{ n }}_data_fine_richiesta_anno"
+                                    class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+                                {% for anno in anni_scadenza %}
+                                <option value="{{ anno }}" {% if anno == anno_default_scadenza %}selected{% endif %}>{{ anno }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" id="prestito{{ n }}_data_fine_richiesta" name="prestito{{ n }}_data_fine_richiesta" value="{{ anno_default_scadenza }}-07-01">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-semibold text-muted">Riscatto</label>
+                            <input type="number" min="0" id="prestito{{ n }}_riscatto_richiesto" name="prestito{{ n }}_riscatto_richiesto"
+                                   placeholder="0" disabled
+                                   class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm disabled:opacity-50">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- STEP 4: Messaggio e Invio -->
+    <div class="rounded-2xl border border-line bg-panel p-4" id="step-4">
+        <h4 class="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-muted"></span> 4. Messaggio e invio
+        </h4>
+        <textarea name="messaggio" id="messaggio" rows="4"
+                  placeholder="Aggiungi note, condizioni speciali o dettagli sulla trattativa..."
+                  class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-sm outline-none focus:border-accent"></textarea>
+
+        <button type="submit" class="mt-3 flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white">
+            Invia Proposta di Scambio
+        </button>
+    </div>
+</form>
+
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+<style>
+.disabled-section { opacity: .4; pointer-events: none; }
+
+.ts-wrapper { font: inherit; }
+.ts-control, .ts-wrapper.multi.disabled .ts-control {
+    background: var(--panel-2) !important;
+    border: 1px solid var(--line) !important;
+    color: var(--text) !important;
+    border-radius: 0.75rem !important;
+    padding: 0.4rem 0.6rem !important;
+}
+.ts-control input { color: var(--text) !important; }
+.ts-control input::placeholder { color: var(--muted) !important; }
+.ts-dropdown { background: var(--panel) !important; border: 1px solid var(--line) !important; color: var(--text) !important; border-radius: 0.75rem !important; }
+.ts-dropdown .option { color: var(--text) !important; }
+.ts-dropdown .active { background: var(--panel-2) !important; }
+.ts-wrapper .item { background: var(--accent) !important; color: #fff !important; border-radius: 999px !important; padding: 2px 8px !important; }
+
+#loan-slots-warning {
+    background: color-mix(in srgb, var(--crit) 15%, var(--panel));
+    border: 1px solid color-mix(in srgb, var(--crit) 45%, transparent);
+    color: var(--text);
+    border-radius: 0.75rem;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.8rem;
+    margin-bottom: 0.75rem;
+}
+</style>
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     const nome_squadra = "{{ nome_squadra }}";
 
-    // Il giorno di scadenza dei prestiti è fisso all'1 luglio: solo l'anno è
-    // selezionabile (corrente o successivo), come nella pagina Nuovo Prestito.
     const annoScadenzaSelectIds = [
         'prestito1_data_fine_richiesta',
         'prestito1_data_fine_offerta',
@@ -443,10 +312,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const hidden = document.getElementById(baseId);
         if (!select || !hidden) return;
 
-        const aggiornaDataFine = () => {
-            hidden.value = `${select.value}-07-01`;
-        };
-
+        const aggiornaDataFine = () => { hidden.value = `${select.value}-07-01`; };
         select.addEventListener('change', aggiornaDataFine);
         aggiornaDataFine();
     });
@@ -456,31 +322,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const myCreditsAvailable = parseInt(form.dataset.creditiMiei) || 0;
     const mySlotPrestiti = parseInt(form.dataset.slotPrestitiMiei) || 0;
 
-    // Snapshot elements
     const myOccupiedSpan = document.getElementById('card-miei-slot-now');
     const destOccupiedSpan = document.getElementById('card-dest-slot-now');
     const myOccupiedAfterSpan = document.getElementById('card-miei-slot-after');
     const destOccupiedAfterSpan = document.getElementById('card-dest-slot-after');
-    
+
     const myPrestitiSpan = document.getElementById('card-miei-prestiti-now');
     const myPrestitiAfterSpan = document.getElementById('card-miei-prestiti-after');
     const destPrestitiSpan = document.getElementById('card-dest-prestiti-now');
     const destPrestitiAfterSpan = document.getElementById('card-dest-prestiti-after');
-    
+
     const myCreditsSpan = document.getElementById('card-miei-crediti-now');
     const myCreditsAfterSpan = document.getElementById('card-miei-crediti-after');
     const destCreditsSpan = document.getElementById('card-dest-crediti-now');
     const destCreditsAfterSpan = document.getElementById('card-dest-crediti-after');
 
-    // Mobile summary bar elements
-    const mobileMieiSlotAfter = document.getElementById('mobile-miei-slot-after');
-    const mobileMieiCredAfter = document.getElementById('mobile-miei-crediti-after');
-    const mobileDestSlotAfter = document.getElementById('mobile-dest-slot-after');
-    const mobileDestCredAfter = document.getElementById('mobile-dest-crediti-after');
-    const mobileDestTeam = document.getElementById('mobile-dest-team');
-
     const creditiOffertiInput = document.getElementById('crediti_offerti');
     const creditiRichiestiInput = document.getElementById('crediti_richiesti');
+    const messaggioInput = document.getElementById('messaggio');
 
     const maxOffertiSpan = document.getElementById('max_offerti');
     const maxRichiestiSpan = document.getElementById('max_richiesti');
@@ -504,48 +363,20 @@ document.addEventListener("DOMContentLoaded", () => {
         return (value || '').trim().toLowerCase();
     }
 
-    // Uniforma le label delle pick offerte in formato "anno - giro"
     const pickOffertaNative = document.getElementById('pick_offerta');
     Array.from(pickOffertaNative.options).forEach(option => {
         const pick = allPick.find(p => String(p.id) === String(option.value));
-        if (pick) {
-            option.text = getPickDisplayText(pick);
-        }
+        if (pick) option.text = getPickDisplayText(pick);
     });
 
-    // Scambio selects
-    const selectOfferti = new TomSelect("#giocatori_offerti", {
-        plugins: ['remove_button'],
-        placeholder: "Giocatori da offrire",
-        create: false,
-        maxItems: 30
-    });
-
-    const selectRichiesti = new TomSelect("#giocatori_richiesti", {
-        plugins: ['remove_button'],
-        placeholder: "Giocatori da richiedere",
-        create: false,
-        maxItems: 0
-    });
+    const selectOfferti = new TomSelect("#giocatori_offerti", { plugins: ['remove_button'], placeholder: "Giocatori da offrire", create: false, maxItems: 30 });
+    const selectRichiesti = new TomSelect("#giocatori_richiesti", { plugins: ['remove_button'], placeholder: "Giocatori da richiedere", create: false, maxItems: 0 });
     selectRichiesti.disable();
 
-    // Pick selects
-    const selectPickOfferta = new TomSelect("#pick_offerta", {
-        plugins: ['remove_button'],
-        placeholder: "Pick da offrire",
-        create: false,
-        maxItems: 30
-    });
-
-    const selectPickRichiesta = new TomSelect("#pick_richiesta", {
-        plugins: ['remove_button'],
-        placeholder: "Pick da richiedere",
-        create: false,
-        maxItems: 30
-    });
+    const selectPickOfferta = new TomSelect("#pick_offerta", { plugins: ['remove_button'], placeholder: "Pick da offrire", create: false, maxItems: 30 });
+    const selectPickRichiesta = new TomSelect("#pick_richiesta", { plugins: ['remove_button'], placeholder: "Pick da richiedere", create: false, maxItems: 30 });
     selectPickRichiesta.disable();
 
-    // Prestiti selects (single item)
     const selectPrestito1Rich = new TomSelect('#prestito1_richiesto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
     const selectPrestito1Off = new TomSelect('#prestito1_offerto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
     const selectPrestito2Rich = new TomSelect('#prestito2_richiesto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
@@ -563,7 +394,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('prestito1_riscatto_richiesto'),
         document.getElementById('prestito1_riscatto_offerto')
     ];
-
     const prestito2Fields = [
         selectPrestito2Rich, selectPrestito2Off,
         document.getElementById('prestito2_tipo_richiesto'),
@@ -575,7 +405,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const loan1Body = document.getElementById('loan1-body');
     const loan2Body = document.getElementById('loan2-body');
 
-    // Helper to enable/disable a loan block
     function toggleLoan(blockFields, enabled) {
         blockFields.forEach(f => {
             if (f instanceof TomSelect) {
@@ -589,20 +418,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById('enable_prestito1').addEventListener('change', (e) => {
         toggleLoan(prestito1Fields, e.target.checked);
-        loan1Body.classList.toggle('d-none', !e.target.checked);
+        loan1Body.classList.toggle('hidden', !e.target.checked);
+        loan1Body.classList.toggle('grid', e.target.checked);
         updateSlotsCard();
     });
     document.getElementById('enable_prestito2').addEventListener('change', (e) => {
         toggleLoan(prestito2Fields, e.target.checked);
-        loan2Body.classList.toggle('d-none', !e.target.checked);
+        loan2Body.classList.toggle('hidden', !e.target.checked);
+        loan2Body.classList.toggle('grid', e.target.checked);
         updateSlotsCard();
     });
 
-    // Event listeners per bloccare riscatto a 0 se prestito è secco
     function setupLoanTypeListener(tipoSelectId, riscattoSelectId) {
         const tipoSelect = document.getElementById(tipoSelectId);
         const riscattoInput = document.getElementById(riscattoSelectId);
-        
         tipoSelect.addEventListener('change', () => {
             if (tipoSelect.value === 'Secco') {
                 riscattoInput.value = '0';
@@ -612,14 +441,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
-    
     setupLoanTypeListener('prestito1_tipo_richiesto', 'prestito1_riscatto_richiesto');
     setupLoanTypeListener('prestito1_tipo_offerto', 'prestito1_riscatto_offerto');
     setupLoanTypeListener('prestito2_tipo_richiesto', 'prestito2_riscatto_richiesto');
     setupLoanTypeListener('prestito2_tipo_offerto', 'prestito2_riscatto_offerto');
-
-    loan1Body.classList.toggle('d-none', !document.getElementById('enable_prestito1').checked);
-    loan2Body.classList.toggle('d-none', !document.getElementById('enable_prestito2').checked);
 
     function updateMaxItems() {
         const destOption = selectSquadra.options[selectSquadra.selectedIndex];
@@ -634,7 +459,6 @@ document.addEventListener("DOMContentLoaded", () => {
         maxOffertiSpan.textContent = maxOffertiSuggeriti;
         maxRichiestiSpan.textContent = maxRichiestiSuggeriti;
 
-        // Controlla disponibilità slot prestiti
         checkLoanSlotsAvailability();
     }
 
@@ -642,135 +466,65 @@ document.addEventListener("DOMContentLoaded", () => {
         const destOption = selectSquadra.options[selectSquadra.selectedIndex];
         const destSlotPrestiti = destOption ? parseInt(destOption.dataset.slotPrestiti) || 0 : 0;
 
-        const enable_prestito1 = document.getElementById('enable_prestito1');
-        const enable_prestito2 = document.getElementById('enable_prestito2');
-        
-        // Le checkbox non vengono mai disabilitate
-        enable_prestito1.disabled = false;
-        enable_prestito2.disabled = false;
-        
-        // Calcola slot liberi per ciascuna squadra
-        const myFreeSlots = 2 - mySlotPrestiti;  // 2 = nessun occupato, 1 = uno occupato, 0 = tutti occupati
-        const destFreeSlots = 2 - destSlotPrestiti;
-        
-        // Prestito 1 OFFERTO: il giocatore va in prestito a loro, quindi serve che LORO abbiano almeno 1 slot libero
-        const prestito1OffDisabled = destFreeSlots < 1;
-        // Prestito 2 OFFERTO: abilitato solo se loro hanno 2 slot liberi
-        const prestito2OffDisabled = destFreeSlots < 2;
+        document.getElementById('enable_prestito1').disabled = false;
+        document.getElementById('enable_prestito2').disabled = false;
 
-        // Prestito 1 RICHIESTO: il giocatore arriva in prestito a me, quindi serve che IO abbia almeno 1 slot libero
-        const prestito1RichDisabled = myFreeSlots < 1;
-        // Prestito 2 RICHIESTO: abilitato solo se io ho 2 slot liberi
-        const prestito2RichDisabled = myFreeSlots < 2;
-        
-        // Disabilita pannelli e campi PRESTITO 1 OFFERTO
-        const tradeSidePrestito1Off = document.getElementById('trade-side-prestito1-offerto');
-        const prestito1Off = document.getElementById('prestito1_offerto');
-        const prestito1TipoOff = document.getElementById('prestito1_tipo_offerto');
-        const prestito1RiscattoOff = document.getElementById('prestito1_riscatto_offerto');
-        
-        if (prestito1OffDisabled) {
-            tradeSidePrestito1Off.classList.add('disabled-section');
-            prestito1Off.disabled = true;
-            prestito1TipoOff.disabled = true;
-            prestito1RiscattoOff.disabled = true;
-        } else {
-            tradeSidePrestito1Off.classList.remove('disabled-section');
-            prestito1Off.disabled = false;
-            prestito1TipoOff.disabled = false;
-            prestito1RiscattoOff.disabled = false;
+        const myFree = 2 - mySlotPrestiti;
+        const destFree = 2 - destSlotPrestiti;
+
+        const prestito1OffDisabled = destFree < 1;
+        const prestito2OffDisabled = destFree < 2;
+        const prestito1RichDisabled = myFree < 1;
+        const prestito2RichDisabled = myFree < 2;
+
+        const loan1Enabled = document.getElementById('enable_prestito1').checked;
+        const loan2Enabled = document.getElementById('enable_prestito2').checked;
+
+        function apply(slotDisabled, loanEnabled, sideId, tomSelect, tipoId, riscattoId) {
+            const side = document.getElementById(sideId);
+            const tipo = document.getElementById(tipoId);
+            const riscatto = document.getElementById(riscattoId);
+            side.classList.toggle('disabled-section', slotDisabled);
+            if (slotDisabled) tomSelect.clear();
+            if (slotDisabled || !loanEnabled) { tomSelect.disable(); } else { tomSelect.enable(); }
+            tipo.disabled = slotDisabled || !loanEnabled;
+            riscatto.disabled = slotDisabled || !loanEnabled;
         }
-        
-        // Disabilita pannelli e campi PRESTITO 1 RICHIESTO
-        const tradeSidePrestito1Rich = document.getElementById('trade-side-prestito1-richiesto');
-        const prestito1Rich = document.getElementById('prestito1_richiesto');
-        const prestito1TipoRich = document.getElementById('prestito1_tipo_richiesto');
-        const prestito1RiscattoRich = document.getElementById('prestito1_riscatto_richiesto');
-        
-        if (prestito1RichDisabled) {
-            tradeSidePrestito1Rich.classList.add('disabled-section');
-            prestito1Rich.disabled = true;
-            prestito1TipoRich.disabled = true;
-            prestito1RiscattoRich.disabled = true;
-        } else {
-            tradeSidePrestito1Rich.classList.remove('disabled-section');
-            prestito1Rich.disabled = false;
-            prestito1TipoRich.disabled = false;
-            prestito1RiscattoRich.disabled = false;
-        }
-        
-        // Disabilita pannelli e campi PRESTITO 2 OFFERTO
-        const tradeSidePrestito2Off = document.getElementById('trade-side-prestito2-offerto');
-        const prestito2Off = document.getElementById('prestito2_offerto');
-        const prestito2TipoOff = document.getElementById('prestito2_tipo_offerto');
-        const prestito2RiscattoOff = document.getElementById('prestito2_riscatto_offerto');
-        
-        if (prestito2OffDisabled) {
-            tradeSidePrestito2Off.classList.add('disabled-section');
-            prestito2Off.disabled = true;
-            prestito2TipoOff.disabled = true;
-            prestito2RiscattoOff.disabled = true;
-        } else {
-            tradeSidePrestito2Off.classList.remove('disabled-section');
-            prestito2Off.disabled = false;
-            prestito2TipoOff.disabled = false;
-            prestito2RiscattoOff.disabled = false;
-        }
-        
-        // Disabilita pannelli e campi PRESTITO 2 RICHIESTO
-        const tradeSidePrestito2Rich = document.getElementById('trade-side-prestito2-richiesto');
-        const prestito2Rich = document.getElementById('prestito2_richiesto');
-        const prestito2TipoRich = document.getElementById('prestito2_tipo_richiesto');
-        const prestito2RiscattoRich = document.getElementById('prestito2_riscatto_richiesto');
-        
-        if (prestito2RichDisabled) {
-            tradeSidePrestito2Rich.classList.add('disabled-section');
-            prestito2Rich.disabled = true;
-            prestito2TipoRich.disabled = true;
-            prestito2RiscattoRich.disabled = true;
-        } else {
-            tradeSidePrestito2Rich.classList.remove('disabled-section');
-            prestito2Rich.disabled = false;
-            prestito2TipoRich.disabled = false;
-            prestito2RiscattoRich.disabled = false;
-        }
-        
-        // Mostra/nascondi messaggi di avvertenza
+
+        apply(prestito1OffDisabled, loan1Enabled, 'trade-side-prestito1-offerto', selectPrestito1Off, 'prestito1_tipo_offerto', 'prestito1_riscatto_offerto');
+        apply(prestito1RichDisabled, loan1Enabled, 'trade-side-prestito1-richiesto', selectPrestito1Rich, 'prestito1_tipo_richiesto', 'prestito1_riscatto_richiesto');
+        apply(prestito2OffDisabled, loan2Enabled, 'trade-side-prestito2-offerto', selectPrestito2Off, 'prestito2_tipo_offerto', 'prestito2_riscatto_offerto');
+        apply(prestito2RichDisabled, loan2Enabled, 'trade-side-prestito2-richiesto', selectPrestito2Rich, 'prestito2_tipo_richiesto', 'prestito2_riscatto_richiesto');
+
         let warningMsg = document.getElementById('loan-slots-warning');
-        const hasWarnings = myFreeSlots === 0 || destFreeSlots === 0 || myFreeSlots === 1 || destFreeSlots === 1;
-        
+        const hasWarnings = myFree === 0 || destFree === 0 || myFree === 1 || destFree === 1;
+
         if (hasWarnings) {
             let warningText = '⚠️ ';
-            if (myFreeSlots === 0) {
+            if (myFree === 0) {
                 warningText += `${nome_squadra} non può ricevere altri prestiti (slot: ${mySlotPrestiti}/2). `;
-            } else if (myFreeSlots === 1) {
+            } else if (myFree === 1) {
                 warningText += `${nome_squadra} può ricevere solo 1 prestito (slot: ${mySlotPrestiti}/2). `;
             }
-            
-            if (destFreeSlots === 0) {
+            if (destFree === 0) {
                 const destName = selectSquadra.value || 'Squadra destinataria';
                 warningText += `${destName} non può ricevere altri prestiti (slot: ${destSlotPrestiti}/2).`;
-            } else if (destFreeSlots === 1) {
+            } else if (destFree === 1) {
                 const destName = selectSquadra.value || 'Squadra destinataria';
                 warningText += `${destName} può ricevere solo 1 prestito (slot: ${destSlotPrestiti}/2).`;
             }
-            
+
             if (!warningMsg) {
                 warningMsg = document.createElement('div');
                 warningMsg.id = 'loan-slots-warning';
-                warningMsg.className = 'alert alert-warning mb-3';
-                warningMsg.innerHTML = warningText;
-                
+                warningMsg.textContent = warningText;
                 const step3 = document.getElementById('step-3');
-                const cardBody = step3.querySelector('.card-body');
-                cardBody.insertBefore(warningMsg, cardBody.firstChild.nextSibling);
+                step3.insertBefore(warningMsg, step3.children[1]);
             } else {
-                warningMsg.innerHTML = warningText;
+                warningMsg.textContent = warningText;
             }
-        } else {
-            if (warningMsg) {
-                warningMsg.remove();
-            }
+        } else if (warningMsg) {
+            warningMsg.remove();
         }
     }
 
@@ -790,16 +544,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const loanOfferti = (loan1Active ? selectPrestito1Off.items.length : 0) + (loan2Active ? selectPrestito2Off.items.length : 0);
 
         const loanOffertiSlotDelta = (loan1Active ? selectPrestito1Off.items : []).concat(loan2Active ? selectPrestito2Off.items : [])
-            .filter(id => {
-                const tipo = contractById.get(String(id));
-                return tipo === 'Indeterminato' || tipo === 'Hold';
-            }).length;
+            .filter(id => { const tipo = contractById.get(String(id)); return tipo === 'Indeterminato' || tipo === 'Hold'; }).length;
 
         const loanRichiestiSlotDelta = (loan1Active ? selectPrestito1Rich.items : []).concat(loan2Active ? selectPrestito2Rich.items : [])
-            .filter(id => {
-                const tipo = contractById.get(String(id));
-                return tipo === 'Indeterminato' || tipo === 'Hold';
-            }).length;
+            .filter(id => { const tipo = contractById.get(String(id)); return tipo === 'Indeterminato' || tipo === 'Hold'; }).length;
 
         const creditiOfferti = parseInt(creditiOffertiInput.value) || 0;
         const creditiRichiesti = parseInt(creditiRichiestiInput.value) || 0;
@@ -809,18 +557,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const mieiDopo = mieiOra - scambioOfferti + scambioRichiesti - loanOffertiSlotDelta;
         const destDopo = destOra === null ? null : destOra - scambioRichiesti + scambioOfferti - loanRichiestiSlotDelta;
-        
-        // Calcolo slot prestiti - usa i valori reali dal backend
+
         const mieiPrestitiOra = mySlotPrestiti;
         const destPrestitiOra = destSlotPrestiti;
-        
-        // Dopo lo scambio: prestiti attuali + nuovi prestiti dal form
         const mieiPrestitiDopo = mieiPrestitiOra + loanRichiesti;
         const destPrestitiDopo = destPrestitiOra + loanOfferti;
 
         const mieiCredOra = myCreditsAvailable;
         const destCredOra = destCreditsAvail === null ? null : destCreditsAvail;
-
         const mieiCredDopo = mieiCredOra - creditiOfferti + creditiRichiesti;
         const destCredDopo = destCredOra === null ? null : destCredOra - creditiRichiesti + creditiOfferti;
 
@@ -828,7 +572,7 @@ document.addEventListener("DOMContentLoaded", () => {
         destOccupiedSpan.textContent = destOra === null ? '—' : destOra + ' / 30';
         myOccupiedAfterSpan.textContent = isNaN(mieiDopo) ? '—' : mieiDopo + ' / 30';
         destOccupiedAfterSpan.textContent = destDopo === null || isNaN(destDopo) ? '—' : destDopo + ' / 30';
-        
+
         myPrestitiSpan.textContent = mieiPrestitiOra + ' / 2';
         myPrestitiAfterSpan.textContent = mieiPrestitiDopo + ' / 2';
         destPrestitiSpan.textContent = destPrestitiOra + ' / 2';
@@ -839,22 +583,39 @@ document.addEventListener("DOMContentLoaded", () => {
         destCreditsSpan.textContent = destCredOra === null ? '—' : destCredOra;
         destCreditsAfterSpan.textContent = destCredDopo === null || isNaN(destCredDopo) ? '—' : destCredDopo;
 
-        if (mobileMieiSlotAfter) {
-            mobileMieiSlotAfter.textContent = isNaN(mieiDopo) ? '—' : `${mieiDopo} / 30`;
-        }
-        if (mobileMieiCredAfter) {
-            mobileMieiCredAfter.textContent = isNaN(mieiCredDopo) ? '—' : mieiCredDopo;
-        }
-        if (mobileDestSlotAfter) {
-            mobileDestSlotAfter.textContent = destDopo === null || isNaN(destDopo) ? '—' : `${destDopo} / 30`;
-        }
-        if (mobileDestCredAfter) {
-            mobileDestCredAfter.textContent = destCredDopo === null || isNaN(destCredDopo) ? '—' : destCredDopo;
-        }
+        updateStepIndicator();
+    }
+
+    function setStepState(n, done) {
+        const badge = document.getElementById('step-badge-' + n);
+        const label = document.getElementById('step-label-' + n);
+        if (!badge) return;
+        badge.classList.toggle('bg-ok', done);
+        badge.classList.toggle('text-white', done);
+        badge.classList.toggle('bg-panel-2', !done);
+        badge.classList.toggle('text-muted', !done);
+        if (label) label.classList.toggle('text-text', done);
+        if (label) label.classList.toggle('font-medium', done);
+    }
+
+    function updateStepIndicator() {
+        const squadraOk = !!selectSquadra.value;
+        const scambioOk = selectOfferti.items.length > 0 || selectRichiesti.items.length > 0 ||
+            selectPickOfferta.items.length > 0 || selectPickRichiesta.items.length > 0 ||
+            (parseInt(creditiOffertiInput.value) || 0) > 0 || (parseInt(creditiRichiestiInput.value) || 0) > 0;
+        const prestitiOk = document.getElementById('enable_prestito1').checked || document.getElementById('enable_prestito2').checked;
+        const inviaOk = squadraOk && scambioOk;
+
+        setStepState(1, squadraOk);
+        setStepState(2, scambioOk);
+        setStepState(3, prestitiOk);
+        setStepState(4, inviaOk);
     }
 
     selectOfferti.on('change', () => { updateMaxItems(); updateSlotsCard(); });
     selectRichiesti.on('change', () => { updateMaxItems(); updateSlotsCard(); });
+    selectPickOfferta.on('change', updateStepIndicator);
+    selectPickRichiesta.on('change', updateStepIndicator);
     selectPrestito1Rich.on('change', updateSlotsCard);
     selectPrestito1Off.on('change', updateSlotsCard);
     selectPrestito2Rich.on('change', updateSlotsCard);
@@ -862,9 +623,30 @@ document.addEventListener("DOMContentLoaded", () => {
     creditiOffertiInput.addEventListener('input', updateSlotsCard);
     creditiRichiestiInput.addEventListener('input', updateSlotsCard);
 
+    function resetFormPerCambioSquadra() {
+        // Cambiando controparte, tutto ciò che era stato impostato per la
+        // squadra precedente (slot/crediti disponibili diversi) non è più
+        // valido: si riparte da zero con lo scambio.
+        selectOfferti.clear();
+        creditiOffertiInput.value = '';
+        selectPickOfferta.clear();
+        messaggioInput.value = '';
+
+        [1, 2].forEach(n => {
+            const checkbox = document.getElementById(`enable_prestito${n}`);
+            checkbox.checked = false;
+            document.getElementById(`loan${n}-body`).classList.add('hidden');
+            document.getElementById(`loan${n}-body`).classList.remove('grid');
+        });
+        toggleLoan(prestito1Fields, false);
+        toggleLoan(prestito2Fields, false);
+    }
+
     selectSquadra.addEventListener('change', () => {
         const squadraSelezionata = selectSquadra.value;
         const selectedOption = selectSquadra.options[selectSquadra.selectedIndex];
+
+        resetFormPerCambioSquadra();
 
         selectRichiesti.clearOptions();
         selectPickRichiesta.clearOptions();
@@ -880,16 +662,13 @@ document.addEventListener("DOMContentLoaded", () => {
             maxRichiestiSpan.textContent = 0;
             document.getElementById('max_pick_richieste').textContent = 0;
             destTeamLabel.textContent = 'Controparte';
-                        document.getElementById('crediti-richiesti-max-badge').textContent = 'Max: 0';
+            document.getElementById('crediti-richiesti-max-badge').textContent = '(max 0)';
             updateMaxItems();
             updateSlotsCard();
             return;
         }
 
         destTeamLabel.textContent = squadraSelezionata;
-        if (mobileDestTeam) {
-            mobileDestTeam.textContent = squadraSelezionata;
-        }
 
         const filtrati = allOptions.filter(g => g.squadra_att === squadraSelezionata);
         filtrati.forEach(g => {
@@ -900,14 +679,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const squadraNorm = normalizeTeamName(squadraSelezionata);
         const pickFiltrate = allPick.filter(p => {
-            if (p.detentore_att_norm) {
-                return p.detentore_att_norm === squadraNorm;
-            }
+            if (p.detentore_att_norm) return p.detentore_att_norm === squadraNorm;
             return normalizeTeamName(p.detentore_att) === squadraNorm;
         });
-        pickFiltrate.forEach(p => {
-            selectPickRichiesta.addOption({ value: p.id, text: getPickDisplayText(p) });
-        });
+        pickFiltrate.forEach(p => selectPickRichiesta.addOption({ value: p.id, text: getPickDisplayText(p) }));
 
         selectRichiesti.enable();
         selectPickRichiesta.enable();
@@ -924,14 +699,8 @@ document.addEventListener("DOMContentLoaded", () => {
         creditiRichiestiInput.max = maxCrediti;
         creditiRichiestiInput.value = '';
         creditiRichiestiInput.placeholder = `Max: ${maxCrediti}`;
-        document.getElementById('crediti-richiesti-max-badge').textContent = `Max: ${maxCrediti}`;
+        document.getElementById('crediti-richiesti-max-badge').textContent = `(max ${maxCrediti})`;
         document.getElementById('max_pick_richieste').textContent = pickFiltrate.length;
-        
-        // Update step indicators
-        document.querySelectorAll('.step-number').forEach((step, index) => {
-            if (index === 0) step.classList.add('active');
-        });
-        document.getElementById('step-1').classList.add('active');
 
         updateMaxItems();
         updateSlotsCard();
@@ -955,20 +724,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const loan1Active = document.getElementById('enable_prestito1').checked;
         const loan2Active = document.getElementById('enable_prestito2').checked;
-        const loanRichiesti = (loan1Active ? selectPrestito1Rich.items.length : 0) + (loan2Active ? selectPrestito2Rich.items.length : 0);
-        const loanOfferti = (loan1Active ? selectPrestito1Off.items.length : 0) + (loan2Active ? selectPrestito2Off.items.length : 0);
-
         const loanOffertiSlotDelta = (loan1Active ? selectPrestito1Off.items : []).concat(loan2Active ? selectPrestito2Off.items : [])
-            .filter(id => {
-                const tipo = contractById.get(String(id));
-                return tipo === 'Indeterminato' || tipo === 'Hold';
-            }).length;
-
+            .filter(id => { const tipo = contractById.get(String(id)); return tipo === 'Indeterminato' || tipo === 'Hold'; }).length;
         const loanRichiestiSlotDelta = (loan1Active ? selectPrestito1Rich.items : []).concat(loan2Active ? selectPrestito2Rich.items : [])
-            .filter(id => {
-                const tipo = contractById.get(String(id));
-                return tipo === 'Indeterminato' || tipo === 'Hold';
-            }).length;
+            .filter(id => { const tipo = contractById.get(String(id)); return tipo === 'Indeterminato' || tipo === 'Hold'; }).length;
 
         const mieiDopo = mieiAttuali - scambioOfferti + scambioRichiesti - loanOffertiSlotDelta;
         const destDopo = destAttuali - scambioRichiesti + scambioOfferti - loanRichiestiSlotDelta;
@@ -980,7 +739,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Init
     maxOffertiSpan.textContent = selectOfferti.options.length;
     maxRichiestiSpan.textContent = myFreeSlots;
     myOccupiedSpan.textContent = 30 - myFreeSlots;
@@ -990,5 +748,4 @@ document.addEventListener("DOMContentLoaded", () => {
     updateSlotsCard();
 });
 </script>
-
 {% endblock %}

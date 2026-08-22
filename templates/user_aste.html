@@ -1,161 +1,117 @@
-{% extends 'base.html' %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="container mt-5">
+{% import '_macros.html' as m %}
+<h2 class="mb-3 text-lg font-bold">Gestione Aste - {{ nome_squadra }}</h2>
 
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-        <div>
-            <h1 class="mb-0">Gestione Aste - {{ nome_squadra }}</h1>
-            <small class="text-muted">
-                Crediti totali: <strong>{{ crediti }}</strong> |
-                Crediti disponibili: 
-                <strong 
-                    {% if crediti_effettivi <= 0 %}
-                        class="text-danger"
-                    {% elif crediti_effettivi < 10 %}
-                        class="text-warning"
-                    {% else %}
-                        class="text-success"
-                    {% endif %}
-                >
-                    {{ crediti_effettivi }}
-                </strong>
-            </small>
+<div class="mb-4 rounded-2xl border border-line bg-panel p-4">
+    <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="rounded-xl bg-panel-2 px-3 py-2">
+            <div class="text-xs text-muted">Crediti totali</div>
+            <div class="text-lg font-bold">{{ crediti }}</div>
         </div>
-
-        <a href="{{ url_for('aste.nuova_asta', nome_squadra=nome_squadra) }}"
-           class="btn btn-success btn-lg mt-2 mt-sm-0"
-           {% if block_button %}
-               disabled
-               style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-           {% endif %}>
-            Nuova Asta
-        </a>
+        <div class="rounded-xl bg-panel-2 px-3 py-2">
+            <div class="text-xs text-muted">Crediti disponibili</div>
+            <div class="text-lg font-bold {% if crediti_effettivi <= 0 %}text-ko{% elif crediti_effettivi < 10 %}text-crit{% else %}text-ok{% endif %}">
+                {{ crediti_effettivi }}
+            </div>
+        </div>
     </div>
+    <a href="{{ url_for('aste.nuova_asta', nome_squadra=nome_squadra) }}"
+       class="mt-3 flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-white
+              {% if block_button %}pointer-events-none bg-muted opacity-50{% else %}bg-ok{% endif %}">
+        Nuova Asta
+    </a>
+</div>
 
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            Aste in corso - {{ nome_squadra }}
-        </div>
-        <div class="card-body table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-light"> 
-                    <tr>
-                        <th>Giocatore</th>
-                        <th>Ultima offerta</th>
-                        <th>Squadra vincente</th>
-                        <th>Scadenza</th>
-                        <th>Partecipanti</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for asta in aste if asta.stato == 'in_corso' %}
-                    <tr>
-                        <td>{{ asta.giocatore }}</td>
-                        <td>{{ asta.ultima_offerta }}</td>
-                        <td>{{ asta.squadra_vincente }}</td>
-                        <td>{{ asta.data_scadenza }}</td>
-                        <td>{{ asta.partecipanti }}</td>
-                        <td class="text-center">
-                            <a href="{{ url_for('aste.singola_asta_attiva', asta_id=asta.asta_id, nome_squadra=nome_squadra) }}"
-                               class="btn btn-sm fw-semibold py-1 px-2 btn-danger w-100">
-                                Entra
-                            </a>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted">Nessuna asta attiva</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<div class="flex flex-col gap-4">
+
+    <!-- Aste in corso -->
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-accent"></span> Aste in corso
+        </h4>
+        <div class="flex flex-col gap-2">
+            {% for asta in aste if asta.stato == 'in_corso' %}
+            <div class="rounded-xl bg-panel-2 px-3 py-2.5">
+                <div class="flex items-start justify-between gap-3">
+                    <span class="min-w-0 flex-1 font-medium">{{ asta.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(asta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(asta.club) }}</span>
+                    <span class="shrink-0 tabular-nums font-bold text-accent">{{ asta.ultima_offerta }} cr</span>
+                </div>
+                <div class="mt-1 text-xs text-muted"><span class="font-bold text-text">Vincente:</span> {{ asta.squadra_vincente or '—' }}</div>
+                <div class="mt-0.5 text-xs text-muted"><span class="font-bold text-text">Scade:</span> {{ asta.data_scadenza }}</div>
+                {% if asta.partecipanti %}
+                <div class="mt-0.5 text-xs text-muted"><span class="font-bold text-text">Partecipanti:</span> {{ asta.partecipanti }}</div>
+                {% endif %}
+                <a href="{{ url_for('aste.singola_asta_attiva', asta_id=asta.asta_id, nome_squadra=nome_squadra) }}"
+                   class="mt-2 flex items-center justify-center rounded-lg bg-ko px-3 py-2 text-sm font-semibold text-white">
+                    Entra
+                </a>
+            </div>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessuna asta attiva</p>
+            {% endfor %}
         </div>
     </div>
 
-    <div class="card mb-4">
-        <div class="card-header bg-warning text-dark">
-            Aste a cui è possibile iscriversi - {{ nome_squadra }}
-        </div>
-        <div class="card-body table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-light"> 
-                    <tr>
-                        <th>Giocatore</th>
-                        <th>Scadenza</th>
-                        <th>Iscritti</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for asta in aste if asta.stato == 'mostra_interesse' %}
-                    <tr>
-                        <td>{{ asta.giocatore }}</td>
-                        <td>{{ asta.tempo_fine_mostra_interesse }}</td>
-                        <td>{{ asta.partecipanti }}</td>
-                        <td class="text-center">
-                            {% if asta.gia_iscritto_all_asta %}
-                                <button class="btn btn-sm btn-secondary fw-semibold py-1 px-2" disabled>
-                                    Già iscritto
-                                </button>
-                            {% elif slot_occupati >= 30 %}
-                                <button class="btn btn-sm fw-semibold py-1 px-2" style="background-color: #6f42c1; border-color: #6f42c1; color: white;" disabled title="Hai raggiunto il limite massimo di 30 giocatori">
-                                    Slot Pieni
-                                </button>
-                            {% else %}
-                                <form method="POST" action="{{ url_for('aste.user_aste', nome_squadra=nome_squadra) }}"
-                                        onsubmit="return confirm('Sei sicuro di volerti iscrivere all\'asta per {{ asta.giocatore }}?');">
-                                    <input type="hidden" name="asta_id_aste_a_cui_iscriversi" value="{{ asta.asta_id }}">
-                                    <button type="submit" class="btn btn-sm btn-success fw-semibold py-1 px-2">
-                                        Iscriviti
-                                    </button>
-                                </form>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="4" class="text-center text-muted">Nessuna asta disponibile</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Aste a cui è possibile iscriversi -->
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-crit"></span> Aperte alle iscrizioni
+        </h4>
+        <div class="flex flex-col gap-2">
+            {% for asta in aste if asta.stato == 'mostra_interesse' %}
+            <div class="rounded-xl bg-panel-2 px-3 py-2.5">
+                <span class="font-medium">{{ asta.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(asta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(asta.club) }}</span>
+                <div class="mt-1 text-xs text-muted"><span class="font-bold text-text">Scade:</span> {{ asta.tempo_fine_mostra_interesse }}</div>
+                {% if asta.partecipanti %}
+                <div class="mt-0.5 text-xs text-muted"><span class="font-bold text-text">Iscritti:</span> {{ asta.partecipanti }}</div>
+                {% endif %}
+
+                {% if asta.gia_iscritto_all_asta %}
+                <button class="mt-2 flex w-full items-center justify-center rounded-lg bg-muted px-3 py-2 text-sm font-semibold text-white opacity-60" disabled>
+                    Già iscritto
+                </button>
+                {% elif slot_occupati >= 30 %}
+                <button class="mt-2 flex w-full items-center justify-center rounded-lg bg-muted px-3 py-2 text-sm font-semibold text-white opacity-60" disabled title="Hai raggiunto il limite massimo di 30 giocatori">
+                    Slot Pieni
+                </button>
+                {% else %}
+                <form method="POST" action="{{ url_for('aste.user_aste', nome_squadra=nome_squadra) }}"
+                      onsubmit="return confirm('Sei sicuro di volerti iscrivere all\'asta per {{ asta.giocatore }}?');">
+                    <input type="hidden" name="asta_id_aste_a_cui_iscriversi" value="{{ asta.asta_id }}">
+                    <button type="submit" class="mt-2 flex w-full items-center justify-center rounded-lg bg-ok px-3 py-2 text-sm font-semibold text-white">
+                        Iscriviti
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessuna asta disponibile</p>
+            {% endfor %}
         </div>
     </div>
 
-    <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">
-            Aste concluse - {{ nome_squadra }}
-        </div>
-        <div class="card-body table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Giocatore</th>
-                        <th>Termine</th>
-                        <th>Ultima offerta</th>
-                        <th>Vincitore</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for asta in aste if asta.stato == 'conclusa' %}
-                    <tr>
-                        <td>{{ asta.giocatore }}</td>
-                        <td>{{ asta.data_scadenza }}</td>
-                        <td>{{ asta.ultima_offerta }}</td>
-                        <td>{{ asta.squadra_vincente }}</td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="4" class="text-center text-muted">Nessuna asta conclusa</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Aste concluse -->
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-muted"></span> Concluse
+        </h4>
+        <div class="flex flex-col gap-2">
+            {% for asta in aste if asta.stato == 'conclusa' %}
+            <div class="rounded-xl bg-panel-2 px-3 py-2.5">
+                <div class="flex items-start justify-between gap-3">
+                    <span class="min-w-0 flex-1 font-medium">{{ asta.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(asta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(asta.club) }}</span>
+                    <span class="shrink-0 tabular-nums text-muted">{{ asta.ultima_offerta }} cr</span>
+                </div>
+                <div class="mt-1 text-xs text-muted"><span class="font-bold text-text">Vinta da:</span> {{ asta.squadra_vincente or '—' }}</div>
+                <div class="mt-0.5 text-xs text-muted"><span class="font-bold text-text">Termine:</span> {{ asta.data_scadenza }}</div>
+            </div>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessuna asta conclusa</p>
+            {% endfor %}
         </div>
     </div>
 
 </div>
-
 {% endblock %}

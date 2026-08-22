@@ -90,10 +90,10 @@ def user_aste(nome_squadra):
         # Lista aste, tutte insieme
         aste = []
         cur.execute('''
-                    SELECT a.id, g.nome, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
+                    SELECT a.id, g.nome, g.ruolo, g.club, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
                     FROM asta a
                     JOIN giocatore g ON a.giocatore = g.id
-                    WHERE (a.stato = 'in_corso' AND %s = ANY(a.partecipanti)) 
+                    WHERE (a.stato = 'in_corso' AND %s = ANY(a.partecipanti))
                     OR a.stato = 'mostra_interesse'
                     OR (a.stato = 'conclusa' AND a.squadra_vincente = %s)
                     ORDER BY a.tempo_fine_asta DESC;
@@ -108,12 +108,14 @@ def user_aste(nome_squadra):
             gia_iscritto_all_asta = False
             if nome_squadra in a["partecipanti"]:
                 gia_iscritto_all_asta = True
-            
+
             partecipanti = format_partecipanti(a["partecipanti"])
 
             aste.append({
                 "asta_id": a["id"],
                 "giocatore": a["nome"],
+                "ruolo": a["ruolo"].strip("{}"),
+                "club": a["club"],
                 "squadra_vincente": a["squadra_vincente"],
                 "ultima_offerta": a["ultima_offerta"],
                 "tempo_fine_mostra_interesse": tempo_fine_mostra_interesse,
@@ -377,11 +379,11 @@ def singola_asta_attiva(asta_id, nome_squadra):
         # Recupero dati asta
         cur.execute('''
             WITH giocatori_svincolati AS (
-                SELECT id, nome
+                SELECT id, nome, ruolo, club
                 FROM giocatore
                 WHERE tipo_contratto = 'Svincolato'
             )
-            SELECT g.nome, a.ultima_offerta, a.squadra_vincente, a.tempo_fine_asta, a.partecipanti
+            SELECT g.nome, g.ruolo, g.club, a.ultima_offerta, a.squadra_vincente, a.tempo_fine_asta, a.partecipanti
             FROM asta a
             JOIN giocatori_svincolati g ON a.giocatore = g.id
             WHERE a.id = %s;
@@ -409,6 +411,8 @@ def singola_asta_attiva(asta_id, nome_squadra):
             asta = {
                 "id": asta_id,
                 "giocatore": asta_raw["nome"],
+                "ruolo": asta_raw["ruolo"].strip("{}"),
+                "club": asta_raw["club"],
                 "ultima_offerta": asta_raw["ultima_offerta"],
                 "squadra_vincente": asta_raw["squadra_vincente"],
                 "tempo_fine_asta": data_scadenza_str,

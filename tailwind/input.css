@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@source "../templates/**/*.html";
+
+/* dark mode attivata mettendo la classe .dark su <html>, invece che
+   affidarsi a prefers-color-scheme: la scelta resta all'utente e viene
+   ricordata in localStorage (vedi static/js/theme.js) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel-2);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-ok: var(--ok);
+  --color-ko: var(--ko);
+  --color-crit: var(--crit);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+:root {
+  --bg: #f5f6f8;
+  --panel: #ffffff;
+  --panel-2: #f0f2f5;
+  --line: #e2e5ea;
+  --text: #1a1d23;
+  --muted: #6b7280;
+  --accent: #16a34a;
+  --ok: #2ecc71;
+  --ko: #ff6b6b;
+  --crit: #ffb020;
+}
+
+.dark {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --panel-2: #1e222b;
+  --line: #2a2f3a;
+  --text: #e6e8ec;
+  --muted: #8b93a1;
+  --accent: #22c55e;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+[data-tip] img {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

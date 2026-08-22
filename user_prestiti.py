@@ -71,7 +71,7 @@ def user_prestiti(nome_squadra):
 
         # Selezione dei prestiti che non sono associati con nessuno scambio
         cur.execute('''
-                    SELECT *, p.id AS prestito_id, 
+                    SELECT *, p.id AS prestito_id,
                            p.note,
                            p.costo_prestito,
                            p.tipo_prestito,
@@ -94,6 +94,8 @@ def user_prestiti(nome_squadra):
             prestiti.append({
                 "prestito_id": p["prestito_id"],
                 "giocatore": p["nome"],
+                "ruolo": (p["ruolo"] or "").strip("{}"),
+                "club": p["club"],
                 "squadra_prestante": p["squadra_prestante"],
                 "squadra_ricevente": p["squadra_ricevente"],
                 "stato": p["stato"],
