@@ -34,6 +34,18 @@
                                     {% if tipo_contratto != 'Hold' %}
                                     <option value="Hold">Hold</option>
                                     {% endif %}
+                                    {% if tipo_contratto != 'Retrocessione' %}
+                                    <option value="Retrocessione">Retrocessione</option>
+                                    {% endif %}
+                                    {% if tipo_contratto != 'Scadenza Contratto' %}
+                                    <option value="Scadenza Contratto">Scadenza Contratto</option>
+                                    {% endif %}
+                                    {% if tipo_contratto != "Ritorno all'estero per fine prestito" %}
+                                    <option value="Ritorno all'estero per fine prestito">Ritorno all'estero per fine prestito</option>
+                                    {% endif %}
+                                    {% if tipo_contratto != 'Taglio Gratuito' %}
+                                    <option value="Taglio Gratuito">Taglio Gratuito</option>
+                                    {% endif %}
                                 </select>
                             </div>
                             <div class="mb-3">
@@ -49,6 +61,32 @@
                                 <a href="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}" class="btn btn-secondary">Annulla</a>
                             </div>
                         </form>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function () {
+                                var selectContratto = document.getElementById('nuovo_contratto');
+                                var inputCrediti = document.getElementById('crediti_richiesti');
+                                var tipiCreditiAzzerati = [
+                                    'Retrocessione',
+                                    'Scadenza Contratto',
+                                    "Ritorno all'estero per fine prestito",
+                                    'Taglio Gratuito'
+                                ];
+
+                                function aggiornaCampoCrediti() {
+                                    if (tipiCreditiAzzerati.includes(selectContratto.value)) {
+                                        inputCrediti.value = 0;
+                                        inputCrediti.setAttribute('readonly', 'readonly');
+                                        inputCrediti.classList.add('bg-light');
+                                    } else {
+                                        inputCrediti.removeAttribute('readonly');
+                                        inputCrediti.classList.remove('bg-light');
+                                    }
+                                }
+
+                                selectContratto.addEventListener('change', aggiornaCampoCrediti);
+                                aggiornaCampoCrediti();
+                            });
+                        </script>
                     {% else %}
                         <div class="alert alert-danger" role="alert">
                             <h4 class="alert-heading">Errore!</h4>

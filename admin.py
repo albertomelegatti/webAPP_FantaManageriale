@@ -151,7 +151,7 @@ def richiesta_modifica_contratto():
 
                 # Logica per aggiornare squadra_attuale e detentore_cartellino
                 if nuovo_contratto == 'Svincolato':
-                    # Se il contratto è "Svincolato", 
+                    # Se il contratto è "Svincolato",
                     # squadra attuale e detentore cartellino vanno a "Svincolato"
                     cur.execute('''
                                 UPDATE giocatore

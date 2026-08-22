@@ -2,9 +2,10 @@ import math
 import pytz
 import telegram_utils
 from datetime import datetime
+from psycopg2 import errors as pg_errors
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from db import get_connection, release_connection
+from db import get_connection, release_connection, resync_sequence
 from user import formatta_data
 from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori, get_nome_giocatore, sposta_crediti
 
@@ -331,13 +332,28 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
 
         if request.method == "POST":
             nuovo_tipo_contratto = request.form.get("nuovo_contratto")
-            crediti_richiesti = int(request.form.get("crediti_richiesti") or 0)
             messaggio = (request.form.get("messaggio") or "").strip()
+
+            # Retrocessione, Scadenza Contratto, Ritorno all'estero per fine prestito e Taglio
+            # Gratuito sono varianti di "Trasferimento Reale" mostrate nel menu solo per
+            # chiarezza: devono comportarsi esattamente come "Trasferimento Reale" (valore
+            # 'Svincolato', unico valore ammesso dall'enum di database), con crediti a 0.
+            tipi_contratto_come_trasferimento_reale = (
+                'Retrocessione',
+                'Scadenza Contratto',
+                "Ritorno all'estero per fine prestito",
+                'Taglio Gratuito'
+            )
+            if nuovo_tipo_contratto in tipi_contratto_come_trasferimento_reale:
+                crediti_richiesti = 0
+                nuovo_tipo_contratto = 'Svincolato'
+            else:
+                crediti_richiesti = int(request.form.get("crediti_richiesti") or 0)
 
             cur.execute("SELECT tipo_contratto FROM giocatore WHERE id = %s", (id_giocatore,))
             tipo_contratto_attuale = cur.fetchone()['tipo_contratto']
 
-            cur.execute('''
+            insert_richiesta_sql = '''
                 INSERT INTO richiesta_modifica_contratto (
                     giocatore,
                     contratto_richiesto,
@@ -347,7 +363,18 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
                     data,
                     stato
                 ) VALUES (%s, %s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s)
-            ''', (id_giocatore, nuovo_tipo_contratto, nome_squadra, crediti_richiesti, messaggio, 'in_elaborazione'))
+            '''
+            insert_richiesta_params = (id_giocatore, nuovo_tipo_contratto, nome_squadra, crediti_richiesti, messaggio, 'in_elaborazione')
+
+            try:
+                cur.execute(insert_richiesta_sql, insert_richiesta_params)
+            except pg_errors.UniqueViolation:
+                # La sequence dell'id è rimasta indietro rispetto ai dati (es. import/restore
+                # manuale sul DB). La riallineiamo e riproviamo, così l'utente non vede l'errore.
+                conn.rollback()
+                resync_sequence(conn, 'richiesta_modifica_contratto')
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute(insert_richiesta_sql, insert_richiesta_params)
 
             conn.commit()
 
