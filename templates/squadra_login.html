@@ -2,7 +2,13 @@
 
 {% block content %}
 {% import '_macros.html' as m %}
-<h2 class="mb-4 text-center text-lg font-bold">Sezione riservata di {{ nome_squadra }}</h2>
+{% set logo_file = 'loghi/' ~ username ~ '.png' %}
+<div class="mb-4 flex flex-col items-center gap-2 text-center">
+    <img src="{{ url_for('static', filename=logo_file) }}?v={{ asset_v(logo_file) }}"
+         alt="Logo {{ nome_squadra }}"
+         class="h-28 w-28 rounded-xl bg-panel-2 object-contain p-1.5">
+    <h2 class="text-lg font-bold">Sezione riservata di {{ nome_squadra }}</h2>
+</div>
 
 <div class="mb-4 grid grid-cols-2 gap-2">
     <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
