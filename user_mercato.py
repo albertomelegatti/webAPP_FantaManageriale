@@ -6,6 +6,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from user import format_giocatori, formatta_data
 from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati, get_slot_prestiti_in
+from user_prestiti import _get_allowed_prestito_years
 
 
 mercato_bp = Blueprint('mercato', __name__, url_prefix='/mercato')
@@ -218,6 +219,8 @@ def nuovo_scambio(nome_squadra):
             p1_tipo_offerto = (request.form.get("prestito1_tipo_offerto") or "").strip()
             p1_riscatto_rich = int(request.form.get("prestito1_riscatto_richiesto") or 0)
             p1_riscatto_off = int(request.form.get("prestito1_riscatto_offerto") or 0)
+            p1_data_fine_rich = request.form.get("prestito1_data_fine_richiesta")
+            p1_data_fine_off = request.form.get("prestito1_data_fine_offerta")
 
             # Prestito 2
             p2_richiesto = request.form.get("prestito2_richiesto")
@@ -226,6 +229,8 @@ def nuovo_scambio(nome_squadra):
             p2_tipo_offerto = (request.form.get("prestito2_tipo_offerto") or "").strip()
             p2_riscatto_rich = int(request.form.get("prestito2_riscatto_richiesto") or 0)
             p2_riscatto_off = int(request.form.get("prestito2_riscatto_offerto") or 0)
+            p2_data_fine_rich = request.form.get("prestito2_data_fine_richiesta")
+            p2_data_fine_off = request.form.get("prestito2_data_fine_offerta")
 
             def map_tipo(val):
                 if not val:
@@ -248,11 +253,24 @@ def nuovo_scambio(nome_squadra):
             if map_tipo(p2_tipo_offerto) == 'secco':
                 p2_riscatto_off = 0
 
-            # Data di fine default: 1 luglio alle 23:59:59 (prima data utile futura)
-            today = datetime.now()
-            target_year = today.year if today < datetime(today.year, 7, 1, 23, 59, 59) else today.year + 1
+            # Data di fine: 1 luglio alle 23:59:59 dell'anno scelto (corrente o successivo)
+            anni_scadenza, anno_default_scadenza = _get_allowed_prestito_years()
 
-            default_data_fine = datetime(target_year, 7, 1, 23, 59, 59)
+            def parse_data_fine_prestito(data_fine_raw):
+                anno = None
+                if data_fine_raw:
+                    try:
+                        anno = int(str(data_fine_raw)[:4])
+                    except ValueError:
+                        anno = None
+                if anno not in anni_scadenza:
+                    anno = anno_default_scadenza
+                return datetime(anno, 7, 1, 23, 59, 59)
+
+            p1_data_fine_rich = parse_data_fine_prestito(p1_data_fine_rich)
+            p1_data_fine_off = parse_data_fine_prestito(p1_data_fine_off)
+            p2_data_fine_rich = parse_data_fine_prestito(p2_data_fine_rich)
+            p2_data_fine_off = parse_data_fine_prestito(p2_data_fine_off)
 
             # Validazioni base
             if not squadra_destinataria:
@@ -290,7 +308,7 @@ def nuovo_scambio(nome_squadra):
 
 
             # Inserisci eventuali prestiti collegati (costo_prestito=0)
-            def crea_prestito(giocatore_id, squadra_prestante, squadra_ricevente, tipo_txt, riscatto):
+            def crea_prestito(giocatore_id, squadra_prestante, squadra_ricevente, tipo_txt, riscatto, data_fine):
 
                 if not giocatore_id or not tipo_txt:
                     return None
@@ -316,7 +334,7 @@ def nuovo_scambio(nome_squadra):
                     int(giocatore_id),
                     squadra_prestante,
                     squadra_ricevente,
-                    default_data_fine,
+                    data_fine,
                     0,
                     tipo_db,
                     int(riscatto or 0),
@@ -333,21 +351,21 @@ def nuovo_scambio(nome_squadra):
             if enable_prestito1:
                 if p1_richiesto:
                     created_prestiti.append(
-                        crea_prestito(p1_richiesto, squadra_destinataria, nome_squadra, p1_tipo_richiesto, p1_riscatto_rich)
+                        crea_prestito(p1_richiesto, squadra_destinataria, nome_squadra, p1_tipo_richiesto, p1_riscatto_rich, p1_data_fine_rich)
                     )
                 if p1_offerto:
                     created_prestiti.append(
-                        crea_prestito(p1_offerto, nome_squadra, squadra_destinataria, p1_tipo_offerto, p1_riscatto_off)
+                        crea_prestito(p1_offerto, nome_squadra, squadra_destinataria, p1_tipo_offerto, p1_riscatto_off, p1_data_fine_off)
                     )
 
             if enable_prestito2:
                 if p2_richiesto:
                     created_prestiti.append(
-                        crea_prestito(p2_richiesto, squadra_destinataria, nome_squadra, p2_tipo_richiesto, p2_riscatto_rich)
+                        crea_prestito(p2_richiesto, squadra_destinataria, nome_squadra, p2_tipo_richiesto, p2_riscatto_rich, p2_data_fine_rich)
                     )
                 if p2_offerto:
                     created_prestiti.append(
-                        crea_prestito(p2_offerto, nome_squadra, squadra_destinataria, p2_tipo_offerto, p2_riscatto_off)
+                        crea_prestito(p2_offerto, nome_squadra, squadra_destinataria, p2_tipo_offerto, p2_riscatto_off, p2_data_fine_off)
                     )
 
 
@@ -534,6 +552,8 @@ def nuovo_scambio(nome_squadra):
             for p in pick_raw
         ]
 
+        anni_scadenza, anno_default_scadenza = _get_allowed_prestito_years()
+
         return render_template(
             "user_nuovo_scambio.html",
             nome_squadra=nome_squadra,
@@ -544,7 +564,9 @@ def nuovo_scambio(nome_squadra):
             pick_list=pick_list,
             crediti_effettivi=crediti_effettivi,
             slot_liberi_miei=slot_liberi_miei,
-            slot_prestiti_miei=slot_prestiti_miei
+            slot_prestiti_miei=slot_prestiti_miei,
+            anni_scadenza=anni_scadenza,
+            anno_default_scadenza=anno_default_scadenza
         )
 
     except Exception as e:

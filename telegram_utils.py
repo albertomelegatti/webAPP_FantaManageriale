@@ -96,6 +96,12 @@ def format_pick(pick_ids, conn):
         return ""
 
 
+def formatta_tipo_prestito(tipo_prestito):
+    """Converte il tipo di prestito (es. 'diritto_di_riscatto') in una forma leggibile (es. 'DDR')"""
+    tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
+    return tipo_map.get(tipo_prestito, tipo_prestito)
+
+
 if not TOKEN:
     print("❌ Token non trovato nel file .env")
     exit()
@@ -299,8 +305,7 @@ def nuovo_scambio(conn, id_scambio):
 
             # Formatta prestiti offerti e richiesti
             for p in prestiti:
-                tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
-                tipo_str = tipo_map.get(p['tipo_prestito'], p['tipo_prestito'])
+                tipo_str = formatta_tipo_prestito(p['tipo_prestito'])
                 riscatto_str = f" (risc. {p['crediti_riscatto']})" if p['crediti_riscatto'] and p['crediti_riscatto'] > 0 else ""
                 prestito_str = f"• {p['nome_giocatore']} [Prestito {tipo_str}{riscatto_str}]"
                 
@@ -397,8 +402,7 @@ def scambio_risposta(conn, id_scambio, risposta):
         prestiti_offerti = []
         prestiti_richiesti = []
         for p in prestiti:
-            tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
-            tipo_str = tipo_map.get(p['tipo_prestito'], p['tipo_prestito'])
+            tipo_str = formatta_tipo_prestito(p['tipo_prestito'])
             riscatto_str = f" (risc. {p['crediti_riscatto']})" if p['crediti_riscatto'] > 0 else ""
             prestito_str = f"• {p['nome_giocatore']} [Prestito {tipo_str}{riscatto_str}]"
             
@@ -496,7 +500,7 @@ def nuovo_prestito(conn, id_prestito):
         squadra_prestante = info_prestito['squadra_prestante']
         squadra_ricevente = info_prestito['squadra_ricevente']
         data_fine = formatta_data(info_prestito['data_fine'])
-        tipo_prestito = info_prestito.get('tipo_prestito') or '-'
+        tipo_prestito = formatta_tipo_prestito(info_prestito.get('tipo_prestito')) or '-'
         costo_prestito = info_prestito.get('costo_prestito') or 0
         crediti_riscatto = info_prestito.get('crediti_riscatto') or 0
         note = info_prestito.get('note') or ''
@@ -547,7 +551,7 @@ def prestito_risposta(conn, id_prestito, risposta):
         squadra_prestante = info_prestito['squadra_prestante']
         squadra_ricevente = info_prestito['squadra_ricevente']
         data_fine = formatta_data(info_prestito['data_fine'])
-        tipo_prestito = info_prestito.get('tipo_prestito') or '-'
+        tipo_prestito = formatta_tipo_prestito(info_prestito.get('tipo_prestito')) or '-'
         costo_prestito = info_prestito.get('costo_prestito') or 0
         crediti_riscatto = info_prestito.get('crediti_riscatto') or 0
         note = info_prestito.get('note') or 'Nessuna nota.'
