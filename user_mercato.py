@@ -336,6 +336,14 @@ def nuovo_scambio(nome_squadra):
                 created_prestiti = None
 
 
+            # Resincronizza la sequenza prima dell'insert, per proteggersi da eventuali
+            # inserimenti manuali passati con id espliciti che l'hanno lasciata indietro
+            # (causa nota di "duplicate key value violates unique constraint scambio_pkey")
+            cur.execute("SELECT MAX(id) AS max_id FROM scambio")
+            max_id_scambio = cur.fetchone()['max_id']
+            if max_id_scambio is not None:
+                cur.execute("SELECT setval('scambio_id_seq', %s, true)", (max_id_scambio,))
+
             # Inserisci la proposta di scambio
             cur.execute('''
                 INSERT INTO scambio (
