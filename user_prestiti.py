@@ -5,7 +5,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from user import formatta_data
-from queries import get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in, sposta_crediti
+from queries import get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in, sposta_crediti, decadi_vetrina
 
 prestiti_bp = Blueprint('prestiti', __name__, url_prefix='/prestiti')
 
@@ -309,7 +309,8 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
                     tipo_contratto = 'Fanta-Prestito'
                     WHERE id = %s;
         ''', (prestito['squadra_ricevente'], prestito['giocatore']))
-        
+        decadi_vetrina(cur, prestito['giocatore'])
+
         # Cancellare altri prestiti per lo stesso giocatore fatti da altre squadre
         cur.execute('''
                     UPDATE prestito

@@ -4,6 +4,7 @@ import telegram_utils
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from user import formatta_data
 from db import get_connection, release_connection
+from queries import decadi_vetrina
 from psycopg2.extras import RealDictCursor
 from psycopg2 import extensions
 
@@ -160,8 +161,9 @@ def richiesta_modifica_contratto():
                                     detentore_cartellino = %s
                                 WHERE id = %s;
                     ''', (nuovo_contratto, 'Svincolato', 'Svincolato', id_giocatore))
+                    decadi_vetrina(cur, id_giocatore)
                 elif nuovo_contratto == 'Prestito Reale':
-                    # Se il contratto è "Prestito Reale", 
+                    # Se il contratto è "Prestito Reale",
                     # squadra attuale va a "Svincolato"
                     cur.execute('''
                                 UPDATE giocatore
@@ -169,6 +171,7 @@ def richiesta_modifica_contratto():
                                     squadra_att = %s
                                 WHERE id = %s;
                     ''', (nuovo_contratto, 'Svincolato', id_giocatore))
+                    decadi_vetrina(cur, id_giocatore)
                 elif nuovo_contratto == 'Indeterminato':
                     # Se il contratto è "Indeterminato", 
                     # squadra attuale va a tonra a  detentore cartellino
@@ -185,6 +188,8 @@ def richiesta_modifica_contratto():
                                 SET tipo_contratto = %s
                                 WHERE id = %s;
                     ''', (nuovo_contratto, id_giocatore))
+                # "Indeterminato" e "Hold" non fanno decadere la vetrina: il giocatore
+                # resta alla squadra richiedente, non è un vero movimento di mercato.
 
                 # Aggiornamento crediti squadra: la modifica contratto assegna i crediti richiesti
                 cur.execute('''

@@ -115,6 +115,20 @@ def get_nome_giocatore(conn, id_giocatore):
 
     return nome_giocatore
 
+def decadi_vetrina(cur, giocatore_ids):
+    """Rimuove dalla vetrina i giocatori indicati, se presenti (es. dopo svincolo, prestito, riscatto o scambio)."""
+    if not isinstance(giocatore_ids, (list, tuple, set)):
+        giocatore_ids = [giocatore_ids]
+    giocatore_ids = [g for g in giocatore_ids if g]
+    if not giocatore_ids:
+        return
+
+    cur.execute('''
+                DELETE FROM vetrina
+                WHERE id_giocatore = ANY(%s);
+    ''', (list(giocatore_ids),))
+
+
 def sposta_crediti (conn, squadra_from, squadra_to, crediti):
     try:
         cur = conn.cursor()

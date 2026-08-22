@@ -5,7 +5,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from user import format_giocatori, formatta_data
-from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati, get_slot_prestiti_in
+from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati, get_slot_prestiti_in, decadi_vetrina
 from user_prestiti import _get_allowed_prestito_years
 
 
@@ -743,6 +743,9 @@ def effettua_scambio(id, conn, nome_squadra):
                             AND id <> %s;
             ''', (giocatore_id, giocatore_id, id))
 
+        # I giocatori scambiati decadono dalla vetrina, se presenti
+        decadi_vetrina(cur, giocatori_offerti + giocatori_richiesti)
+
         # Eseguo il trasferimento delle pick del draft
         for pick_id in pick_offerta:
             cur.execute('''
@@ -805,7 +808,8 @@ def effettua_scambio(id, conn, nome_squadra):
                             squadra_att = %s
                         WHERE id = %s;
             ''', (prestito['squadra_ricevente'], prestito['giocatore']))
-            
+            decadi_vetrina(cur, prestito['giocatore'])
+
             # Rifiuta altri prestiti in attesa per lo stesso giocatore dalla stessa squadra prestante
             cur.execute('''
                         UPDATE prestito
