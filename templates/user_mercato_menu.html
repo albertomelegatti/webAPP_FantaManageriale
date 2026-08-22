@@ -1,22 +1,12 @@
-{% extends 'base.html' %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="text-center">
-        <h1 class="mb-4">Mercato di {{ nome_squadra }}</h1>
+{% import '_macros.html' as m %}
+<h2 class="mb-4 text-center text-lg font-bold">Mercato di {{ nome_squadra }}</h2>
 
-        <div class="d-grid gap-2 col-6 mx-auto">
-            <a href="{{ url_for('aste.user_aste', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
-                💰 Aste
-            </a>
-            <a href="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
-                🔁 Proposte di mercato
-            </a>
-            <a href="{{ url_for('user.user_prestiti_menu', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg mb-3">
-                🤝 Prestiti
-            </a>
-        </div>
-
-    </div>
+<div class="flex flex-col gap-2">
+    {{ m.voce_menu(url_for('aste.user_aste', nome_squadra=nome_squadra), 'bi-cash-coin', 'Aste') }}
+    {{ m.voce_menu(url_for('mercato.user_mercato', nome_squadra=nome_squadra), 'bi-arrow-left-right', 'Proposte di mercato') }}
+    {{ m.voce_menu(url_for('user.user_prestiti_menu', nome_squadra=nome_squadra), 'bi-people-fill', 'Prestiti') }}
 </div>
 {% endblock %}

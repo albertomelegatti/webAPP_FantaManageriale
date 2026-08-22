@@ -1,70 +1,55 @@
-{% extends 'base.html' %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2 class="text-center mb-4">👥 Promozione Giocatori dalla Primavera</h2>
-    <p class="text-center text-muted">In questa schermata puoi promuovere un giocatore in prima squadra o tagliarlo, ricordiamo che per i giocatori
-        in primavera non sono previsti costi per il taglio.</p>
+{% import '_macros.html' as m %}
+<h2 class="mb-2 text-lg font-bold">Promozione Giocatori dalla Primavera</h2>
+<p class="mb-4 text-sm text-muted">Qui puoi promuovere un giocatore in prima squadra o tagliarlo: per i giocatori in primavera non sono previsti costi per il taglio.</p>
 
-    {% if primavera %}
-    <div class="card shadow-sm mx-auto" style="max-width: 900px;">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped align-middle text-center">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Nome</th>
-                            <th>Ruolo</th>
-                            <th>QA</th>
-                            <th>Promuovi</th>
-                            <th>Taglio</th>
-                            <th>Modifica Contratto</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for giocatore in primavera %}
-                        <tr>
-                            <td>{{ giocatore.nome }}</td>
-                            <td>{{ giocatore.ruolo }}</td>
-                            <td>{{ giocatore.quot_att_mantra }}</td>
-                            <td>
-                                <form method="POST" action="{{ url_for('rosa.user_primavera', nome_squadra=nome_squadra) }}"
-                                    onsubmit="return confirm('Vuoi davvero promuovere {{ giocatore.nome }} in prima squadra?');">
-                                    <input type="hidden" name="id_giocatore_da_promuovere" value="{{ giocatore.id }}">
-                                    <button type="submit" 
-                                            class="btn btn-sm btn-success fw-semibold w-100 py-1">
-                                        Promuovi
-                                    </button>
-                                </form>
-                            </td>
-                            <td>
-                                <form method="POST" action="{{ url_for('rosa.user_primavera', nome_squadra=nome_squadra) }}"
-                                    onsubmit="return confirm('Vuoi davvero tagliare {{ giocatore.nome }}?');">
-                                    <input type="hidden" name="id_giocatore_da_tagliare" value="{{ giocatore.id }}">
-                                    <button type="submit"
-                                            class="btn btn-sm btn-danger fw-semibold w-100 py-1">
-                                        Taglio
-                                    </button>
-                                </form>
-                            </td>
-                            <td>
-                                {% if giocatore.esiste_gia_una_richiesta %}
-                                    <button type="button" class="btn btn-secondary btn-sm fw-semibold w-100 py-1" disabled>📝 Richiesta in corso</button>
-                                {% else %}
-                                    <a href="{{ url_for('rosa.richiesta_modifica_contratto', nome_squadra=nome_squadra, id_giocatore=giocatore.id) }}" class="btn btn-primary btn-sm fw-semibold w-100 py-1">Vendi</a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+{% if primavera %}
+<div class="flex flex-col gap-2">
+    {% for giocatore in primavera %}
+    <div class="flex items-center gap-1.5 rounded-2xl border border-line bg-panel px-3 py-2.5">
+        <div class="flex min-w-0 flex-1 items-center">
+            <span class="min-w-0 truncate font-medium">{{ giocatore.nome }}</span>
+            <span class="ml-1 shrink-0">{{ m.ruolo_colorato(giocatore.ruolo) }}</span>
+            <span class="mx-1 shrink-0 text-muted">-</span>
+            <span class="shrink-0">{{ m.club_abbr(giocatore.club) }}</span>
         </div>
+
+        <form method="POST" action="{{ url_for('rosa.user_primavera', nome_squadra=nome_squadra) }}" class="shrink-0"
+              onsubmit="return confirm('Vuoi davvero promuovere {{ giocatore.nome }} in prima squadra?');">
+            <input type="hidden" name="id_giocatore_da_promuovere" value="{{ giocatore.id }}">
+            <button type="submit" data-tip="Promuovi in prima squadra"
+                    class="flex w-14 items-center justify-center gap-0.5 rounded-lg bg-ok px-1 py-1.5 text-[10px] font-bold uppercase text-white">
+                <i class="bi bi-arrow-up-circle"></i> Prom
+            </button>
+        </form>
+
+        <form method="POST" action="{{ url_for('rosa.user_primavera', nome_squadra=nome_squadra) }}" class="shrink-0"
+              onsubmit="return confirm('Vuoi davvero tagliare {{ giocatore.nome }}?');">
+            <input type="hidden" name="id_giocatore_da_tagliare" value="{{ giocatore.id }}">
+            <button type="submit" data-tip="Taglia (nessun costo)"
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-ko text-white">
+                <i class="bi bi-scissors text-sm"></i>
+            </button>
+        </form>
+
+        {% if giocatore.esiste_gia_una_richiesta %}
+        <button type="button" data-tip="Richiesta di modifica già in corso"
+                class="flex w-14 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-muted px-1 py-1.5 text-[10px] font-bold uppercase text-white opacity-50" disabled>
+            <i class="bi bi-hourglass-split"></i> Att
+        </button>
+        {% else %}
+        <a href="{{ url_for('rosa.richiesta_modifica_contratto', nome_squadra=nome_squadra, id_giocatore=giocatore.id) }}"
+           data-tip="Vendi"
+           class="flex w-14 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-accent px-1 py-1.5 text-[10px] font-bold uppercase text-white">
+            <i class="bi bi-cash-coin"></i> Vend
+        </a>
+        {% endif %}
     </div>
-    {% else %}
-        <div class="alert alert-info text-center mt-4">
-            Nessun giocatore disponibile nella primavera.
-        </div>
-    {% endif %}
+    {% endfor %}
 </div>
+{% else %}
+<p class="py-4 text-center text-sm text-muted">Nessun giocatore disponibile nella primavera.</p>
+{% endif %}
 {% endblock %}

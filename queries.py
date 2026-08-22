@@ -1,5 +1,57 @@
 from psycopg2.extras import RealDictCursor
 
+# Stesso ordine di ruoli già usato in produzione (vedi static/js/tables.js,
+# RUOLO_PRIORITY): portieri, poi difensori, centrocampisti, esterni/trequartisti,
+# infine attaccanti.
+RUOLO_PRIORITY = {
+    'POR': 1,
+    'DD,E': 2,
+    'DD,DC': 3,
+    'DC': 4,
+    'DD,DS,DC': 5,
+    'DS,DC': 6,
+    'DS,E': 7,
+    'B,DD,E': 8,
+    'B,DD,DS': 9,
+    'B,DS,E': 10,
+    'DD,DS,E': 11,
+    'M,C': 12,
+    'E': 13,
+    'E,M': 14,
+    'E,C': 15,
+    'E,W': 16,
+    'C,T': 17,
+    'C': 18,
+    'C,W,T': 19,
+    'C,W': 20,
+    'W': 21,
+    'W,T': 22,
+    'W,A': 23,
+    'W,T,A': 24,
+    'T,A': 25,
+    'T': 26,
+    'A': 27,
+    'PC': 28,
+}
+
+
+def ruolo_sort_key(ruolo):
+    chiave = ruolo.strip().upper().replace(' ', '')
+    return RUOLO_PRIORITY.get(chiave, 99)
+
+
+# Ordine dei ruoli base (singoli), stesso ordine POR -> difesa -> centrocampo
+# -> esterni/trequartisti -> attacco usato per colorarli (vedi _macros.html)
+RUOLI_BASE_ORDINE = ['Por', 'Dd', 'Ds', 'Dc', 'B', 'E', 'M', 'C', 'W', 'T', 'A', 'Pc']
+
+
+def ruolo_base_sort_key(ruolo):
+    try:
+        return RUOLI_BASE_ORDINE.index(ruolo)
+    except ValueError:
+        return 99
+
+
 def get_crediti_squadra(conn, nome_squadra):
 
     cur = conn.cursor(cursor_factory=RealDictCursor)

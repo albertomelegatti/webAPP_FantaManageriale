@@ -1,0 +1,56 @@
+{% macro voce_menu(href, icona, titolo) %}
+<a href="{{ href }}" class="flex items-center gap-3 rounded-2xl border border-line bg-panel p-3 transition hover:border-accent">
+    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-panel-2 text-lg text-accent">
+        <i class="bi {{ icona }}"></i>
+    </span>
+    <span class="flex-1 font-medium">{{ titolo }}</span>
+    <i class="bi bi-chevron-right shrink-0 text-muted"></i>
+</a>
+{% endmacro %}
+
+{% macro ruolo_colorato(ruolo) %}
+{%- set colori = {
+    'por': '#e0951b',
+    'dd': '#22a558', 'ds': '#22a558', 'dc': '#22a558', 'b': '#22a558',
+    'e': '#3f7fff', 'm': '#3f7fff', 'c': '#3f7fff',
+    'w': '#a855f7', 't': '#a855f7',
+    'a': '#ef4444', 'pc': '#ef4444'
+} -%}
+<span class="whitespace-nowrap font-semibold">{% for token in ruolo.split(',') %}<span style="color:{{ colori.get(token.strip().lower(), 'var(--muted)') }}">{{ token.strip() }}</span>{% if not loop.last %}<span class="text-muted">,</span>{% endif %}{% endfor %}</span>
+{%- endmacro %}
+
+{% macro club_abbr(club) %}
+{%- if club -%}
+<span class="whitespace-nowrap font-semibold uppercase text-muted">{{ club[:3] }}</span>
+{%- endif -%}
+{% endmacro %}
+
+{% macro stato_vetrina_badge(stato) %}
+{%- if stato == 'prestabile' -%}
+<span class="shrink-0 whitespace-nowrap rounded-full bg-crit/15 px-2 py-0.5 text-[10px] font-bold text-crit">Prestabile</span>
+{%- elif stato == 'vendibile' -%}
+<span class="shrink-0 whitespace-nowrap rounded-full bg-ok/15 px-2 py-0.5 text-[10px] font-bold text-ok">Vendibile</span>
+{%- elif stato == 'cedibile' -%}
+<span class="shrink-0 whitespace-nowrap rounded-full bg-ko/15 px-2 py-0.5 text-[10px] font-bold text-ko">Cedibile</span>
+{%- endif -%}
+{% endmacro %}
+
+{% macro contratto_icona(tipo) %}
+{%- set icone = {
+    'Indeterminato': 'indeterminato.png',
+    'Fanta-Prestito': 'fanta_prestito.png',
+    'Prestito Reale': 'prestito_reale.png',
+    'Hold': 'hold.png',
+    'Svincolato': 'svincolato.png',
+    'Primavera': 'primavera.png'
+} -%}
+{%- if tipo and icone.get(tipo) -%}
+{%- set file = 'images/contratti/' ~ icone[tipo] -%}
+<span class="inline-flex items-center align-middle" data-tip="{{ tipo }}">
+    <img src="{{ url_for('static', filename=file) }}?v={{ asset_v(file) }}" alt="{{ tipo }}"
+         class="h-[20px] w-[20px] object-contain align-middle dark:invert" draggable="false">
+</span>
+{%- elif tipo -%}
+<span class="text-xs text-muted">{{ tipo }}</span>
+{%- endif -%}
+{% endmacro %}

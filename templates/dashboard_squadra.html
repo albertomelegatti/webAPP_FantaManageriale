@@ -1,264 +1,197 @@
-{% extends 'base.html' %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="container my-4">
+{% import '_macros.html' as m %}
 
-    <div class="row mb-4 align-items-center">
-        <div class="col-12 col-md-2 text-center mb-2 mb-md-0">
-            <img src="{{ url_for('static', filename='loghi/' ~ username ~ '.png') }}" 
-                 alt="Logo {{ nome_squadra }}" 
-                 class="img-fluid rounded shadow">
+<div class="flex flex-col gap-4">
+
+    <!-- Testata squadra -->
+    <div class="flex flex-col items-center gap-4 rounded-2xl border border-line bg-panel p-4 sm:flex-row sm:items-center">
+        {% set logo_file = 'loghi/' ~ username ~ '.png' %}
+        <img src="{{ url_for('static', filename=logo_file) }}?v={{ asset_v(logo_file) }}"
+             alt="Logo {{ nome_squadra }}"
+             class="h-20 w-20 rounded-xl bg-panel-2 object-contain p-1">
+        <div class="flex-1 text-center sm:text-left">
+            <h2 class="text-xl font-bold">{{ nome_squadra }}</h2>
+            <p class="text-sm text-muted">Stadio: {{ stadio.nome }} · Livello {{ stadio.livello }}</p>
         </div>
-        <div class="col-12 col-md-6 mb-2 mb-md-0">
-            <div class="card shadow p-3 text-center text-md-start">
-                <h2 class="mb-1">{{ nome_squadra }}</h2>
-                <p class="text-muted mb-0">Stadio: {{ stadio.nome }} - Livello {{ stadio.livello }}</p>
+        <div class="grid w-full grid-cols-3 gap-2 sm:w-auto">
+            <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
+                <div class="text-xs text-muted">Slot</div>
+                <div class="text-lg font-bold">{{ slot_giocatori }}/30</div>
             </div>
-        </div>
-        <div class="col-12 col-md-4 d-flex flex-wrap gap-2 justify-content-center">
-            <div class="card shadow text-center p-2 flex-fill">
-                <h5 class="mb-1">Slot occupati</h5>
-                <h3>{{ slot_giocatori }}/30</h3>
+            <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
+                <div class="text-xs text-muted">Prestiti IN</div>
+                <div class="text-lg font-bold">{{ prestiti_in_num }}/2</div>
             </div>
-            <div class="card shadow text-center p-2 flex-fill">
-                <h5 class="mb-1">Prestiti IN</h5>
-                <h3>{{ prestiti_in_num }}/2</h3>
+            <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
+                <div class="text-xs text-muted">Crediti</div>
+                <div class="text-lg font-bold">{{ crediti }}</div>
             </div>
-            <div class="card shadow text-center p-2 flex-fill">
-                <h5 class="mb-1">Crediti</h5>
-                <h3>{{ crediti }}</h3>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mb-4">
-        <div class="col-12 col-md-6 mb-3 mb-md-0">
-            <div class="card shadow p-3 h-100">
-                <h4>Rosa</h4>
-                <div class="table-responsive">
-                    <table class="table table-sm table-striped mb-0 smart-table">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Calciatore</th>
-                                <th>Tipo Contratto</th>
-                                <th>Ruolo</th>
-                                <th>QA</th>
-                                <th>Costo</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for giocatore in rosa %}
-                            <tr>
-                                <td>{{ giocatore.nome }}</td>
-                                <td>{{ giocatore.tipo_contratto }}</td>
-                                <td>{{ giocatore.ruolo }}</td>
-                                <td>{{ giocatore.quot_att_mantra }}</td>
-                                <td>{{ giocatore.costo }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-12 col-md-6">
-            <div class="card shadow p-3 mb-3">
-                <h4>Primavera</h4>
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0 table-striped">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Calciatore</th>
-                                <th>Ruolo</th>
-                                <th>QA</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for g in primavera %}
-                            <tr>
-                                <td>{{ g.nome }}</td>
-                                <td>{{ g.ruolo }}</td>
-                                <td>{{ g.quot_att_mantra }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="card shadow p-3 mb-3">
-                <h4>Prestiti OUT</h4>
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0 table-striped">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Calciatore</th>
-                                <th>Ruolo</th>
-                                <th>QA</th>
-                                <th>Verso</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for p in prestiti_out %}
-                            <tr>
-                                <td>{{ p.nome }}</td>
-                                <td>{{ p.ruolo }}</td>
-                                <td>{{ p.quot_att_mantra }}</td>
-                                <td>{% if p.squadra_att == 'Svincolato' %}Prestito Reale{% else %}{{ p.squadra_att }}{% endif %}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="card shadow p-3 mb-3">
-                <h4>Prestiti IN</h4>
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0 table-striped">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Calciatore</th>
-                                <th>Ruolo</th>
-                                <th>QA</th>
-                                <th>Proprietario</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for g in prestiti_in %}
-                            <tr>
-                                <td>{{ g.nome }}</td>
-                                <td>{{ g.ruolo }}</td>
-                                <td>{{ g.quot_att_mantra }}</td>
-                                <td>{{ g.detentore_cartellino }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="card shadow p-3 mb-3">
-                <h4>Draft</h4>
-                <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
-                    <table class="table table-sm mb-0 table-striped">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Detentore originale</th>
-                                <th>Anno</th>
-                                <th>Numero</th>
-                                <th>Giocatore scelto</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for p in draft_pick %}
-                            <tr>
-                                <td>{{ p.detentore_originale }}</td>
-                                <td>{{ p.anno }}</td>
-                                <td>{{ p.numero }}</td>
-                                <td>{{ p.giocatore_scelto }}</td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center text-muted">Nessuna pick disponibile</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
         </div>
     </div>
 
-    <!-- MOVIMENTI DI MERCATO -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card shadow p-3">
-                <h4>Movimenti di mercato</h4>
-                
-                <!-- Filtri -->
-                <div class="row mb-3">
-                    <div class="col-12 col-md-6">
-                        <label for="filterStagione" class="form-label">Filtra per Stagione:</label>
-                        <select id="filterStagione" class="form-select">
-                            <option value="">-- Tutte le stagioni --</option>
-                        </select>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label for="filterEvento" class="form-label">Filtra Evento:</label>
-                        <input type="text" id="filterEvento" class="form-control" placeholder="Cerca nel messaggio...">
-                    </div>
-                </div>
+    <!-- Rosa -->
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Rosa</h4>
+        <table class="w-full table-fixed text-sm">
+            <colgroup>
+                <col style="width:38%"><col style="width:14%"><col style="width:18%"><col style="width:14%"><col style="width:16%">
+            </colgroup>
+            <thead>
+                <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                    <th class="pb-2 font-semibold"></th>
+                    <th class="pb-2 text-center font-semibold">Club</th>
+                    <th class="pb-2 text-center font-semibold">Ruolo</th>
+                    <th class="pb-2 text-center font-semibold">Contr.</th>
+                    <th class="pb-2 text-center font-semibold">QA</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-line">
+                {% for g in rosa %}
+                <tr>
+                    <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
+                    <td class="py-2.5 text-center">{{ m.club_abbr(g.club) }}</td>
+                    <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
+                    <td class="py-2.5 text-center">{{ m.contratto_icona(g.tipo_contratto) }}</td>
+                    <td class="py-2.5 text-center tabular-nums text-muted">{{ g.quot_att_mantra }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0 table-striped" id="mercatoTable">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Data</th>
-                                <th>Evento</th>
-                                <th>Stagione</th>
-                            </tr>
-                        </thead>
-                        <tbody id="mercatoBody">
-                            {% for m in mercato %}
-                            <tr data-stagione="{{ m.stagione }}" data-evento="{{ m.evento.lower() }}">
-                                <td>{{ m.data }}</td>
-                                <td>{{ m.evento }}</td>
-                                <td>{{ m.stagione }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+        <!-- Primavera -->
+        <div class="rounded-2xl border border-line bg-panel p-4">
+            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Primavera</h4>
+            {% if primavera %}
+            <table class="w-full table-fixed text-sm">
+                <colgroup>
+                    <col style="width:66%"><col style="width:20%"><col style="width:14%">
+                </colgroup>
+                <thead>
+                    <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                        <th class="pb-2 font-semibold"></th>
+                        <th class="pb-2 text-center font-semibold">Ruolo</th>
+                        <th class="pb-2 text-center font-semibold">QA</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-line">
+                    {% for g in primavera %}
+                    <tr>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
+                        <td class="py-2.5 text-center tabular-nums text-muted">{{ g.quot_att_mantra }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessun giocatore</p>
+            {% endif %}
+        </div>
+
+        <!-- Prestiti OUT -->
+        <div class="rounded-2xl border border-line bg-panel p-4">
+            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Prestiti OUT</h4>
+            {% if prestiti_out %}
+            <table class="w-full table-fixed text-sm">
+                <colgroup>
+                    <col style="width:32%"><col style="width:12%"><col style="width:10%"><col style="width:46%">
+                </colgroup>
+                <thead>
+                    <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                        <th class="pb-2 font-semibold"></th>
+                        <th class="pb-2 text-center font-semibold">Ruolo</th>
+                        <th class="pb-2 text-center font-semibold">QA</th>
+                        <th class="pb-2 pl-2 font-semibold">Verso</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-line">
+                    {% for p in prestiti_out %}
+                    <tr>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ p.nome }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(p.ruolo) }}</td>
+                        <td class="py-2.5 text-center tabular-nums text-muted">{{ p.quot_att_mantra }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pl-2 text-muted">{{ 'Prestito Reale' if p.squadra_att == 'Svincolato' else p.squadra_att }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessun prestito in uscita</p>
+            {% endif %}
+        </div>
+
+        <!-- Prestiti IN -->
+        <div class="rounded-2xl border border-line bg-panel p-4">
+            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Prestiti IN</h4>
+            {% if prestiti_in %}
+            <table class="w-full table-fixed text-sm">
+                <colgroup>
+                    <col style="width:32%"><col style="width:12%"><col style="width:10%"><col style="width:46%">
+                </colgroup>
+                <thead>
+                    <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                        <th class="pb-2 font-semibold"></th>
+                        <th class="pb-2 text-center font-semibold">Ruolo</th>
+                        <th class="pb-2 text-center font-semibold">QA</th>
+                        <th class="pb-2 pl-2 font-semibold">Da</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-line">
+                    {% for g in prestiti_in %}
+                    <tr>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
+                        <td class="py-2.5 text-center tabular-nums text-muted">{{ g.quot_att_mantra }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pl-2 text-muted">{{ g.detentore_cartellino }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessun prestito in entrata</p>
+            {% endif %}
+        </div>
+
+        <!-- Draft -->
+        <div class="rounded-2xl border border-line bg-panel p-4">
+            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Draft</h4>
+            {% if draft_pick %}
+            <div class="max-h-80 overflow-y-auto">
+                <table class="w-full table-fixed text-sm">
+                    <colgroup>
+                        <col style="width:34%"><col style="width:16%"><col style="width:14%"><col style="width:36%">
+                    </colgroup>
+                    <thead>
+                        <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                            <th class="pb-2 font-semibold">Detentore</th>
+                            <th class="pb-2 text-center font-semibold">Anno</th>
+                            <th class="pb-2 text-center font-semibold">Num.</th>
+                            <th class="pb-2 pl-2 font-semibold">Giocatore</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        {% for p in draft_pick %}
+                        <tr>
+                            <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ p.detentore_originale }}</td>
+                            <td class="py-2.5 text-center text-muted">{{ p.anno }}</td>
+                            <td class="py-2.5 text-center text-muted">{{ p.numero }}</td>
+                            <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pl-2">{{ p.giocatore_scelto or '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessuna pick disponibile</p>
+            {% endif %}
         </div>
     </div>
 
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const filterStagione = document.getElementById('filterStagione');
-    const filterEvento = document.getElementById('filterEvento');
-    const mercatoBody = document.getElementById('mercatoBody');
-    const rows = mercatoBody.querySelectorAll('tr');
-
-    // Popola il select delle stagioni
-    const stagioni = new Set();
-    rows.forEach(row => {
-        const stagione = row.getAttribute('data-stagione');
-        if (stagione) stagioni.add(stagione);
-    });
-    
-    Array.from(stagioni).sort().reverse().forEach(stagione => {
-        const option = document.createElement('option');
-        option.value = stagione;
-        option.textContent = stagione;
-        filterStagione.appendChild(option);
-    });
-
-    // Funzione di filtro
-    function applyFilters() {
-        const selectedStagione = filterStagione.value.toLowerCase();
-        const searchEvento = filterEvento.value.toLowerCase();
-
-        rows.forEach(row => {
-            const rowStagione = row.getAttribute('data-stagione').toLowerCase();
-            const rowEvento = row.getAttribute('data-evento');
-
-            const matchStagione = !selectedStagione || rowStagione === selectedStagione;
-            const matchEvento = !searchEvento || rowEvento.includes(searchEvento);
-
-            row.style.display = matchStagione && matchEvento ? '' : 'none';
-        });
-    }
-
-    // Event listeners
-    filterStagione.addEventListener('change', applyFilters);
-    filterEvento.addEventListener('keyup', applyFilters);
-});
-</script>
 
 {% endblock %}

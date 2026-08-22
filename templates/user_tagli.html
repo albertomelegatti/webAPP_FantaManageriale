@@ -1,89 +1,64 @@
-{% extends 'base.html' %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="container mt-5">
+{% import '_macros.html' as m %}
+<h2 class="mb-2 text-lg font-bold">Svincoli &amp; Gestione Contratti - {{ nome_squadra }}</h2>
+<p class="mb-1 text-sm text-muted">✂️ Quando un giocatore viene svincolato, la squadra dovrà pagare metà della sua quotazione attuale arrotondata per eccesso.</p>
 
-    <div class="text-center mb-4">
-        <h1 class="mb-3">Svincoli & Gestione Contratti - {{ nome_squadra }}</h1>
-        <p class="text-muted">
-            ✂️ Quando un giocatore viene svincolato, la squadra dovrà pagare 
-            <strong>metà della sua quotazione attuale arrotondata per eccesso.</strong>
-        </p>
-        <p class="text-muted">
-            📝 Scorri verso destra per richiedere una modifica al contratto del tuo giocatore.
-        </p>
-        <small class="text-muted">
-            Crediti totali: <strong>{{ crediti }}</strong> |
-            Crediti disponibili:
-            <strong 
-                {% if crediti_disponibili <= 0 %}
-                    class="text-danger"
-                {% elif crediti_disponibili < 10 %}
-                    class="text-warning"
-                {% else %}
-                    class="text-success"
-                {% endif %}
-            >
+<div class="mb-4 rounded-2xl border border-line bg-panel p-4">
+    <div class="grid grid-cols-2 gap-2 text-center">
+        <div class="rounded-xl bg-panel-2 px-3 py-2">
+            <div class="text-xs text-muted">Crediti totali</div>
+            <div class="text-lg font-bold">{{ crediti }}</div>
+        </div>
+        <div class="rounded-xl bg-panel-2 px-3 py-2">
+            <div class="text-xs text-muted">Crediti disponibili</div>
+            <div class="text-lg font-bold {% if crediti_disponibili <= 0 %}text-ko{% elif crediti_disponibili < 10 %}text-crit{% else %}text-ok{% endif %}">
                 {{ crediti_disponibili }}
-            </strong>
-        </small>
-    </div>
-
-    <div class="card shadow-sm mx-auto" style="max-width: 900px;">
-        <div class="card-body">
-            {% if rosa and rosa|length > 0 %}
-            <div class="table-responsive">
-                <table class="table table-striped align-middle text-center">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Nome</th>
-                            <th>Ruolo</th>
-                            <th>QA</th>
-                            <th>Svincola</th>
-                            <th>Modifica Contratto</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for giocatore in rosa %}
-                        {% set costo_taglio = ((giocatore.quot_att_mantra / 2) | round(0, 'ceil')) | int %}
-                        <tr>
-                            <td>{{ giocatore.nome }}</td>
-                            <td>{{ giocatore.ruolo }}</td>
-                            <td>{{ giocatore.quot_att_mantra }}</td>
-                            <td>
-                                <form method="POST" 
-                                        action="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}"
-                                        onsubmit="return confirm('Vuoi davvero tagliare {{ giocatore.nome }}? Dovrai pagare metà della sua quotazione attuale.');">
-                                    <input type="hidden" name="id_giocatore_da_tagliare" value="{{ giocatore.id }}">
-                                    <button type="submit" 
-                                            class="btn btn-sm fw-semibold w-100 py-1 {% if crediti_disponibili < costo_taglio %}btn-secondary{% else %}btn-danger{% endif %}"
-                                            {% if crediti_disponibili < costo_taglio %}disabled{% endif %}>
-                                        
-                                        {% if crediti_disponibili < costo_taglio %}
-                                            🚫 Non disponibile
-                                        {% else %}
-                                            ✂️ Svincola ({{ costo_taglio }} crediti)
-                                        {% endif %}
-                                    </button>
-                                </form>
-                            </td>
-                            <td>
-                                {% if giocatore.esiste_gia_una_richiesta %}
-                                    <button type="button" class="btn btn-secondary btn-sm fw-semibold w-100 py-1" disabled>📝 Richiesta in corso</button>
-                                {% else %}
-                                    <a href="{{ url_for('rosa.richiesta_modifica_contratto', nome_squadra=nome_squadra, id_giocatore=giocatore.id) }}" class="btn btn-primary btn-sm fw-semibold w-100 py-1">📝 Modifica contratto</a>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
             </div>
-            {% else %}
-                <p class="text-center text-muted">Nessun giocatore presente nella rosa.</p>
-            {% endif %}
         </div>
     </div>
-
 </div>
+
+{% if rosa and rosa|length > 0 %}
+<div class="flex flex-col gap-2">
+    {% for giocatore in rosa %}
+    {% set costo_taglio = ((giocatore.quot_att_mantra / 2) | round(0, 'ceil')) | int %}
+    <div class="flex items-center gap-1.5 rounded-2xl border border-line bg-panel px-3 py-2.5">
+        <div class="flex min-w-0 flex-1 items-center">
+            <span class="min-w-0 truncate font-medium">{{ giocatore.nome }}</span>
+            <span class="ml-1 shrink-0">{{ m.ruolo_colorato(giocatore.ruolo) }}</span>
+            <span class="mx-1 shrink-0 text-muted">-</span>
+            <span class="shrink-0">{{ m.club_abbr(giocatore.club) }}</span>
+        </div>
+
+        <form method="POST" action="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}" class="shrink-0"
+              onsubmit="return confirm('Vuoi davvero tagliare {{ giocatore.nome }}? Dovrai pagare metà della sua quotazione attuale.');">
+            <input type="hidden" name="id_giocatore_da_tagliare" value="{{ giocatore.id }}">
+            <button type="submit" data-tip="Svincola per {{ costo_taglio }} crediti{% if crediti_disponibili < costo_taglio %} - non disponibile{% endif %}"
+                    class="flex w-14 items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-bold uppercase text-white
+                           {% if crediti_disponibili < costo_taglio %}pointer-events-none bg-muted opacity-50{% else %}bg-ko{% endif %}"
+                    {% if crediti_disponibili < costo_taglio %}disabled{% endif %}>
+                <i class="bi bi-scissors"></i> {{ costo_taglio }} cr
+            </button>
+        </form>
+
+        {% if giocatore.esiste_gia_una_richiesta %}
+        <button type="button" data-tip="Richiesta di modifica già in corso"
+                class="flex w-14 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-muted px-1 py-1.5 text-[10px] font-bold uppercase text-white opacity-50" disabled>
+            <i class="bi bi-hourglass-split"></i> Att
+        </button>
+        {% else %}
+        <a href="{{ url_for('rosa.richiesta_modifica_contratto', nome_squadra=nome_squadra, id_giocatore=giocatore.id) }}"
+           data-tip="Modifica contratto"
+           class="flex w-14 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-accent px-1 py-1.5 text-[10px] font-bold uppercase text-white">
+            <i class="bi bi-pencil-square"></i> Mod
+        </a>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="py-4 text-center text-sm text-muted">Nessun giocatore presente nella rosa.</p>
+{% endif %}
 {% endblock %}

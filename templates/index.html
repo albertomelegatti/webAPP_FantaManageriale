@@ -1,52 +1,26 @@
-{% extends 'base.html' %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="content-wrapper">
-    <img src="{{ url_for('static', filename='images/logo3.png') }}" alt="Logo" class="logo">
-    <h1>Benvenuto</h1>
+{% import '_macros.html' as m %}
 
-    <!-- Bottoni principali -->
-    <div class="buttons">
-        <a href="{{ url_for('squadre') }}" class="btn">Squadre</a>
-        <a href="{{ url_for('crediti_stadi_slot') }}" class="btn">Crediti, Stadi <br>e Slot</a>
-        <a href="{{ url_for('listone') }}" class="btn">Listone</a>
-        <a href="{{ url_for('aste') }}" class="btn">Aste</a>
-        <a href="{{ url_for('vetrina.vetrina') }}" class="btn">Vetrina</a>
-        <a href="{{ url_for('movimenti_mercato') }}" class="btn">Movimenti <br>di Mercato</a>
-        <a href="{{ url_for('chat_page') }}" class="btn">Chatbot <br>regolamento</a>
-    </div>
-
-    <!-- Bottone per vedere il regolamento -->
-    <div class="footer">
-        <a href="/scarica_regolamento" class="btn-small">Regolamento</a>
-    </div>
+<div class="mb-6 flex flex-col items-center text-center">
+    <img src="{{ url_for('static', filename='images/logo-guru-tattici.png') }}" alt="Logo Lega Guru Tattici" class="h-40 w-40 object-contain">
 </div>
 
-<style>
-.btn-nuovo {
-    position: relative;
-    overflow: visible;
-}
+<div class="flex flex-col gap-2">
+    {{ m.voce_menu(url_for('squadre'), 'bi-shield-fill', 'Squadre') }}
+    {{ m.voce_menu(url_for('crediti_stadi_slot'), 'bi-building', 'Crediti, Stadi e Slot') }}
+    {{ m.voce_menu(url_for('listone'), 'bi-list-ul', 'Listone') }}
+    {{ m.voce_menu(url_for('aste'), 'bi-hammer', 'Aste') }}
+    {{ m.voce_menu(url_for('vetrina.vetrina'), 'bi-shop-window', 'Vetrina') }}
+    {{ m.voce_menu(url_for('movimenti_mercato'), 'bi-arrow-left-right', 'Movimenti di Mercato') }}
+    {{ m.voce_menu(url_for('chat_page'), 'bi-chat-dots-fill', 'Chatbot regolamento') }}
+</div>
 
-.badge-nuovo {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background-color: #dc3545;
-    color: #ffffff;
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 10px;
-    line-height: 1.2;
-    white-space: nowrap;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    animation: pulse-nuovo 1.8s ease-in-out infinite;
-}
+<div class="mt-6 text-center">
+    <a href="/scarica_regolamento" class="inline-flex items-center gap-1.5 text-sm text-muted hover:text-accent">
+        <i class="bi bi-file-earmark-text"></i> Regolamento
+    </a>
+</div>
 
-@keyframes pulse-nuovo {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.12); }
-}
-</style>
 {% endblock %}

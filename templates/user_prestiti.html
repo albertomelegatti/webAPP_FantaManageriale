@@ -1,148 +1,94 @@
-{% extends 'base.html' %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="container mt-5">
+{% import '_macros.html' as m %}
+<h2 class="mb-3 text-lg font-bold">Sezione Prestiti - {{ nome_squadra }}</h2>
 
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-        <div>
-            <h1 class="mb-0">Sezione Prestiti - {{ nome_squadra }}</h1>
-            <small class="text-muted">
-                Crediti totali: <strong>{{ crediti }}</strong> |
-                Crediti disponibili: 
-                <strong 
-                    {% if crediti_disponibili <= 0 %}
-                        class="text-danger"
-                    {% elif crediti_disponibili < 10 %}
-                        class="text-warning"
-                    {% else %}
-                        class="text-success"
-                    {% endif %}
-                >
-                    {{ crediti_disponibili }}
-                </strong>
-                <span class="d-none d-sm-inline"> | </span>
-                <br class="d-sm-none">
-                Slot prestiti occupati: <strong>{{ prestiti_in_num }} / 2</strong>
-            </small>
+<div class="mb-4 rounded-2xl border border-line bg-panel p-4">
+    <div class="grid grid-cols-3 gap-2 text-center">
+        <div class="rounded-xl bg-panel-2 px-2 py-2">
+            <div class="text-xs text-muted">Crediti totali</div>
+            <div class="text-lg font-bold">{{ crediti }}</div>
         </div>
-
-        <a href="{{ url_for('prestiti.nuovo_prestito', nome_squadra=nome_squadra) }}"
-           class="btn btn-primary btn-lg mt-2 mt-sm-0 shadow-sm"
-           {% if block_button %}
-               disabled
-               style="pointer-events: none; opacity: 0.6; cursor: not-allowed;"
-           {% endif %}>
-            <i class="bi bi-plus-circle me-1" ></i> Nuovo Prestito
-        </a>
+        <div class="rounded-xl bg-panel-2 px-2 py-2">
+            <div class="text-xs text-muted">Disponibili</div>
+            <div class="text-lg font-bold {% if crediti_disponibili <= 0 %}text-ko{% elif crediti_disponibili < 10 %}text-crit{% else %}text-ok{% endif %}">
+                {{ crediti_disponibili }}
+            </div>
+        </div>
+        <div class="rounded-xl bg-panel-2 px-2 py-2">
+            <div class="text-xs text-muted">Slot prestiti</div>
+            <div class="text-lg font-bold">{{ prestiti_in_num }}/2</div>
+        </div>
     </div>
+    <a href="{{ url_for('prestiti.nuovo_prestito', nome_squadra=nome_squadra) }}"
+       class="mt-3 flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold text-white
+              {% if block_button %}pointer-events-none bg-muted opacity-50{% else %}bg-accent{% endif %}">
+        <i class="bi bi-plus-circle me-1"></i> Nuovo Prestito
+    </a>
+</div>
 
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-primary text-white">
-            Richieste di prestito inviate
-        </div>
-        <div class="card-body table-responsive">
-            <table class="table table-striped table-hover align-middle">
-                <thead class="table-light"> 
-                    <tr>
-                        <th>Giocatore</th>
-                        <th>Verso</th>
-                        <th>Fino a</th>
-                        <th>Tipo</th>
-                        <th>Costo</th>
-                        <th>Riscatto</th>
-                        <th class="text-center">Azione</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for prestito in prestiti if prestito.squadra_ricevente == nome_squadra and prestito.stato == 'in_attesa' %}
-                    <tr>
-                        <td>
-                            {{ prestito.giocatore }}
-                            {% if prestito.note %}
-                                <br><small class="text-muted">📝 {{ prestito.note }}</small>
-                            {% endif %}
-                        </td>
-                        <td>{{ prestito.squadra_prestante }}</td>
-                        <td>{{ prestito.data_fine }}</td>
-                        <td>{{ prestito.tipo_prestito if prestito.tipo_prestito else '-' }}</td>
-                        <td>{{ prestito.costo_prestito }}</td>
-                        <td>{{ prestito.crediti_riscatto }}</td>
-                        <td class="text-center">
-                            <form method="POST" 
-                                    action="{{ url_for('prestiti.user_prestiti', nome_squadra=nome_squadra) }}" 
-                                    onsubmit="return confirm('Vuoi davvero annullare la richiesta per {{ prestito.giocatore }}?');">
-                                <input type="hidden" name="annulla_prestito" value="{{ prestito.prestito_id }}">
-                                <button name="azione" value="annulla" class="btn btn-sm btn-danger fw-semibold py-1 px-3">
-                                    Annulla
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="7" class="text-center text-muted">Nessuna richiesta di prestito inviata</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<div class="flex flex-col gap-4">
+
+    <!-- Richieste inviate -->
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-accent"></span> Richieste di prestito inviate
+        </h4>
+        <div class="flex flex-col gap-2">
+            {% for prestito in prestiti if prestito.squadra_ricevente == nome_squadra and prestito.stato == 'in_attesa' %}
+            <div class="rounded-xl bg-panel-2 px-3 py-2.5">
+                <span class="font-medium">{{ prestito.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(prestito.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(prestito.club) }}</span>
+                <div class="mt-1 text-xs text-muted"><span class="font-bold text-text">Verso:</span> {{ prestito.squadra_prestante }}</div>
+                <div class="mt-0.5 text-xs text-muted"><span class="font-bold text-text">Fino a:</span> {{ prestito.data_fine }}</div>
+                <div class="mt-0.5 text-xs text-muted"><span class="font-bold text-text">Tipo:</span> {{ prestito.tipo_prestito or '-' }} · <span class="font-bold text-text">Costo:</span> {{ prestito.costo_prestito }} · <span class="font-bold text-text">Riscatto:</span> {{ prestito.crediti_riscatto }}</div>
+                {% if prestito.note %}
+                <div class="mt-0.5 text-xs text-muted">📝 {{ prestito.note }}</div>
+                {% endif %}
+                <form method="POST" action="{{ url_for('prestiti.user_prestiti', nome_squadra=nome_squadra) }}"
+                      onsubmit="return confirm('Vuoi davvero annullare la richiesta per {{ prestito.giocatore }}?');">
+                    <input type="hidden" name="annulla_prestito" value="{{ prestito.prestito_id }}">
+                    <button name="azione" value="annulla" class="mt-2 flex w-full items-center justify-center rounded-lg bg-ko px-3 py-2 text-sm font-semibold text-white">
+                        Annulla
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessuna richiesta di prestito inviata</p>
+            {% endfor %}
         </div>
     </div>
 
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-warning"> 
-            Richieste di prestito ricevute
-        </div>
-        <div class="card-body table-responsive">
-            <table class="table table-striped table-hover align-middle">
-                <thead class="table-light"> 
-                    <tr>
-                        <th>Giocatore</th>
-                        <th>Da</th>
-                        <th>Fino a</th>
-                        <th>Tipo</th>
-                        <th>Costo</th>
-                        <th>Riscatto</th>
-                        <th class="text-center">Azioni</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for prestito in prestiti if prestito.squadra_prestante == nome_squadra and prestito.stato == 'in_attesa' %}
-                    <tr>
-                        <td>
-                            {{ prestito.giocatore }}
-                            {% if prestito.note %}
-                                <br><small class="text-muted">📝 {{ prestito.note }}</small>
-                            {% endif %}
-                        </td>
-                        <td>{{ prestito.squadra_ricevente }}</td>
-                        <td>{{ prestito.data_fine }}</td>
-                        <td>{{ prestito.tipo_prestito if prestito.tipo_prestito else '-' }}</td>
-                        <td>{{ prestito.costo_prestito }}</td>
-                        <td>{{ prestito.crediti_riscatto }}</td>
-                        <td class="text-center">
-                            <form method="POST" 
-                                    action="{{ url_for('prestiti.user_prestiti', nome_squadra=nome_squadra) }}" 
-                                    class="d-flex justify-content-center gap-2">
-                                <input type="hidden" name="prestito_id" value="{{ prestito.prestito_id }}">
-                                <button name="accetta_prestito" value="{{ prestito.prestito_id }}" class="btn btn-sm btn-success fw-semibold py-1 px-3">
-                                    <i class="bi bi-check-circle me-1"></i> Accetta
-                                </button>
-                                <button name="rifiuta_prestito" value="{{ prestito.prestito_id }}" class="btn btn-sm btn-danger fw-semibold py-1 px-3">
-                                    <i class="bi bi-x-circle me-1"></i> Rifiuta
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="7" class="text-center text-muted">Nessuna richiesta in entrata</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Richieste ricevute -->
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-crit"></span> Richieste di prestito ricevute
+        </h4>
+        <div class="flex flex-col gap-2">
+            {% for prestito in prestiti if prestito.squadra_prestante == nome_squadra and prestito.stato == 'in_attesa' %}
+            <div class="rounded-xl bg-panel-2 px-3 py-2.5">
+                <span class="font-medium">{{ prestito.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(prestito.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(prestito.club) }}</span>
+                <div class="mt-1 text-xs text-muted"><span class="font-bold text-text">Da:</span> {{ prestito.squadra_ricevente }}</div>
+                <div class="mt-0.5 text-xs text-muted"><span class="font-bold text-text">Fino a:</span> {{ prestito.data_fine }}</div>
+                <div class="mt-0.5 text-xs text-muted"><span class="font-bold text-text">Tipo:</span> {{ prestito.tipo_prestito or '-' }} · <span class="font-bold text-text">Costo:</span> {{ prestito.costo_prestito }} · <span class="font-bold text-text">Riscatto:</span> {{ prestito.crediti_riscatto }}</div>
+                {% if prestito.note %}
+                <div class="mt-0.5 text-xs text-muted">📝 {{ prestito.note }}</div>
+                {% endif %}
+                <form method="POST" action="{{ url_for('prestiti.user_prestiti', nome_squadra=nome_squadra) }}" class="mt-2 flex gap-2">
+                    <input type="hidden" name="prestito_id" value="{{ prestito.prestito_id }}">
+                    <button name="accetta_prestito" value="{{ prestito.prestito_id }}" class="flex-1 rounded-lg bg-ok px-3 py-2 text-sm font-semibold text-white">
+                        Accetta
+                    </button>
+                    <button name="rifiuta_prestito" value="{{ prestito.prestito_id }}" class="flex-1 rounded-lg bg-ko px-3 py-2 text-sm font-semibold text-white">
+                        Rifiuta
+                    </button>
+                </form>
+            </div>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessuna richiesta in entrata</p>
+            {% endfor %}
         </div>
     </div>
 
 </div>
-
 {% endblock %}

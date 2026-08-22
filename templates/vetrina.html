@@ -1,247 +1,133 @@
-{% extends 'base.html' %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="text-center mb-4">
-        <h1 class="mb-3">Vetrina</h1>
-        <p class="text-muted mb-0">
-            Giocatori messi in vetrina da tutte le squadre.
-        </p>
-    </div>
+{% import '_macros.html' as m %}
+<h2 class="mb-1 text-lg font-bold">Vetrina</h2>
+<p class="mb-4 text-sm text-muted">Giocatori messi in vetrina da tutte le squadre.</p>
 
-    <div class="card shadow-sm mx-auto vetrina-card">
-        <div class="card-body">
+{% if giocatori and giocatori|length > 0 %}
 
-            {% if giocatori and giocatori|length > 0 %}
-
-            <div class="row g-2 mb-3">
-                <div class="col-12 col-md-4">
-                    <select id="filtro-squadra" class="form-select">
-                        <option value="">Tutte le squadre</option>
-                        {% for squadra in squadre %}
-                        <option value="{{ squadra.nome }}">{{ squadra.nome }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-12 col-md-4">
-                    <select id="filtro-stato" class="form-select">
-                        <option value="">Tutti gli stati</option>
-                        <option value="prestabile">Prestabile</option>
-                        <option value="vendibile">Vendibile</option>
-                        <option value="cedibile">Cedibile</option>
-                    </select>
-                </div>
-                <div class="col-12 col-md-4">
-                    <div class="dropdown">
-                        <button class="form-select text-start" type="button"
-                                id="filtro-ruolo-btn" data-bs-toggle="dropdown" data-bs-auto-close="outside"
-                                aria-expanded="false">
-                            Tutti i ruoli
-                        </button>
-                        <ul class="dropdown-menu w-100 p-2" id="filtro-ruolo-menu"
-                            style="max-height: 280px; overflow-y: auto;" aria-labelledby="filtro-ruolo-btn">
-                            {% for ruolo, _ in giocatori|sort(attribute='ruolo')|groupby('ruolo') %}
-                            {% if ruolo %}
-                            <li>
-                                <div class="form-check py-1">
-                                    <input class="form-check-input filtro-ruolo-checkbox" type="checkbox"
-                                           value="{{ ruolo }}" id="ruolo-check-{{ loop.index }}">
-                                    <label class="form-check-label" for="ruolo-check-{{ loop.index }}">{{ ruolo }}</label>
-                                </div>
-                            </li>
-                            {% endif %}
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Card per squadra: stesso markup per desktop e mobile, righe interne diverse -->
-            <div class="row g-3" id="gruppi-vetrina">
-                {% for nome_squadra, giocatori_squadra in giocatori|sort(attribute='detentore_cartellino')|groupby('detentore_cartellino') %}
-                <div class="col-12 col-lg-6" data-squadra="{{ nome_squadra }}">
-                    <div class="card h-100 vetrina-squadra-card">
-                        <div class="card-header fw-semibold">
-                            {{ nome_squadra }}
-                            <span class="badge bg-secondary float-end">{{ giocatori_squadra|length }}</span>
-                        </div>
-                        <ul class="list-group list-group-flush">
-                            {% for giocatore in giocatori_squadra %}
-                            <li class="list-group-item vetrina-item px-2 py-1" data-stato="{{ giocatore.stato }}" data-ruolo="{{ giocatore.ruolo }}">
-
-                                <!-- DESKTOP: riga estesa con colonne -->
-                                <div class="d-none d-lg-flex align-items-center gap-2">
-                                    <div class="text-start" style="width: 150px; flex-shrink: 0;">
-                                        <div class="fw-semibold text-truncate">{{ giocatore.nome }}</div>
-                                        <div class="fw-bold text-muted" style="font-size: 0.75rem;">{{ giocatore.ruolo }}</div>
-                                    </div>
-                                    <div class="text-muted text-center" style="width: 45px; flex-shrink: 0; font-size: 0.85rem;">
-                                        {{ giocatore.quot_att_mantra }}
-                                    </div>
-                                    <div style="width: 100px; flex-shrink: 0;">
-                                        {% if giocatore.stato == 'prestabile' %}
-                                            <span class="badge bg-warning text-dark">Prestabile</span>
-                                        {% elif giocatore.stato == 'vendibile' %}
-                                            <span class="badge bg-success">Vendibile</span>
-                                        {% elif giocatore.stato == 'cedibile' %}
-                                            <span class="badge bg-danger">Cedibile</span>
-                                        {% endif %}
-                                    </div>
-                                    <div class="text-start flex-grow-1" style="min-width: 0;">
-                                        <div class="text-muted text-truncate" style="font-size: 0.85rem;">{{ giocatore.note or '-' }}</div>
-                                        <div class="text-muted" style="font-size: 0.7rem;">{{ giocatore.data_inserimento or '-' }}</div>
-                                    </div>
-                                </div>
-
-                                <!-- MOBILE: riga compatta -->
-                                <div class="d-lg-none">
-                                    <div class="d-flex align-items-start justify-content-between gap-2">
-                                        <div class="text-start flex-grow-1" style="min-width: 0;">
-                                            <div>
-                                                <span class="fw-semibold" style="font-size: 0.8rem;">{{ giocatore.nome }}</span>
-                                                <span class="fw-bold text-muted" style="font-size: 0.7rem;"> · {{ giocatore.ruolo }}</span>
-                                            </div>
-                                            {% if giocatore.note %}
-                                            <div class="text-muted" style="font-size: 0.7rem; white-space: normal; word-break: break-word;">{{ giocatore.note }}</div>
-                                            {% endif %}
-                                            <div class="text-muted" style="font-size: 0.65rem;">{{ giocatore.data_inserimento or '-' }}</div>
-                                        </div>
-                                        <div class="flex-shrink-0">
-                                            {% if giocatore.stato == 'prestabile' %}
-                                                <span class="badge bg-warning text-dark" style="font-size: 0.65rem;">Prestabile</span>
-                                            {% elif giocatore.stato == 'vendibile' %}
-                                                <span class="badge bg-success" style="font-size: 0.65rem;">Vendibile</span>
-                                            {% elif giocatore.stato == 'cedibile' %}
-                                                <span class="badge bg-danger" style="font-size: 0.65rem;">Cedibile</span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
+<div class="mb-4 rounded-2xl border border-line bg-panel p-4">
+    <div class="grid grid-cols-2 gap-3">
+        <div>
+            <label class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Squadra</label>
+            <select id="filtro-squadra" class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+                <option value="">Tutte</option>
+                {% for squadra in squadre %}
+                <option value="{{ squadra.nome }}">{{ squadra.nome }}</option>
                 {% endfor %}
-            </div>
-
-            <div class="text-center text-muted small mt-3 d-none" id="nessun-risultato">
-                Nessun giocatore corrisponde ai filtri selezionati.
-            </div>
-
-            {% else %}
-                <div class="alert alert-info mb-0 text-center">
-                    Nessun giocatore attualmente in vetrina.
-                </div>
-            {% endif %}
-
+            </select>
+        </div>
+        <div>
+            <label class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Stato</label>
+            <select id="filtro-stato" class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+                <option value="">Tutti</option>
+                <option value="prestabile">Prestabile</option>
+                <option value="vendibile">Vendibile</option>
+                <option value="cedibile">Cedibile</option>
+            </select>
+        </div>
+    </div>
+    <div class="mt-3">
+        <label class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Ruolo</label>
+        <div class="flex flex-wrap gap-1.5" id="filtro-ruolo-chips">
+            {% for ruolo in ruoli_disponibili %}
+            <button type="button" data-ruolo="{{ ruolo }}"
+                    class="chip-ruolo rounded-full border border-line bg-panel-2 px-2.5 py-1 text-xs font-semibold text-muted">
+                {{ ruolo }}
+            </button>
+            {% endfor %}
         </div>
     </div>
 </div>
+
+<div class="flex flex-col gap-4" id="gruppi-vetrina">
+    {% for nome_squadra, giocatori_squadra in giocatori|sort(attribute='detentore_cartellino')|groupby('detentore_cartellino') %}
+    <div class="rounded-2xl border border-line bg-panel p-4" data-squadra="{{ nome_squadra }}">
+        <h4 class="mb-2 flex items-center justify-between text-sm font-bold uppercase tracking-wide text-muted">
+            <span>{{ nome_squadra }}</span>
+            <span class="rounded-full bg-panel-2 px-2 py-0.5 text-[11px] font-bold text-text">{{ giocatori_squadra|length }}</span>
+        </h4>
+        <div class="flex flex-col gap-2">
+            {% for giocatore in giocatori_squadra %}
+            <div class="vetrina-item rounded-xl bg-panel-2 px-3 py-2.5" data-stato="{{ giocatore.stato }}" data-ruolo="{{ giocatore.ruolo }}">
+                <div class="flex items-start justify-between gap-3">
+                    <span class="min-w-0 flex-1 font-medium">{{ giocatore.nome }} <span class="ml-1">{{ m.ruolo_colorato(giocatore.ruolo) }}</span><span class="mx-1 text-muted">-</span><span class="text-muted">{{ giocatore.quot_att_mantra }}</span></span>
+                    {{ m.stato_vetrina_badge(giocatore.stato) }}
+                </div>
+                {% if giocatore.note %}
+                <div class="mt-1 line-clamp-1 text-xs text-muted" data-tip="{{ giocatore.note }}">{{ giocatore.note }}</div>
+                {% endif %}
+                <div class="mt-0.5 text-[11px] font-semibold">{{ giocatore.data_inserimento or '-' }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<p class="hidden py-4 text-center text-sm text-muted" id="nessun-risultato">Nessun giocatore corrisponde ai filtri selezionati.</p>
+
+{% else %}
+<div class="rounded-2xl border border-line bg-panel-2 p-4 text-center text-sm text-muted">
+    Nessun giocatore attualmente in vetrina.
+</div>
+{% endif %}
+
+<style>
+.chip-ruolo.attivo {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const filtroSquadra = document.getElementById('filtro-squadra');
     const filtroStato = document.getElementById('filtro-stato');
-    const filtroRuoloBtn = document.getElementById('filtro-ruolo-btn');
-    const filtroRuoloMenu = document.getElementById('filtro-ruolo-menu');
-    const filtroRuoloReset = document.getElementById('filtro-ruolo-reset');
-    if (!filtroSquadra || !filtroStato || !filtroRuoloBtn || !filtroRuoloMenu) return;
+    const chipRuolo = document.querySelectorAll('.chip-ruolo');
+    if (!filtroSquadra || !filtroStato) return;
 
-    const ruoloPriority = window.RUOLO_PRIORITY || {};
-
-    function normalizeRuolo(value) {
-        return (value || '').trim().toUpperCase().replace(/\s/g, '');
-    }
-
-    function ordinaFiltroRuolo() {
-        // Ordina solo i <li> che contengono una checkbox ruolo, lasciando
-        // invariati eventuali elementi di intestazione (es. "Deseleziona tutto").
-        const items = Array.from(filtroRuoloMenu.querySelectorAll('li')).filter(function (li) {
-            return li.querySelector('.filtro-ruolo-checkbox');
-        });
-
-        items.sort(function (a, b) {
-            const keyA = normalizeRuolo(a.querySelector('.filtro-ruolo-checkbox').value);
-            const keyB = normalizeRuolo(b.querySelector('.filtro-ruolo-checkbox').value);
-            const priorityA = ruoloPriority[keyA] || 99;
-            const priorityB = ruoloPriority[keyB] || 99;
-
-            if (priorityA !== priorityB) return priorityA - priorityB;
-            return keyA.localeCompare(keyB, 'it');
-        });
-
-        items.forEach(function (item) {
-            filtroRuoloMenu.appendChild(item);
-        });
-    }
-
-    ordinaFiltroRuolo();
-
-    function getRuoliSelezionati() {
-        return Array.from(filtroRuoloMenu.querySelectorAll('.filtro-ruolo-checkbox:checked'))
-            .map(function (cb) { return normalizeRuolo(cb.value); });
-    }
-
-    function aggiornaTestoBottone() {
-        const checkboxes = Array.from(filtroRuoloMenu.querySelectorAll('.filtro-ruolo-checkbox'));
-        const selezionati = checkboxes.filter(function (cb) { return cb.checked; });
-
-        if (selezionati.length === 0) {
-            filtroRuoloBtn.textContent = 'Tutti i ruoli';
-        } else if (selezionati.length === 1) {
-            filtroRuoloBtn.textContent = selezionati[0].value;
-        } else {
-            filtroRuoloBtn.textContent = selezionati.length + ' ruoli selezionati';
-        }
+    function ruoliSelezionati() {
+        return Array.from(chipRuolo).filter(c => c.classList.contains('attivo')).map(c => c.dataset.ruolo);
     }
 
     function applicaFiltri() {
         const squadra = filtroSquadra.value;
         const stato = filtroStato.value;
-        const ruoliSelezionati = getRuoliSelezionati();
+        const ruoli = ruoliSelezionati();
         let visibiliCount = 0;
 
-        document.querySelectorAll('#gruppi-vetrina > [data-squadra]').forEach(function (colWrapper) {
-            const matchSquadra = !squadra || colWrapper.dataset.squadra === squadra;
+        document.querySelectorAll('#gruppi-vetrina > [data-squadra]').forEach(function (gruppo) {
+            const matchSquadra = !squadra || gruppo.dataset.squadra === squadra;
             let visibiliNelGruppo = 0;
 
-            colWrapper.querySelectorAll('.vetrina-item').forEach(function (item) {
+            gruppo.querySelectorAll('.vetrina-item').forEach(function (item) {
                 const matchStato = !stato || item.dataset.stato === stato;
-                const matchRuolo = ruoliSelezionati.length === 0 ||
-                    ruoliSelezionati.indexOf(normalizeRuolo(item.dataset.ruolo)) !== -1;
+                const ruoliGiocatore = item.dataset.ruolo.split(',').map(r => r.trim());
+                const matchRuolo = ruoli.length === 0 || ruoliGiocatore.some(r => ruoli.indexOf(r) !== -1);
                 const visibile = matchSquadra && matchStato && matchRuolo;
-                item.classList.toggle('d-none', !visibile);
+                item.classList.toggle('hidden', !visibile);
                 if (visibile) visibiliNelGruppo++;
             });
 
-            colWrapper.classList.toggle('d-none', visibiliNelGruppo === 0);
+            gruppo.classList.toggle('hidden', visibiliNelGruppo === 0);
             visibiliCount += visibiliNelGruppo;
         });
 
-        document.getElementById('nessun-risultato')?.classList.toggle('d-none', visibiliCount > 0);
+        const nessunRisultato = document.getElementById('nessun-risultato');
+        if (nessunRisultato) nessunRisultato.classList.toggle('hidden', visibiliCount > 0);
     }
 
     filtroSquadra.addEventListener('change', applicaFiltri);
     filtroStato.addEventListener('change', applicaFiltri);
-
-    filtroRuoloMenu.addEventListener('change', function (e) {
-        if (e.target.classList.contains('filtro-ruolo-checkbox')) {
-            aggiornaTestoBottone();
-            applicaFiltri();
-        }
-    });
-
-    if (filtroRuoloReset) {
-        filtroRuoloReset.addEventListener('click', function () {
-            filtroRuoloMenu.querySelectorAll('.filtro-ruolo-checkbox').forEach(function (cb) {
-                cb.checked = false;
-            });
-            aggiornaTestoBottone();
+    chipRuolo.forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            chip.classList.toggle('attivo');
             applicaFiltri();
         });
-    }
+    });
 });
 </script>
 {% endblock %}

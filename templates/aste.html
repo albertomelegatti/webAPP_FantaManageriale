@@ -1,104 +1,75 @@
-{% extends 'base.html' %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
-        <h1>Aste</h1>
-    </div>
+{% import '_macros.html' as m %}
+<h2 class="mb-3 text-lg font-bold">Aste</h2>
 
-    <!-- Aste attive -->
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            Aste in corso
-        </div>
-        <div class="card-body table-responsive">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>Giocatore</th>
-                        <th>Ultima offerta</th>
-                        <th>Squadra vincente</th>
-                        <th>Scadenza</th>
-                        <th>Partecipanti</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for asta in aste if asta.stato == 'in_corso' %}
-                    <tr>
-                        <td>{{ asta.giocatore }}</td>
-                        <td>{{ asta.ultima_offerta }}</td>
-                        <td>{{ asta.squadra_vincente }}</td>
-                        <td>{{ asta.data_scadenza }}</td>
-                        <td>{{ asta.partecipanti }}</td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="5" class="text-center text-muted">Nessuna asta attiva</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<div class="flex flex-col gap-4">
+
+    <!-- Aste in corso -->
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-accent"></span> Aste in corso
+        </h4>
+        <div class="flex flex-col gap-2">
+            {% for asta in aste if asta.stato == 'in_corso' %}
+            <div class="rounded-xl bg-panel-2 px-3 py-2.5">
+                <div class="flex items-start justify-between gap-3">
+                    <span class="min-w-0 flex-1 font-medium">{{ asta.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(asta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(asta.club) }}</span>
+                    <span class="shrink-0 tabular-nums font-bold text-accent">{{ asta.ultima_offerta }} cr</span>
+                </div>
+                <div class="mt-1 text-xs text-muted"><span class="font-bold text-text">Vincente:</span> {{ asta.squadra_vincente or '—' }}</div>
+                <div class="mt-0.5 text-xs text-muted"><span class="font-bold text-text">Scade:</span> {{ asta.data_scadenza }}</div>
+                {% if asta.partecipanti %}
+                <div class="mt-0.5 text-xs text-muted"><span class="font-bold text-text">Partecipanti:</span> {{ asta.partecipanti }}</div>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessuna asta attiva</p>
+            {% endfor %}
         </div>
     </div>
 
-    <!-- Aste a cui posso iscrivermi -->
-    
-    <div class="card mb-4">
-        <div class="card-header bg-warning text-dark">
-            Aste a cui è possibile iscriversi
-        </div>
-        <div class="card-body table-responsive">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>Giocatore</th>
-                        <th>Scadenza</th>
-                        <th>Iscritti</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for asta in aste if asta.stato == 'mostra_interesse' %}
-                    <tr>
-                        <td>{{ asta.giocatore }}</td>
-                        <td>{{ asta.tempo_fine_mostra_interesse }}</td>
-                        <td>{{ asta.partecipanti }}</td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="3" class="text-center text-muted">Nessuna asta disponibile</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Aste a cui è possibile iscriversi -->
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-crit"></span> Aperte alle iscrizioni
+        </h4>
+        <div class="flex flex-col gap-2">
+            {% for asta in aste if asta.stato == 'mostra_interesse' %}
+            <div class="rounded-xl bg-panel-2 px-3 py-2.5">
+                <span class="font-medium">{{ asta.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(asta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(asta.club) }}</span>
+                <div class="mt-1 text-xs text-muted"><span class="font-bold text-text">Scade:</span> {{ asta.tempo_fine_mostra_interesse }}</div>
+                {% if asta.partecipanti %}
+                <div class="mt-0.5 text-xs text-muted"><span class="font-bold text-text">Iscritti:</span> {{ asta.partecipanti }}</div>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessuna asta disponibile</p>
+            {% endfor %}
         </div>
     </div>
-    
+
     <!-- Aste concluse -->
-    <div class="card mb-4">
-        <div class="card-header bg-secondary text-white">
-            Aste concluse
-        </div>
-        <div class="card-body table-responsive">
-            <table class="table table-striped table-hover">
-                <thead>
-                    <tr>
-                        <th>Giocatore</th>
-                        <th>Termine</th>
-                        <th>Ultima offerta</th>
-                        <th>Vincitore</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for asta in aste if asta.stato == 'conclusa' %}
-                    <tr>
-                        <td>{{ asta.giocatore }}</td>
-                        <td>{{ asta.data_scadenza }}</td>
-                        <td>{{ asta.ultima_offerta }}</td>
-                        <td>{{ asta.squadra_vincente }}</td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="4" class="text-center text-muted">Nessuna asta conclusa</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-muted"></span> Concluse
+        </h4>
+        <div class="flex flex-col gap-2">
+            {% for asta in aste if asta.stato == 'conclusa' %}
+            <div class="rounded-xl bg-panel-2 px-3 py-2.5">
+                <div class="flex items-start justify-between gap-3">
+                    <span class="min-w-0 flex-1 font-medium">{{ asta.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(asta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(asta.club) }}</span>
+                    <span class="shrink-0 tabular-nums text-muted">{{ asta.ultima_offerta }} cr</span>
+                </div>
+                <div class="mt-1 text-xs text-muted"><span class="font-bold text-text">Vinta da:</span> {{ asta.squadra_vincente or '—' }}</div>
+                <div class="mt-0.5 text-xs text-muted"><span class="font-bold text-text">Termine:</span> {{ asta.data_scadenza }}</div>
+            </div>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessuna asta conclusa</p>
+            {% endfor %}
         </div>
     </div>
-</div>
 
+</div>
 {% endblock %}

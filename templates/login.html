@@ -1,19 +1,22 @@
-{% extends 'base.html' %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="container">
-    <div class="login-box">
-        <h2>Login</h2>
+<div class="mx-auto mt-6 w-full max-w-sm rounded-2xl border border-line bg-panel p-6">
+    <h2 class="mb-5 text-center text-xl font-semibold">Login</h2>
 
-        <form method="POST" action="/login">
-            <input type="text" name="username" placeholder="Username" required>
-            <div class="password-container">
-                <input type="password" id="password-field" name="password" placeholder="Password" required>
-                <i class="bi bi-eye-slash togglePassword" id="togglePassword"></i>
-            </div>
-            <input type="submit" value="Accedi">
-        </form>
-    </div>
+    <form method="POST" action="/login" class="flex flex-col gap-3">
+        <input type="text" name="username" placeholder="Username" required
+               class="w-full rounded-xl border border-line bg-panel px-4 py-3 text-base outline-none focus:border-accent">
+
+        <div class="relative">
+            <input type="password" id="password-field" name="password" placeholder="Password" required
+                   class="w-full rounded-xl border border-line bg-panel px-4 py-3 pr-11 text-base outline-none focus:border-accent">
+            <i class="bi bi-eye-slash togglePassword absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-muted" id="togglePassword"></i>
+        </div>
+
+        <input type="submit" value="Accedi"
+               class="mt-2 cursor-pointer rounded-xl bg-accent px-4 py-3 text-base font-semibold text-white hover:brightness-110">
+    </form>
 </div>
 
 <script src="{{ url_for('static', filename='js/login.js') }}"></script>

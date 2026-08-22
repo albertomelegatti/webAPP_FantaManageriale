@@ -1,50 +1,12 @@
-{% extends 'base.html' %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="text-center">
-        <h1 class="mb-4">Gestione Rosa di {{ nome_squadra }}</h1>
+{% import '_macros.html' as m %}
+<h2 class="mb-4 text-center text-lg font-bold">Gestione Rosa di {{ nome_squadra }}</h2>
 
-        <div class="d-grid gap-3 mx-auto" style="max-width: 300px;">
-            <a href="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg d-flex align-items-center justify-content-center" style="height: 72px;">
-                🧾 Gestione Contratti
-            </a>
-            <a href="{{ url_for('rosa.user_primavera', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg d-flex align-items-center justify-content-center" style="height: 72px;">
-                🌱 Primavera
-            </a>
-            <a href="{{ url_for('rosa.user_vetrina', nome_squadra=nome_squadra) }}" class="btn btn-primary btn-lg d-flex align-items-center justify-content-center" style="height: 72px;">
-                🪟✨ Vetrina
-            </a>
-        </div>
-
-    </div>
+<div class="flex flex-col gap-2">
+    {{ m.voce_menu(url_for('rosa.user_tagli', nome_squadra=nome_squadra), 'bi-file-earmark-text-fill', 'Gestione Contratti') }}
+    {{ m.voce_menu(url_for('rosa.user_primavera', nome_squadra=nome_squadra), 'bi-flower1', 'Primavera') }}
+    {{ m.voce_menu(url_for('rosa.user_vetrina', nome_squadra=nome_squadra), 'bi-shop-window', 'Vetrina') }}
 </div>
-
-<style>
-.btn-nuovo {
-    position: relative;
-    overflow: visible;
-}
-
-.badge-nuovo {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background-color: #dc3545;
-    color: #ffffff;
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 10px;
-    line-height: 1.2;
-    white-space: nowrap;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    animation: pulse-nuovo 1.8s ease-in-out infinite;
-}
-
-@keyframes pulse-nuovo {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.12); }
-}
-</style>
 {% endblock %}

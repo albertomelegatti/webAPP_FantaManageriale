@@ -1,6 +1,7 @@
 import psycopg2
 import telegram_utils
 import os
+import time
 from datetime import datetime
 from io import BytesIO
 from dotenv import load_dotenv
@@ -19,7 +20,7 @@ from webhook import webhook_bp
 from vetrina import vetrina_bp
 from db import get_connection, release_connection, init_pool
 from telegram_utils import get_all_telegram_ids
-from queries import get_slot_giocatori, get_slot_aste
+from queries import get_slot_giocatori, get_slot_aste, ruolo_sort_key
 from chatbot import get_answer
 
 app = Flask(__name__)
@@ -38,6 +39,33 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 # Cache lato browser per gli asset statici (CSS/JS/immagini) e compressione gzip/br delle risposte
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 1  # 1 giorno di cache su immagini statiche
 Compress(app)
+
+
+_asset_v_cache = {}
+_ASSET_V_TTL = 5  # secondi: evita uno stat() del file a ogni singola riga/richiesta
+
+def asset_v(rel_path):
+    """Timestamp di modifica di un file statico, da usare come ?v= per invalidare la cache del browser quando il file cambia.
+
+    Il risultato viene tenuto in cache per qualche secondo: senza, una pagina con
+    molte righe (es. la Rosa con 25-30 giocatori) farebbe uno stat() del
+    filesystem per ogni riga a ogni caricamento.
+    """
+    now = time.monotonic()
+    cached = _asset_v_cache.get(rel_path)
+    if cached and now - cached[1] < _ASSET_V_TTL:
+        return cached[0]
+
+    try:
+        value = int(os.path.getmtime(os.path.join(app.static_folder, rel_path)))
+    except OSError:
+        value = 0
+
+    _asset_v_cache[rel_path] = (value, now)
+    return value
+
+
+app.jinja_env.globals['asset_v'] = asset_v
 
 # Inizializza il dizionario telegram al lancio dell'app
 app.config['SQUADRE_TELEGRAM_IDS'] = get_all_telegram_ids()
@@ -181,10 +209,10 @@ def squadre():
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT nome 
-                    FROM squadra 
+                    SELECT nome, username
+                    FROM squadra
                     WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
-        squadre = [row["nome"] for row in cur.fetchall()]
+        squadre = [{"nome": row["nome"], "username": row["username"]} for row in cur.fetchall()]
 
         return render_template("squadre.html", squadre=squadre)
 
@@ -232,9 +260,9 @@ def dashboard_squadra(nome_squadra):
         # ROSA
         rosa = []
         cur.execute('''
-                    SELECT nome, tipo_contratto, ruolo, quot_att_mantra, costo 
-                    FROM giocatore 
-                    WHERE squadra_att = %s 
+                    SELECT nome, tipo_contratto, ruolo, quot_att_mantra, costo, club
+                    FROM giocatore
+                    WHERE squadra_att = %s
                         AND tipo_contratto <> 'Primavera';
         ''' , (nome_squadra,))
         rosa_raw = cur.fetchall()
@@ -246,8 +274,11 @@ def dashboard_squadra(nome_squadra):
                 "tipo_contratto": g['tipo_contratto'],
                 "ruolo": ruolo,
                 "quot_att_mantra": g['quot_att_mantra'],
-                "costo": g['costo']
+                "costo": g['costo'],
+                "club": g['club']
             })
+
+        rosa.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
 
         # PRIMAVERA
         primavera = []
@@ -267,6 +298,8 @@ def dashboard_squadra(nome_squadra):
                 "quot_att_mantra": g['quot_att_mantra']
             })
 
+        primavera.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
+
         # PRESTITI IN (prestiti_in_num ricavato da len(), evita una COUNT separata con la stessa WHERE)
         prestiti_in = []
         cur.execute('''
@@ -285,6 +318,8 @@ def dashboard_squadra(nome_squadra):
                 "quot_att_mantra": g['quot_att_mantra'],
                 "detentore_cartellino": g["detentore_cartellino"]
             })
+
+        prestiti_in.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
 
         prestiti_in_num = len(prestiti_in)
 
@@ -327,6 +362,8 @@ def dashboard_squadra(nome_squadra):
                 "quot_att_mantra": g['quot_att_mantra'],
                 "squadra_att": g['squadra_att']
             })
+
+        prestiti_out.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
 
         # MOVIMENTI DI MERCATO
         mercato = []
@@ -438,15 +475,15 @@ def crediti_stadi_slot():
 
         # CREDITI
         cur.execute('''
-                    SELECT nome, crediti 
-                    FROM squadra 
+                    SELECT nome, crediti
+                    FROM squadra
                     WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
         squadre_raw = cur.fetchall()
         squadre = [{"nome": c['nome'], "crediti": c['crediti']} for c in squadre_raw]
 
         # STADIO
         cur.execute('''
-                    SELECT nome, proprietario, livello 
+                    SELECT nome, proprietario, livello
                     FROM stadio ORDER BY proprietario ASC;''')
         stadi_raw = cur.fetchall()
         stadi = []
@@ -467,7 +504,7 @@ def crediti_stadi_slot():
                     WHERE tipo_contratto IN ('Hold', 'Indeterminato')
                     GROUP BY squadra_att;''')
         slot_raw = cur.fetchall()
-        
+
         cur.execute('''
                     SELECT squadra_att, COUNT(id) AS slot_in_prestito
                     FROM giocatore
@@ -475,7 +512,7 @@ def crediti_stadi_slot():
                     GROUP BY squadra_att;''')
         slot_prestito_raw = cur.fetchall()
         slot_prestito_dict = {s["squadra_att"]: s["slot_in_prestito"] for s in slot_prestito_raw}
-        
+
         slot = []
         for s in slot_raw:
             slot.append({
@@ -557,7 +594,7 @@ def aste():
         cur = conn.cursor(cursor_factory = RealDictCursor)
     
         cur.execute('''
-                    SELECT g.nome, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
+                    SELECT g.nome, g.ruolo, g.club, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
                     FROM asta a
                     JOIN giocatore g ON a.giocatore = g.id
                     ORDER BY a.tempo_fine_asta DESC;''')
@@ -572,6 +609,8 @@ def aste():
 
             aste.append({
                 "giocatore": a["nome"],
+                "ruolo": a["ruolo"].strip("{}"),
+                "club": a["club"],
                 "squadra_vincente": a["squadra_vincente"],
                 "ultima_offerta": a["ultima_offerta"],
                 "tempo_fine_mostra_interesse": tempo_fine_mostra_interesse,

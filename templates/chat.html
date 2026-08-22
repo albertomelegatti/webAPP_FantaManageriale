@@ -1,89 +1,69 @@
-{% extends "base.html" %}
-
-{% block title %}ChatBot Fantacalcio{% endblock %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<!-- Importa Bootstrap -->
-<link
-  href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-  rel="stylesheet"
->
+<h2 class="mb-3 text-lg font-bold">Chatbot regolamento</h2>
 
-<div class="container py-4">
-    <h1 class="text-center mb-4">
-        💬 ChatBot Fantacalcio
-    </h1>
-
-    <div class="card shadow-lg mx-auto" style="max-width: 600px;">
-        <div class="card-body d-flex flex-column" style="height: 450px; background-color: #f8f9fa;">
-            <div id="chat-box" class="flex-grow-1 overflow-auto mb-3 p-3 border rounded bg-light">
-                <div class="bot-message mb-2 p-2 rounded bg-primary text-white" style="max-width: 75%;">
-                    👋 Ciao! Sono il tuo assistente del regolamento Fantacalcio.<br>
-                    Scrivimi una domanda per iniziare!
-                </div>
-            </div>
-
-            <form id="chat-form" class="d-flex">
-                <input
-                    type="text"
-                    id="user_message"
-                    class="form-control me-2"
-                    placeholder="Scrivi la tua domanda..."
-                    autocomplete="off"
-                    required
-                >
-                <button type="submit" class="btn btn-primary">Invia</button>
-            </form>
+<div class="flex h-[70vh] flex-col rounded-2xl border border-line bg-panel">
+    <div id="chat-box" class="flex flex-1 flex-col gap-2 overflow-y-auto p-3">
+        <div class="max-w-[85%] rounded-2xl rounded-bl-sm bg-panel-2 px-3 py-2 text-sm">
+            👋 Ciao! Sono il tuo assistente del regolamento Fantacalcio.<br>
+            Scrivimi una domanda per iniziare!
         </div>
     </div>
+
+    <form id="chat-form" class="flex items-center gap-2 border-t border-line p-3">
+        <input
+            type="text"
+            id="user_message"
+            class="w-full flex-1 rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm outline-none focus:border-accent"
+            placeholder="Scrivi la tua domanda..."
+            autocomplete="off"
+            required
+        >
+        <button type="submit"
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-white">
+            <i class="bi bi-send-fill"></i>
+        </button>
+    </form>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script>
-$(document).ready(function() {
-    $("#chat-form").submit(function(e) {
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('user_message');
+    const chatBox = document.getElementById('chat-box');
+
+    function addBubble(text, mittente) {
+        const wrap = document.createElement('div');
+        wrap.className = mittente === 'user' ? 'flex justify-end' : 'flex justify-start';
+
+        const bubble = document.createElement('div');
+        bubble.className = mittente === 'user'
+            ? 'max-w-[85%] rounded-2xl rounded-br-sm bg-accent px-3 py-2 text-sm text-white'
+            : 'max-w-[85%] rounded-2xl rounded-bl-sm bg-panel-2 px-3 py-2 text-sm';
+        bubble.textContent = text;
+
+        wrap.appendChild(bubble);
+        chatBox.appendChild(wrap);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    form.addEventListener('submit', function (e) {
         e.preventDefault();
-        let userMsg = $("#user_message").val();
-        if (!userMsg) return;
+        const msg = input.value.trim();
+        if (!msg) return;
 
-        // Messaggio utente
-        $("#chat-box").append(`
-            <div class="text-end mb-2">
-                <div class="d-inline-block p-2 rounded bg-success text-white" style="max-width: 75%;">
-                    <strong>Tu:</strong> ${userMsg}
-                </div>
-            </div>
-        `);
-        $("#user_message").val('');
-        $("#chat-box").scrollTop($("#chat-box")[0].scrollHeight);
+        addBubble(msg, 'user');
+        input.value = '';
 
-        // Chiamata AJAX
-        $.ajax({
-            url: "/chat",
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({question: userMsg}),
-            success: function(data) {
-                $("#chat-box").append(`
-                    <div class="text-start mb-2">
-                        <div class="d-inline-block p-2 rounded bg-primary text-white" style="max-width: 75%;">
-                            <strong>Bot:</strong> ${data.answer}
-                        </div>
-                    </div>
-                `);
-                $("#chat-box").scrollTop($("#chat-box")[0].scrollHeight);
-            },
-            error: function(err) {
-                $("#chat-box").append(`
-                    <div class="text-start mb-2">
-                        <div class="d-inline-block p-2 rounded bg-danger text-white" style="max-width: 75%;">
-                            ⚠️ Errore: impossibile contattare il server
-                        </div>
-                    </div>
-                `);
-                $("#chat-box").scrollTop($("#chat-box")[0].scrollHeight);
-            }
-        });
+        fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: msg })
+        })
+            .then(res => res.json())
+            .then(data => addBubble(data.answer, 'bot'))
+            .catch(() => addBubble('⚠️ Errore: impossibile contattare il server', 'bot'));
     });
 });
 </script>
