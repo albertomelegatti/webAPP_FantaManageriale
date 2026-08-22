@@ -4,6 +4,7 @@ import telegram_utils
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from user import formatta_data
 from db import get_connection, release_connection
+from queries import decadi_vetrina
 from psycopg2.extras import RealDictCursor
 from psycopg2 import extensions
 
@@ -185,6 +186,7 @@ def richiesta_modifica_contratto():
                                 SET tipo_contratto = %s
                                 WHERE id = %s;
                     ''', (nuovo_contratto, id_giocatore))
+                decadi_vetrina(cur, id_giocatore)
 
                 # Aggiornamento crediti squadra: la modifica contratto assegna i crediti richiesti
                 cur.execute('''

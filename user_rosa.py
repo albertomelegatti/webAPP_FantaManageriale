@@ -7,7 +7,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection, resync_sequence
 from user import formatta_data
-from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori, get_nome_giocatore, sposta_crediti
+from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori, get_nome_giocatore, sposta_crediti, decadi_vetrina
 
 rosa_bp = Blueprint('rosa', __name__, url_prefix='/rosa')
 
@@ -48,9 +48,10 @@ def user_primavera(nome_squadra):
                                 tipo_contratto = 'Svincolato'
                             WHERE id = %s;
                 ''', (id_giocatore_da_tagliare,))
-                
+                decadi_vetrina(cur, id_giocatore_da_tagliare)
+
                 nome_giocatore = get_nome_giocatore(conn, id_giocatore_da_tagliare)
-                
+
                 conn.commit()
                 flash("✅ Giocatore tagliato con successo.", "success")
                 telegram_utils.taglio_giocatore(conn, nome_squadra, nome_giocatore, 0)
@@ -268,6 +269,7 @@ def user_tagli(nome_squadra):
                                 tipo_contratto = 'Svincolato'
                             WHERE id = %s;
                 ''', (id_giocatore_da_tagliare,))
+                decadi_vetrina(cur, id_giocatore_da_tagliare)
 
                 # Aggiorna i crediti della squadra
                 cur.execute('''
@@ -622,6 +624,7 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
                         tipo_contratto = 'Indeterminato'
                     WHERE id = %s;
         ''', (nome_squadra, nome_squadra, prestito['giocatore']))
+        decadi_vetrina(cur, prestito['giocatore'])
 
         conn.commit()
         flash(f"✅ Giocatore riscattato con successo! Pagati {costo_riscatto} crediti.", "success")
@@ -727,6 +730,7 @@ def accetta_terminazione(conn, id_prestito):
                         tipo_contratto = 'Indeterminato'
                     WHERE id = %s;
         ''', (row['squadra_prestante'], row['giocatore']))
+        decadi_vetrina(cur, row['giocatore'])
 
         conn.commit()
         flash("✅ Prestito terminato con successo.", "success")
