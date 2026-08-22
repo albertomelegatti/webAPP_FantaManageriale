@@ -266,7 +266,26 @@ def nuovo_scambio(nome_squadra):
             if not giocatori_richiesti and crediti_richiesti == 0:
                 flash("Devi richiedere almeno un giocatore o dei crediti.", "warning")
                 return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
-            
+
+            # Validazione slot prestiti: il giocatore "richiesto" arriva in prestito a me,
+            # il giocatore "offerto" va in prestito a loro, quindi il limite di 2 slot va
+            # verificato sulla squadra che riceverebbe effettivamente il prestito.
+            prestiti_verso_me = sum([
+                1 if enable_prestito1 and p1_richiesto else 0,
+                1 if enable_prestito2 and p2_richiesto else 0,
+            ])
+            prestiti_verso_loro = sum([
+                1 if enable_prestito1 and p1_offerto else 0,
+                1 if enable_prestito2 and p2_offerto else 0,
+            ])
+
+            if prestiti_verso_me > 0 and get_slot_prestiti_in(conn, nome_squadra) + prestiti_verso_me > 2:
+                flash(f"❌ {nome_squadra} non ha abbastanza slot prestiti disponibili.", "danger")
+                return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
+
+            if prestiti_verso_loro > 0 and get_slot_prestiti_in(conn, squadra_destinataria) + prestiti_verso_loro > 2:
+                flash(f"❌ {squadra_destinataria} non ha abbastanza slot prestiti disponibili.", "danger")
+                return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
 
 
 

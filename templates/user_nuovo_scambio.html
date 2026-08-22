@@ -644,15 +644,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const myFreeSlots = 2 - mySlotPrestiti;  // 2 = nessun occupato, 1 = uno occupato, 0 = tutti occupati
         const destFreeSlots = 2 - destSlotPrestiti;
         
-        // Prestito 1 OFFERTO: abilitato se ho almeno 1 slot libero (myFreeSlots >= 1)
-        const prestito1OffDisabled = myFreeSlots < 1;
-        // Prestito 2 OFFERTO: abilitato solo se ho 2 slot liberi (myFreeSlots >= 2)
-        const prestito2OffDisabled = myFreeSlots < 2;
-        
-        // Prestito 1 RICHIESTO: abilitato se controparte ha almeno 1 slot libero
-        const prestito1RichDisabled = destFreeSlots < 1;
-        // Prestito 2 RICHIESTO: abilitato solo se controparte ha 2 slot liberi
-        const prestito2RichDisabled = destFreeSlots < 2;
+        // Prestito 1 OFFERTO: il giocatore va in prestito a loro, quindi serve che LORO abbiano almeno 1 slot libero
+        const prestito1OffDisabled = destFreeSlots < 1;
+        // Prestito 2 OFFERTO: abilitato solo se loro hanno 2 slot liberi
+        const prestito2OffDisabled = destFreeSlots < 2;
+
+        // Prestito 1 RICHIESTO: il giocatore arriva in prestito a me, quindi serve che IO abbia almeno 1 slot libero
+        const prestito1RichDisabled = myFreeSlots < 1;
+        // Prestito 2 RICHIESTO: abilitato solo se io ho 2 slot liberi
+        const prestito2RichDisabled = myFreeSlots < 2;
         
         // Disabilita pannelli e campi PRESTITO 1 OFFERTO
         const tradeSidePrestito1Off = document.getElementById('trade-side-prestito1-offerto');
