@@ -12,15 +12,19 @@ user_bp = Blueprint('user', __name__, url_prefix='/user')
 def squadra_login(nome_squadra):
 
     conn = get_connection()
-    
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    cur.execute("SELECT username FROM squadra WHERE nome = %s;", (nome_squadra,))
+    username = cur.fetchone()["username"]
+
     slot_giocatori = get_slot_giocatori(conn, nome_squadra)
     slot_aste = get_slot_aste(conn, nome_squadra)
     slot_occupati = slot_giocatori + slot_aste
     prestiti_in_num = get_slot_prestiti_in(conn, nome_squadra)
 
-    release_connection(conn, None)
+    release_connection(conn, cur)
 
-    return render_template("squadra_login.html", nome_squadra=nome_squadra, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num)
+    return render_template("squadra_login.html", nome_squadra=nome_squadra, username=username, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num)
 
 
 @user_bp.route("/mercato_menu/<nome_squadra>")
