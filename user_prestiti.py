@@ -188,6 +188,14 @@ def nuovo_prestito(nome_squadra):
 
             data_fine = datetime(anno_scadenza, 7, 1, 23, 59, 59)
 
+            # Resincronizza la sequenza prima dell'insert, per proteggersi da eventuali
+            # inserimenti manuali passati con id espliciti che l'hanno lasciata indietro
+            # (causa nota di "duplicate key value violates unique constraint prestito_pkey")
+            cur.execute("SELECT MAX(id) AS max_id FROM prestito")
+            max_id_prestito = cur.fetchone()['max_id']
+            if max_id_prestito is not None:
+                cur.execute("SELECT setval('prestito_id_seq', %s, true)", (max_id_prestito,))
+
             cur.execute('''
                         INSERT INTO prestito (
                         giocatore, squadra_prestante, squadra_ricevente, stato, data_inizio, data_fine, note, costo_prestito, tipo_prestito, crediti_riscatto)
