@@ -313,6 +313,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
     function generateDetailsHtml(scambio, currentUserTeam, actionUrl) {
         const isProposer = scambio.squadra_proponente === currentUserTeam;
         const isReceiver = scambio.squadra_destinataria === currentUserTeam;
@@ -403,6 +409,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 </div>
+                ${scambio.messaggio && scambio.messaggio.trim() ? `
+                <div class="trade-message mt-3">
+                    <strong><i class="bi bi-chat-left-text"></i> Note:</strong>
+                    <p class="mb-0">${escapeHtml(scambio.messaggio).replace(/\n/g, '<br>')}</p>
+                </div>` : ''}
                 ${buttonsHtml ? `<div class="trade-actions">${buttonsHtml}</div>` : ''}
             </div>
         `;
