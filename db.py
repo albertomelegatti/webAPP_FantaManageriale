@@ -1,6 +1,7 @@
 import os
 import psycopg2
 import time
+from psycopg2 import sql
 from psycopg2.extras import RealDictCursor
 from psycopg2 import OperationalError
 from psycopg2.pool import SimpleConnectionPool, ThreadedConnectionPool
@@ -41,11 +42,72 @@ def init_pool():
             **params
         )
         print("✅ Pool di connessioni Supabase inizializzato con successo!")
+        resync_sequences()
         return pool
     except psycopg2.Error as e:
         print(f"❌ Errore critico nell'inizializzazione del pool: {e}")
         pool = None
         raise
+
+
+def resync_sequences():
+    # Riallinea le sequence di tutte le tabelle al MAX(id) attualmente presente.
+    # Serve perché import/restore manuali sul DB possono inserire righe con id
+    # espliciti senza far avanzare la sequence, causando poi collisioni di
+    # chiave primaria sui successivi INSERT dell'app. Viene eseguito ad ogni
+    # avvio così il problema si corregge da solo, senza interventi manuali sul DB.
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute('''
+            DO $$
+            DECLARE
+                r RECORD;
+            BEGIN
+                FOR r IN
+                    SELECT
+                        t.relname AS table_name,
+                        a.attname AS column_name,
+                        pg_get_serial_sequence(t.relname, a.attname) AS seq_name
+                    FROM pg_class t
+                    JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum > 0 AND NOT a.attisdropped
+                    WHERE t.relkind = 'r'
+                      AND t.relnamespace = 'public'::regnamespace
+                      AND pg_get_serial_sequence(t.relname, a.attname) IS NOT NULL
+                LOOP
+                    EXECUTE format(
+                        'SELECT setval(%L, COALESCE((SELECT MAX(%I) FROM %I), 1))',
+                        r.seq_name, r.column_name, r.table_name
+                    );
+                END LOOP;
+            END $$;
+        ''')
+        conn.commit()
+        print("✅ Sequence delle tabelle riallineate con successo.")
+    except Exception as e:
+        print(f"⚠️ Errore durante il riallineamento delle sequence: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        release_connection(conn, cur)
+
+
+def resync_sequence(conn, table_name, column_name="id"):
+    # Riallinea la sequence di una singola tabella al MAX(colonna) attuale,
+    # usando la connessione già aperta dal chiamante (nessun nuovo checkout dal pool).
+    # Pensata per essere invocata a runtime, dopo un errore di chiave duplicata,
+    # così il problema si autocorregge anche senza riavviare il worker (es. su Render,
+    # dove i processi restano attivi a lungo senza restart).
+    with conn.cursor() as cur:
+        cur.execute(
+            sql.SQL("SELECT setval(pg_get_serial_sequence(%s, %s), COALESCE((SELECT MAX({}) FROM {}), 1))").format(
+                sql.Identifier(column_name), sql.Identifier(table_name)
+            ),
+            (table_name, column_name)
+        )
+    conn.commit()
 
 
 def log_pool_status(action):
