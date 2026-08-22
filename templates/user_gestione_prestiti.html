@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ${loan.note && loan.note.trim() ? `
                 <div class="loan-message mt-3">
                     <strong><i class="bi bi-chat-left-text"></i> Note:</strong>
-                    <p class="mb-0">${escapeHtml(loan.note).replace(/\n/g, '<br>')}</p>
+                    <p class="mb-0" style="overflow-wrap: anywhere;">${escapeHtml(loan.note).replace(/\n/g, '<br>')}</p>
                 </div>` : ''}
                 ${buttonsHtml ? `<div class="loan-actions">${buttonsHtml}</div>` : ''}
             </div>

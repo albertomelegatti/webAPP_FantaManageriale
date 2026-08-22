@@ -412,7 +412,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 ${scambio.messaggio && scambio.messaggio.trim() ? `
                 <div class="trade-message mt-3">
                     <strong><i class="bi bi-chat-left-text"></i> Note:</strong>
-                    <p class="mb-0">${escapeHtml(scambio.messaggio).replace(/\n/g, '<br>')}</p>
+                    <p class="mb-0" style="overflow-wrap: anywhere;">${escapeHtml(scambio.messaggio).replace(/\n/g, '<br>')}</p>
                 </div>` : ''}
                 ${buttonsHtml ? `<div class="trade-actions">${buttonsHtml}</div>` : ''}
             </div>
