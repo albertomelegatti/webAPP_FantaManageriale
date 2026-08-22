@@ -410,11 +410,11 @@ def nuovo_scambio(nome_squadra):
         ''')
         offerta_totale_map = {r["squadra_vincente"]: r["offerta_totale"] or 0 for r in cur.fetchall()}
 
-        def get_occupied_slots(nome):
+        def slot_occupati_squadra(nome):
             return int(slot_giocatori_map.get(nome, 0)) + int(slot_aste_map.get(nome, 0))
 
         for s in squadre_raw:
-            slot_occupati = get_occupied_slots(s["nome"])
+            slot_occupati = slot_occupati_squadra(s["nome"])
             slot_prestiti = int(slot_prestiti_map.get(s["nome"], 0))
             # Calcola l'offerta totale per la squadra corrente (non usare l'offerta della squadra loggata)
             offerta_totale_squadra = int(offerta_totale_map.get(s["nome"], 0))
@@ -431,7 +431,7 @@ def nuovo_scambio(nome_squadra):
                 crediti_effettivi = offerta_massima_possibile
 
         # Slot liberi e prestiti della squadra loggata (riusa le mappe già calcolate sopra)
-        slot_liberi_miei = max(30 - get_occupied_slots(nome_squadra), 0)
+        slot_liberi_miei = max(30 - slot_occupati_squadra(nome_squadra), 0)
         slot_prestiti_miei = int(slot_prestiti_map.get(nome_squadra, 0))
 
         # Recupera tutti i giocatori validi (non svincolati, non prestiti, non hold)
