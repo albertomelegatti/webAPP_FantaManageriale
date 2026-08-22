@@ -20,6 +20,10 @@
                         <form method="POST" action="{{ url_for('rosa.richiesta_modifica_contratto', nome_squadra=nome_squadra, id_giocatore=id_giocatore) }}">
                             <div class="mb-3">
                                 <label for="nuovo_contratto" class="form-label"><strong>Nuovo Contratto Richiesto:</strong></label>
+                                {% if tipo_contratto == 'Primavera' %}
+                                <input type="text" class="form-control" value="Trasferimento Reale" disabled readonly>
+                                <input type="hidden" id="nuovo_contratto" name="nuovo_contratto" value="Svincolato">
+                                {% else %}
                                 <select class="form-select" id="nuovo_contratto" name="nuovo_contratto" required>
                                     <option value="" disabled selected>Seleziona un'opzione...</option>
                                     {% if tipo_contratto != 'Indeterminato' %}
@@ -47,6 +51,7 @@
                                     <option value="Taglio Gratuito">Taglio Gratuito</option>
                                     {% endif %}
                                 </select>
+                                {% endif %}
                             </div>
                             <div class="mb-3">
                                 <label for="crediti_richiesti" class="form-label"><strong>Crediti Richiesti:</strong></label>
@@ -58,7 +63,7 @@
                             </div>
                             <div class="d-grid gap-2 mt-4">
                                 <button type="submit" class="btn btn-primary fw-bold">Invia Richiesta all'Admin</button>
-                                <a href="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}" class="btn btn-secondary">Annulla</a>
+                                <a href="{{ url_for('rosa.user_primavera' if tipo_contratto == 'Primavera' else 'rosa.user_tagli', nome_squadra=nome_squadra) }}" class="btn btn-secondary">Annulla</a>
                             </div>
                         </form>
                         <script>

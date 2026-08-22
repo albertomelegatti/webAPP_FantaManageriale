@@ -73,7 +73,8 @@ def user_primavera(nome_squadra):
                 "id": p['id'],
                 "nome": p['nome'],
                 "ruolo": ruolo,
-                "quot_att_mantra": p['quot_att_mantra']
+                "quot_att_mantra": p['quot_att_mantra'],
+                "esiste_gia_una_richiesta": esiste_gia_una_richiesta(conn, p['id'])
             })
 
     except Exception as e:
@@ -382,6 +383,8 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
 
             flash("✅ Richiesta di modifica contratto inviata con successo.", "success")
             telegram_utils.richiesta_modifica_contratto(conn, nome_squadra, id_giocatore, messaggio)
+            if tipo_contratto_attuale == 'Primavera':
+                return redirect(url_for("rosa.user_primavera", nome_squadra=nome_squadra))
             return redirect(url_for("rosa.user_tagli", nome_squadra=nome_squadra))
 
         cur.execute('''
