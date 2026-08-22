@@ -35,7 +35,7 @@
     </div>
 
     <div class="alert alert-info mb-4 info-box">
-        <strong>💡 Suggerimento:</strong> Per facilitare il riscatto, imposta la data di scadenza dei prestiti al <strong>2 luglio</strong>, quando gli slot dei giocatori retrocessi e svincolati saranno liberati.
+        <strong>💡 Suggerimento:</strong> La scadenza dei prestiti è fissata automaticamente all'<strong>1 luglio</strong>: puoi scegliere solo l'anno.
     </div>
 
     <form method="POST" action="{{ url_for('mercato.nuovo_scambio', nome_squadra=nome_squadra) }}"
@@ -245,15 +245,21 @@
                                         <label for="prestito1_tipo_offerto" class="form-label fw-semibold">Tipo Prestito</label>
                                         <select id="prestito1_tipo_offerto" name="prestito1_tipo_offerto" class="form-select" disabled>
                                             <option value="">-- Seleziona --</option>
-                                            <option value="Secco">Secco</option>
+                                            <option value="Secco" selected>Secco</option>
                                             <option value="Diritto">Con diritto di riscatto</option>
                                             <option value="Obbligo">Con obbligo di riscatto</option>
                                         </select>
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-md-6">
-                                            <label for="prestito1_data_fine_offerta" class="form-label fw-semibold">Data Fine</label>
-                                            <input type="date" id="prestito1_data_fine_offerta" name="prestito1_data_fine_offerta" class="form-control">
+                                            <label for="prestito1_data_fine_offerta_anno" class="form-label fw-semibold">Anno Fine</label>
+                                            <select id="prestito1_data_fine_offerta_anno" name="prestito1_data_fine_offerta_anno" class="form-select">
+                                                {% for anno in anni_scadenza %}
+                                                    <option value="{{ anno }}" {% if anno == anno_default_scadenza %}selected{% endif %}>{{ anno }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <input type="hidden" id="prestito1_data_fine_offerta" name="prestito1_data_fine_offerta" value="{{ anno_default_scadenza }}-07-01">
+                                            <div class="form-text text-muted">Scadenza all'1 luglio.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="prestito1_riscatto_offerto" class="form-label fw-semibold">Riscatto</label>
@@ -276,15 +282,21 @@
                                         <label for="prestito1_tipo_richiesto" class="form-label fw-semibold">Tipo Prestito</label>
                                         <select id="prestito1_tipo_richiesto" name="prestito1_tipo_richiesto" class="form-select" disabled>
                                             <option value="">-- Seleziona --</option>
-                                            <option value="Secco">Secco</option>
+                                            <option value="Secco" selected>Secco</option>
                                             <option value="Diritto">Con diritto di riscatto</option>
                                             <option value="Obbligo">Con obbligo di riscatto</option>
                                         </select>
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-md-6">
-                                            <label for="prestito1_data_fine_richiesta" class="form-label fw-semibold">Data Fine</label>
-                                            <input type="date" id="prestito1_data_fine_richiesta" name="prestito1_data_fine_richiesta" class="form-control">
+                                            <label for="prestito1_data_fine_richiesta_anno" class="form-label fw-semibold">Anno Fine</label>
+                                            <select id="prestito1_data_fine_richiesta_anno" name="prestito1_data_fine_richiesta_anno" class="form-select">
+                                                {% for anno in anni_scadenza %}
+                                                    <option value="{{ anno }}" {% if anno == anno_default_scadenza %}selected{% endif %}>{{ anno }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <input type="hidden" id="prestito1_data_fine_richiesta" name="prestito1_data_fine_richiesta" value="{{ anno_default_scadenza }}-07-01">
+                                            <div class="form-text text-muted">Scadenza all'1 luglio.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="prestito1_riscatto_richiesto" class="form-label fw-semibold">Riscatto</label>
@@ -326,15 +338,21 @@
                                         <label for="prestito2_tipo_offerto" class="form-label fw-semibold">Tipo Prestito</label>
                                         <select id="prestito2_tipo_offerto" name="prestito2_tipo_offerto" class="form-select" disabled>
                                             <option value="">-- Seleziona --</option>
-                                            <option value="Secco">Secco</option>
+                                            <option value="Secco" selected>Secco</option>
                                             <option value="Diritto">Con diritto di riscatto</option>
                                             <option value="Obbligo">Con obbligo di riscatto</option>
                                         </select>
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-md-6">
-                                            <label for="prestito2_data_fine_offerta" class="form-label fw-semibold">Data Fine</label>
-                                            <input type="date" id="prestito2_data_fine_offerta" name="prestito2_data_fine_offerta" class="form-control">
+                                            <label for="prestito2_data_fine_offerta_anno" class="form-label fw-semibold">Anno Fine</label>
+                                            <select id="prestito2_data_fine_offerta_anno" name="prestito2_data_fine_offerta_anno" class="form-select">
+                                                {% for anno in anni_scadenza %}
+                                                    <option value="{{ anno }}" {% if anno == anno_default_scadenza %}selected{% endif %}>{{ anno }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <input type="hidden" id="prestito2_data_fine_offerta" name="prestito2_data_fine_offerta" value="{{ anno_default_scadenza }}-07-01">
+                                            <div class="form-text text-muted">Scadenza all'1 luglio.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="prestito2_riscatto_offerto" class="form-label fw-semibold">Riscatto</label>
@@ -357,15 +375,21 @@
                                         <label for="prestito2_tipo_richiesto" class="form-label fw-semibold">Tipo Prestito</label>
                                         <select id="prestito2_tipo_richiesto" name="prestito2_tipo_richiesto" class="form-select" disabled>
                                             <option value="">-- Seleziona --</option>
-                                            <option value="Secco">Secco</option>
+                                            <option value="Secco" selected>Secco</option>
                                             <option value="Diritto">Con diritto di riscatto</option>
                                             <option value="Obbligo">Con obbligo di riscatto</option>
                                         </select>
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-md-6">
-                                            <label for="prestito2_data_fine_richiesta" class="form-label fw-semibold">Data Fine</label>
-                                            <input type="date" id="prestito2_data_fine_richiesta" name="prestito2_data_fine_richiesta" class="form-control">
+                                            <label for="prestito2_data_fine_richiesta_anno" class="form-label fw-semibold">Anno Fine</label>
+                                            <select id="prestito2_data_fine_richiesta_anno" name="prestito2_data_fine_richiesta_anno" class="form-select">
+                                                {% for anno in anni_scadenza %}
+                                                    <option value="{{ anno }}" {% if anno == anno_default_scadenza %}selected{% endif %}>{{ anno }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <input type="hidden" id="prestito2_data_fine_richiesta" name="prestito2_data_fine_richiesta" value="{{ anno_default_scadenza }}-07-01">
+                                            <div class="form-text text-muted">Scadenza all'1 luglio.</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="prestito2_riscatto_richiesto" class="form-label fw-semibold">Riscatto</label>
@@ -404,42 +428,27 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-    // Funzione per formattare una data in YYYY-MM-DD
-    function formatDateToString(date) {
-        const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, '0');
-        const dd = String(date.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
-    }
-
     const nome_squadra = "{{ nome_squadra }}";
 
-    // Imposta il valore di default al prossimo 1 luglio per i campi data prestito
-    const oggi = new Date();
-    const annoCorrente = oggi.getFullYear();
-    const luglioDiQuestAnno = new Date(annoCorrente, 6, 1); // mese 6 = luglio (0-indexed)
-    
-    let defaultDate;
-    if (oggi <= luglioDiQuestAnno) {
-        // Se oggi è prima o uguale al 1 luglio di quest'anno, usa luglio di quest'anno
-        defaultDate = formatDateToString(luglioDiQuestAnno);
-    } else {
-        // Altrimenti usa luglio dell'anno prossimo
-        defaultDate = formatDateToString(new Date(annoCorrente + 1, 6, 1));
-    }
-
-    // Imposta il valore di default per i campi data prestito
-    const dataInputs = [
+    // Il giorno di scadenza dei prestiti è fisso all'1 luglio: solo l'anno è
+    // selezionabile (corrente o successivo), come nella pagina Nuovo Prestito.
+    const annoScadenzaSelectIds = [
         'prestito1_data_fine_richiesta',
         'prestito1_data_fine_offerta',
         'prestito2_data_fine_richiesta',
         'prestito2_data_fine_offerta'
     ];
-    dataInputs.forEach(id => {
-        const input = document.getElementById(id);
-        if (input) {
-            input.value = defaultDate;
-        }
+    annoScadenzaSelectIds.forEach(baseId => {
+        const select = document.getElementById(`${baseId}_anno`);
+        const hidden = document.getElementById(baseId);
+        if (!select || !hidden) return;
+
+        const aggiornaDataFine = () => {
+            hidden.value = `${select.value}-07-01`;
+        };
+
+        select.addEventListener('change', aggiornaDataFine);
+        aggiornaDataFine();
     });
 
     const form = document.querySelector('.negotiation-form');
