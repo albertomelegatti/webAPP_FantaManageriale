@@ -4,6 +4,7 @@
 {% import '_macros.html' as m %}
 
 {% if nome_giocatore %}
+<style>.contratto-icona-grande img { width: 30px !important; height: 30px !important; }</style>
 <div class="mb-2">
     {{ m.torna_indietro(url_for('rosa.user_primavera' if tipo_contratto == 'Primavera' else 'rosa.user_tagli', nome_squadra=nome_squadra)) }}
 </div>
@@ -12,7 +13,7 @@
 <div class="mb-4 rounded-2xl border border-line bg-panel p-4">
     <div class="text-base font-bold">
         {{ nome_giocatore }} <span class="ml-1">{{ m.ruolo_colorato(ruolo_giocatore) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(club_giocatore) }}
-        <span class="ml-1 inline-block scale-150 align-middle">{{ m.contratto_icona(tipo_contratto) }}</span>
+        <span class="ml-1 contratto-icona-grande">{{ m.contratto_icona(tipo_contratto) }}</span>
     </div>
 </div>
 
