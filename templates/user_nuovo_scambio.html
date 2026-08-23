@@ -479,6 +479,22 @@ document.addEventListener("DOMContentLoaded", () => {
     setupLoanTypeListener('prestito2_tipo_richiesto', 'prestito2_riscatto_richiesto');
     setupLoanTypeListener('prestito2_tipo_offerto', 'prestito2_riscatto_offerto');
 
+    // Non appena si sceglie il giocatore per un prestito, il tipo riparte da
+    // "Secco" (modificabile dopo) invece di restare vuoto: il reset a '' fatto
+    // da toggleLoan() quando il blocco viene disabilitato/riabilitato altrimenti
+    // lo lascia senza default.
+    function defaultTipoPrestitoASecco(tipoSelectId, riscattoSelectId) {
+        const tipoSelect = document.getElementById(tipoSelectId);
+        const riscattoInput = document.getElementById(riscattoSelectId);
+        tipoSelect.value = 'Secco';
+        riscattoInput.value = '0';
+        riscattoInput.disabled = true;
+    }
+    selectPrestito1Rich.on('change', (value) => { if (value) defaultTipoPrestitoASecco('prestito1_tipo_richiesto', 'prestito1_riscatto_richiesto'); });
+    selectPrestito1Off.on('change', (value) => { if (value) defaultTipoPrestitoASecco('prestito1_tipo_offerto', 'prestito1_riscatto_offerto'); });
+    selectPrestito2Rich.on('change', (value) => { if (value) defaultTipoPrestitoASecco('prestito2_tipo_richiesto', 'prestito2_riscatto_richiesto'); });
+    selectPrestito2Off.on('change', (value) => { if (value) defaultTipoPrestitoASecco('prestito2_tipo_offerto', 'prestito2_riscatto_offerto'); });
+
     function updateMaxItems() {
         const destOption = selectSquadra.options[selectSquadra.selectedIndex];
         const destFreeSlots = destOption ? parseInt(destOption.dataset.slotLiberi) || 0 : 0;
