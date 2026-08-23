@@ -41,9 +41,9 @@
         </button>
         {% else %}
         <a href="{{ url_for('rosa.richiesta_modifica_contratto', nome_squadra=nome_squadra, id_giocatore=giocatore.id) }}"
-           data-tip="Vendi"
+           data-tip="Modifica contratto"
            class="flex w-14 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-accent px-1 py-1.5 text-[10px] font-bold uppercase text-white">
-            <i class="bi bi-cash-coin"></i> Vend
+            <i class="bi bi-pencil-square"></i> Mod
         </a>
         {% endif %}
     </div>

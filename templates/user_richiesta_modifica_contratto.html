@@ -21,8 +21,11 @@
                             <div class="mb-3">
                                 <label for="nuovo_contratto" class="form-label"><strong>Nuovo Contratto Richiesto:</strong></label>
                                 {% if tipo_contratto == 'Primavera' %}
-                                <input type="text" class="form-control" value="Trasferimento Reale" disabled readonly>
-                                <input type="hidden" id="nuovo_contratto" name="nuovo_contratto" value="Svincolato">
+                                <select class="form-select" id="nuovo_contratto" name="nuovo_contratto" required>
+                                    <option value="" disabled selected>Seleziona un'opzione...</option>
+                                    <option value="Svincolato">Trasferimento Reale</option>
+                                    <option value="Prestito Reale">Prestito Reale</option>
+                                </select>
                                 {% else %}
                                 <select class="form-select" id="nuovo_contratto" name="nuovo_contratto" required>
                                     <option value="" disabled selected>Seleziona un'opzione...</option>
