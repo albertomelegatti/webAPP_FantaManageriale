@@ -160,6 +160,7 @@ def user_aste(nome_squadra):
 def nuova_asta(nome_squadra):
     conn = None
     giocatori_disponibili_per_asta = []
+    giocatori_info_per_asta = []
 
     try:
         conn = get_connection()
@@ -168,18 +169,23 @@ def nuova_asta(nome_squadra):
 
         # Recupera i giocatori disponibili per l'asta
         cur.execute('''
-            SELECT nome
+            SELECT nome, ruolo, club
             FROM giocatore AS g
             WHERE tipo_contratto = 'Svincolato'
               AND priorita = 1
               AND NOT EXISTS (
-                    SELECT 1 
-                    FROM asta a 
-                    WHERE a.giocatore = g.id 
+                    SELECT 1
+                    FROM asta a
+                    WHERE a.giocatore = g.id
                         AND a.stato IN ('mostra_interesse', 'in_corso')
               );
         ''')
-        giocatori_disponibili_per_asta = [row["nome"] for row in cur.fetchall()]
+        giocatori_raw = cur.fetchall()
+        giocatori_disponibili_per_asta = [row["nome"] for row in giocatori_raw]
+        giocatori_info_per_asta = [
+            {"nome": row["nome"], "ruolo": (row["ruolo"] or "").strip("{}"), "club": row["club"]}
+            for row in giocatori_raw
+        ]
 
 
         if request.method == "POST":
@@ -306,9 +312,10 @@ def nuova_asta(nome_squadra):
     # Controlla se la creazione di giocatori è abilitata per il template
     enable_player_creation = os.getenv("ENABLE_PLAYER_CREATION", "false").lower() == "true"
 
-    return render_template("user_nuova_asta.html", 
+    return render_template("user_nuova_asta.html",
                          nome_squadra=nome_squadra,
                          giocatori_disponibili_per_asta=giocatori_disponibili_per_asta,
+                         giocatori_info_per_asta=giocatori_info_per_asta,
                          enable_player_creation=enable_player_creation)
 
 

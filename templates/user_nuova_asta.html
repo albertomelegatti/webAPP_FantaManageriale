@@ -83,8 +83,9 @@ window.addEventListener("load", function() {
     const creaMsg = document.getElementById("creaGiocatore");
     const btnAvviaAsta = document.getElementById("btnAvviaAsta");
 
-    // Lista di giocatori passata dal server
-    const giocatori = JSON.parse('{{ giocatori_disponibili_per_asta|tojson|safe }}');
+    // Lista di giocatori (con ruolo e club) passata dal server
+    const giocatoriInfo = JSON.parse('{{ giocatori_info_per_asta|tojson|safe }}');
+    const giocatori = giocatoriInfo.map(g => g.nome);
     // @ts-ignore
     const enableCreation = '{{ enable_player_creation|tojson|safe }}' === 'true' || '{{ enable_player_creation|tojson|safe }}' === 'True';
 
@@ -104,17 +105,28 @@ window.addEventListener("load", function() {
 
         if (query.length < 2) return;
 
-        const filtrati = giocatori.filter(g => g.toLowerCase().includes(query));
+        const filtrati = giocatoriInfo.filter(g => g.nome.toLowerCase().includes(query));
 
         if (filtrati.length > 0) {
-            // Mostra suggerimenti se trovati
+            // Mostra suggerimenti se trovati, con ruolo e club di ciascuno
             filtrati.forEach(g => {
                 const button = document.createElement("button");
                 button.type = "button";
-                button.className = "block w-full px-3 py-2 text-left text-sm hover:bg-panel-2";
-                button.textContent = g;
+                button.className = "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-panel-2";
+
+                const nomeSpan = document.createElement("span");
+                nomeSpan.textContent = g.nome;
+
+                const infoSpan = document.createElement("span");
+                infoSpan.className = "shrink-0 whitespace-nowrap text-xs text-muted";
+                const club = (g.club || "").slice(0, 3).toUpperCase();
+                infoSpan.textContent = [g.ruolo, club].filter(Boolean).join(" - ");
+
+                button.appendChild(nomeSpan);
+                button.appendChild(infoSpan);
+
                 button.onclick = () => {
-                    input.value = g;
+                    input.value = g.nome;
                     suggerimenti.innerHTML = "";
                     erroreMsg.classList.add("hidden");
                     if (creaMsg) creaMsg.classList.add("hidden");
