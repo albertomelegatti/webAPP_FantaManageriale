@@ -2,14 +2,11 @@ import psycopg2
 import telegram_utils
 import os
 import time
-from datetime import datetime
-from io import BytesIO
 from dotenv import load_dotenv
-from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify, send_file
+from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify
 from flask_compress import Compress
 from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
-from openpyxl import Workbook
 from admin import admin_bp
 from user import user_bp, format_partecipanti, formatta_data
 from user_aste import aste_bp
@@ -20,7 +17,7 @@ from webhook import webhook_bp
 from vetrina import vetrina_bp
 from db import get_connection, release_connection, init_pool
 from telegram_utils import get_all_telegram_ids
-from queries import get_slot_giocatori, get_slot_aste, ruolo_sort_key
+from queries import get_slot_giocatori, get_slot_aste, ruolo_sort_key, ruolo_base_sort_key
 from chatbot import get_answer
 
 app = Flask(__name__)
@@ -537,50 +534,57 @@ def crediti_stadi_slot():
 def listone():
     conn = None
     cur = None
+    giocatori = []
 
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute("""
-            SELECT *
-            FROM giocatore
-            ORDER BY id;
+            SELECT g.nome, g.ruolo, g.club, g.squadra_att, g.tipo_contratto, g.quot_att_mantra, s.username AS squadra_username
+            FROM giocatore g
+            LEFT JOIN squadra s ON s.nome = g.squadra_att AND g.squadra_att <> 'Svincolato'
+            WHERE g.priorita = 1
+            ORDER BY g.quot_att_mantra DESC;
         """)
-        giocatori = cur.fetchall()
-
-        workbook = Workbook()
-        sheet = workbook.active
-        sheet.title = "Giocatori"
-
-        if giocatori:
-            headers = list(giocatori[0].keys())
-            sheet.append(headers)
-
-            for giocatore in giocatori:
-                sheet.append([giocatore.get(colonna) for colonna in headers])
-        else:
-            sheet.append(["Nessun giocatore trovato"])
-
-        output = BytesIO()
-        workbook.save(output)
-        output.seek(0)
-
-        nome_file = f"listone_giocatori_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-        return send_file(
-            output,
-            as_attachment=True,
-            download_name=nome_file,
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+        giocatori = [
+            {
+                "nome": g["nome"],
+                "ruolo": (g["ruolo"] or "").strip("{}"),
+                "club": g["club"],
+                "squadra_att": g["squadra_att"],
+                "squadra_username": g["squadra_username"],
+                "tipo_contratto": g["tipo_contratto"],
+                "quotazione": g["quot_att_mantra"],
+            }
+            for g in cur.fetchall()
+        ]
 
     except Exception as e:
-        print("Errore esportazione listone:", e)
-        flash("❌ Errore durante la generazione del file Excel.", "danger")
-        return redirect(url_for('home'))
+        print("Errore caricamento listone:", e)
+        flash("❌ Errore durante il caricamento del listone.", "danger")
 
     finally:
         release_connection(conn, cur)
+
+    ruoli_base = set()
+    for g in giocatori:
+        for token in g["ruolo"].split(","):
+            token = token.strip()
+            if token:
+                ruoli_base.add(token)
+    ruoli_disponibili = sorted(ruoli_base, key=ruolo_base_sort_key)
+
+    club_disponibili = sorted({g["club"] for g in giocatori if g["club"]})
+    squadre_disponibili = sorted({g["squadra_att"] for g in giocatori if g["squadra_att"]})
+    contratti_disponibili = sorted({g["tipo_contratto"] for g in giocatori if g["tipo_contratto"]})
+
+    return render_template("listone.html",
+                            giocatori=giocatori,
+                            ruoli_disponibili=ruoli_disponibili,
+                            club_disponibili=club_disponibili,
+                            squadre_disponibili=squadre_disponibili,
+                            contratti_disponibili=contratti_disponibili)
 
 
 @app.route("/aste")
