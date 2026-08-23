@@ -73,7 +73,7 @@
 {% endif %}
 
 <div class="mt-4 text-center">
-    <a href="{{ url_for('aste.user_aste', nome_squadra=nome_squadra) }}" class="text-sm text-muted hover:text-accent">← Torna alle aste</a>
+    {{ m.torna_indietro(url_for('aste.user_aste', nome_squadra=nome_squadra), 'Torna alle aste') }}
 </div>
 
 {% else %}
@@ -81,7 +81,7 @@
     ⚠️ L'asta selezionata non è disponibile o è stata rimossa.
 </div>
 <div class="mt-4 text-center">
-    <a href="{{ url_for('aste.user_aste', nome_squadra=nome_squadra) }}" class="text-sm text-muted hover:text-accent">← Torna alle aste</a>
+    {{ m.torna_indietro(url_for('aste.user_aste', nome_squadra=nome_squadra), 'Torna alle aste') }}
 </div>
 {% endif %}
 {% endblock %}
