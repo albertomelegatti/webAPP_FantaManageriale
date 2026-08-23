@@ -11,7 +11,7 @@
             <input type="text" id="giocatore" name="giocatore" autocomplete="off"
                    placeholder="Inizia a digitare il nome..."
                    class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-sm outline-none focus:border-accent">
-            <div id="suggerimenti" class="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-line bg-panel shadow-lg empty:hidden"></div>
+            <div id="suggerimenti" class="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-xl border border-line bg-panel empty:hidden"></div>
         </div>
 
         <div id="erroreGiocatore" class="hidden text-sm text-ko">Seleziona un giocatore valido dalla lista.</div>
@@ -96,7 +96,6 @@ window.addEventListener("load", function() {
         confermaMsg.classList.add("hidden");
         if (creaMsg) creaMsg.classList.add("hidden");
 
-        btnAvviaAsta.classList.remove("hidden");
         btnAvviaAsta.disabled = true;
 
         if (query.length < 2) return;
@@ -104,11 +103,7 @@ window.addEventListener("load", function() {
         const filtrati = giocatori.filter(g => g.toLowerCase().includes(query));
 
         if (filtrati.length > 0) {
-            // Mostra suggerimenti se trovati: il menu è in overlay sopra il
-            // resto del form, quindi nascondiamo il bottone sottostante
-            // invece di lasciarlo intravedere sotto il dropdown.
-            btnAvviaAsta.classList.add("hidden");
-
+            // Mostra suggerimenti se trovati
             filtrati.forEach(g => {
                 const button = document.createElement("button");
                 button.type = "button";
@@ -120,7 +115,6 @@ window.addEventListener("load", function() {
                     erroreMsg.classList.add("hidden");
                     if (creaMsg) creaMsg.classList.add("hidden");
                     confermaMsg.classList.remove("hidden");
-                    btnAvviaAsta.classList.remove("hidden");
                     btnAvviaAsta.disabled = false;
                 };
                 suggerimenti.appendChild(button);
@@ -138,7 +132,6 @@ window.addEventListener("load", function() {
     document.addEventListener("click", function(e) {
         if (!input.contains(e.target) && !suggerimenti.contains(e.target)) {
             suggerimenti.innerHTML = "";
-            btnAvviaAsta.classList.remove("hidden");
         }
     });
 
