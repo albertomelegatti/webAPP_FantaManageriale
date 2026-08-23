@@ -15,7 +15,10 @@
         </div>
 
         <div id="erroreGiocatore" class="hidden text-sm text-ko">Seleziona un giocatore valido dalla lista.</div>
-        <div id="confermaGiocatore" class="hidden text-sm text-ok">Giocatore selezionato correttamente!</div>
+        <div id="confermaGiocatore" class="hidden items-center gap-1 text-sm text-ok">
+            <i class="bi bi-check-circle-fill"></i>
+            <span id="confermaGiocatoreInfo"></span>
+        </div>
 
         {% if enable_player_creation %}
         <div id="creaGiocatore" class="hidden items-center gap-2 text-sm text-muted">
@@ -80,6 +83,7 @@ window.addEventListener("load", function() {
     const form = document.getElementById("nuovaAstaForm");
     const erroreMsg = document.getElementById("erroreGiocatore");
     const confermaMsg = document.getElementById("confermaGiocatore");
+    const confermaGiocatoreInfo = document.getElementById("confermaGiocatoreInfo");
     const creaMsg = document.getElementById("creaGiocatore");
     const btnAvviaAsta = document.getElementById("btnAvviaAsta");
 
@@ -118,6 +122,26 @@ window.addEventListener("load", function() {
         return span;
     }
 
+    // Frammento "Nome Ruolo - Club" riutilizzato sia nelle righe del
+    // dropdown sia nella conferma di selezione
+    function rigaGiocatore(g) {
+        const frag = document.createDocumentFragment();
+        frag.appendChild(document.createTextNode(g.nome));
+        frag.appendChild(ruoloColorato(g.ruolo));
+
+        const sep = document.createElement("span");
+        sep.className = "mx-1 text-muted";
+        sep.textContent = "-";
+        frag.appendChild(sep);
+
+        const clubSpan = document.createElement("span");
+        clubSpan.className = "whitespace-nowrap font-semibold uppercase text-muted";
+        clubSpan.textContent = (g.club || "").slice(0, 3);
+        frag.appendChild(clubSpan);
+
+        return frag;
+    }
+
     input.addEventListener("input", function() {
         const query = this.value.toLowerCase().trim();
 
@@ -142,27 +166,19 @@ window.addEventListener("load", function() {
                 const button = document.createElement("button");
                 button.type = "button";
                 button.className = "block w-full px-3 py-2 text-left text-sm hover:bg-panel-2";
-
-                // Stesso formato usato altrove nell'app: "Nome Ruolo - Club"
-                button.appendChild(document.createTextNode(g.nome));
-                button.appendChild(ruoloColorato(g.ruolo));
-
-                const sep = document.createElement("span");
-                sep.className = "mx-1 text-muted";
-                sep.textContent = "-";
-                button.appendChild(sep);
-
-                const clubSpan = document.createElement("span");
-                clubSpan.className = "whitespace-nowrap font-semibold uppercase text-muted";
-                clubSpan.textContent = (g.club || "").slice(0, 3);
-                button.appendChild(clubSpan);
+                button.appendChild(rigaGiocatore(g));
 
                 button.onclick = () => {
                     input.value = g.nome;
                     suggerimenti.innerHTML = "";
                     erroreMsg.classList.add("hidden");
                     if (creaMsg) creaMsg.classList.add("hidden");
+
+                    confermaGiocatoreInfo.innerHTML = "";
+                    confermaGiocatoreInfo.appendChild(rigaGiocatore(g));
                     confermaMsg.classList.remove("hidden");
+                    confermaMsg.classList.add("flex");
+
                     btnAvviaAsta.classList.remove("hidden");
                     btnAvviaAsta.disabled = false;
                 };
