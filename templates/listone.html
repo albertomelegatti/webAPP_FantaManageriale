@@ -81,11 +81,11 @@
                     {% if g.squadra_username %}
                     <img src="{{ url_for('static', filename='loghi/' ~ g.squadra_username ~ '.png') }}?v={{ asset_v('loghi/' ~ g.squadra_username ~ '.png') }}"
                          alt="{{ g.squadra_att }}" data-tip="{{ g.squadra_att }}"
-                         class="h-6 w-6 rounded-lg bg-panel-2 object-contain p-0.5">
+                         class="h-6 w-6 object-contain">
                     {% else %}
                     <img src="{{ url_for('static', filename='loghi/svincolato.png') }}?v={{ asset_v('loghi/svincolato.png') }}"
                          alt="Svincolato" data-tip="Svincolato"
-                         class="h-6 w-6 rounded-lg bg-panel-2 object-contain p-0.5">
+                         class="h-6 w-6 object-contain">
                     {% endif %}
                 </td>
                 <td class="py-2 pr-1 text-center">{{ m.contratto_icona(g.tipo_contratto) }}</td>
