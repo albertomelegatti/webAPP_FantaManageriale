@@ -76,8 +76,8 @@
                 data-squadra="{{ g.squadra_att }}" data-contratto="{{ g.tipo_contratto }}">
                 <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-1 font-medium">{{ g.nome }}</td>
                 <td class="overflow-hidden py-2 pr-1">{{ m.ruolo_colorato(g.ruolo) }}</td>
-                <td class="overflow-hidden py-2 pr-1 text-center text-muted">{{ m.club_abbr(g.club) }}</td>
-                <td class="py-2 pr-1 text-center text-muted">
+                <td class="overflow-hidden py-2 text-center text-muted">{{ m.club_abbr(g.club) }}</td>
+                <td class="py-2 text-center text-muted">
                     {% if g.squadra_username %}
                     <img src="{{ url_for('static', filename='loghi/' ~ g.squadra_username ~ '.png') }}?v={{ asset_v('loghi/' ~ g.squadra_username ~ '.png') }}"
                          alt="{{ g.squadra_att }}" data-tip="{{ g.squadra_att }}"
@@ -88,7 +88,7 @@
                          class="h-6 w-6 object-contain">
                     {% endif %}
                 </td>
-                <td class="py-2 pr-1 text-center">{{ m.contratto_icona(g.tipo_contratto) }}</td>
+                <td class="py-2 text-center">{{ m.contratto_icona(g.tipo_contratto) }}</td>
                 <td class="py-2 text-right tabular-nums">{{ g.quotazione }}</td>
             </tr>
             {% endfor %}
