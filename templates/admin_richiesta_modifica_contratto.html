@@ -16,7 +16,7 @@
     {% for richiesta in nuove_richieste_list %}
     <div class="rounded-2xl border border-line bg-panel p-3">
         <div class="flex items-center justify-between gap-2">
-            <span class="min-w-0 truncate font-medium">{{ richiesta.nome_giocatore }}</span>
+            <span class="min-w-0 truncate font-medium">{{ richiesta.nome_giocatore }} <span class="ml-1">{{ m.ruolo_colorato(richiesta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(richiesta.club) }}</span>
             <span class="shrink-0 text-xs text-muted">{{ richiesta.data }}</span>
         </div>
         <div class="mt-1 text-xs text-muted">{{ richiesta.squadra_richiedente }}</div>
@@ -57,7 +57,7 @@
     {% for richiesta in richieste_accettate_list %}
     <div class="rounded-2xl border border-line bg-panel p-3">
         <div class="flex items-center justify-between gap-2">
-            <span class="min-w-0 truncate font-medium">{{ richiesta.nome_giocatore }}</span>
+            <span class="min-w-0 truncate font-medium">{{ richiesta.nome_giocatore }} <span class="ml-1">{{ m.ruolo_colorato(richiesta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(richiesta.club) }}</span>
             <span class="shrink-0 text-xs text-muted">{{ richiesta.data }}</span>
         </div>
         <div class="mt-1 text-xs text-muted">{{ richiesta.squadra_richiedente }}</div>
@@ -83,7 +83,7 @@
     {% for richiesta in richieste_rifiutate_list %}
     <div class="rounded-2xl border border-line bg-panel p-3">
         <div class="flex items-center justify-between gap-2">
-            <span class="min-w-0 truncate font-medium">{{ richiesta.nome_giocatore }}</span>
+            <span class="min-w-0 truncate font-medium">{{ richiesta.nome_giocatore }} <span class="ml-1">{{ m.ruolo_colorato(richiesta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(richiesta.club) }}</span>
             <span class="shrink-0 text-xs text-muted">{{ richiesta.data }}</span>
         </div>
         <div class="mt-1 text-xs text-muted">{{ richiesta.squadra_richiedente }}</div>
