@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
 from user import format_partecipanti, formatta_data
-from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati
+from queries import get_crediti_e_offerta, get_slot_occupati
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -128,8 +128,7 @@ def user_aste(nome_squadra):
         
 
         # Ottengo i crediti e i crediti disponibili
-        crediti = get_crediti_squadra(conn, nome_squadra)
-        offerta_totale = get_offerta_totale(conn, nome_squadra)
+        crediti, offerta_totale = get_crediti_e_offerta(conn, nome_squadra)
         offerta_massima_possibile = crediti - offerta_totale
         slot_occupati = get_slot_occupati(conn, nome_squadra)
 
@@ -376,25 +375,20 @@ def singola_asta_attiva(asta_id, nome_squadra):
                 return redirect(url_for("aste.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
 
 
-        # Recupero dati asta
+        # Recupero dati asta (join diretto sull'id dell'asta: un'unica riga,
+        # non serve filtrare tutta la tabella giocatore per tipo_contratto)
         cur.execute('''
-            WITH giocatori_svincolati AS (
-                SELECT id, nome, ruolo, club
-                FROM giocatore
-                WHERE tipo_contratto = 'Svincolato'
-            )
             SELECT g.nome, g.ruolo, g.club, a.ultima_offerta, a.squadra_vincente, a.tempo_fine_asta, a.partecipanti
             FROM asta a
-            JOIN giocatori_svincolati g ON a.giocatore = g.id
+            JOIN giocatore g ON a.giocatore = g.id
             WHERE a.id = %s;
         ''', (asta_id,))
         asta_raw = cur.fetchone()
 
         if asta_raw:
             # Recupero crediti disponibili
-            crediti = get_crediti_squadra(conn, nome_squadra)
-            offerta_totale = get_offerta_totale(conn, nome_squadra)
-            
+            crediti, offerta_totale = get_crediti_e_offerta(conn, nome_squadra)
+
 
             # Calcolo offerta massima possibile
             if asta_raw["squadra_vincente"] == nome_squadra:
