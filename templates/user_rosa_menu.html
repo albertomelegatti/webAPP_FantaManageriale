@@ -2,11 +2,12 @@
 
 {% block content %}
 {% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('user.squadra_login', nome_squadra=nome_squadra)) }}</div>
 <h2 class="mb-4 text-center text-lg font-bold">Gestione Rosa di {{ nome_squadra }}</h2>
 
 <div class="flex flex-col gap-2">
     {{ m.voce_menu(url_for('rosa.user_tagli', nome_squadra=nome_squadra), 'bi-file-earmark-text-fill', 'Gestione Contratti') }}
-    {{ m.voce_menu(url_for('rosa.user_primavera', nome_squadra=nome_squadra), 'bi-flower1', 'Primavera') }}
+    {{ m.voce_menu(url_for('rosa.user_primavera', nome_squadra=nome_squadra), 'bi-flower3', 'Primavera') }}
     {{ m.voce_menu(url_for('rosa.user_vetrina', nome_squadra=nome_squadra), 'bi-shop-window', 'Vetrina') }}
 </div>
 {% endblock %}

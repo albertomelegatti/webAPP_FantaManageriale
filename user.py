@@ -2,7 +2,7 @@ from flask import Blueprint, render_template
 from db import get_connection, release_connection
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
-from queries import get_slot_aste, get_slot_giocatori, get_slot_prestiti_in
+from queries import get_slot_aste, get_slot_giocatori, get_slot_prestiti_in, get_crediti_squadra
 
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
@@ -22,9 +22,11 @@ def squadra_login(nome_squadra):
     slot_occupati = slot_giocatori + slot_aste
     prestiti_in_num = get_slot_prestiti_in(conn, nome_squadra)
 
+    crediti = get_crediti_squadra(conn, nome_squadra)
+
     release_connection(conn, cur)
 
-    return render_template("squadra_login.html", nome_squadra=nome_squadra, username=username, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num)
+    return render_template("squadra_login.html", nome_squadra=nome_squadra, username=username, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num, crediti=crediti)
 
 
 @user_bp.route("/mercato_menu/<nome_squadra>")
