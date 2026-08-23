@@ -2,6 +2,7 @@
 
 {% block content %}
 {% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('user.user_rosa_menu', nome_squadra=nome_squadra)) }}</div>
 <h2 class="mb-2 text-lg font-bold">Svincoli &amp; Gestione Contratti - {{ nome_squadra }}</h2>
 <p class="mb-1 text-sm text-muted">✂️ Quando un giocatore viene svincolato, la squadra dovrà pagare metà della sua quotazione attuale arrotondata per eccesso.</p>
 

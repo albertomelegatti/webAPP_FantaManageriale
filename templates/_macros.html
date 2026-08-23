@@ -1,3 +1,7 @@
+{% macro torna_indietro(href, testo='Indietro') %}
+<a href="{{ href }}" class="inline-flex shrink-0 items-center gap-1 text-sm text-muted hover:text-accent">← {{ testo }}</a>
+{% endmacro %}
+
 {% macro voce_menu(href, icona, titolo) %}
 <a href="{{ href }}" class="flex items-center gap-3 rounded-2xl border border-line bg-panel p-3 transition hover:border-accent">
     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-panel-2 text-lg text-accent">

@@ -2,6 +2,7 @@
 
 {% block content %}
 {% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('user.user_rosa_menu', nome_squadra=nome_squadra)) }}</div>
 <h2 class="mb-2 text-lg font-bold">Promozione Giocatori dalla Primavera</h2>
 <p class="mb-4 text-sm text-muted">Qui puoi promuovere un giocatore in prima squadra, tagliarlo o richiederne la modifica del contratto: per i giocatori in primavera non sono previsti costi per il taglio.</p>
 

@@ -1,6 +1,8 @@
 {% extends 'base_tailwind.html' %}
 
 {% block content %}
+{% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('aste.user_aste', nome_squadra=nome_squadra)) }}</div>
 <h2 class="mb-1 text-center text-lg font-bold">Nuova asta</h2>
 <p class="mb-4 text-center text-sm text-muted">Cerca un giocatore per iniziare una nuova asta.</p>
 
