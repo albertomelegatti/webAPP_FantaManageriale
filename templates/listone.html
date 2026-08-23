@@ -92,15 +92,15 @@
                 <td class="py-2 text-muted">
                     {% if g.squadra_username %}
                     <img src="{{ url_for('static', filename='loghi/' ~ g.squadra_username ~ '.png') }}?v={{ asset_v('loghi/' ~ g.squadra_username ~ '.png') }}"
-                         alt="{{ g.squadra_att }}" data-tip="{{ g.squadra_att }}"
+                         alt="{{ g.squadra_att }}" data-sortkey="{{ g.squadra_att }}"
                          class="mx-auto h-6 w-6 object-contain">
                     {% else %}
                     <img src="{{ url_for('static', filename='loghi/svincolato.png') }}?v={{ asset_v('loghi/svincolato.png') }}"
-                         alt="Svincolato" data-tip="Svincolato"
+                         alt="Svincolato" data-sortkey="Svincolato"
                          class="mx-auto h-6 w-6 object-contain">
                     {% endif %}
                 </td>
-                <td class="py-2 text-center">{{ m.contratto_icona(g.tipo_contratto) }}</td>
+                <td class="py-2 text-center">{{ m.contratto_icona(g.tipo_contratto, mostra_tip=false) }}</td>
                 <td class="py-2 text-right tabular-nums">{{ g.quotazione }}</td>
             </tr>
             {% endfor %}
@@ -239,12 +239,12 @@ document.addEventListener('DOMContentLoaded', function () {
         return match ? parseFloat(match[0]) : NaN;
     };
     // Le celle con solo icona/immagine (contratto, squadra) non hanno testo:
-    // usa il data-tip dell'eventuale elemento interno come chiave di ordinamento.
+    // usa il data-sortkey dell'eventuale elemento interno come chiave di ordinamento.
     const cellSortValue = (cell) => {
         const text = cell.textContent.trim();
         if (text) return text;
-        const withTip = cell.querySelector('[data-tip]');
-        return withTip ? withTip.dataset.tip : '';
+        const withKey = cell.querySelector('[data-sortkey]');
+        return withKey ? withKey.dataset.sortkey : '';
     };
     headers.forEach(function (header, index) {
         if (header.classList.contains('no-sort')) return;
