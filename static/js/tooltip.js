@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const text = el.getAttribute('data-tip');
         if (!text) return;
         const tip = document.createElement('div');
-        tip.className = 'fixed z-50 rounded-lg border border-line bg-panel px-2.5 py-1.5 text-xs font-semibold text-text shadow-lg';
+        tip.className = 'fixed z-50 rounded-lg border border-line bg-panel px-2.5 py-1.5 text-sm font-semibold text-text shadow-lg';
         tip.textContent = text;
         document.body.appendChild(tip);
         positionTip(tip, el);
