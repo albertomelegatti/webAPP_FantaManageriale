@@ -7,18 +7,25 @@
 <div class="rounded-2xl border border-line bg-panel p-4">
     <form id="nuovaAstaForm" method="POST" class="flex flex-col gap-2">
         <label for="giocatore" class="text-xs font-semibold uppercase tracking-wide text-muted">Cerca giocatore</label>
-        <div class="relative">
-            <input type="text" id="giocatore" name="giocatore" autocomplete="off"
+        <div id="ricercaGiocatore" class="relative">
+            <input type="text" id="giocatore" autocomplete="off"
                    placeholder="Inizia a digitare il nome..."
                    class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-sm outline-none focus:border-accent">
             <div id="suggerimenti" class="absolute z-10 mt-1 max-h-80 w-full overflow-y-auto rounded-xl border border-line bg-panel empty:hidden"></div>
         </div>
 
-        <div id="erroreGiocatore" class="hidden text-sm text-ko">Seleziona un giocatore valido dalla lista.</div>
-        <div id="confermaGiocatore" class="hidden items-center gap-1 text-sm text-ok">
-            <i class="bi bi-check-circle-fill"></i>
-            <span id="confermaGiocatoreInfo"></span>
+        <!-- Sostituisce il campo di ricerca una volta scelto un giocatore:
+             mostra ruolo/club solo a video. Il valore effettivamente
+             inviato al backend resta nell'input hidden qui sotto. -->
+        <div id="confermaGiocatore" class="hidden w-full items-center justify-between gap-2 rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-sm">
+            <span id="confermaGiocatoreInfo" class="flex items-center text-ok"></span>
+            <button type="button" id="btnCambiaGiocatore" class="shrink-0 text-muted hover:text-accent" aria-label="Cambia giocatore">
+                <i class="bi bi-x-lg"></i>
+            </button>
         </div>
+        <input type="hidden" id="giocatoreValore" name="giocatore" value="">
+
+        <div id="erroreGiocatore" class="hidden text-sm text-ko">Seleziona un giocatore valido dalla lista.</div>
 
         {% if enable_player_creation %}
         <div id="creaGiocatore" class="hidden items-center gap-2 text-sm text-muted">
@@ -79,11 +86,14 @@
 <script>
 window.addEventListener("load", function() {
     const input = document.getElementById("giocatore");
+    const ricercaGiocatore = document.getElementById("ricercaGiocatore");
     const suggerimenti = document.getElementById("suggerimenti");
     const form = document.getElementById("nuovaAstaForm");
     const erroreMsg = document.getElementById("erroreGiocatore");
     const confermaMsg = document.getElementById("confermaGiocatore");
     const confermaGiocatoreInfo = document.getElementById("confermaGiocatoreInfo");
+    const btnCambiaGiocatore = document.getElementById("btnCambiaGiocatore");
+    const giocatoreValore = document.getElementById("giocatoreValore");
     const creaMsg = document.getElementById("creaGiocatore");
     const btnAvviaAsta = document.getElementById("btnAvviaAsta");
 
@@ -149,6 +159,7 @@ window.addEventListener("load", function() {
         erroreMsg.classList.add("hidden");
         confermaMsg.classList.add("hidden");
         if (creaMsg) creaMsg.classList.add("hidden");
+        giocatoreValore.value = "";
 
         // Il bottone compare solo dopo una selezione valida dalla lista:
         // finché si sta ancora cercando resta nascosto, così non può mai
@@ -169,12 +180,19 @@ window.addEventListener("load", function() {
                 button.appendChild(rigaGiocatore(g));
 
                 button.onclick = () => {
-                    input.value = g.nome;
+                    giocatoreValore.value = g.nome;
                     suggerimenti.innerHTML = "";
                     erroreMsg.classList.add("hidden");
                     if (creaMsg) creaMsg.classList.add("hidden");
 
+                    // Il campo di ricerca lascia il posto al box con le
+                    // informazioni del giocatore, invece di mostrare il nome
+                    // due volte (una nell'input, una sotto).
+                    ricercaGiocatore.classList.add("hidden");
+                    const check = document.createElement("i");
+                    check.className = "bi bi-check-circle-fill mr-1";
                     confermaGiocatoreInfo.innerHTML = "";
+                    confermaGiocatoreInfo.appendChild(check);
                     confermaGiocatoreInfo.appendChild(rigaGiocatore(g));
                     confermaMsg.classList.remove("hidden");
                     confermaMsg.classList.add("flex");
@@ -200,12 +218,25 @@ window.addEventListener("load", function() {
         }
     });
 
+    // Bottone "cambia": torna al campo di ricerca per scegliere un altro giocatore
+    btnCambiaGiocatore.addEventListener("click", function() {
+        giocatoreValore.value = "";
+        confermaMsg.classList.add("hidden");
+        confermaMsg.classList.remove("flex");
+        ricercaGiocatore.classList.remove("hidden");
+        input.value = "";
+        input.focus();
+        btnAvviaAsta.classList.add("hidden");
+        btnAvviaAsta.disabled = true;
+    });
+
     // Controllo submit form principale
     form.addEventListener("submit", function(e) {
-        const valore = input.value.trim();
-        if (!giocatori.includes(valore)) {
+        const valore = giocatoreValore.value.trim();
+        if (!valore || !giocatori.includes(valore)) {
             e.preventDefault();
             confermaMsg.classList.add("hidden");
+            ricercaGiocatore.classList.remove("hidden");
             erroreMsg.classList.remove("hidden");
         } else {
             if (!confirm(`Vuoi davvero avviare un'asta per ${valore}?`)) {
