@@ -14,25 +14,23 @@
             <div id="suggerimenti" class="absolute z-10 mt-1 max-h-80 w-full overflow-y-auto rounded-xl border border-line bg-panel empty:hidden"></div>
         </div>
 
-        <div id="restoForm">
-            <div id="erroreGiocatore" class="hidden text-sm text-ko">Seleziona un giocatore valido dalla lista.</div>
-            <div id="confermaGiocatore" class="hidden text-sm text-ok">Giocatore selezionato correttamente!</div>
+        <div id="erroreGiocatore" class="hidden text-sm text-ko">Seleziona un giocatore valido dalla lista.</div>
+        <div id="confermaGiocatore" class="hidden text-sm text-ok">Giocatore selezionato correttamente!</div>
 
-            {% if enable_player_creation %}
-            <div id="creaGiocatore" class="hidden items-center gap-2 text-sm text-muted">
-                <span><i class="bi bi-info-circle"></i> Giocatore non trovato.</span>
-                <button type="button" id="btnApriModal"
-                        class="rounded-lg bg-ok px-2.5 py-1 text-xs font-semibold text-white">
-                    <i class="bi bi-plus-lg"></i> Crea Giocatore
-                </button>
-            </div>
-            {% endif %}
-
-            <button type="submit" id="btnAvviaAsta" disabled
-                    class="mt-2 w-full rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
-                Avvia Asta
+        {% if enable_player_creation %}
+        <div id="creaGiocatore" class="hidden items-center gap-2 text-sm text-muted">
+            <span><i class="bi bi-info-circle"></i> Giocatore non trovato.</span>
+            <button type="button" id="btnApriModal"
+                    class="rounded-lg bg-ok px-2.5 py-1 text-xs font-semibold text-white">
+                <i class="bi bi-plus-lg"></i> Crea Giocatore
             </button>
         </div>
+        {% endif %}
+
+        <button type="submit" id="btnAvviaAsta" disabled
+                class="mt-2 hidden w-full rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+            Avvia Asta
+        </button>
     </form>
 </div>
 
@@ -79,7 +77,6 @@
 window.addEventListener("load", function() {
     const input = document.getElementById("giocatore");
     const suggerimenti = document.getElementById("suggerimenti");
-    const restoForm = document.getElementById("restoForm");
     const form = document.getElementById("nuovaAstaForm");
     const erroreMsg = document.getElementById("erroreGiocatore");
     const confermaMsg = document.getElementById("confermaGiocatore");
@@ -95,12 +92,14 @@ window.addEventListener("load", function() {
         const query = this.value.toLowerCase().trim();
 
         suggerimenti.innerHTML = "";
-        suggerimenti.style.minHeight = "";
         erroreMsg.classList.add("hidden");
         confermaMsg.classList.add("hidden");
         if (creaMsg) creaMsg.classList.add("hidden");
-        btnAvviaAsta.classList.remove("hidden");
 
+        // Il bottone compare solo dopo una selezione valida dalla lista:
+        // finché si sta ancora cercando resta nascosto, così non può mai
+        // sovrapporsi al menu dei suggerimenti.
+        btnAvviaAsta.classList.add("hidden");
         btnAvviaAsta.disabled = true;
 
         if (query.length < 2) return;
@@ -108,15 +107,7 @@ window.addEventListener("load", function() {
         const filtrati = giocatori.filter(g => g.toLowerCase().includes(query));
 
         if (filtrati.length > 0) {
-            // Mostra suggerimenti se trovati. Il dropdown è in overlay: gli
-            // diamo un'altezza minima pari a quella del resto del form (bottone
-            // incluso) così lo copre sempre per intero. Il bottone resta al
-            // suo posto (nessuno scorrimento) ma lo nascondiamo finché il menu
-            // è aperto: essendo "disabled" ha opacità ridotta e altrimenti si
-            // vedrebbe in trasparenza sotto il menu.
-            suggerimenti.style.minHeight = restoForm.offsetHeight + "px";
-            btnAvviaAsta.classList.add("hidden");
-
+            // Mostra suggerimenti se trovati
             filtrati.forEach(g => {
                 const button = document.createElement("button");
                 button.type = "button";
@@ -125,7 +116,6 @@ window.addEventListener("load", function() {
                 button.onclick = () => {
                     input.value = g;
                     suggerimenti.innerHTML = "";
-                    suggerimenti.style.minHeight = "";
                     erroreMsg.classList.add("hidden");
                     if (creaMsg) creaMsg.classList.add("hidden");
                     confermaMsg.classList.remove("hidden");
@@ -147,8 +137,6 @@ window.addEventListener("load", function() {
     document.addEventListener("click", function(e) {
         if (!input.contains(e.target) && !suggerimenti.contains(e.target)) {
             suggerimenti.innerHTML = "";
-            suggerimenti.style.minHeight = "";
-            btnAvviaAsta.classList.remove("hidden");
         }
     });
 
