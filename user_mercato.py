@@ -494,7 +494,7 @@ def nuovo_scambio(nome_squadra):
 
         # Recupera tutti i giocatori validi (non svincolati, non prestiti, non hold)
         cur.execute('''
-                SELECT id, nome, squadra_att, tipo_contratto
+                SELECT id, nome, squadra_att, tipo_contratto, ruolo, club
                 FROM giocatore
                 WHERE squadra_att IS NOT NULL
                     AND squadra_att != 'Svincolati'
@@ -503,16 +503,18 @@ def nuovo_scambio(nome_squadra):
         ''')
         giocatori_raw = cur.fetchall()
 
-        miei_giocatori = [g for g in giocatori_raw if g["squadra_att"] == nome_squadra]
         giocatori = [
             {
                 "id": g["id"],
                 "nome": g["nome"],
                 "squadra_att": g["squadra_att"],
-                "tipo_contratto": g["tipo_contratto"]
+                "tipo_contratto": g["tipo_contratto"],
+                "ruolo": (g["ruolo"] or "").strip("{}"),
+                "club": g["club"]
             }
             for g in giocatori_raw
         ]
+        miei_giocatori = [g for g in giocatori if g["squadra_att"] == nome_squadra]
 
         # Recupera tutte le pick dal draft
         cur.execute('''

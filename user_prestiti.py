@@ -218,7 +218,7 @@ def nuovo_prestito(nome_squadra):
 
         # Selezione dei giocatori
         cur.execute('''
-                    SELECT id, nome, squadra_att
+                    SELECT id, nome, squadra_att, ruolo, club
                     FROM giocatore g
                     WHERE g.tipo_contratto <> 'Fanta-Prestito'
                     AND g.squadra_att <> 'Svincolato'
@@ -236,7 +236,9 @@ def nuovo_prestito(nome_squadra):
             giocatori.append({
                 "id": g["id"],
                 "nome": g["nome"],
-                "squadra_att": g["squadra_att"]
+                "squadra_att": g["squadra_att"],
+                "ruolo": (g["ruolo"] or "").strip("{}"),
+                "club": g["club"]
             })
 
         # Selezione dei nomi delle squadre, tranne la squadra loggata e Svincolato

@@ -1,3 +1,9 @@
+{% macro torna_indietro(href, testo='Indietro') %}
+<a href="{{ href }}" class="inline-flex shrink-0 items-center gap-1 text-sm text-muted hover:text-accent">
+    <i class="bi bi-chevron-left"></i> {{ testo }}
+</a>
+{% endmacro %}
+
 {% macro voce_menu(href, icona, titolo) %}
 <a href="{{ href }}" class="flex items-center gap-3 rounded-2xl border border-line bg-panel p-3 transition hover:border-accent">
     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-panel-2 text-lg text-accent">
@@ -37,18 +43,16 @@
 
 {% macro contratto_icona(tipo) %}
 {%- set icone = {
-    'Indeterminato': 'indeterminato.png',
-    'Fanta-Prestito': 'fanta_prestito.png',
-    'Prestito Reale': 'prestito_reale.png',
-    'Hold': 'hold.png',
-    'Svincolato': 'svincolato.png',
-    'Primavera': 'primavera.png'
+    'Indeterminato': 'bi-infinity',
+    'Fanta-Prestito': 'bi-arrow-left-right',
+    'Prestito Reale': 'bi-airplane',
+    'Hold': 'bi-pause-circle',
+    'Svincolato': 'bi-x-circle',
+    'Primavera': 'bi-flower3'
 } -%}
 {%- if tipo and icone.get(tipo) -%}
-{%- set file = 'images/contratti/' ~ icone[tipo] -%}
-<span class="inline-flex items-center align-middle" data-tip="{{ tipo }}">
-    <img src="{{ url_for('static', filename=file) }}?v={{ asset_v(file) }}" alt="{{ tipo }}"
-         class="h-[20px] w-[20px] object-contain align-middle dark:invert" draggable="false">
+<span class="inline-flex items-center align-middle text-muted" data-tip="{{ tipo }}">
+    <i class="bi {{ icone[tipo] }}"></i>
 </span>
 {%- elif tipo -%}
 <span class="text-xs text-muted">{{ tipo }}</span>

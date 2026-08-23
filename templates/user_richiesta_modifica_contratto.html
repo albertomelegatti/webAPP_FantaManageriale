@@ -1,108 +1,122 @@
-{% extends 'base.html' %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-header text-center bg-primary text-white">
-                    <h3>Richiesta Modifica Contratto</h3>
-                </div>
-                <div class="card-body p-4">
-                    {% if nome_giocatore %}
-                        <div class="mb-4">
-                            <h5 class="card-title">Dati Giocatore</h5>
-                            <p class="card-text mb-1"><strong>Giocatore:</strong> <span class="text-primary">{{ nome_giocatore }}</span></p>
-                            <p class="card-text"><strong>Tipo di Contratto Attuale:</strong> <span class="badge bg-secondary">{{ tipo_contratto }}</span></p>
-                        </div>
-                        <hr>
-                        <h5 class="card-title mt-4">Crea la tua Richiesta</h5>
-                        <form method="POST" action="{{ url_for('rosa.richiesta_modifica_contratto', nome_squadra=nome_squadra, id_giocatore=id_giocatore) }}">
-                            <div class="mb-3">
-                                <label for="nuovo_contratto" class="form-label"><strong>Nuovo Contratto Richiesto:</strong></label>
-                                {% if tipo_contratto == 'Primavera' %}
-                                <input type="text" class="form-control" value="Trasferimento Reale" disabled readonly>
-                                <input type="hidden" id="nuovo_contratto" name="nuovo_contratto" value="Svincolato">
-                                {% else %}
-                                <select class="form-select" id="nuovo_contratto" name="nuovo_contratto" required>
-                                    <option value="" disabled selected>Seleziona un'opzione...</option>
-                                    {% if tipo_contratto != 'Indeterminato' %}
-                                    <option value="Indeterminato">Indeterminato</option>
-                                    {% endif %}
-                                    {% if tipo_contratto != 'Svincolato' %}
-                                    <option value="Svincolato">Trasferimento Reale</option>
-                                    {% endif %}
-                                    {% if tipo_contratto != 'Prestito Reale' %}
-                                    <option value="Prestito Reale">Prestito Reale</option>
-                                    {% endif %}
-                                    {% if tipo_contratto != 'Hold' %}
-                                    <option value="Hold">Hold</option>
-                                    {% endif %}
-                                    {% if tipo_contratto != 'Retrocessione' %}
-                                    <option value="Retrocessione">Retrocessione</option>
-                                    {% endif %}
-                                    {% if tipo_contratto != 'Scadenza Contratto' %}
-                                    <option value="Scadenza Contratto">Scadenza Contratto</option>
-                                    {% endif %}
-                                    {% if tipo_contratto != "Ritorno all'estero per fine prestito" %}
-                                    <option value="Ritorno all'estero per fine prestito">Ritorno all'estero per fine prestito</option>
-                                    {% endif %}
-                                    {% if tipo_contratto != 'Taglio Gratuito' %}
-                                    <option value="Taglio Gratuito">Taglio Gratuito</option>
-                                    {% endif %}
-                                </select>
-                                {% endif %}
-                            </div>
-                            <div class="mb-3">
-                                <label for="crediti_richiesti" class="form-label"><strong>Crediti Richiesti:</strong></label>
-                                <input type="number" class="form-control" id="crediti_richiesti" name="crediti_richiesti" min="0" placeholder="Inserisci i crediti richiesti per il giocatore">
-                            </div>
-                            <div class="mb-3">
-                                <label for="messaggio" class="form-label"><strong>Messaggio (Opzionale):</strong></label>
-                                <textarea class="form-control" id="messaggio" name="messaggio" rows="3" placeholder="Scrivi qui un messaggio da allegare alla richiesta..."></textarea>
-                            </div>
-                            <div class="d-grid gap-2 mt-4">
-                                <button type="submit" class="btn btn-primary fw-bold">Invia Richiesta all'Admin</button>
-                                <a href="{{ url_for('rosa.user_primavera' if tipo_contratto == 'Primavera' else 'rosa.user_tagli', nome_squadra=nome_squadra) }}" class="btn btn-secondary">Annulla</a>
-                            </div>
-                        </form>
-                        <script>
-                            document.addEventListener('DOMContentLoaded', function () {
-                                var selectContratto = document.getElementById('nuovo_contratto');
-                                var inputCrediti = document.getElementById('crediti_richiesti');
-                                var tipiCreditiAzzerati = [
-                                    'Retrocessione',
-                                    'Scadenza Contratto',
-                                    "Ritorno all'estero per fine prestito",
-                                    'Taglio Gratuito'
-                                ];
+{% import '_macros.html' as m %}
 
-                                function aggiornaCampoCrediti() {
-                                    if (tipiCreditiAzzerati.includes(selectContratto.value)) {
-                                        inputCrediti.value = 0;
-                                        inputCrediti.setAttribute('readonly', 'readonly');
-                                        inputCrediti.classList.add('bg-light');
-                                    } else {
-                                        inputCrediti.removeAttribute('readonly');
-                                        inputCrediti.classList.remove('bg-light');
-                                    }
-                                }
+{% if nome_giocatore %}
+<style>.contratto-icona-grande i { font-size: 1.5em; }</style>
+<div class="mb-2">
+    {{ m.torna_indietro(url_for('rosa.user_primavera' if tipo_contratto == 'Primavera' else 'rosa.user_tagli', nome_squadra=nome_squadra)) }}
+</div>
+<h2 class="mb-4 text-lg font-bold">Richiesta Modifica Contratto</h2>
 
-                                selectContratto.addEventListener('change', aggiornaCampoCrediti);
-                                aggiornaCampoCrediti();
-                            });
-                        </script>
-                    {% else %}
-                        <div class="alert alert-danger" role="alert">
-                            <h4 class="alert-heading">Errore!</h4>
-                            <p>Dati del giocatore non trovati. Impossibile procedere con la richiesta.</p>
-                            <hr>
-                            <a href="{{ url_for('dashboard_squadra', nome_squadra=nome_squadra) }}" class="btn btn-danger">Torna alla Dashboard</a>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+<div class="mb-4 rounded-2xl border border-line bg-panel p-4">
+    <div class="text-base font-bold">
+        {{ nome_giocatore }} <span class="ml-1">{{ m.ruolo_colorato(ruolo_giocatore) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(club_giocatore) }}
+        <span class="ml-1 contratto-icona-grande">{{ m.contratto_icona(tipo_contratto) }}</span>
     </div>
 </div>
+
+<div class="rounded-2xl border border-line bg-panel p-4">
+    <form method="POST" action="{{ url_for('rosa.richiesta_modifica_contratto', nome_squadra=nome_squadra, id_giocatore=id_giocatore) }}" class="flex flex-col gap-3">
+
+        <div>
+            <label for="nuovo_contratto" class="mb-1 block text-xs font-semibold text-muted">Nuovo contratto richiesto</label>
+            {% if tipo_contratto == 'Primavera' %}
+            <select id="nuovo_contratto" name="nuovo_contratto" required
+                    class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-xs">
+                <option value="" disabled selected>Seleziona un'opzione...</option>
+                <option value="Svincolato">Trasferimento Reale</option>
+                <option value="Prestito Reale">Prestito Reale</option>
+            </select>
+            {% else %}
+            <select id="nuovo_contratto" name="nuovo_contratto" required
+                    class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-xs">
+                <option value="" disabled selected>Seleziona un'opzione...</option>
+                {% if tipo_contratto != 'Indeterminato' %}
+                <option value="Indeterminato">Indeterminato</option>
+                {% endif %}
+                {% if tipo_contratto != 'Svincolato' %}
+                <option value="Svincolato">Trasferimento Reale</option>
+                {% endif %}
+                {% if tipo_contratto != 'Prestito Reale' %}
+                <option value="Prestito Reale">Prestito Reale</option>
+                {% endif %}
+                {% if tipo_contratto != 'Hold' %}
+                <option value="Hold">Hold</option>
+                {% endif %}
+                {% if tipo_contratto != 'Retrocessione' %}
+                <option value="Retrocessione">Retrocessione</option>
+                {% endif %}
+                {% if tipo_contratto != 'Scadenza Contratto' %}
+                <option value="Scadenza Contratto">Scadenza Contratto</option>
+                {% endif %}
+                {% if tipo_contratto != "Ritorno all'estero per fine prestito" %}
+                <option value="Ritorno all'estero per fine prestito">Ritorno all'estero per fine prestito</option>
+                {% endif %}
+                {% if tipo_contratto != 'Taglio Gratuito' %}
+                <option value="Taglio Gratuito">Taglio Gratuito</option>
+                {% endif %}
+            </select>
+            {% endif %}
+        </div>
+
+        <div>
+            <label for="crediti_richiesti" class="mb-1 block text-xs font-semibold text-muted">Crediti richiesti</label>
+            <input type="number" id="crediti_richiesti" name="crediti_richiesti" min="0"
+                   placeholder="Inserisci i crediti richiesti per il giocatore"
+                   class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-xs outline-none focus:border-accent disabled:opacity-50">
+        </div>
+
+        <div>
+            <label for="messaggio" class="mb-1 block text-xs font-semibold text-muted">Messaggio (opzionale)</label>
+            <textarea id="messaggio" name="messaggio" rows="3" placeholder="Scrivi qui un messaggio da allegare alla richiesta..."
+                      class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-xs outline-none focus:border-accent"></textarea>
+        </div>
+
+        <button type="submit" class="mt-1 flex w-full items-center justify-center rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white">
+            Invia richiesta all'admin
+        </button>
+        <a href="{{ url_for('rosa.user_primavera' if tipo_contratto == 'Primavera' else 'rosa.user_tagli', nome_squadra=nome_squadra) }}"
+           class="flex w-full items-center justify-center rounded-xl border border-line px-4 py-3 text-sm font-semibold text-muted">
+            Annulla
+        </a>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var selectContratto = document.getElementById('nuovo_contratto');
+    var inputCrediti = document.getElementById('crediti_richiesti');
+    var tipiCreditiAzzerati = [
+        'Retrocessione',
+        'Scadenza Contratto',
+        "Ritorno all'estero per fine prestito",
+        'Taglio Gratuito'
+    ];
+
+    function aggiornaCampoCrediti() {
+        if (tipiCreditiAzzerati.includes(selectContratto.value)) {
+            inputCrediti.value = 0;
+            inputCrediti.setAttribute('readonly', 'readonly');
+            inputCrediti.disabled = true;
+        } else {
+            inputCrediti.removeAttribute('readonly');
+            inputCrediti.disabled = false;
+        }
+    }
+
+    selectContratto.addEventListener('change', aggiornaCampoCrediti);
+    aggiornaCampoCrediti();
+});
+</script>
+
+{% else %}
+<div class="rounded-2xl border border-line bg-panel p-4 text-center text-sm text-muted">
+    ⚠️ Dati del giocatore non trovati. Impossibile procedere con la richiesta.
+</div>
+<div class="mt-4 text-center">
+    <a href="{{ url_for('dashboard_squadra', nome_squadra=nome_squadra) }}" class="text-sm text-muted hover:text-accent">Torna alla dashboard</a>
+</div>
+{% endif %}
 {% endblock %}

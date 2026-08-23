@@ -2,6 +2,7 @@
 
 {% block content %}
 {% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('home')) }}</div>
 <h2 class="mb-1 text-lg font-bold">Vetrina</h2>
 <p class="mb-4 text-sm text-muted">Giocatori messi in vetrina da tutte le squadre.</p>
 
@@ -52,11 +53,14 @@
             {% for giocatore in giocatori_squadra %}
             <div class="vetrina-item rounded-xl bg-panel-2 px-3 py-2.5" data-stato="{{ giocatore.stato }}" data-ruolo="{{ giocatore.ruolo }}">
                 <div class="flex items-start justify-between gap-3">
-                    <span class="min-w-0 flex-1 font-medium">{{ giocatore.nome }} <span class="ml-1">{{ m.ruolo_colorato(giocatore.ruolo) }}</span><span class="mx-1 text-muted">-</span><span class="text-muted">{{ giocatore.quot_att_mantra }}</span></span>
+                    <span class="min-w-0 flex-1 font-medium">{{ giocatore.nome }} <span class="ml-1">{{ m.ruolo_colorato(giocatore.ruolo) }}</span><span class="mx-1 text-muted">-</span><span class="text-muted">QA {{ giocatore.quot_att_mantra }}</span></span>
                     {{ m.stato_vetrina_badge(giocatore.stato) }}
                 </div>
                 {% if giocatore.note %}
-                <div class="mt-1 line-clamp-1 text-xs text-muted" data-tip="{{ giocatore.note }}">{{ giocatore.note }}</div>
+                <button type="button" class="vetrina-note-toggle mt-1 flex w-full items-start justify-between gap-2 text-left">
+                    <span class="nota-testo line-clamp-1 min-w-0 flex-1 break-words text-xs text-muted">{{ giocatore.note }}</span>
+                    <i class="bi bi-chevron-down chevron mt-0.5 shrink-0 text-muted transition-transform"></i>
+                </button>
                 {% endif %}
                 <div class="mt-0.5 text-[11px] font-semibold">{{ giocatore.data_inserimento or '-' }}</div>
             </div>
@@ -84,6 +88,20 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.vetrina-note-toggle').forEach(function (btn) {
+        const testo = btn.querySelector('.nota-testo');
+        const chevron = btn.querySelector('.chevron');
+        // Mostra la freccia solo se il testo è davvero troncato dal line-clamp
+        if (testo.scrollHeight <= testo.clientHeight + 1) {
+            chevron.classList.add('hidden');
+            return;
+        }
+        btn.addEventListener('click', function () {
+            testo.classList.toggle('line-clamp-1');
+            chevron.classList.toggle('rotate-180');
+        });
+    });
+
     const filtroSquadra = document.getElementById('filtro-squadra');
     const filtroStato = document.getElementById('filtro-stato');
     const chipRuolo = document.querySelectorAll('.chip-ruolo');

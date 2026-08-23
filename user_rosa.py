@@ -398,7 +398,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
             return redirect(url_for("rosa.user_tagli", nome_squadra=nome_squadra))
 
         cur.execute('''
-                    SELECT nome, tipo_contratto
+                    SELECT nome, tipo_contratto, ruolo, club
                     FROM giocatore
                     WHERE id = %s;
         ''', (id_giocatore,))
@@ -410,11 +410,15 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
 
         nome_giocatore = giocatore_raw['nome']
         tipo_contratto = giocatore_raw['tipo_contratto']
+        ruolo_giocatore = (giocatore_raw['ruolo'] or "").strip("{}")
+        club_giocatore = giocatore_raw['club']
 
-        return render_template("user_richiesta_modifica_contratto.html", 
-                               nome_squadra=nome_squadra, 
-                               nome_giocatore=nome_giocatore, 
-                               tipo_contratto=tipo_contratto, 
+        return render_template("user_richiesta_modifica_contratto.html",
+                               nome_squadra=nome_squadra,
+                               nome_giocatore=nome_giocatore,
+                               tipo_contratto=tipo_contratto,
+                               ruolo_giocatore=ruolo_giocatore,
+                               club_giocatore=club_giocatore,
                                id_giocatore=id_giocatore)
 
     except Exception as e:

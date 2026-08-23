@@ -2,6 +2,7 @@
 
 {% block content %}
 {% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('user.user_rosa_menu', nome_squadra=nome_squadra)) }}</div>
 <h2 class="mb-1 text-lg font-bold">Vetrina - {{ nome_squadra }}</h2>
 <p class="mb-4 text-sm text-muted">Imposta per ogni giocatore lo stato di vetrina e aggiungi eventuali note.</p>
 
@@ -39,7 +40,7 @@
     </div>
 
     <div class="mt-4 flex justify-end gap-2">
-        <a href="{{ url_for('dashboard_squadra', nome_squadra=nome_squadra) }}"
+        <a href="{{ url_for('user.user_rosa_menu', nome_squadra=nome_squadra) }}"
            class="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-muted">
             Annulla
         </a>
