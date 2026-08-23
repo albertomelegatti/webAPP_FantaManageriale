@@ -43,18 +43,16 @@
 
 {% macro contratto_icona(tipo) %}
 {%- set icone = {
-    'Indeterminato': 'indeterminato.png',
-    'Fanta-Prestito': 'fanta_prestito.png',
-    'Prestito Reale': 'prestito_reale.png',
-    'Hold': 'hold.png',
-    'Svincolato': 'svincolato.png',
-    'Primavera': 'primavera.png'
+    'Indeterminato': 'bi-infinity',
+    'Fanta-Prestito': 'bi-arrow-left-right',
+    'Prestito Reale': 'bi-airplane',
+    'Hold': 'bi-pause-circle',
+    'Svincolato': 'bi-x-circle',
+    'Primavera': 'bi-flower1'
 } -%}
 {%- if tipo and icone.get(tipo) -%}
-{%- set file = 'images/contratti/' ~ icone[tipo] -%}
-<span class="inline-flex items-center align-middle" data-tip="{{ tipo }}">
-    <img src="{{ url_for('static', filename=file) }}?v={{ asset_v(file) }}" alt="{{ tipo }}"
-         class="h-[20px] w-[20px] object-contain align-middle dark:invert" draggable="false">
+<span class="inline-flex items-center align-middle text-muted" data-tip="{{ tipo }}">
+    <i class="bi {{ icone[tipo] }}"></i>
 </span>
 {%- elif tipo -%}
 <span class="text-xs text-muted">{{ tipo }}</span>
