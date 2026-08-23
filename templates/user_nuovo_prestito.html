@@ -103,6 +103,15 @@
 .ts-dropdown { background: var(--panel) !important; border: 1px solid var(--line) !important; color: var(--text) !important; border-radius: 0.75rem !important; }
 .ts-dropdown .option { color: var(--text) !important; }
 .ts-dropdown .active { background: var(--panel-2) !important; }
+.ts-wrapper .item {
+    background: color-mix(in oklab, var(--accent) 22%, var(--panel-2)) !important;
+    border: 1px solid color-mix(in oklab, var(--accent) 45%, var(--line)) !important;
+    color: #fff !important;
+    border-radius: 999px !important;
+    padding: 2px 8px !important;
+}
+/* Nel chip il ruolo resta colorato (colore inline), nome e club in bianco */
+.ts-wrapper .item .text-muted { color: #fff !important; }
 </style>
 
 <script>
