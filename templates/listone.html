@@ -61,35 +61,43 @@
 
 <div class="rounded-2xl border border-line bg-panel p-4">
     <div class="mb-2 text-xs text-muted"><span id="risultati-count">{{ giocatori|length }}</span> giocatori</div>
-    <div class="overflow-x-auto">
-        <table class="w-full min-w-[640px] text-sm sortable-table" id="listoneTable">
-            <thead>
-                <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
-                    <th class="pb-2 pr-2 font-semibold">Nome</th>
-                    <th class="pb-2 pr-2 font-semibold">Ruolo</th>
-                    <th class="pb-2 pr-2 font-semibold">Club</th>
-                    <th class="pb-2 pr-2 font-semibold">Squadra</th>
-                    <th class="pb-2 pr-2 font-semibold">Contratto</th>
-                    <th class="pb-2 pr-2 text-right font-semibold desc">QA</th>
-                    <th class="pb-2 text-right font-semibold">Prezzo</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-line" id="listoneBody">
-                {% for g in giocatori %}
-                <tr data-nome="{{ g.nome.lower() }}" data-ruolo="{{ g.ruolo }}" data-club="{{ g.club }}"
-                    data-squadra="{{ g.squadra_att }}" data-contratto="{{ g.tipo_contratto }}">
-                    <td class="py-2 pr-2 font-medium">{{ g.nome }}</td>
-                    <td class="py-2 pr-2">{{ m.ruolo_colorato(g.ruolo) }}</td>
-                    <td class="py-2 pr-2 text-muted">{{ g.club }}</td>
-                    <td class="py-2 pr-2 text-muted">{{ g.squadra_att }}</td>
-                    <td class="py-2 pr-2 text-muted">{{ g.tipo_contratto }}</td>
-                    <td class="py-2 pr-2 text-right tabular-nums">{{ g.quotazione }}</td>
-                    <td class="py-2 text-right tabular-nums">{{ g.prezzo_acquisto }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    <table class="w-full table-fixed text-sm sortable-table" id="listoneTable">
+        <colgroup>
+            <col style="width:34%"><col style="width:14%"><col style="width:12%">
+            <col style="width:14%"><col style="width:12%"><col style="width:14%">
+        </colgroup>
+        <thead>
+            <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                <th class="pb-2 pr-1 font-semibold">Nome</th>
+                <th class="pb-2 pr-1 font-semibold">Ruolo</th>
+                <th class="pb-2 pr-1 font-semibold">Club</th>
+                <th class="pb-2 pr-1 font-semibold no-sort"></th>
+                <th class="pb-2 pr-1 font-semibold">Contr.</th>
+                <th class="pb-2 text-right font-semibold desc">QA</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-line" id="listoneBody">
+            {% for g in giocatori %}
+            <tr data-nome="{{ g.nome.lower() }}" data-ruolo="{{ g.ruolo }}" data-club="{{ g.club }}"
+                data-squadra="{{ g.squadra_att }}" data-contratto="{{ g.tipo_contratto }}">
+                <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-1 font-medium">{{ g.nome }}</td>
+                <td class="overflow-hidden py-2 pr-1">{{ m.ruolo_colorato(g.ruolo) }}</td>
+                <td class="overflow-hidden py-2 pr-1 text-muted">{{ m.club_abbr(g.club) }}</td>
+                <td class="py-2 pr-1 text-muted">
+                    {% if g.squadra_username %}
+                    <img src="{{ url_for('static', filename='loghi/' ~ g.squadra_username ~ '.png') }}?v={{ asset_v('loghi/' ~ g.squadra_username ~ '.png') }}"
+                         alt="{{ g.squadra_att }}" data-tip="{{ g.squadra_att }}"
+                         class="h-6 w-6 rounded-lg bg-panel-2 object-contain p-0.5">
+                    {% else %}
+                    <span class="text-[11px]">Svinc.</span>
+                    {% endif %}
+                </td>
+                <td class="py-2 pr-1">{{ m.contratto_icona(g.tipo_contratto) }}</td>
+                <td class="py-2 text-right tabular-nums">{{ g.quotazione }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     <p class="hidden py-4 text-center text-sm text-muted" id="noResults">Nessun giocatore trovato con i filtri selezionati.</p>
 </div>
 
@@ -97,6 +105,12 @@
 .sortable-table thead th {
     cursor: pointer;
     user-select: none;
+}
+.sortable-table thead th.no-sort {
+    cursor: default;
+}
+.sortable-table thead th.no-sort::after {
+    content: '';
 }
 .sortable-table thead th::after {
     content: ' \2195';
@@ -177,7 +191,16 @@ document.addEventListener('DOMContentLoaded', function () {
         const match = value.replace(',', '.').match(/-?\d+(\.\d+)?/);
         return match ? parseFloat(match[0]) : NaN;
     };
+    // Le celle con solo icona/immagine (contratto, squadra) non hanno testo:
+    // usa il data-tip dell'eventuale elemento interno come chiave di ordinamento.
+    const cellSortValue = (cell) => {
+        const text = cell.textContent.trim();
+        if (text) return text;
+        const withTip = cell.querySelector('[data-tip]');
+        return withTip ? withTip.dataset.tip : '';
+    };
     headers.forEach(function (header, index) {
+        if (header.classList.contains('no-sort')) return;
         header.addEventListener('click', function () {
             const isAsc = !this.classList.contains('asc');
             headers.forEach(h => h.classList.remove('asc', 'desc'));
@@ -185,8 +208,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const sortedRows = Array.from(tbody.querySelectorAll('tr'));
             sortedRows.sort(function (a, b) {
-                const aValue = a.children[index].textContent.trim();
-                const bValue = b.children[index].textContent.trim();
+                const aValue = cellSortValue(a.children[index]);
+                const bValue = cellSortValue(b.children[index]);
                 const aNum = extractNumber(aValue);
                 const bNum = extractNumber(bValue);
                 if (!isNaN(aNum) && !isNaN(bNum)) {
