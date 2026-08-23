@@ -10,20 +10,14 @@
     <h2 class="text-lg font-bold">Sezione riservata di {{ nome_squadra }}</h2>
 </div>
 
-<div class="mb-4 grid grid-cols-2 gap-2">
-    <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
-        <div class="text-xs text-muted">Crediti totali</div>
-        <div class="text-lg font-bold">{{ crediti }}</div>
-    </div>
-    <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
-        <div class="text-xs text-muted">Crediti disponibili</div>
-        <div class="text-lg font-bold {% if crediti_disponibili <= 0 %}text-ko{% elif crediti_disponibili < 10 %}text-crit{% else %}text-ok{% endif %}">
-            {{ crediti_disponibili }}
-        </div>
-    </div>
+<div class="mb-4 grid grid-cols-3 gap-2">
     <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
         <div class="text-xs text-muted">Aste a cui partecipi</div>
         <div class="text-lg font-bold">{{ slot_aste }}</div>
+    </div>
+    <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
+        <div class="text-xs text-muted">Crediti</div>
+        <div class="text-lg font-bold">{{ crediti }}</div>
     </div>
     <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
         <div class="text-xs text-muted">Slot totali</div>
