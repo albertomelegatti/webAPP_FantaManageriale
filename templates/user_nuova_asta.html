@@ -18,7 +18,7 @@
              mostra ruolo/club solo a video. Il valore effettivamente
              inviato al backend resta nell'input hidden qui sotto. -->
         <div id="confermaGiocatore" class="hidden w-full items-center justify-between gap-2 rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-sm">
-            <span id="confermaGiocatoreInfo" class="flex items-center text-ok"></span>
+            <span id="confermaGiocatoreInfo" class="flex items-center gap-1.5"></span>
             <button type="button" id="btnCambiaGiocatore" class="shrink-0 text-muted hover:text-accent" aria-label="Cambia giocatore">
                 <i class="bi bi-x-lg"></i>
             </button>
@@ -136,7 +136,12 @@ window.addEventListener("load", function() {
     // dropdown sia nella conferma di selezione
     function rigaGiocatore(g) {
         const frag = document.createDocumentFragment();
-        frag.appendChild(document.createTextNode(g.nome));
+
+        const nomeSpan = document.createElement("span");
+        nomeSpan.className = "text-text";
+        nomeSpan.textContent = g.nome;
+        frag.appendChild(nomeSpan);
+
         frag.appendChild(ruoloColorato(g.ruolo));
 
         const sep = document.createElement("span");
@@ -190,7 +195,7 @@ window.addEventListener("load", function() {
                     // due volte (una nell'input, una sotto).
                     ricercaGiocatore.classList.add("hidden");
                     const check = document.createElement("i");
-                    check.className = "bi bi-check-circle-fill mr-1";
+                    check.className = "bi bi-check-circle-fill text-ok";
                     confermaGiocatoreInfo.innerHTML = "";
                     confermaGiocatoreInfo.appendChild(check);
                     confermaGiocatoreInfo.appendChild(rigaGiocatore(g));
