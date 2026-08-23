@@ -89,6 +89,35 @@ window.addEventListener("load", function() {
     // @ts-ignore
     const enableCreation = '{{ enable_player_creation|tojson|safe }}' === 'true' || '{{ enable_player_creation|tojson|safe }}' === 'True';
 
+    // Stessa palette di _macros.html (macro ruolo_colorato), per colorare
+    // i ruoli anche qui dove le righe sono generate via JS
+    const COLORI_RUOLO = {
+        por: '#e0951b',
+        dd: '#22a558', ds: '#22a558', dc: '#22a558', b: '#22a558',
+        e: '#3f7fff', m: '#3f7fff', c: '#3f7fff',
+        w: '#a855f7', t: '#a855f7',
+        a: '#ef4444', pc: '#ef4444'
+    };
+
+    function ruoloColorato(ruolo) {
+        const span = document.createElement("span");
+        span.className = "ml-1 whitespace-nowrap font-semibold";
+        const token_list = (ruolo || "").split(",").map(t => t.trim()).filter(Boolean);
+        token_list.forEach((token, i) => {
+            const tokenSpan = document.createElement("span");
+            tokenSpan.style.color = COLORI_RUOLO[token.toLowerCase()] || "var(--muted)";
+            tokenSpan.textContent = token;
+            span.appendChild(tokenSpan);
+            if (i < token_list.length - 1) {
+                const comma = document.createElement("span");
+                comma.className = "text-muted";
+                comma.textContent = ",";
+                span.appendChild(comma);
+            }
+        });
+        return span;
+    }
+
     input.addEventListener("input", function() {
         const query = this.value.toLowerCase().trim();
 
@@ -112,18 +141,21 @@ window.addEventListener("load", function() {
             filtrati.forEach(g => {
                 const button = document.createElement("button");
                 button.type = "button";
-                button.className = "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-panel-2";
+                button.className = "block w-full px-3 py-2 text-left text-sm hover:bg-panel-2";
 
-                const nomeSpan = document.createElement("span");
-                nomeSpan.textContent = g.nome;
+                // Stesso formato usato altrove nell'app: "Nome Ruolo - Club"
+                button.appendChild(document.createTextNode(g.nome));
+                button.appendChild(ruoloColorato(g.ruolo));
 
-                const infoSpan = document.createElement("span");
-                infoSpan.className = "shrink-0 whitespace-nowrap text-xs text-muted";
-                const club = (g.club || "").slice(0, 3).toUpperCase();
-                infoSpan.textContent = [g.ruolo, club].filter(Boolean).join(" - ");
+                const sep = document.createElement("span");
+                sep.className = "mx-1 text-muted";
+                sep.textContent = "-";
+                button.appendChild(sep);
 
-                button.appendChild(nomeSpan);
-                button.appendChild(infoSpan);
+                const clubSpan = document.createElement("span");
+                clubSpan.className = "whitespace-nowrap font-semibold uppercase text-muted";
+                clubSpan.textContent = (g.club || "").slice(0, 3);
+                button.appendChild(clubSpan);
 
                 button.onclick = () => {
                     input.value = g.nome;
