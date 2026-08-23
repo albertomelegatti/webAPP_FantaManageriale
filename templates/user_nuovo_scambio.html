@@ -1,12 +1,11 @@
 {% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="mb-4 flex items-center justify-between gap-2">
-    <div>
-        <h2 class="text-lg font-bold">Nuova Trattativa di Mercato</h2>
-        <p class="text-sm text-muted">{{ nome_squadra }}</p>
-    </div>
-    <a href="{{ url_for('mercato.user_mercato', nome_squadra=nome_squadra) }}" class="text-sm text-muted hover:text-accent">← Indietro</a>
+{% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('mercato.user_mercato', nome_squadra=nome_squadra)) }}</div>
+<div class="mb-4">
+    <h2 class="text-lg font-bold">Nuova Trattativa di Mercato</h2>
+    <p class="text-sm text-muted">{{ nome_squadra }}</p>
 </div>
 
 <div class="mb-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 rounded-2xl border border-line bg-panel p-3 text-xs">
@@ -117,7 +116,7 @@
                 </label>
                 <select multiple name="giocatori_offerti" id="giocatori_offerti">
                     {% for g in miei_giocatori %}
-                    <option value="{{ g.id }}">{{ g.nome }}</option>
+                    <option value="{{ g.id }}" data-ruolo="{{ g.ruolo }}" data-club="{{ g.club }}">{{ g.nome }}</option>
                     {% endfor %}
                 </select>
 
@@ -126,7 +125,7 @@
                 </label>
                 <input type="number" min="0" name="crediti_offerti" id="crediti_offerti"
                        max="{{ crediti_effettivi }}" placeholder="Inserisci importo"
-                       class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm outline-none focus:border-accent">
+                       class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-xs outline-none focus:border-accent">
 
                 <label for="pick_offerta" class="mb-1 mt-3 block text-xs font-semibold text-muted">
                     Pick Draft <span class="text-text">(mie {{ mie_pick|length }})</span>
@@ -146,14 +145,14 @@
                     Giocatori <span class="text-text">(max <span id="max_richiesti">0</span>)</span>
                 </label>
                 <select multiple name="giocatori_richiesti" id="giocatori_richiesti" disabled></select>
-                <p class="mt-1 text-[11px] text-muted">Prima seleziona una controparte</p>
+                <p class="mt-1 text-xs text-muted">Prima seleziona una controparte</p>
 
                 <label for="crediti_richiesti" class="mb-1 mt-3 block text-xs font-semibold text-muted">
                     Crediti <span class="text-text" id="crediti-richiesti-max-badge">(max 0)</span>
                 </label>
                 <input type="number" min="0" name="crediti_richiesti" id="crediti_richiesti" disabled
                        placeholder="Inserisci importo"
-                       class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm outline-none focus:border-accent disabled:opacity-50">
+                       class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-xs outline-none focus:border-accent disabled:opacity-50">
 
                 <label for="pick_richiesta" class="mb-1 mt-3 block text-xs font-semibold text-muted">
                     Pick Draft <span class="text-text">(disponibili <span id="max_pick_richieste">0</span>)</span>
@@ -182,12 +181,12 @@
                     <select id="prestito{{ n }}_offerto" name="prestito{{ n }}_offerto" disabled>
                         <option value="">Seleziona giocatore</option>
                         {% for g in miei_giocatori %}
-                        <option value="{{ g.id }}">{{ g.nome }}</option>
+                        <option value="{{ g.id }}" data-ruolo="{{ g.ruolo }}" data-club="{{ g.club }}">{{ g.nome }}</option>
                         {% endfor %}
                     </select>
                     <label class="mb-1 mt-2 block text-xs font-semibold text-muted">Tipo Prestito</label>
                     <select id="prestito{{ n }}_tipo_offerto" name="prestito{{ n }}_tipo_offerto" disabled
-                            class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+                            class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-xs">
                         <option value="">-- Seleziona --</option>
                         <option value="Secco" selected>Secco</option>
                         <option value="Diritto">Con diritto di riscatto</option>
@@ -220,7 +219,7 @@
                     </select>
                     <label class="mb-1 mt-2 block text-xs font-semibold text-muted">Tipo Prestito</label>
                     <select id="prestito{{ n }}_tipo_richiesto" name="prestito{{ n }}_tipo_richiesto" disabled
-                            class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+                            class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-xs">
                         <option value="">-- Seleziona --</option>
                         <option value="Secco" selected>Secco</option>
                         <option value="Diritto">Con diritto di riscatto</option>
@@ -278,13 +277,22 @@
     color: var(--text) !important;
     border-radius: 0.75rem !important;
     padding: 0.4rem 0.6rem !important;
+    font-size: var(--text-xs) !important;
 }
-.ts-control input { color: var(--text) !important; }
+.ts-control input { color: var(--text) !important; font-size: inherit !important; }
 .ts-control input::placeholder { color: var(--muted) !important; }
-.ts-dropdown { background: var(--panel) !important; border: 1px solid var(--line) !important; color: var(--text) !important; border-radius: 0.75rem !important; }
+.ts-dropdown { background: var(--panel) !important; border: 1px solid var(--line) !important; color: var(--text) !important; border-radius: 0.75rem !important; font-size: var(--text-xs) !important; }
 .ts-dropdown .option { color: var(--text) !important; }
 .ts-dropdown .active { background: var(--panel-2) !important; }
-.ts-wrapper .item { background: var(--accent) !important; color: #fff !important; border-radius: 999px !important; padding: 2px 8px !important; }
+.ts-wrapper .item {
+    background: color-mix(in oklab, var(--accent) 22%, var(--panel-2)) !important;
+    border: 1px solid color-mix(in oklab, var(--accent) 45%, var(--line)) !important;
+    color: #fff !important;
+    border-radius: 999px !important;
+    padding: 2px 8px !important;
+}
+/* Nel chip il ruolo resta colorato (colore inline), nome e club in bianco */
+.ts-wrapper .item .text-muted { color: #fff !important; }
 
 #loan-slots-warning {
     background: color-mix(in srgb, var(--crit) 15%, var(--panel));
@@ -369,18 +377,43 @@ document.addEventListener("DOMContentLoaded", () => {
         if (pick) option.text = getPickDisplayText(pick);
     });
 
-    const selectOfferti = new TomSelect("#giocatori_offerti", { plugins: ['remove_button'], placeholder: "Giocatori da offrire", create: false, maxItems: 30 });
-    const selectRichiesti = new TomSelect("#giocatori_richiesti", { plugins: ['remove_button'], placeholder: "Giocatori da richiedere", create: false, maxItems: 0 });
+    // Stessa palette di _macros.html (macro ruolo_colorato), per colorare
+    // i ruoli anche nelle option/chip generate da Tom Select
+    const COLORI_RUOLO = {
+        por: '#e0951b',
+        dd: '#22a558', ds: '#22a558', dc: '#22a558', b: '#22a558',
+        e: '#3f7fff', m: '#3f7fff', c: '#3f7fff',
+        w: '#a855f7', t: '#a855f7',
+        a: '#ef4444', pc: '#ef4444'
+    };
+
+    function ruoloColoratoHtml(ruolo, escape) {
+        const token_list = (ruolo || "").split(",").map(t => t.trim()).filter(Boolean);
+        return token_list
+            .map(t => `<span style="color:${COLORI_RUOLO[t.toLowerCase()] || 'var(--muted)'}">${escape(t)}</span>`)
+            .join('<span class="text-muted">,</span>');
+    }
+
+    // Formato "Nome Ruolo - Club" usato altrove nell'app, qui come
+    // render.option/render.item di Tom Select per i select dei giocatori
+    function renderGiocatore(data, escape) {
+        const club = escape((data.club || "").slice(0, 3));
+        return `<div>${escape(data.text)} <span class="ml-1 whitespace-nowrap font-semibold">${ruoloColoratoHtml(data.ruolo, escape)}</span><span class="mx-1 text-muted">-</span><span class="whitespace-nowrap font-semibold uppercase text-muted">${club}</span></div>`;
+    }
+    const renderGiocatoreOptions = { render: { option: renderGiocatore, item: renderGiocatore } };
+
+    const selectOfferti = new TomSelect("#giocatori_offerti", { plugins: ['remove_button'], placeholder: "Giocatori da offrire", create: false, maxItems: 30, ...renderGiocatoreOptions });
+    const selectRichiesti = new TomSelect("#giocatori_richiesti", { plugins: ['remove_button'], placeholder: "Giocatori da richiedere", create: false, maxItems: 0, ...renderGiocatoreOptions });
     selectRichiesti.disable();
 
     const selectPickOfferta = new TomSelect("#pick_offerta", { plugins: ['remove_button'], placeholder: "Pick da offrire", create: false, maxItems: 30 });
     const selectPickRichiesta = new TomSelect("#pick_richiesta", { plugins: ['remove_button'], placeholder: "Pick da richiedere", create: false, maxItems: 30 });
     selectPickRichiesta.disable();
 
-    const selectPrestito1Rich = new TomSelect('#prestito1_richiesto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
-    const selectPrestito1Off = new TomSelect('#prestito1_offerto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
-    const selectPrestito2Rich = new TomSelect('#prestito2_richiesto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
-    const selectPrestito2Off = new TomSelect('#prestito2_offerto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
+    const selectPrestito1Rich = new TomSelect('#prestito1_richiesto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false, ...renderGiocatoreOptions });
+    const selectPrestito1Off = new TomSelect('#prestito1_offerto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false, ...renderGiocatoreOptions });
+    const selectPrestito2Rich = new TomSelect('#prestito2_richiesto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false, ...renderGiocatoreOptions });
+    const selectPrestito2Off = new TomSelect('#prestito2_offerto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false, ...renderGiocatoreOptions });
 
     selectPrestito1Rich.disable();
     selectPrestito1Off.disable();
@@ -445,6 +478,31 @@ document.addEventListener("DOMContentLoaded", () => {
     setupLoanTypeListener('prestito1_tipo_offerto', 'prestito1_riscatto_offerto');
     setupLoanTypeListener('prestito2_tipo_richiesto', 'prestito2_riscatto_richiesto');
     setupLoanTypeListener('prestito2_tipo_offerto', 'prestito2_riscatto_offerto');
+
+    // Non appena c'è un giocatore selezionato valido per il prestito, il tipo
+    // riparte da "Secco" (modificabile dopo) invece di restare vuoto: il reset
+    // a '' fatto da toggleLoan() quando il blocco viene disabilitato/riabilitato
+    // altrimenti lo lascia senza default. Scatta solo su una vera nuova
+    // selezione (non ad ogni evento 'change' di Tom Select, che può ripetersi
+    // anche solo aprendo/chiudendo la tendina senza cambiare valore).
+    function defaultTipoPrestitoASecco(tipoSelectId, riscattoSelectId) {
+        const tipoSelect = document.getElementById(tipoSelectId);
+        const riscattoInput = document.getElementById(riscattoSelectId);
+        tipoSelect.value = 'Secco';
+        riscattoInput.value = '0';
+        riscattoInput.disabled = true;
+    }
+    function onNuovaSelezioneGiocatore(selectInstance, callback) {
+        let ultimoValore = selectInstance.getValue();
+        selectInstance.on('change', (value) => {
+            if (value && value !== ultimoValore) callback();
+            ultimoValore = value;
+        });
+    }
+    onNuovaSelezioneGiocatore(selectPrestito1Rich, () => defaultTipoPrestitoASecco('prestito1_tipo_richiesto', 'prestito1_riscatto_richiesto'));
+    onNuovaSelezioneGiocatore(selectPrestito1Off, () => defaultTipoPrestitoASecco('prestito1_tipo_offerto', 'prestito1_riscatto_offerto'));
+    onNuovaSelezioneGiocatore(selectPrestito2Rich, () => defaultTipoPrestitoASecco('prestito2_tipo_richiesto', 'prestito2_riscatto_richiesto'));
+    onNuovaSelezioneGiocatore(selectPrestito2Off, () => defaultTipoPrestitoASecco('prestito2_tipo_offerto', 'prestito2_riscatto_offerto'));
 
     function updateMaxItems() {
         const destOption = selectSquadra.options[selectSquadra.selectedIndex];
@@ -672,9 +730,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const filtrati = allOptions.filter(g => g.squadra_att === squadraSelezionata);
         filtrati.forEach(g => {
-            selectRichiesti.addOption({ value: g.id, text: g.nome });
-            selectPrestito1Rich.addOption({ value: g.id, text: g.nome });
-            selectPrestito2Rich.addOption({ value: g.id, text: g.nome });
+            selectRichiesti.addOption({ value: g.id, text: g.nome, ruolo: g.ruolo, club: g.club });
+            selectPrestito1Rich.addOption({ value: g.id, text: g.nome, ruolo: g.ruolo, club: g.club });
+            selectPrestito2Rich.addOption({ value: g.id, text: g.nome, ruolo: g.ruolo, club: g.club });
         });
 
         const squadraNorm = normalizeTeamName(squadraSelezionata);

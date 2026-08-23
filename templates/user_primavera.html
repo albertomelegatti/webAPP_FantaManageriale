@@ -2,8 +2,9 @@
 
 {% block content %}
 {% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('user.user_rosa_menu', nome_squadra=nome_squadra)) }}</div>
 <h2 class="mb-2 text-lg font-bold">Promozione Giocatori dalla Primavera</h2>
-<p class="mb-4 text-sm text-muted">Qui puoi promuovere un giocatore in prima squadra o tagliarlo: per i giocatori in primavera non sono previsti costi per il taglio.</p>
+<p class="mb-4 text-sm text-muted">Qui puoi promuovere un giocatore in prima squadra, tagliarlo o richiederne la modifica del contratto: per i giocatori in primavera non sono previsti costi per il taglio.</p>
 
 {% if primavera %}
 <div class="flex flex-col gap-2">
@@ -20,7 +21,7 @@
               onsubmit="return confirm('Vuoi davvero promuovere {{ giocatore.nome }} in prima squadra?');">
             <input type="hidden" name="id_giocatore_da_promuovere" value="{{ giocatore.id }}">
             <button type="submit" data-tip="Promuovi in prima squadra"
-                    class="flex w-14 items-center justify-center gap-0.5 rounded-lg bg-ok px-1 py-1.5 text-[10px] font-bold uppercase text-white">
+                    class="flex h-8 w-16 items-center justify-center gap-0.5 rounded-lg bg-ok px-1 text-[12px] font-bold uppercase text-white">
                 <i class="bi bi-arrow-up-circle"></i> Prom
             </button>
         </form>
@@ -36,14 +37,14 @@
 
         {% if giocatore.esiste_gia_una_richiesta %}
         <button type="button" data-tip="Richiesta di modifica già in corso"
-                class="flex w-14 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-muted px-1 py-1.5 text-[10px] font-bold uppercase text-white opacity-50" disabled>
+                class="flex h-8 w-16 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-muted px-1 text-[12px] font-bold uppercase text-white opacity-50" disabled>
             <i class="bi bi-hourglass-split"></i> Att
         </button>
         {% else %}
         <a href="{{ url_for('rosa.richiesta_modifica_contratto', nome_squadra=nome_squadra, id_giocatore=giocatore.id) }}"
-           data-tip="Vendi"
-           class="flex w-14 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-accent px-1 py-1.5 text-[10px] font-bold uppercase text-white">
-            <i class="bi bi-cash-coin"></i> Vend
+           data-tip="Modifica contratto"
+           class="flex h-8 w-16 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-accent px-1 text-[12px] font-bold uppercase text-white">
+            <i class="bi bi-pencil-square"></i> Mod
         </a>
         {% endif %}
     </div>

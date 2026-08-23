@@ -35,6 +35,20 @@
             </button>
         </form>
 
+        <form method="POST"
+              action="{{ url_for('aste.singola_asta_attiva', asta_id=asta.id, nome_squadra=nome_squadra) }}"
+              class="flex items-center gap-2">
+            <input type="hidden" name="offerta_attesa" value="{{ asta.ultima_offerta }}">
+            <span class="shrink-0 text-xs text-muted">Rilancio rapido</span>
+            {% for delta in [1, 2, 5] %}
+            <button type="submit" name="delta_rilancio" value="{{ delta }}"
+                    class="flex-1 rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-sm font-semibold text-text hover:border-accent disabled:opacity-50"
+                    {% if asta.ultima_offerta + delta > asta.offerta_massima_possibile %}disabled{% endif %}>
+                +{{ delta }}
+            </button>
+            {% endfor %}
+        </form>
+
         <form method="POST" action="{{ url_for('aste.singola_asta_attiva', asta_id=asta.id, nome_squadra=nome_squadra) }}"
               onsubmit="return confirm('Sei sicuro di voler rinunciare all\'asta per {{ asta.giocatore }}?');">
             <input type="hidden" name="bottone_rinuncia" value="{{ asta.id }}">
@@ -59,7 +73,7 @@
 {% endif %}
 
 <div class="mt-4 text-center">
-    <a href="{{ url_for('aste.user_aste', nome_squadra=nome_squadra) }}" class="text-sm text-muted hover:text-accent">← Torna alle aste</a>
+    {{ m.torna_indietro(url_for('aste.user_aste', nome_squadra=nome_squadra), 'Torna alle aste') }}
 </div>
 
 {% else %}
@@ -67,7 +81,7 @@
     ⚠️ L'asta selezionata non è disponibile o è stata rimossa.
 </div>
 <div class="mt-4 text-center">
-    <a href="{{ url_for('aste.user_aste', nome_squadra=nome_squadra) }}" class="text-sm text-muted hover:text-accent">← Torna alle aste</a>
+    {{ m.torna_indietro(url_for('aste.user_aste', nome_squadra=nome_squadra), 'Torna alle aste') }}
 </div>
 {% endif %}
 {% endblock %}

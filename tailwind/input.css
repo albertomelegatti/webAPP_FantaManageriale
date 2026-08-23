@@ -20,6 +20,16 @@
   --color-crit: var(--crit);
 
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Tutti i caratteri +20% rispetto alla scala di default di Tailwind
+     (i line-height restano proporzionati perché sono rapporti unitless,
+     non valori fissi) */
+  --text-xs: 0.9rem;
+  --text-sm: 1.05rem;
+  --text-base: 1.2rem;
+  --text-lg: 1.35rem;
+  --text-xl: 1.5rem;
+  --text-4xl: 2.7rem;
 }
 
 :root {

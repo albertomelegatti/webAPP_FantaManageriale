@@ -2,6 +2,7 @@
 
 {% block content %}
 {% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('user.user_mercato_menu', nome_squadra=nome_squadra)) }}</div>
 <h2 class="mb-4 text-center text-lg font-bold">Prestiti di {{ nome_squadra }}</h2>
 
 <div class="flex flex-col gap-2">

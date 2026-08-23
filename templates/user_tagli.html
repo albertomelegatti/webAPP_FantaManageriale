@@ -2,6 +2,7 @@
 
 {% block content %}
 {% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('user.user_rosa_menu', nome_squadra=nome_squadra)) }}</div>
 <h2 class="mb-2 text-lg font-bold">Svincoli &amp; Gestione Contratti - {{ nome_squadra }}</h2>
 <p class="mb-1 text-sm text-muted">✂️ Quando un giocatore viene svincolato, la squadra dovrà pagare metà della sua quotazione attuale arrotondata per eccesso.</p>
 
@@ -36,7 +37,7 @@
               onsubmit="return confirm('Vuoi davvero tagliare {{ giocatore.nome }}? Dovrai pagare metà della sua quotazione attuale.');">
             <input type="hidden" name="id_giocatore_da_tagliare" value="{{ giocatore.id }}">
             <button type="submit" data-tip="Svincola per {{ costo_taglio }} crediti{% if crediti_disponibili < costo_taglio %} - non disponibile{% endif %}"
-                    class="flex w-14 items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-bold uppercase text-white
+                    class="flex w-14 items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[12px] font-bold uppercase text-white
                            {% if crediti_disponibili < costo_taglio %}pointer-events-none bg-muted opacity-50{% else %}bg-ko{% endif %}"
                     {% if crediti_disponibili < costo_taglio %}disabled{% endif %}>
                 <i class="bi bi-scissors"></i> {{ costo_taglio }} cr
@@ -45,13 +46,13 @@
 
         {% if giocatore.esiste_gia_una_richiesta %}
         <button type="button" data-tip="Richiesta di modifica già in corso"
-                class="flex w-14 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-muted px-1 py-1.5 text-[10px] font-bold uppercase text-white opacity-50" disabled>
+                class="flex w-14 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-muted px-1 py-1.5 text-[12px] font-bold uppercase text-white opacity-50" disabled>
             <i class="bi bi-hourglass-split"></i> Att
         </button>
         {% else %}
         <a href="{{ url_for('rosa.richiesta_modifica_contratto', nome_squadra=nome_squadra, id_giocatore=giocatore.id) }}"
            data-tip="Modifica contratto"
-           class="flex w-14 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-accent px-1 py-1.5 text-[10px] font-bold uppercase text-white">
+           class="flex w-14 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-accent px-1 py-1.5 text-[12px] font-bold uppercase text-white">
             <i class="bi bi-pencil-square"></i> Mod
         </a>
         {% endif %}

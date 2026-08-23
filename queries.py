@@ -79,6 +79,22 @@ def get_offerta_totale(conn, nome_squadra):
     return offerta_totale
 
 
+def get_crediti_e_offerta(conn, nome_squadra):
+    """Crediti squadra e offerta totale in aste attive, in un'unica query
+    (evita 2 round-trip separati al DB, usati insieme in ogni pagina asta)."""
+
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute('''
+                SELECT
+                    (SELECT crediti FROM squadra WHERE nome = %s) AS crediti,
+                    (SELECT COALESCE(SUM(ultima_offerta), 0) FROM asta
+                        WHERE squadra_vincente = %s AND stato = 'in_corso') AS offerta_totale;
+    ''', (nome_squadra, nome_squadra))
+    row = cur.fetchone()
+    cur.close()
+    return row["crediti"], row["offerta_totale"]
+
+
 def get_slot_giocatori(conn, nome_squadra):
 
     cur = conn.cursor(cursor_factory=RealDictCursor)
@@ -113,8 +129,22 @@ def get_slot_aste(conn, nome_squadra):
 
 
 def get_slot_occupati(conn, nome_squadra):
+    """Slot giocatori (con contratto) + slot aste attive, in un'unica query
+    invece di 2 round-trip separati."""
 
-    return get_slot_giocatori(conn, nome_squadra) + get_slot_aste(conn, nome_squadra)
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute('''
+                SELECT
+                    (SELECT COUNT(id) FROM giocatore
+                        WHERE squadra_att = %s
+                            AND tipo_contratto IN ('Hold', 'Indeterminato')) AS slot_giocatori,
+                    (SELECT COUNT(id) FROM asta
+                        WHERE %s = ANY(partecipanti)
+                            AND stato <> 'conclusa') AS slot_aste;
+    ''', (nome_squadra, nome_squadra))
+    row = cur.fetchone()
+    cur.close()
+    return row["slot_giocatori"] + row["slot_aste"]
 
 
 
