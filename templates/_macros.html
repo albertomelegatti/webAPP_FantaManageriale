@@ -41,7 +41,7 @@
 {%- endif -%}
 {% endmacro %}
 
-{% macro contratto_icona(tipo) %}
+{% macro contratto_icona(tipo, mostra_tip=true) %}
 {%- set icone = {
     'Indeterminato': 'bi-infinity',
     'Fanta-Prestito': 'bi-arrow-left-right',
@@ -51,7 +51,7 @@
     'Primavera': 'bi-flower3'
 } -%}
 {%- if tipo and icone.get(tipo) -%}
-<span class="inline-flex items-center align-middle text-muted" data-tip="{{ tipo }}">
+<span class="inline-flex items-center align-middle text-muted" data-sortkey="{{ tipo }}"{% if mostra_tip %} data-tip="{{ tipo }}"{% endif %}>
     <i class="bi {{ icone[tipo] }}"></i>
 </span>
 {%- elif tipo -%}
