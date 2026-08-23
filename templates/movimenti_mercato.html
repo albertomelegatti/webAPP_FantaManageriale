@@ -121,9 +121,14 @@ document.addEventListener('DOMContentLoaded', function () {
     filterEvento.addEventListener('keyup', applyFilters);
 
     mercatoBody.querySelectorAll('.mercato-toggle').forEach(function (btn) {
+        const testo = btn.querySelector('.evento-testo');
+        const chevron = btn.querySelector('.chevron');
+        // Mostra la freccia solo se il testo è davvero troncato dal line-clamp
+        if (testo.scrollHeight <= testo.clientHeight + 1) {
+            chevron.classList.add('hidden');
+            return;
+        }
         btn.addEventListener('click', function () {
-            const testo = btn.querySelector('.evento-testo');
-            const chevron = btn.querySelector('.chevron');
             testo.classList.toggle('line-clamp-1');
             chevron.classList.toggle('rotate-180');
         });
