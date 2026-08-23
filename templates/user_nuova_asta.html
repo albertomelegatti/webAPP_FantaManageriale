@@ -99,6 +99,7 @@ window.addEventListener("load", function() {
         erroreMsg.classList.add("hidden");
         confermaMsg.classList.add("hidden");
         if (creaMsg) creaMsg.classList.add("hidden");
+        btnAvviaAsta.classList.remove("hidden");
 
         btnAvviaAsta.disabled = true;
 
@@ -109,9 +110,12 @@ window.addEventListener("load", function() {
         if (filtrati.length > 0) {
             // Mostra suggerimenti se trovati. Il dropdown è in overlay: gli
             // diamo un'altezza minima pari a quella del resto del form (bottone
-            // incluso) così lo copre sempre per intero, senza lasciarne
-            // intravedere un pezzo sotto quando i risultati sono pochi.
+            // incluso) così lo copre sempre per intero. Il bottone resta al
+            // suo posto (nessuno scorrimento) ma lo nascondiamo finché il menu
+            // è aperto: essendo "disabled" ha opacità ridotta e altrimenti si
+            // vedrebbe in trasparenza sotto il menu.
             suggerimenti.style.minHeight = restoForm.offsetHeight + "px";
+            btnAvviaAsta.classList.add("hidden");
 
             filtrati.forEach(g => {
                 const button = document.createElement("button");
@@ -125,6 +129,7 @@ window.addEventListener("load", function() {
                     erroreMsg.classList.add("hidden");
                     if (creaMsg) creaMsg.classList.add("hidden");
                     confermaMsg.classList.remove("hidden");
+                    btnAvviaAsta.classList.remove("hidden");
                     btnAvviaAsta.disabled = false;
                 };
                 suggerimenti.appendChild(button);
@@ -143,6 +148,7 @@ window.addEventListener("load", function() {
         if (!input.contains(e.target) && !suggerimenti.contains(e.target)) {
             suggerimenti.innerHTML = "";
             suggerimenti.style.minHeight = "";
+            btnAvviaAsta.classList.remove("hidden");
         }
     });
 
