@@ -4,7 +4,7 @@ import os
 import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from db import get_connection, release_connection
+from db import get_connection, release_connection, resync_sequence
 from user import format_partecipanti, formatta_data
 from queries import get_crediti_e_offerta, get_slot_occupati
 from dotenv import load_dotenv
@@ -228,31 +228,49 @@ def nuova_asta(nome_squadra):
                 # - Ruolo: PlaceHolderRole (sarà aggiornato successivamente)
                 # - Quotazione: 666 (default)
                 # - Tipo contratto: Svincolato
-                cur.execute('''
+                sql_giocatore = '''
                     INSERT INTO giocatore (
-                        nome, ruolo, tipo_contratto, squadra_att, detentore_cartellino, 
+                        nome, ruolo, tipo_contratto, squadra_att, detentore_cartellino,
                         quot_att_mantra, costo, priorita, club
                     )
                     VALUES (%s, ARRAY['PlaceHolderRole']::ruolo_mantra[], 'Svincolato', 'Svincolato', 'Svincolato', 666, 0, 1, %s)
                     RETURNING id;
-                ''', (nome_nuovo, club_nuovo or "N/A"))
-                nuovo_giocatore_id = cur.fetchone()["id"]
-                
+                '''
+                giocatore_params = (nome_nuovo, club_nuovo or "N/A")
+
                 # Crea automaticamente l'asta per il giocatore appena creato
                 # - Stato: mostra_interesse
                 # - Durata: 1 giorno
                 # - Partecipante iniziale: squadra corrente
-                cur.execute('''
+                sql_asta = '''
                     INSERT INTO asta (
                         giocatore, squadra_vincente, ultima_offerta,
                         tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti, gia_elaborata
                     )
                     VALUES (%s, %s, NULL, NULL, (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day', 'mostra_interesse', %s, FALSE)
                     RETURNING id;
-                ''', (nuovo_giocatore_id, nome_squadra, [nome_squadra]))
-                asta_id = cur.fetchone()["id"]
-                
-                
+                '''
+
+                try:
+                    cur.execute(sql_giocatore, giocatore_params)
+                    nuovo_giocatore_id = cur.fetchone()["id"]
+                    cur.execute(sql_asta, (nuovo_giocatore_id, nome_squadra, [nome_squadra]))
+                    asta_id = cur.fetchone()["id"]
+                except psycopg2.errors.UniqueViolation:
+                    # La sequence di giocatore o asta è rimasta indietro rispetto ai dati
+                    # (es. import/restore manuale sul DB). Il rollback annulla anche
+                    # l'eventuale insert di giocatore già fatto in questo tentativo, quindi
+                    # riallineiamo entrambe le sequence e rifacciamo l'intero blocco da capo,
+                    # così l'utente non vede l'errore.
+                    conn.rollback()
+                    resync_sequence(conn, 'giocatore')
+                    resync_sequence(conn, 'asta')
+                    cur = conn.cursor(cursor_factory=RealDictCursor)
+                    cur.execute(sql_giocatore, giocatore_params)
+                    nuovo_giocatore_id = cur.fetchone()["id"]
+                    cur.execute(sql_asta, (nuovo_giocatore_id, nome_squadra, [nome_squadra]))
+                    asta_id = cur.fetchone()["id"]
+
                 conn.commit()
                 flash(f"✅ Giocatore {nome_nuovo} creato e asta avviata con successo!", "success")
                 telegram_utils.nuova_asta(conn, asta_id)
@@ -282,14 +300,25 @@ def nuova_asta(nome_squadra):
                     giocatore_id = giocatore_raw["id"]
 
                     # Inserisci l'asta
-                    cur.execute('''
+                    sql_asta = '''
                         INSERT INTO asta (
                             giocatore, squadra_vincente, ultima_offerta,
                             tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti, gia_elaborata
                         )
                         VALUES (%s, %s, NULL, NULL, (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day', 'mostra_interesse', %s, FALSE)
                         RETURNING id;
-                    ''', (giocatore_id, nome_squadra, [nome_squadra]))
+                    '''
+                    asta_params = (giocatore_id, nome_squadra, [nome_squadra])
+                    try:
+                        cur.execute(sql_asta, asta_params)
+                    except psycopg2.errors.UniqueViolation:
+                        # La sequence di asta è rimasta indietro rispetto ai dati
+                        # (es. import/restore manuale sul DB). Riallineiamo e riproviamo,
+                        # così l'utente non vede l'errore.
+                        conn.rollback()
+                        resync_sequence(conn, 'asta')
+                        cur = conn.cursor(cursor_factory=RealDictCursor)
+                        cur.execute(sql_asta, asta_params)
                     asta_id = cur.fetchone()["id"]
                     conn.commit()
 
