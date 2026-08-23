@@ -10,93 +10,143 @@
 {% set richieste_accettate_list = richieste | selectattr('stato', 'equalto', 'accettata') | list %}
 {% set richieste_rifiutate_list = richieste | selectattr('stato', 'equalto', 'rifiutata') | list %}
 
-<h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Nuove richieste ({{ nuove_richieste_list|length }})</h3>
-{% if nuove_richieste_list %}
-<div class="mb-6 flex flex-col gap-2">
-    {% for richiesta in nuove_richieste_list %}
-    <div class="rounded-2xl border border-line bg-panel p-3">
-        <div class="flex items-center justify-between gap-2">
-            <span class="min-w-0 truncate font-medium">{{ richiesta.nome_giocatore }} <span class="ml-1">{{ m.ruolo_colorato(richiesta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(richiesta.club) }}</span>
-            <span class="shrink-0 text-xs text-muted">{{ richiesta.data }}</span>
-        </div>
-        <div class="mt-1 text-xs text-muted">{{ richiesta.squadra_richiedente }}</div>
-        <div class="mt-2 flex items-center gap-1.5 text-xs">
-            <span class="rounded-full bg-panel-2 px-2 py-0.5 font-semibold text-muted">{{ richiesta.contratto_attuale }}</span>
-            <i class="bi bi-arrow-right text-muted"></i>
-            <span class="rounded-full bg-accent/15 px-2 py-0.5 font-semibold text-accent">{{ richiesta.contratto_richiesto }}</span>
-        </div>
-        {% if richiesta.crediti_richiesti %}
-        <div class="mt-1.5 text-xs text-muted">Crediti richiesti: <span class="font-semibold text-text">{{ richiesta.crediti_richiesti }}</span></div>
-        {% endif %}
-        {% if richiesta.messaggio %}
-        <div class="mt-1.5 text-xs italic text-muted">"{{ richiesta.messaggio }}"</div>
-        {% endif %}
-        <form method="POST" action="{{ url_for('admin.richiesta_modifica_contratto') }}" class="mt-3 flex gap-2">
-            <input type="hidden" name="id_richiesta" value="{{ richiesta.id }}">
-            <button type="submit" name="accetta_richiesta" value="accetta"
-                    onclick="return confirm('Accettare la richiesta per {{ richiesta.nome_giocatore }}?');"
-                    class="flex-1 rounded-xl bg-ok px-3 py-2 text-xs font-bold uppercase text-white">
-                <i class="bi bi-check-lg"></i> Accetta
-            </button>
-            <button type="submit" name="rifiuta_richiesta" value="rifiuta"
-                    onclick="return confirm('Rifiutare la richiesta per {{ richiesta.nome_giocatore }}?');"
-                    class="flex-1 rounded-xl bg-ko px-3 py-2 text-xs font-bold uppercase text-white">
-                <i class="bi bi-x-lg"></i> Rifiuta
-            </button>
-        </form>
-    </div>
-    {% endfor %}
-</div>
-{% else %}
-<p class="mb-6 text-center text-sm text-muted">Nessuna nuova richiesta in elaborazione.</p>
-{% endif %}
+<div class="flex flex-col gap-4">
 
-<h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Accettate ({{ richieste_accettate_list|length }})</h3>
-{% if richieste_accettate_list %}
-<div class="mb-6 flex flex-col gap-2">
-    {% for richiesta in richieste_accettate_list %}
-    <div class="rounded-2xl border border-line bg-panel p-3">
-        <div class="flex items-center justify-between gap-2">
-            <span class="min-w-0 truncate font-medium">{{ richiesta.nome_giocatore }} <span class="ml-1">{{ m.ruolo_colorato(richiesta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(richiesta.club) }}</span>
-            <span class="shrink-0 text-xs text-muted">{{ richiesta.data }}</span>
+    <!-- Nuove richieste -->
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-accent"></span> Nuove richieste
+            <span class="ml-auto rounded-full bg-panel-2 px-2 py-0.5 text-[11px] font-bold text-text">{{ nuove_richieste_list|length }}</span>
+        </h4>
+        <div class="flex flex-col gap-2">
+            {% for richiesta in nuove_richieste_list %}
+            <div class="richiesta-item rounded-xl bg-panel-2 px-3 py-2.5">
+                <button type="button" class="richiesta-toggle flex w-full items-center justify-between gap-2 text-left">
+                    <span class="min-w-0 flex-1 text-sm">
+                        <span class="font-medium">{{ richiesta.nome_giocatore }}</span> <span class="ml-1">{{ m.ruolo_colorato(richiesta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(richiesta.club) }}
+                        <span class="block text-xs text-muted">{{ richiesta.squadra_richiedente }} · {{ richiesta.data }}</span>
+                    </span>
+                    <i class="bi bi-chevron-down chevron shrink-0 text-muted transition-transform"></i>
+                </button>
+                <div class="richiesta-details hidden mt-2 flex flex-col gap-2 border-t border-line pt-2 text-xs">
+                    <div class="rounded-lg bg-panel p-2.5">
+                        <div class="flex items-center gap-1.5">
+                            <span class="rounded-full bg-panel-2 px-2 py-0.5 font-semibold text-muted">{{ richiesta.contratto_attuale }}</span>
+                            <i class="bi bi-arrow-right text-muted"></i>
+                            <span class="rounded-full bg-accent/15 px-2 py-0.5 font-semibold text-accent">{{ richiesta.contratto_richiesto }}</span>
+                        </div>
+                        {% if richiesta.crediti_richiesti %}
+                        <div class="mt-1.5"><span class="font-bold">Crediti richiesti:</span> {{ richiesta.crediti_richiesti }}</div>
+                        {% endif %}
+                    </div>
+                    {% if richiesta.messaggio %}
+                    <div class="rounded-lg bg-panel p-2.5 break-words [overflow-wrap:anywhere]">
+                        <span class="font-bold">Messaggio:</span> {{ richiesta.messaggio }}
+                    </div>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('admin.richiesta_modifica_contratto') }}" class="flex gap-2">
+                        <input type="hidden" name="id_richiesta" value="{{ richiesta.id }}">
+                        <button type="submit" name="accetta_richiesta" value="accetta"
+                                onclick="return confirm('Accettare la richiesta per {{ richiesta.nome_giocatore }}?');"
+                                class="flex-1 rounded-lg bg-ok px-3 py-2 text-sm font-semibold text-white">
+                            <i class="bi bi-check-lg"></i> Accetta
+                        </button>
+                        <button type="submit" name="rifiuta_richiesta" value="rifiuta"
+                                onclick="return confirm('Rifiutare la richiesta per {{ richiesta.nome_giocatore }}?');"
+                                class="flex-1 rounded-lg bg-ko px-3 py-2 text-sm font-semibold text-white">
+                            <i class="bi bi-x-lg"></i> Rifiuta
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessuna nuova richiesta in elaborazione.</p>
+            {% endfor %}
         </div>
-        <div class="mt-1 text-xs text-muted">{{ richiesta.squadra_richiedente }}</div>
-        <div class="mt-2 flex flex-wrap items-center gap-2 text-xs">
-            <span class="rounded-full bg-ok/15 px-2 py-0.5 font-semibold text-ok">{{ richiesta.contratto_richiesto }}</span>
-            {% if richiesta.crediti_richiesti %}
-            <span class="text-muted">Crediti: <span class="font-semibold text-text">{{ richiesta.crediti_richiesti }}</span></span>
-            {% endif %}
-        </div>
-        {% if richiesta.messaggio %}
-        <div class="mt-1.5 text-xs italic text-muted">"{{ richiesta.messaggio }}"</div>
-        {% endif %}
     </div>
-    {% endfor %}
-</div>
-{% else %}
-<p class="mb-6 text-center text-sm text-muted">Nessuna richiesta è stata ancora accettata.</p>
-{% endif %}
 
-<h3 class="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Rifiutate ({{ richieste_rifiutate_list|length }})</h3>
-{% if richieste_rifiutate_list %}
-<div class="flex flex-col gap-2">
-    {% for richiesta in richieste_rifiutate_list %}
-    <div class="rounded-2xl border border-line bg-panel p-3">
-        <div class="flex items-center justify-between gap-2">
-            <span class="min-w-0 truncate font-medium">{{ richiesta.nome_giocatore }} <span class="ml-1">{{ m.ruolo_colorato(richiesta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(richiesta.club) }}</span>
-            <span class="shrink-0 text-xs text-muted">{{ richiesta.data }}</span>
+    <!-- Richieste accettate -->
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-ok"></span> Accettate
+            <span class="ml-auto rounded-full bg-panel-2 px-2 py-0.5 text-[11px] font-bold text-text">{{ richieste_accettate_list|length }}</span>
+        </h4>
+        <div class="flex flex-col gap-2">
+            {% for richiesta in richieste_accettate_list %}
+            <div class="richiesta-item rounded-xl bg-panel-2 px-3 py-2.5">
+                <button type="button" class="richiesta-toggle flex w-full items-center justify-between gap-2 text-left">
+                    <span class="min-w-0 flex-1 text-sm">
+                        <span class="font-medium">{{ richiesta.nome_giocatore }}</span> <span class="ml-1">{{ m.ruolo_colorato(richiesta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(richiesta.club) }}
+                        <span class="block text-xs text-muted">{{ richiesta.squadra_richiedente }} · {{ richiesta.data }}</span>
+                    </span>
+                    <i class="bi bi-chevron-down chevron shrink-0 text-muted transition-transform"></i>
+                </button>
+                <div class="richiesta-details hidden mt-2 flex flex-col gap-2 border-t border-line pt-2 text-xs">
+                    <div class="rounded-lg bg-panel p-2.5">
+                        <span class="rounded-full bg-ok/15 px-2 py-0.5 font-semibold text-ok">{{ richiesta.contratto_richiesto }}</span>
+                        {% if richiesta.crediti_richiesti %}
+                        <div class="mt-1.5"><span class="font-bold">Crediti:</span> {{ richiesta.crediti_richiesti }}</div>
+                        {% endif %}
+                    </div>
+                    {% if richiesta.messaggio %}
+                    <div class="rounded-lg bg-panel p-2.5 break-words [overflow-wrap:anywhere]">
+                        <span class="font-bold">Messaggio:</span> {{ richiesta.messaggio }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessuna richiesta è stata ancora accettata.</p>
+            {% endfor %}
         </div>
-        <div class="mt-1 text-xs text-muted">{{ richiesta.squadra_richiedente }}</div>
-        <div class="mt-2">
-            <span class="rounded-full bg-ko/15 px-2 py-0.5 text-xs font-semibold text-ko">{{ richiesta.contratto_richiesto }}</span>
-        </div>
-        {% if richiesta.messaggio %}
-        <div class="mt-1.5 text-xs italic text-muted">"{{ richiesta.messaggio }}"</div>
-        {% endif %}
     </div>
-    {% endfor %}
+
+    <!-- Richieste rifiutate -->
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <span class="h-2 w-2 rounded-full bg-ko"></span> Rifiutate
+            <span class="ml-auto rounded-full bg-panel-2 px-2 py-0.5 text-[11px] font-bold text-text">{{ richieste_rifiutate_list|length }}</span>
+        </h4>
+        <div class="flex flex-col gap-2">
+            {% for richiesta in richieste_rifiutate_list %}
+            <div class="richiesta-item rounded-xl bg-panel-2 px-3 py-2.5">
+                <button type="button" class="richiesta-toggle flex w-full items-center justify-between gap-2 text-left">
+                    <span class="min-w-0 flex-1 text-sm">
+                        <span class="font-medium">{{ richiesta.nome_giocatore }}</span> <span class="ml-1">{{ m.ruolo_colorato(richiesta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(richiesta.club) }}
+                        <span class="block text-xs text-muted">{{ richiesta.squadra_richiedente }} · {{ richiesta.data }}</span>
+                    </span>
+                    <i class="bi bi-chevron-down chevron shrink-0 text-muted transition-transform"></i>
+                </button>
+                <div class="richiesta-details hidden mt-2 flex flex-col gap-2 border-t border-line pt-2 text-xs">
+                    <div class="rounded-lg bg-panel p-2.5">
+                        <span class="rounded-full bg-ko/15 px-2 py-0.5 font-semibold text-ko">{{ richiesta.contratto_richiesto }}</span>
+                    </div>
+                    {% if richiesta.messaggio %}
+                    <div class="rounded-lg bg-panel p-2.5 break-words [overflow-wrap:anywhere]">
+                        <span class="font-bold">Messaggio:</span> {{ richiesta.messaggio }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessuna richiesta è stata rifiutata.</p>
+            {% endfor %}
+        </div>
+    </div>
+
 </div>
-{% else %}
-<p class="text-center text-sm text-muted">Nessuna richiesta è stata rifiutata.</p>
-{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.richiesta-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const item = btn.closest('.richiesta-item');
+            const details = item.querySelector('.richiesta-details');
+            const chevron = btn.querySelector('.chevron');
+            details.classList.toggle('hidden');
+            chevron.classList.toggle('rotate-180');
+        });
+    });
+});
+</script>
 {% endblock %}
