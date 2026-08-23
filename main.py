@@ -541,9 +541,11 @@ def listone():
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute("""
-            SELECT g.nome, g.ruolo, g.club, g.squadra_att, g.tipo_contratto, g.quot_att_mantra, s.username AS squadra_username
+            SELECT g.nome, g.ruolo, g.club, g.squadra_att, g.tipo_contratto, g.quot_att_mantra, g.costo,
+                   g.detentore_cartellino, s.username AS squadra_username, d.username AS detentore_username
             FROM giocatore g
             LEFT JOIN squadra s ON s.nome = g.squadra_att AND g.squadra_att <> 'Svincolato'
+            LEFT JOIN squadra d ON d.nome = g.detentore_cartellino AND g.detentore_cartellino <> 'Svincolato'
             WHERE g.priorita = 1
             ORDER BY g.quot_att_mantra DESC;
         """)
@@ -554,8 +556,11 @@ def listone():
                 "club": g["club"],
                 "squadra_att": g["squadra_att"],
                 "squadra_username": g["squadra_username"],
+                "detentore_cartellino": g["detentore_cartellino"],
+                "detentore_username": g["detentore_username"],
                 "tipo_contratto": g["tipo_contratto"],
                 "quotazione": g["quot_att_mantra"],
+                "costo": g["costo"],
             }
             for g in cur.fetchall()
         ]
