@@ -212,7 +212,7 @@ def richiesta_modifica_contratto():
 
 
         cur.execute('''
-                    SELECT r.id, g.nome, g.tipo_contratto, r.giocatore, r.contratto_richiesto, r.squadra_richiedente, r.crediti_richiesti, r.messaggio, r.data, r.stato
+                    SELECT r.id, g.nome, g.tipo_contratto, g.ruolo, g.club, r.giocatore, r.contratto_richiesto, r.squadra_richiedente, r.crediti_richiesti, r.messaggio, r.data, r.stato
                     FROM richiesta_modifica_contratto AS r
                     JOIN giocatore AS g
                     ON r.giocatore = g.id
@@ -225,6 +225,8 @@ def richiesta_modifica_contratto():
             richieste.append({
                 "id": r["id"],
                 "nome_giocatore": r["nome"],
+                "ruolo": (r["ruolo"] or "").strip("{}"),
+                "club": r["club"],
                 "contratto_attuale": r["tipo_contratto"],
                 "contratto_richiesto": r["contratto_richiesto"],
                 "squadra_richiedente": r["squadra_richiedente"],
