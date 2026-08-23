@@ -1,44 +1,26 @@
-{% extends "base.html" %}
-
-{% block title %}
-Admin - Invio messaggio
-{% endblock %}
+{% extends 'base_tailwind.html' %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            
-            <h2 class="mb-4">📧 Invia un Messaggio alle squadre</h2>
-            <p class="text-muted">Utilizza questo modulo per inviare notifiche, comandi o dati specifici a tutte le squadre.</p>
+{% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('admin.admin_home')) }}</div>
+<h2 class="mb-1 text-lg font-bold">Invia un Messaggio alle squadre</h2>
+<p class="mb-4 text-sm text-muted">Utilizza questo modulo per inviare notifiche, comandi o dati specifici a tutte le squadre.</p>
 
-            <hr>
+<div class="rounded-2xl border border-line bg-panel p-4">
+    <form method="POST" action="{{ url_for('admin.invia_comunicazione') }}" class="flex flex-col gap-3">
+        <textarea id="message_body" name="text_to_send" rows="6"
+                  placeholder="Inserisci qui il testo completo del messaggio."
+                  required
+                  class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-sm outline-none focus:border-accent"></textarea>
 
-            <form method="POST" action="{{ url_for('admin.invia_comunicazione') }}">
+        <input type="hidden" name="sender" value="AdminUser">
+        {% if csrf_token %}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% endif %}
 
-                <div class="mb-3">
-                    <textarea class="form-control" 
-                              id="message_body" 
-                              name="text_to_send" 
-                              rows="6" 
-                              placeholder="Inserisci qui il testo completo del messaggio." 
-                              required></textarea>
-                </div>
-                
-                <input type="hidden" name="sender" value="AdminUser">
-                {% if csrf_token %}
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                {% endif %}
-
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary btn-lg mt-3">
-                        <i class="fas fa-paper-plane me-2"></i> Invia
-                    </button>
-                </div>
-
-            </form>
-            
-        </div>
-    </div>
+        <button type="submit" class="mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white">
+            <i class="bi bi-send-fill"></i> Invia
+        </button>
+    </form>
 </div>
 {% endblock %}
