@@ -57,7 +57,10 @@
                     {{ m.stato_vetrina_badge(giocatore.stato) }}
                 </div>
                 {% if giocatore.note %}
-                <div class="mt-1 line-clamp-1 text-xs text-muted" data-tip="{{ giocatore.note }}">{{ giocatore.note }}</div>
+                <button type="button" class="vetrina-note-toggle mt-1 flex w-full items-start justify-between gap-2 text-left">
+                    <span class="nota-testo line-clamp-1 min-w-0 flex-1 break-words text-xs text-muted">{{ giocatore.note }}</span>
+                    <i class="bi bi-chevron-down chevron mt-0.5 shrink-0 text-muted transition-transform"></i>
+                </button>
                 {% endif %}
                 <div class="mt-0.5 text-[11px] font-semibold">{{ giocatore.data_inserimento or '-' }}</div>
             </div>
@@ -85,6 +88,15 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.vetrina-note-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const testo = btn.querySelector('.nota-testo');
+            const chevron = btn.querySelector('.chevron');
+            testo.classList.toggle('line-clamp-1');
+            chevron.classList.toggle('rotate-180');
+        });
+    });
+
     const filtroSquadra = document.getElementById('filtro-squadra');
     const filtroStato = document.getElementById('filtro-stato');
     const chipRuolo = document.querySelectorAll('.chip-ruolo');
