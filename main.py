@@ -20,7 +20,7 @@ from webhook import webhook_bp
 from vetrina import vetrina_bp
 from db import get_connection, release_connection, init_pool
 from telegram_utils import get_all_telegram_ids
-from queries import get_slot_giocatori, get_slot_aste, ruolo_sort_key
+from queries import get_slot_giocatori, get_slot_aste, ruolo_sort_key, ruolo_base_sort_key
 from chatbot import get_answer
 
 app = Flask(__name__)
@@ -537,6 +537,62 @@ def crediti_stadi_slot():
 def listone():
     conn = None
     cur = None
+    giocatori = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        cur.execute("""
+            SELECT nome, ruolo, club, squadra_att, tipo_contratto, quot_att_mantra, costo
+            FROM giocatore
+            WHERE priorita = 1
+            ORDER BY quot_att_mantra DESC;
+        """)
+        giocatori = [
+            {
+                "nome": g["nome"],
+                "ruolo": (g["ruolo"] or "").strip("{}"),
+                "club": g["club"],
+                "squadra_att": g["squadra_att"],
+                "tipo_contratto": g["tipo_contratto"],
+                "quotazione": g["quot_att_mantra"],
+                "prezzo_acquisto": g["costo"],
+            }
+            for g in cur.fetchall()
+        ]
+
+    except Exception as e:
+        print("Errore caricamento listone:", e)
+        flash("❌ Errore durante il caricamento del listone.", "danger")
+
+    finally:
+        release_connection(conn, cur)
+
+    ruoli_base = set()
+    for g in giocatori:
+        for token in g["ruolo"].split(","):
+            token = token.strip()
+            if token:
+                ruoli_base.add(token)
+    ruoli_disponibili = sorted(ruoli_base, key=ruolo_base_sort_key)
+
+    club_disponibili = sorted({g["club"] for g in giocatori if g["club"]})
+    squadre_disponibili = sorted({g["squadra_att"] for g in giocatori if g["squadra_att"]})
+    contratti_disponibili = sorted({g["tipo_contratto"] for g in giocatori if g["tipo_contratto"]})
+
+    return render_template("listone.html",
+                            giocatori=giocatori,
+                            ruoli_disponibili=ruoli_disponibili,
+                            club_disponibili=club_disponibili,
+                            squadre_disponibili=squadre_disponibili,
+                            contratti_disponibili=contratti_disponibili)
+
+
+@app.route("/listone/esporta")
+def listone_esporta():
+    conn = None
+    cur = None
 
     try:
         conn = get_connection()
@@ -577,7 +633,7 @@ def listone():
     except Exception as e:
         print("Errore esportazione listone:", e)
         flash("❌ Errore durante la generazione del file Excel.", "danger")
-        return redirect(url_for('home'))
+        return redirect(url_for('listone'))
 
     finally:
         release_connection(conn, cur)
