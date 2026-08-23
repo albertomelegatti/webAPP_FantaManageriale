@@ -53,7 +53,7 @@
             {% for giocatore in giocatori_squadra %}
             <div class="vetrina-item rounded-xl bg-panel-2 px-3 py-2.5" data-stato="{{ giocatore.stato }}" data-ruolo="{{ giocatore.ruolo }}">
                 <div class="flex items-start justify-between gap-3">
-                    <span class="min-w-0 flex-1 font-medium">{{ giocatore.nome }} <span class="ml-1">{{ m.ruolo_colorato(giocatore.ruolo) }}</span><span class="mx-1 text-muted">-</span><span class="text-muted">{{ giocatore.quot_att_mantra }} cr</span></span>
+                    <span class="min-w-0 flex-1 font-medium">{{ giocatore.nome }} <span class="ml-1">{{ m.ruolo_colorato(giocatore.ruolo) }}</span><span class="mx-1 text-muted">-</span><span class="text-muted">QA {{ giocatore.quot_att_mantra }} cr</span></span>
                     {{ m.stato_vetrina_badge(giocatore.stato) }}
                 </div>
                 {% if giocatore.note %}
