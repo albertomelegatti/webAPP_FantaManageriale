@@ -374,6 +374,52 @@ def singola_asta_attiva(asta_id, nome_squadra):
                 flash("❌ Attenzione, valori non aggiornati, verrai reindirizzato alla pagina aggiornata.", "danger")
                 return redirect(url_for("aste.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
 
+            # Bottoni RILANCIO RAPIDO (+1 / +2 / +5)
+            delta_rilancio = request.form.get("delta_rilancio")
+            if delta_rilancio in ("1", "2", "5"):
+                # Blocca la riga dell'asta per aggiornamenti concorrenti
+                cur.execute('''
+                            SELECT ultima_offerta, squadra_vincente, stato
+                            FROM asta
+                            WHERE id = %s FOR UPDATE;
+                ''', (asta_id,))
+                asta_dati = cur.fetchone()
+
+                # Controllo sullo stato dell'asta prima del rilancio
+                if asta_dati['stato'] != 'in_corso':
+                    flash("Tempo scaduto, asta terminata.", "danger")
+                    return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
+
+                # L'offerta vista dall'utente al caricamento della pagina: se nel
+                # frattempo qualcun altro ha rilanciato, l'offerta reale in DB non
+                # corrisponde più e il rilancio rapido va rifiutato invece di sommare
+                # il delta a un valore ormai superato.
+                offerta_attesa = request.form.get("offerta_attesa", type=int)
+
+                if offerta_attesa is None or asta_dati['ultima_offerta'] != offerta_attesa:
+                    flash(f"⚠️ Nel frattempo l'offerta è cambiata: ora è a {asta_dati['ultima_offerta']} cr "
+                          f"(in testa {asta_dati['squadra_vincente']}). Ripremi +1, +2 o +5 se vuoi rilanciare "
+                          f"sull'offerta aggiornata.", "warning")
+                    return redirect(url_for("aste.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
+
+                if not asta_dati['squadra_vincente']:
+                    flash("❌ Rilancio non valido.", "danger")
+                    return redirect(url_for("aste.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
+
+                nuova_offerta = asta_dati['ultima_offerta'] + int(delta_rilancio)
+
+                cur.execute('''
+                    UPDATE asta
+                    SET ultima_offerta = %s,
+                        squadra_vincente = %s,
+                        tempo_fine_asta = (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day'
+                    WHERE id = %s;
+                ''', (nuova_offerta, nome_squadra, asta_id))
+                conn.commit()
+                flash(f"✅ Hai rilanciato l'offerta a {nuova_offerta}.", "success")
+                telegram_utils.asta_rilanciata(conn, asta_id)
+                return redirect(url_for("aste.singola_asta_attiva", asta_id=asta_id, nome_squadra=nome_squadra))
+
 
         # Recupero dati asta (join diretto sull'id dell'asta: un'unica riga,
         # non serve filtrare tutta la tabella giocatore per tipo_contratto)
