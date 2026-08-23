@@ -107,6 +107,30 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+    // Stessa palette di _macros.html (macro ruolo_colorato), per colorare
+    // i ruoli anche nelle option/chip generate da Tom Select
+    const COLORI_RUOLO = {
+        por: '#e0951b',
+        dd: '#22a558', ds: '#22a558', dc: '#22a558', b: '#22a558',
+        e: '#3f7fff', m: '#3f7fff', c: '#3f7fff',
+        w: '#a855f7', t: '#a855f7',
+        a: '#ef4444', pc: '#ef4444'
+    };
+
+    function ruoloColoratoHtml(ruolo, escape) {
+        const token_list = (ruolo || "").split(",").map(t => t.trim()).filter(Boolean);
+        return token_list
+            .map(t => `<span style="color:${COLORI_RUOLO[t.toLowerCase()] || 'var(--muted)'}">${escape(t)}</span>`)
+            .join('<span class="text-muted">,</span>');
+    }
+
+    // Formato "Nome Ruolo - Club" usato altrove nell'app, qui come
+    // render.option/render.item di Tom Select
+    function renderGiocatore(data, escape) {
+        const club = escape((data.club || "").slice(0, 3));
+        return `<div>${escape(data.text)} <span class="ml-1 whitespace-nowrap font-semibold">${ruoloColoratoHtml(data.ruolo, escape)}</span><span class="mx-1 text-muted">-</span><span class="whitespace-nowrap font-semibold uppercase text-muted">${club}</span></div>`;
+    }
+
     const selectSquadra = new TomSelect("#squadra_prestante", {
         placeholder: "Seleziona squadra...",
         create: false,
@@ -116,7 +140,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectGiocatore = new TomSelect("#giocatore_richiesto", {
         placeholder: "Seleziona giocatore...",
         create: false,
-        plugins: ['dropdown_input']
+        plugins: ['dropdown_input'],
+        render: {
+            option: renderGiocatore,
+            item: renderGiocatore
+        }
     });
 
     selectGiocatore.clearOptions();
@@ -147,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const filtrati = allGiocatori.filter(g => g.squadra_att === squadraSelezionata);
-        filtrati.forEach(g => selectGiocatore.addOption({ value: g.id, text: g.nome }));
+        filtrati.forEach(g => selectGiocatore.addOption({ value: g.id, text: g.nome, ruolo: g.ruolo, club: g.club }));
 
         selectGiocatore.enable();
         selectGiocatore.refreshOptions(false);

@@ -117,7 +117,7 @@
                 </label>
                 <select multiple name="giocatori_offerti" id="giocatori_offerti">
                     {% for g in miei_giocatori %}
-                    <option value="{{ g.id }}">{{ g.nome }}</option>
+                    <option value="{{ g.id }}" data-ruolo="{{ g.ruolo }}" data-club="{{ g.club }}">{{ g.nome }}</option>
                     {% endfor %}
                 </select>
 
@@ -182,7 +182,7 @@
                     <select id="prestito{{ n }}_offerto" name="prestito{{ n }}_offerto" disabled>
                         <option value="">Seleziona giocatore</option>
                         {% for g in miei_giocatori %}
-                        <option value="{{ g.id }}">{{ g.nome }}</option>
+                        <option value="{{ g.id }}" data-ruolo="{{ g.ruolo }}" data-club="{{ g.club }}">{{ g.nome }}</option>
                         {% endfor %}
                     </select>
                     <label class="mb-1 mt-2 block text-xs font-semibold text-muted">Tipo Prestito</label>
@@ -369,18 +369,43 @@ document.addEventListener("DOMContentLoaded", () => {
         if (pick) option.text = getPickDisplayText(pick);
     });
 
-    const selectOfferti = new TomSelect("#giocatori_offerti", { plugins: ['remove_button'], placeholder: "Giocatori da offrire", create: false, maxItems: 30 });
-    const selectRichiesti = new TomSelect("#giocatori_richiesti", { plugins: ['remove_button'], placeholder: "Giocatori da richiedere", create: false, maxItems: 0 });
+    // Stessa palette di _macros.html (macro ruolo_colorato), per colorare
+    // i ruoli anche nelle option/chip generate da Tom Select
+    const COLORI_RUOLO = {
+        por: '#e0951b',
+        dd: '#22a558', ds: '#22a558', dc: '#22a558', b: '#22a558',
+        e: '#3f7fff', m: '#3f7fff', c: '#3f7fff',
+        w: '#a855f7', t: '#a855f7',
+        a: '#ef4444', pc: '#ef4444'
+    };
+
+    function ruoloColoratoHtml(ruolo, escape) {
+        const token_list = (ruolo || "").split(",").map(t => t.trim()).filter(Boolean);
+        return token_list
+            .map(t => `<span style="color:${COLORI_RUOLO[t.toLowerCase()] || 'var(--muted)'}">${escape(t)}</span>`)
+            .join('<span class="text-muted">,</span>');
+    }
+
+    // Formato "Nome Ruolo - Club" usato altrove nell'app, qui come
+    // render.option/render.item di Tom Select per i select dei giocatori
+    function renderGiocatore(data, escape) {
+        const club = escape((data.club || "").slice(0, 3));
+        return `<div>${escape(data.text)} <span class="ml-1 whitespace-nowrap font-semibold">${ruoloColoratoHtml(data.ruolo, escape)}</span><span class="mx-1 text-muted">-</span><span class="whitespace-nowrap font-semibold uppercase text-muted">${club}</span></div>`;
+    }
+    const renderGiocatoreOptions = { render: { option: renderGiocatore, item: renderGiocatore } };
+
+    const selectOfferti = new TomSelect("#giocatori_offerti", { plugins: ['remove_button'], placeholder: "Giocatori da offrire", create: false, maxItems: 30, ...renderGiocatoreOptions });
+    const selectRichiesti = new TomSelect("#giocatori_richiesti", { plugins: ['remove_button'], placeholder: "Giocatori da richiedere", create: false, maxItems: 0, ...renderGiocatoreOptions });
     selectRichiesti.disable();
 
     const selectPickOfferta = new TomSelect("#pick_offerta", { plugins: ['remove_button'], placeholder: "Pick da offrire", create: false, maxItems: 30 });
     const selectPickRichiesta = new TomSelect("#pick_richiesta", { plugins: ['remove_button'], placeholder: "Pick da richiedere", create: false, maxItems: 30 });
     selectPickRichiesta.disable();
 
-    const selectPrestito1Rich = new TomSelect('#prestito1_richiesto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
-    const selectPrestito1Off = new TomSelect('#prestito1_offerto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
-    const selectPrestito2Rich = new TomSelect('#prestito2_richiesto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
-    const selectPrestito2Off = new TomSelect('#prestito2_offerto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false });
+    const selectPrestito1Rich = new TomSelect('#prestito1_richiesto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false, ...renderGiocatoreOptions });
+    const selectPrestito1Off = new TomSelect('#prestito1_offerto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false, ...renderGiocatoreOptions });
+    const selectPrestito2Rich = new TomSelect('#prestito2_richiesto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false, ...renderGiocatoreOptions });
+    const selectPrestito2Off = new TomSelect('#prestito2_offerto', { placeholder: "Seleziona giocatore", maxItems: 1, create: false, ...renderGiocatoreOptions });
 
     selectPrestito1Rich.disable();
     selectPrestito1Off.disable();
@@ -672,9 +697,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const filtrati = allOptions.filter(g => g.squadra_att === squadraSelezionata);
         filtrati.forEach(g => {
-            selectRichiesti.addOption({ value: g.id, text: g.nome });
-            selectPrestito1Rich.addOption({ value: g.id, text: g.nome });
-            selectPrestito2Rich.addOption({ value: g.id, text: g.nome });
+            selectRichiesti.addOption({ value: g.id, text: g.nome, ruolo: g.ruolo, club: g.club });
+            selectPrestito1Rich.addOption({ value: g.id, text: g.nome, ruolo: g.ruolo, club: g.club });
+            selectPrestito2Rich.addOption({ value: g.id, text: g.nome, ruolo: g.ruolo, club: g.club });
         });
 
         const squadraNorm = normalizeTeamName(squadraSelezionata);
