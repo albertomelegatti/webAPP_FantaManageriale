@@ -57,16 +57,16 @@
     <div class="mb-2 text-xs text-muted"><span id="risultati-count">{{ giocatori|length }}</span> giocatori</div>
     <table class="w-full table-fixed text-sm sortable-table" id="listoneTable">
         <colgroup>
-            <col style="width:34%"><col style="width:14%"><col style="width:12%">
-            <col style="width:14%"><col style="width:15%"><col style="width:11%">
+            <col style="width:34%"><col style="width:14%"><col style="width:13%">
+            <col style="width:13%"><col style="width:13%"><col style="width:13%">
         </colgroup>
         <thead>
             <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
                 <th class="pb-2 pr-1 font-semibold">Nome</th>
                 <th class="pb-2 pr-1 font-semibold">Ruolo</th>
-                <th class="pb-2 pr-1 font-semibold">Club</th>
-                <th class="pb-2 pr-1 font-semibold no-sort"></th>
-                <th class="pb-2 pr-1 font-semibold">Contr</th>
+                <th class="pb-2 text-center font-semibold">Club</th>
+                <th class="pb-2 font-semibold no-sort"></th>
+                <th class="pb-2 text-center font-semibold">Contr</th>
                 <th class="pb-2 text-right font-semibold desc">QA</th>
             </tr>
         </thead>
@@ -76,19 +76,19 @@
                 data-squadra="{{ g.squadra_att }}" data-contratto="{{ g.tipo_contratto }}">
                 <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-1 font-medium">{{ g.nome }}</td>
                 <td class="overflow-hidden py-2 pr-1">{{ m.ruolo_colorato(g.ruolo) }}</td>
-                <td class="overflow-hidden py-2 pr-1 text-muted">{{ m.club_abbr(g.club) }}</td>
-                <td class="py-2 pr-1 text-muted">
+                <td class="overflow-hidden py-2 text-center text-muted">{{ m.club_abbr(g.club) }}</td>
+                <td class="py-2 text-muted">
                     {% if g.squadra_username %}
                     <img src="{{ url_for('static', filename='loghi/' ~ g.squadra_username ~ '.png') }}?v={{ asset_v('loghi/' ~ g.squadra_username ~ '.png') }}"
                          alt="{{ g.squadra_att }}" data-tip="{{ g.squadra_att }}"
-                         class="h-6 w-6 rounded-lg bg-panel-2 object-contain p-0.5">
+                         class="mx-auto h-6 w-6 object-contain">
                     {% else %}
                     <img src="{{ url_for('static', filename='loghi/svincolato.png') }}?v={{ asset_v('loghi/svincolato.png') }}"
                          alt="Svincolato" data-tip="Svincolato"
-                         class="h-6 w-6 rounded-lg bg-panel-2 object-contain p-0.5">
+                         class="mx-auto h-6 w-6 object-contain">
                     {% endif %}
                 </td>
-                <td class="py-2 pr-1">{{ m.contratto_icona(g.tipo_contratto) }}</td>
+                <td class="py-2 text-center">{{ m.contratto_icona(g.tipo_contratto) }}</td>
                 <td class="py-2 text-right tabular-nums">{{ g.quotazione }}</td>
             </tr>
             {% endfor %}
