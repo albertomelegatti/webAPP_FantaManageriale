@@ -2,12 +2,10 @@
 
 {% block content %}
 {% import '_macros.html' as m %}
-<div class="mb-4 flex items-center justify-between gap-2">
-    <div>
-        <h2 class="text-lg font-bold">Nuova Trattativa di Mercato</h2>
-        <p class="text-sm text-muted">{{ nome_squadra }}</p>
-    </div>
-    {{ m.torna_indietro(url_for('mercato.user_mercato', nome_squadra=nome_squadra)) }}
+<div class="mb-2">{{ m.torna_indietro(url_for('mercato.user_mercato', nome_squadra=nome_squadra)) }}</div>
+<div class="mb-4">
+    <h2 class="text-lg font-bold">Nuova Trattativa di Mercato</h2>
+    <p class="text-sm text-muted">{{ nome_squadra }}</p>
 </div>
 
 <div class="mb-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 rounded-2xl border border-line bg-panel p-3 text-xs">
