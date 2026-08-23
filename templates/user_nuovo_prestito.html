@@ -49,7 +49,7 @@
                 {% endfor %}
             </select>
             <input type="hidden" id="data_fine" name="data_fine" value="{{ default_data_fine }}">
-            <p class="mt-1 text-[11px] text-muted">La scadenza verrà salvata automaticamente all'1 luglio alle 23:59:59 dell'anno selezionato.</p>
+            <p class="mt-1 text-xs text-muted">La scadenza verrà salvata automaticamente all'1 luglio alle 23:59:59 dell'anno selezionato.</p>
         </div>
 
         <div>
@@ -67,14 +67,14 @@
             <label for="costo_prestito" class="mb-1 block text-xs font-semibold text-muted">Costo del prestito (crediti)</label>
             <input type="number" id="costo_prestito" name="costo_prestito" min="0" value="0" placeholder="0"
                    class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-sm outline-none focus:border-accent">
-            <p class="mt-1 text-[11px] text-muted">Crediti da versare alla squadra prestante.</p>
+            <p class="mt-1 text-xs text-muted">Crediti da versare alla squadra prestante.</p>
         </div>
 
         <div>
             <label for="crediti_riscatto" class="mb-1 block text-xs font-semibold text-muted">Crediti per il riscatto</label>
             <input type="number" id="crediti_riscatto" name="crediti_riscatto" min="0" value="0" placeholder="0"
                    class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2.5 text-sm outline-none focus:border-accent disabled:opacity-50">
-            <p class="mt-1 text-[11px] text-muted">Crediti per l'eventuale riscatto del giocatore (solo se previsto).</p>
+            <p class="mt-1 text-xs text-muted">Crediti per l'eventuale riscatto del giocatore (solo se previsto).</p>
         </div>
 
         <div>
@@ -99,10 +99,11 @@
     color: var(--text) !important;
     border-radius: 0.75rem !important;
     padding: 0.4rem 0.6rem !important;
+    font-size: var(--text-sm) !important;
 }
 .ts-control input { color: var(--text) !important; }
 .ts-control input::placeholder { color: var(--muted) !important; }
-.ts-dropdown { background: var(--panel) !important; border: 1px solid var(--line) !important; color: var(--text) !important; border-radius: 0.75rem !important; }
+.ts-dropdown { background: var(--panel) !important; border: 1px solid var(--line) !important; color: var(--text) !important; border-radius: 0.75rem !important; font-size: var(--text-sm) !important; }
 .ts-dropdown .option { color: var(--text) !important; }
 .ts-dropdown .active { background: var(--panel-2) !important; }
 .ts-wrapper .item {

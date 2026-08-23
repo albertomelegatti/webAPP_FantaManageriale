@@ -147,7 +147,7 @@
                     Giocatori <span class="text-text">(max <span id="max_richiesti">0</span>)</span>
                 </label>
                 <select multiple name="giocatori_richiesti" id="giocatori_richiesti" disabled></select>
-                <p class="mt-1 text-[11px] text-muted">Prima seleziona una controparte</p>
+                <p class="mt-1 text-xs text-muted">Prima seleziona una controparte</p>
 
                 <label for="crediti_richiesti" class="mb-1 mt-3 block text-xs font-semibold text-muted">
                     Crediti <span class="text-text" id="crediti-richiesti-max-badge">(max 0)</span>
@@ -279,10 +279,11 @@
     color: var(--text) !important;
     border-radius: 0.75rem !important;
     padding: 0.4rem 0.6rem !important;
+    font-size: var(--text-sm) !important;
 }
 .ts-control input { color: var(--text) !important; }
 .ts-control input::placeholder { color: var(--muted) !important; }
-.ts-dropdown { background: var(--panel) !important; border: 1px solid var(--line) !important; color: var(--text) !important; border-radius: 0.75rem !important; }
+.ts-dropdown { background: var(--panel) !important; border: 1px solid var(--line) !important; color: var(--text) !important; border-radius: 0.75rem !important; font-size: var(--text-sm) !important; }
 .ts-dropdown .option { color: var(--text) !important; }
 .ts-dropdown .active { background: var(--panel-2) !important; }
 .ts-wrapper .item {
