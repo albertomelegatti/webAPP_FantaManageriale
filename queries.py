@@ -1,4 +1,8 @@
+import pytz
+from datetime import datetime
 from psycopg2.extras import RealDictCursor
+
+ROME_TZ = pytz.timezone("Europe/Rome")
 
 # Stesso ordine di ruoli già usato in produzione (vedi static/js/tables.js,
 # RUOLO_PRIORITY): portieri, poi difensori, centrocampisti, esterni/trequartisti,
@@ -209,6 +213,61 @@ def decadi_vetrina(cur, giocatore_ids):
                 DELETE FROM vetrina
                 WHERE id_giocatore = ANY(%s);
     ''', (list(giocatore_ids),))
+
+
+def get_general_config(conn):
+
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute('''
+                SELECT mercato_chiusura, aste_chiusura
+                FROM general_config
+                WHERE id = 1;
+    ''')
+    config = cur.fetchone()
+    cur.close()
+    return config
+
+
+def mercato_aperto(conn):
+    """True se il mercato scambi (scambi e prestiti) è ancora aperto, in base alla
+    data di chiusura impostata dall'admin (chiuso a partire dalla mezzanotte, ora di Roma,
+    del giorno scelto). Nessuna data impostata = sempre aperto."""
+
+    config = get_general_config(conn)
+    chiusura = config["mercato_chiusura"] if config else None
+    if chiusura is None:
+        return True
+    return datetime.now(ROME_TZ).date() < chiusura
+
+
+def aste_aperte(conn):
+    """True se le aste sono ancora aperte, in base alla data di chiusura impostata
+    dall'admin (chiuse a partire dalla mezzanotte, ora di Roma, del giorno scelto).
+    Nessuna data impostata = sempre aperte."""
+
+    config = get_general_config(conn)
+    chiusura = config["aste_chiusura"] if config else None
+    if chiusura is None:
+        return True
+    return datetime.now(ROME_TZ).date() < chiusura
+
+
+def get_stato_gate(conn):
+    """Stato completo del gate mercato/aste (date di chiusura configurate e se le
+    sezioni sono attualmente aperte), in un'unica query: usato dalle pagine menu
+    per mostrare le voci come disabilitate con la data di chiusura in tooltip."""
+
+    config = get_general_config(conn)
+    mercato_chiusura = config["mercato_chiusura"] if config else None
+    aste_chiusura = config["aste_chiusura"] if config else None
+    oggi = datetime.now(ROME_TZ).date()
+
+    return {
+        "mercato_chiusura": mercato_chiusura,
+        "mercato_aperto": mercato_chiusura is None or oggi < mercato_chiusura,
+        "aste_chiusura": aste_chiusura,
+        "aste_aperte": aste_chiusura is None or oggi < aste_chiusura,
+    }
 
 
 def sposta_crediti (conn, squadra_from, squadra_to, crediti):

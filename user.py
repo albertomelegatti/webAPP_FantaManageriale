@@ -1,11 +1,20 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, session, redirect, url_for
 from db import get_connection, release_connection
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
-from queries import get_slot_aste, get_slot_giocatori, get_slot_prestiti_in, get_crediti_squadra
+from queries import get_slot_aste, get_slot_giocatori, get_slot_prestiti_in, get_crediti_squadra, get_stato_gate
 
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
+
+
+def redirect_gate_chiuso():
+    """Redirect da usare quando una sezione (mercato o aste) è chiusa: torna alla
+    home della squadra loggata, se nota, altrimenti alla home generale."""
+    nome_squadra = session.get("nome_squadra")
+    if nome_squadra:
+        return redirect(url_for("user.squadra_login", nome_squadra=nome_squadra))
+    return redirect(url_for("home"))
 
 # Sezione squadra DOPO LOGIN
 @user_bp.route("/squadra_login/<nome_squadra>")
@@ -29,14 +38,39 @@ def squadra_login(nome_squadra):
     return render_template("squadra_login.html", nome_squadra=nome_squadra, username=username, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num, crediti=crediti)
 
 
+def _info_chiusura(chiusura, aperto, testo):
+    """Testo per il tooltip di una voce di menu disabilitata, es. 'Chiuso dal 02/09/2026'."""
+    if aperto or not chiusura:
+        return None
+    return f"{testo} dal {chiusura.strftime('%d/%m/%Y')}"
+
+
 @user_bp.route("/mercato_menu/<nome_squadra>")
 def user_mercato_menu(nome_squadra):
-    return render_template("user_mercato_menu.html", nome_squadra=nome_squadra)
+    conn = get_connection()
+    stato_gate = get_stato_gate(conn)
+    release_connection(conn)
+    return render_template(
+        "user_mercato_menu.html",
+        nome_squadra=nome_squadra,
+        mercato_aperto=stato_gate["mercato_aperto"],
+        aste_aperte=stato_gate["aste_aperte"],
+        mercato_info=_info_chiusura(stato_gate["mercato_chiusura"], stato_gate["mercato_aperto"], "Chiuso"),
+        aste_info=_info_chiusura(stato_gate["aste_chiusura"], stato_gate["aste_aperte"], "Chiuse"),
+    )
 
 
 @user_bp.route("/prestiti_menu/<nome_squadra>")
 def user_prestiti_menu(nome_squadra):
-    return render_template("user_prestiti_menu.html", nome_squadra=nome_squadra)
+    conn = get_connection()
+    stato_gate = get_stato_gate(conn)
+    release_connection(conn)
+    return render_template(
+        "user_prestiti_menu.html",
+        nome_squadra=nome_squadra,
+        mercato_aperto=stato_gate["mercato_aperto"],
+        mercato_info=_info_chiusura(stato_gate["mercato_chiusura"], stato_gate["mercato_aperto"], "Chiuso"),
+    )
 
 
 @user_bp.route("/rosa_menu/<nome_squadra>")

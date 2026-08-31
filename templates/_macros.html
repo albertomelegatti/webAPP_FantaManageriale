@@ -4,7 +4,19 @@
 </a>
 {% endmacro %}
 
-{% macro voce_menu(href, icona, titolo) %}
+{% macro voce_menu(href, icona, titolo, disabilitato=false, info=none) %}
+{% if disabilitato %}
+<span class="flex items-center gap-3 rounded-2xl border border-dashed border-line bg-panel/60 p-3 grayscale"
+      {% if info %}data-tip="{{ info }}"{% endif %}>
+    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-panel-2 text-lg text-muted">
+        <i class="bi {{ icona }}"></i>
+    </span>
+    <span class="flex-1 font-medium text-muted line-through decoration-1">{{ titolo }}</span>
+    <span class="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-ko/15 px-2 py-0.5 text-[10px] font-bold uppercase text-ko">
+        <i class="bi bi-lock-fill"></i> Chiuso
+    </span>
+</span>
+{% else %}
 <a href="{{ href }}" class="flex items-center gap-3 rounded-2xl border border-line bg-panel p-3 transition hover:border-accent">
     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-panel-2 text-lg text-accent">
         <i class="bi {{ icona }}"></i>
@@ -12,6 +24,7 @@
     <span class="flex-1 font-medium">{{ titolo }}</span>
     <i class="bi bi-chevron-right shrink-0 text-muted"></i>
 </a>
+{% endif %}
 {% endmacro %}
 
 {% macro ruolo_colorato(ruolo) %}

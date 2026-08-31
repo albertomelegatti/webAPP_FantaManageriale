@@ -5,8 +5,8 @@ import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection, resync_sequence
-from user import format_partecipanti, formatta_data
-from queries import get_crediti_e_offerta, get_slot_occupati
+from user import format_partecipanti, formatta_data, redirect_gate_chiuso
+from queries import get_crediti_e_offerta, get_slot_occupati, aste_aperte
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,6 +14,17 @@ load_dotenv()
 
 
 aste_bp = Blueprint('aste', __name__, url_prefix='/aste')
+
+
+@aste_bp.before_request
+def blocca_aste_chiuse():
+    conn = get_connection()
+    try:
+        if not aste_aperte(conn):
+            flash("❌ Le aste sono chiuse.", "danger")
+            return redirect_gate_chiuso()
+    finally:
+        release_connection(conn)
 
 
 
