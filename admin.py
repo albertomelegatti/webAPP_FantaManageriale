@@ -1,10 +1,11 @@
 import psycopg2
 import time
 import telegram_utils
+from datetime import datetime
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
 from user import formatta_data
 from db import get_connection, release_connection
-from queries import decadi_vetrina
+from queries import decadi_vetrina, get_stato_gate
 from psycopg2.extras import RealDictCursor
 from psycopg2 import extensions
 
@@ -66,6 +67,54 @@ def admin_crediti():
     return render_template("admin_crediti.html", squadre=squadre)
 
 
+
+
+@admin_bp.route("/chiusura_mercato_aste", methods=["GET", "POST"])
+def admin_chiusura_mercato_aste():
+    conn = None
+    cur = None
+    stato_gate = None
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        if request.method == "POST":
+            mercato_chiusura_raw = request.form.get("mercato_chiusura") or None
+            aste_chiusura_raw = request.form.get("aste_chiusura") or None
+
+            def parse_data(data_raw):
+                if not data_raw:
+                    return None
+                return datetime.strptime(data_raw, "%Y-%m-%d").date()
+
+            try:
+                mercato_chiusura = parse_data(mercato_chiusura_raw)
+                aste_chiusura = parse_data(aste_chiusura_raw)
+            except ValueError:
+                flash("❌ Data non valida.", "danger")
+                return redirect(url_for("admin.admin_chiusura_mercato_aste"))
+
+            cur.execute('''
+                        UPDATE general_config
+                        SET mercato_chiusura = %s,
+                            aste_chiusura = %s
+                        WHERE id = 1;
+            ''', (mercato_chiusura, aste_chiusura))
+            conn.commit()
+            flash("✅ Impostazioni di chiusura aggiornate con successo.", "success")
+            return redirect(url_for("admin.admin_chiusura_mercato_aste"))
+
+        stato_gate = get_stato_gate(conn)
+
+    except Exception as e:
+        print("Errore:", e)
+        flash("❌ Errore durante il caricamento o l'aggiornamento delle impostazioni.", "danger")
+
+    finally:
+        release_connection(conn, cur)
+
+    return render_template("admin_chiusura_mercato_aste.html", stato_gate=stato_gate)
 
 
 @admin_bp.route("/invia_comunicazione", methods=["GET", "POST"])

@@ -6,7 +6,7 @@
 <h2 class="mb-4 text-center text-lg font-bold">Prestiti di {{ nome_squadra }}</h2>
 
 <div class="flex flex-col gap-2">
-    {{ m.voce_menu(url_for('prestiti.user_prestiti', nome_squadra=nome_squadra), 'bi-file-earmark-plus-fill', 'Richieste di Prestito') }}
+    {{ m.voce_menu(url_for('prestiti.user_prestiti', nome_squadra=nome_squadra), 'bi-file-earmark-plus-fill', 'Richieste di Prestito', disabilitato=not mercato_aperto, info=mercato_info) }}
     {{ m.voce_menu(url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra), 'bi-tools', 'Gestione Prestiti') }}
 </div>
 {% endblock %}

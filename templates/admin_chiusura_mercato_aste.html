@@ -1,0 +1,57 @@
+{% extends 'base_tailwind.html' %}
+
+{% block content %}
+{% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('admin.admin_home')) }}</div>
+<h2 class="mb-4 text-lg font-bold">Chiusura Mercato e Aste</h2>
+
+<p class="mb-4 text-sm text-muted">
+    Imposta la data a partire dalla quale (mezzanotte, ora italiana) una sezione si chiude:
+    non sarà più possibile entrarci, né dal menù né navigando direttamente all'URL.
+    Lascia il campo vuoto per tenere la sezione sempre aperta.
+</p>
+
+<form method="POST" action="{{ url_for('admin.admin_chiusura_mercato_aste') }}" class="flex flex-col gap-4">
+
+    <div class="rounded-2xl border border-line bg-panel p-3">
+        <div class="mb-2 flex items-center justify-between gap-2">
+            <label for="mercato_chiusura" class="flex items-center gap-2 font-medium">
+                <i class="bi bi-arrow-left-right text-accent"></i> Mercato Scambi (scambi e prestiti)
+            </label>
+            {% if stato_gate and stato_gate.mercato_aperto %}
+            <span class="shrink-0 whitespace-nowrap rounded-full bg-ok/15 px-2 py-0.5 text-[10px] font-bold uppercase text-ok">Aperto</span>
+            {% else %}
+            <span class="shrink-0 whitespace-nowrap rounded-full bg-ko/15 px-2 py-0.5 text-[10px] font-bold uppercase text-ko">
+                <i class="bi bi-lock-fill"></i> Chiuso
+            </span>
+            {% endif %}
+        </div>
+        <input type="date" id="mercato_chiusura" name="mercato_chiusura"
+               class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm outline-none focus:border-accent"
+               value="{{ stato_gate.mercato_chiusura if stato_gate and stato_gate.mercato_chiusura else '' }}">
+    </div>
+
+    <div class="rounded-2xl border border-line bg-panel p-3">
+        <div class="mb-2 flex items-center justify-between gap-2">
+            <label for="aste_chiusura" class="flex items-center gap-2 font-medium">
+                <i class="bi bi-cash-coin text-accent"></i> Aste
+            </label>
+            {% if stato_gate and stato_gate.aste_aperte %}
+            <span class="shrink-0 whitespace-nowrap rounded-full bg-ok/15 px-2 py-0.5 text-[10px] font-bold uppercase text-ok">Aperte</span>
+            {% else %}
+            <span class="shrink-0 whitespace-nowrap rounded-full bg-ko/15 px-2 py-0.5 text-[10px] font-bold uppercase text-ko">
+                <i class="bi bi-lock-fill"></i> Chiuse
+            </span>
+            {% endif %}
+        </div>
+        <input type="date" id="aste_chiusura" name="aste_chiusura"
+               class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm outline-none focus:border-accent"
+               value="{{ stato_gate.aste_chiusura if stato_gate and stato_gate.aste_chiusura else '' }}">
+    </div>
+
+    <button type="submit"
+            class="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white">
+        <i class="bi bi-save-fill"></i> Salva
+    </button>
+</form>
+{% endblock %}

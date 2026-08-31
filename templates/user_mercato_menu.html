@@ -6,8 +6,8 @@
 <h2 class="mb-4 text-center text-lg font-bold">Mercato di {{ nome_squadra }}</h2>
 
 <div class="flex flex-col gap-2">
-    {{ m.voce_menu(url_for('aste.user_aste', nome_squadra=nome_squadra), 'bi-cash-coin', 'Aste') }}
-    {{ m.voce_menu(url_for('mercato.user_mercato', nome_squadra=nome_squadra), 'bi-arrow-left-right', 'Proposte di mercato') }}
-    {{ m.voce_menu(url_for('user.user_prestiti_menu', nome_squadra=nome_squadra), 'bi-people-fill', 'Prestiti') }}
+    {{ m.voce_menu(url_for('aste.user_aste', nome_squadra=nome_squadra), 'bi-cash-coin', 'Aste', disabilitato=not aste_aperte, info=aste_info) }}
+    {{ m.voce_menu(url_for('mercato.user_mercato', nome_squadra=nome_squadra), 'bi-arrow-left-right', 'Proposte di mercato', disabilitato=not mercato_aperto, info=mercato_info) }}
+    {{ m.voce_menu(url_for('user.user_prestiti_menu', nome_squadra=nome_squadra), 'bi-people-fill', 'Prestiti', disabilitato=not mercato_aperto, info=mercato_info) }}
 </div>
 {% endblock %}

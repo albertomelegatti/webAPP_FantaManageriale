@@ -4,12 +4,23 @@ import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from db import get_connection, release_connection
-from user import format_giocatori, formatta_data
-from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati, get_slot_prestiti_in, decadi_vetrina
+from user import format_giocatori, formatta_data, redirect_gate_chiuso
+from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati, get_slot_prestiti_in, decadi_vetrina, mercato_aperto
 from user_prestiti import _get_allowed_prestito_years
 
 
 mercato_bp = Blueprint('mercato', __name__, url_prefix='/mercato')
+
+
+@mercato_bp.before_request
+def blocca_mercato_chiuso():
+    conn = get_connection()
+    try:
+        if not mercato_aperto(conn):
+            flash("❌ Il mercato scambi è chiuso.", "danger")
+            return redirect_gate_chiuso()
+    finally:
+        release_connection(conn)
 
 
 def format_pick(pick_ids, conn):
