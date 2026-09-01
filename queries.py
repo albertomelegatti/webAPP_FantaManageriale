@@ -205,14 +205,14 @@ def decadi_vetrina(cur, giocatore_ids):
     """Rimuove dalla vetrina i giocatori indicati, se presenti (es. dopo svincolo, prestito, riscatto o scambio)."""
     if not isinstance(giocatore_ids, (list, tuple, set)):
         giocatore_ids = [giocatore_ids]
-    giocatore_ids = [g for g in giocatore_ids if g]
+    giocatore_ids = [int(g) for g in giocatore_ids if g]
     if not giocatore_ids:
         return
 
     cur.execute('''
                 DELETE FROM vetrina
                 WHERE id_giocatore = ANY(%s);
-    ''', (list(giocatore_ids),))
+    ''', (giocatore_ids,))
 
 
 def get_general_config(conn):
