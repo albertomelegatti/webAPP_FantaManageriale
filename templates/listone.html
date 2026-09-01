@@ -84,7 +84,9 @@
                     "detentore_username": g.detentore_username,
                     "tipo_contratto": g.tipo_contratto,
                     "quotazione": g.quotazione,
-                    "costo": g.costo
+                    "costo": g.costo,
+                    "data_nascita": g.data_nascita,
+                    "scadenza_contratto_reale": g.scadenza_contratto_reale
                 } | tojson }}'>
                 <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-1 font-medium">{{ g.nome }}</td>
                 <td class="overflow-hidden py-2 pr-1">{{ m.ruolo_colorato(g.ruolo) }}</td>
@@ -135,6 +137,14 @@
             <div class="flex items-center justify-between">
                 <span class="text-muted">Contratto</span>
                 <span id="modalContratto" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Data di nascita</span>
+                <span id="modalDataNascita" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Scadenza contratto</span>
+                <span id="modalScadenzaContratto" class="font-medium"></span>
             </div>
             <div class="flex items-center justify-between">
                 <span class="text-muted">Quotazione</span>
@@ -281,8 +291,20 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalDetentoreRow = document.getElementById('modalDetentoreRow');
     const modalDetentore = document.getElementById('modalDetentore');
     const modalContratto = document.getElementById('modalContratto');
+    const modalDataNascita = document.getElementById('modalDataNascita');
+    const modalScadenzaContratto = document.getElementById('modalScadenzaContratto');
     const modalQuotazione = document.getElementById('modalQuotazione');
     const modalCosto = document.getElementById('modalCosto');
+
+    // Placeholder per i dati non ancora sincronizzati da Transfermarkt: testo
+    // attenuato e corsivo per distinguerli a colpo d'occhio da un valore reale.
+    const impostaCampoTransfermarkt = (elemento, valore) => {
+        const nonSincronizzato = valore === 'Non sincronizzata';
+        elemento.textContent = valore;
+        elemento.classList.toggle('text-muted', nonSincronizzato);
+        elemento.classList.toggle('italic', nonSincronizzato);
+        elemento.classList.toggle('font-medium', !nonSincronizzato);
+    };
 
     const logoUrl = (username) => loghiBase + (username || 'svincolato') + '.png';
 
@@ -304,6 +326,8 @@ document.addEventListener('DOMContentLoaded', function () {
             modalDetentoreRow.classList.remove('flex');
         }
         modalContratto.textContent = info.tipo_contratto || '-';
+        impostaCampoTransfermarkt(modalDataNascita, info.data_nascita);
+        impostaCampoTransfermarkt(modalScadenzaContratto, info.scadenza_contratto_reale);
         modalQuotazione.textContent = info.quotazione;
         modalCosto.textContent = info.costo;
 

@@ -17,7 +17,8 @@ from webhook import webhook_bp
 from vetrina import vetrina_bp
 from db import get_connection, release_connection, init_pool
 from telegram_utils import get_all_telegram_ids
-from queries import get_slot_giocatori, get_slot_aste, ruolo_sort_key, ruolo_base_sort_key
+from queries import get_slot_giocatori, get_slot_aste, ruolo_sort_key, ruolo_base_sort_key, \
+    formatta_data_nascita_con_eta, formatta_scadenza_contratto
 from chatbot import get_answer
 
 app = Flask(__name__)
@@ -542,7 +543,8 @@ def listone():
 
         cur.execute("""
             SELECT g.nome, g.ruolo, g.club, g.squadra_att, g.tipo_contratto, g.quot_att_mantra, g.costo,
-                   g.detentore_cartellino, s.username AS squadra_username, d.username AS detentore_username
+                   g.detentore_cartellino, s.username AS squadra_username, d.username AS detentore_username,
+                   g.data_nascita, g.scadenza_contratto
             FROM giocatore g
             LEFT JOIN squadra s ON s.nome = g.squadra_att AND g.squadra_att <> 'Svincolato'
             LEFT JOIN squadra d ON d.nome = g.detentore_cartellino AND g.detentore_cartellino <> 'Svincolato'
@@ -561,6 +563,8 @@ def listone():
                 "tipo_contratto": g["tipo_contratto"],
                 "quotazione": g["quot_att_mantra"],
                 "costo": g["costo"],
+                "data_nascita": formatta_data_nascita_con_eta(g["data_nascita"]) or "Non sincronizzata",
+                "scadenza_contratto_reale": formatta_scadenza_contratto(g["scadenza_contratto"]) or "Non sincronizzata",
             }
             for g in cur.fetchall()
         ]

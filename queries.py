@@ -289,10 +289,51 @@ def sposta_crediti (conn, squadra_from, squadra_to, crediti):
         ''', (crediti, squadra_to))
 
         conn.commit()
-        
+
     except Exception as e:
         print(f"Errore durante lo spostamento dei crediti: {e}")
         conn.rollback()
-        
+
     finally:
         cur.close()
+
+
+def calcola_eta(data_nascita):
+    if not data_nascita:
+        return None
+    oggi = datetime.now(ROME_TZ).date()
+    return oggi.year - data_nascita.year - ((oggi.month, oggi.day) < (data_nascita.month, data_nascita.day))
+
+
+def formatta_data_nascita_con_eta(data_nascita):
+    """'07/03/1990 (36 anni)', o None se il dato non è ancora sincronizzato da Transfermarkt."""
+    if not data_nascita:
+        return None
+    return f"{data_nascita.strftime('%d/%m/%Y')} ({calcola_eta(data_nascita)} anni)"
+
+
+def formatta_scadenza_contratto(scadenza_contratto):
+    """'1 anno e 3 mesi', arrotondando i mesi per eccesso (un giorno che avanza
+    conta comunque come un mese intero). 'Scaduto' se la data è passata, None se
+    il dato non è ancora sincronizzato da Transfermarkt."""
+    if not scadenza_contratto:
+        return None
+
+    oggi = datetime.now(ROME_TZ).date()
+    if scadenza_contratto <= oggi:
+        return "Scaduto"
+
+    mesi = (scadenza_contratto.year - oggi.year) * 12 + (scadenza_contratto.month - oggi.month)
+    if scadenza_contratto.day < oggi.day:
+        mesi -= 1
+    if scadenza_contratto.day != oggi.day:
+        mesi += 1
+
+    anni, mesi = divmod(mesi, 12)
+
+    parti = []
+    if anni:
+        parti.append(f"{anni} ann{'o' if anni == 1 else 'i'}")
+    if mesi:
+        parti.append(f"{mesi} mes{'e' if mesi == 1 else 'i'}")
+    return " e ".join(parti)
