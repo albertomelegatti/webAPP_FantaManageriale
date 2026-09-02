@@ -15,6 +15,7 @@ from user_prestiti import prestiti_bp
 from user_rosa import rosa_bp
 from webhook import webhook_bp
 from vetrina import vetrina_bp
+from jobs import jobs_bp
 from db import get_connection, release_connection, init_pool
 from telegram_utils import get_all_telegram_ids
 from queries import get_slot_giocatori, get_slot_aste, ruolo_sort_key, ruolo_base_sort_key, \
@@ -76,6 +77,7 @@ app.register_blueprint(prestiti_bp)
 app.register_blueprint(rosa_bp)
 app.register_blueprint(webhook_bp)
 app.register_blueprint(vetrina_bp)
+app.register_blueprint(jobs_bp)
 
 
 @app.errorhandler(500)
