@@ -1,0 +1,142 @@
+{% extends 'base_tailwind.html' %}
+
+{% block content %}
+{% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('admin.admin_home')) }}</div>
+<h2 class="mb-1 text-lg font-bold">Verifica Corrispondenze Giocatori</h2>
+<p class="mb-4 text-sm text-muted">
+    Giocatori con più candidati possibili su Transfermarkt, o nessuno trovato. Seleziona la
+    corrispondenza corretta (o "Nessuna corrispondenza") per ogni riga che vuoi risolvere: le
+    righe lasciate su "Non ancora rivisto" restano in coda per la prossima volta.
+</p>
+
+{% if giocatori and giocatori|length > 0 %}
+<div class="mb-4 flex flex-wrap gap-1.5" id="filtro-categoria-chips">
+    <button type="button" data-categoria="" class="chip-categoria attivo rounded-full border border-line bg-panel-2 px-2.5 py-1 text-xs font-semibold text-muted">
+        Tutti <span class="text-muted/70">{{ giocatori|length }}</span>
+    </button>
+    <button type="button" data-categoria="ambiguo" class="chip-categoria rounded-full border border-line bg-panel-2 px-2.5 py-1 text-xs font-semibold text-muted">
+        <i class="bi bi-signpost-split-fill text-accent"></i> Ambigui <span class="text-muted/70">{{ conteggi.ambiguo }}</span>
+    </button>
+    <button type="button" data-categoria="suggerito" class="chip-categoria rounded-full border border-line bg-panel-2 px-2.5 py-1 text-xs font-semibold text-muted">
+        <i class="bi bi-search text-crit"></i> Suggeriti <span class="text-muted/70">{{ conteggi.suggerito }}</span>
+    </button>
+    <button type="button" data-categoria="non_trovato" class="chip-categoria rounded-full border border-line bg-panel-2 px-2.5 py-1 text-xs font-semibold text-muted">
+        <i class="bi bi-question-circle-fill text-ko"></i> Non trovati <span class="text-muted/70">{{ conteggi.non_trovato }}</span>
+    </button>
+</div>
+
+<div id="corrispondenze-flash-container" class="mb-4"></div>
+
+<form method="POST" action="{{ url_for('admin.admin_verifica_corrispondenze') }}" id="corrispondenze-form" novalidate>
+    <input type="hidden" name="corrispondenze_data" id="corrispondenze-data-input">
+
+    <div class="flex flex-col gap-2" id="corrispondenze-lista">
+        {% for giocatore in giocatori %}
+        <div class="corrispondenza-row rounded-2xl border border-line bg-panel p-3" data-id="{{ giocatore.id }}" data-categoria="{{ giocatore.categoria }}">
+            <div class="flex items-center gap-2">
+                <div class="flex min-w-0 flex-1 items-center">
+                    <span class="min-w-0 truncate font-medium">{{ giocatore.nome }}</span>
+                    <span class="ml-1 shrink-0">{{ m.ruolo_colorato(giocatore.ruolo) }}</span>
+                    <span class="mx-1 shrink-0 text-muted">-</span>
+                    <span class="shrink-0">{{ m.club_abbr(giocatore.club) }}</span>
+                </div>
+                {% if giocatore.categoria == 'ambiguo' %}
+                <span class="shrink-0 whitespace-nowrap rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold text-accent">
+                    <i class="bi bi-signpost-split-fill"></i> Ambiguo
+                </span>
+                {% elif giocatore.categoria == 'suggerito' %}
+                <span class="shrink-0 whitespace-nowrap rounded-full bg-crit/15 px-2 py-0.5 text-[10px] font-bold text-crit">
+                    <i class="bi bi-search"></i> Suggerito
+                </span>
+                {% else %}
+                <span class="shrink-0 whitespace-nowrap rounded-full bg-ko/15 px-2 py-0.5 text-[10px] font-bold text-ko">
+                    <i class="bi bi-question-circle-fill"></i> Non trovato
+                </span>
+                {% endif %}
+            </div>
+
+            <select class="corrispondenza-select mt-2 w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+                <option value="" selected>Non ancora rivisto</option>
+                {% for c in giocatore.candidati %}
+                <option value="{{ c.id_transfermarkt }}">
+                    {{ c.nome_completo }} - {{ c.club }}{% if c.data_nascita %} (nato il {{ c.data_nascita }}){% endif %}
+                </option>
+                {% endfor %}
+                {% for c in giocatore.suggerimenti %}
+                <option value="fuzzy:{{ c.id_transfermarkt }}">
+                    🔍 Suggerimento: {{ c.nome_completo }} - {{ c.club }}{% if c.data_nascita %} (nato il {{ c.data_nascita }}){% endif %}
+                </option>
+                {% endfor %}
+                <option value="nessuna">Nessuna corrispondenza</option>
+            </select>
+        </div>
+        {% endfor %}
+    </div>
+
+    <p class="hidden py-4 text-center text-sm text-muted" id="corrispondenze-nessun-risultato">Nessuna riga in questa categoria.</p>
+
+    <div class="mt-4 flex justify-end gap-2">
+        <a href="{{ url_for('admin.admin_home') }}"
+           class="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-muted">
+            Annulla
+        </a>
+        <button type="submit" class="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white">
+            Salva
+        </button>
+    </div>
+</form>
+{% else %}
+<p class="py-4 text-center text-sm text-muted">Nessuna corrispondenza da rivedere al momento.</p>
+{% endif %}
+
+<style>
+.chip-categoria.attivo {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: color-mix(in oklab, var(--accent) 15%, transparent);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const chip = document.querySelectorAll('.chip-categoria');
+    const righe = Array.from(document.querySelectorAll('.corrispondenza-row'));
+    const nessunRisultato = document.getElementById('corrispondenze-nessun-risultato');
+
+    chip.forEach(function (c) {
+        c.addEventListener('click', function () {
+            chip.forEach(x => x.classList.remove('attivo'));
+            c.classList.add('attivo');
+            const categoria = c.dataset.categoria;
+            let visibili = 0;
+            righe.forEach(function (riga) {
+                const visibile = !categoria || riga.dataset.categoria === categoria;
+                riga.classList.toggle('hidden', !visibile);
+                if (visibile) visibili++;
+            });
+            nessunRisultato.classList.toggle('hidden', visibili > 0);
+        });
+    });
+});
+
+document.getElementById('corrispondenze-form')?.addEventListener('submit', function () {
+    const form = this;
+    const datiRisolti = [];
+
+    form.querySelectorAll('.corrispondenza-row').forEach(row => {
+        const select = row.querySelector('.corrispondenza-select');
+        const valore = select?.value || '';
+        if (valore === '') {
+            return; // "Non ancora rivisto": resta in coda, non viene inviato
+        }
+        datiRisolti.push({
+            id_giocatore: row.dataset.id,
+            id_transfermarkt: valore
+        });
+    });
+
+    document.getElementById('corrispondenze-data-input').value = JSON.stringify(datiRisolti);
+});
+</script>
+{% endblock %}
