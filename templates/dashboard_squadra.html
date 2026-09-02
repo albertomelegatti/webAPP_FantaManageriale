@@ -48,9 +48,23 @@
                     <th class="pb-2 text-center font-semibold">QA</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-line">
+            <tbody class="divide-y divide-line" id="rosaBody">
                 {% for g in rosa %}
-                <tr>
+                <tr class="cursor-pointer hover:bg-panel-2"
+                    data-info='{{ {
+                        "nome": g.nome,
+                        "ruolo": g.ruolo,
+                        "club": g.club,
+                        "squadra_att": g.squadra_att,
+                        "squadra_username": g.squadra_username,
+                        "detentore": g.detentore_cartellino,
+                        "detentore_username": g.detentore_username,
+                        "tipo_contratto": g.tipo_contratto,
+                        "quotazione": g.quot_att_mantra,
+                        "costo": g.costo,
+                        "data_nascita": g.data_nascita,
+                        "scadenza_contratto_reale": g.scadenza_contratto_reale
+                    } | tojson }}'>
                     <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
                     <td class="py-2.5 text-center">{{ m.club_abbr(g.club) }}</td>
                     <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
@@ -194,5 +208,129 @@
     </div>
 
 </div>
+
+<div id="overlayGiocatore" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-sm rounded-2xl border border-line bg-panel p-4">
+        <div class="mb-3 flex items-center justify-between">
+            <h5 id="modalNome" class="text-base font-bold"></h5>
+            <button type="button" id="btnChiudiGiocatore" class="text-xl leading-none text-muted hover:text-accent">&times;</button>
+        </div>
+        <div class="flex flex-col gap-2 text-sm">
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Ruolo</span>
+                <span id="modalRuolo" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Club</span>
+                <span id="modalClub" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Squadra attuale</span>
+                <span id="modalSquadra" class="flex items-center gap-2 font-medium"></span>
+            </div>
+            <div id="modalDetentoreRow" class="hidden items-center justify-between">
+                <span class="text-muted">Detentore cartellino</span>
+                <span id="modalDetentore" class="flex items-center gap-2 font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Contratto</span>
+                <span id="modalContratto" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Data di nascita</span>
+                <span id="modalDataNascita" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Scadenza contratto</span>
+                <span id="modalScadenzaContratto" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Quotazione</span>
+                <span id="modalQuotazione" class="font-medium tabular-nums"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Prezzo d'acquisto</span>
+                <span id="modalCosto" class="font-medium tabular-nums"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const loghiBase = "{{ url_for('static', filename='loghi/') }}";
+    const overlayGiocatore = document.getElementById('overlayGiocatore');
+    const btnChiudiGiocatore = document.getElementById('btnChiudiGiocatore');
+    const modalNome = document.getElementById('modalNome');
+    const modalRuolo = document.getElementById('modalRuolo');
+    const modalClub = document.getElementById('modalClub');
+    const modalSquadra = document.getElementById('modalSquadra');
+    const modalDetentoreRow = document.getElementById('modalDetentoreRow');
+    const modalDetentore = document.getElementById('modalDetentore');
+    const modalContratto = document.getElementById('modalContratto');
+    const modalDataNascita = document.getElementById('modalDataNascita');
+    const modalScadenzaContratto = document.getElementById('modalScadenzaContratto');
+    const modalQuotazione = document.getElementById('modalQuotazione');
+    const modalCosto = document.getElementById('modalCosto');
+
+    // Placeholder per i dati non ancora sincronizzati da Transfermarkt: testo
+    // attenuato e corsivo per distinguerli a colpo d'occhio da un valore reale.
+    const impostaCampoTransfermarkt = (elemento, valore) => {
+        const nonSincronizzato = valore === 'Non sincronizzata';
+        elemento.textContent = valore;
+        elemento.classList.toggle('text-muted', nonSincronizzato);
+        elemento.classList.toggle('italic', nonSincronizzato);
+        elemento.classList.toggle('font-medium', !nonSincronizzato);
+    };
+
+    const logoUrl = (username) => loghiBase + (username || 'svincolato') + '.png';
+
+    const squadraHtml = (nome, username) =>
+        '<img src="' + logoUrl(username) + '" alt="" class="h-5 w-5 object-contain">' +
+        '<span>' + (nome || 'Svincolato') + '</span>';
+
+    const apriCardGiocatore = (info) => {
+        modalNome.textContent = info.nome;
+        modalRuolo.textContent = info.ruolo.split(',').map(r => r.trim()).join(', ');
+        modalClub.textContent = info.club;
+        modalSquadra.innerHTML = squadraHtml(info.squadra_att, info.squadra_username);
+        if (info.detentore && info.detentore !== info.squadra_att) {
+            modalDetentore.innerHTML = squadraHtml(info.detentore, info.detentore_username);
+            modalDetentoreRow.classList.remove('hidden');
+            modalDetentoreRow.classList.add('flex');
+        } else {
+            modalDetentoreRow.classList.add('hidden');
+            modalDetentoreRow.classList.remove('flex');
+        }
+        modalContratto.textContent = info.tipo_contratto || '-';
+        impostaCampoTransfermarkt(modalDataNascita, info.data_nascita);
+        impostaCampoTransfermarkt(modalScadenzaContratto, info.scadenza_contratto_reale);
+        modalQuotazione.textContent = info.quotazione;
+        modalCosto.textContent = info.costo;
+
+        overlayGiocatore.classList.remove('hidden');
+        overlayGiocatore.classList.add('flex');
+    };
+
+    const chiudiCardGiocatore = () => {
+        overlayGiocatore.classList.add('hidden');
+        overlayGiocatore.classList.remove('flex');
+    };
+
+    document.getElementById('rosaBody')?.addEventListener('click', function (e) {
+        const row = e.target.closest('tr');
+        if (!row || !row.dataset.info) return;
+        apriCardGiocatore(JSON.parse(row.dataset.info));
+    });
+
+    btnChiudiGiocatore.addEventListener('click', chiudiCardGiocatore);
+    overlayGiocatore.addEventListener('click', function (e) {
+        if (e.target === overlayGiocatore) chiudiCardGiocatore();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') chiudiCardGiocatore();
+    });
+});
+</script>
 
 {% endblock %}
