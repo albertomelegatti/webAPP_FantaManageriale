@@ -258,10 +258,14 @@ def dashboard_squadra(nome_squadra):
         # ROSA
         rosa = []
         cur.execute('''
-                    SELECT nome, tipo_contratto, ruolo, quot_att_mantra, costo, club
-                    FROM giocatore
-                    WHERE squadra_att = %s
-                        AND tipo_contratto <> 'Primavera';
+                    SELECT g.nome, g.tipo_contratto, g.ruolo, g.quot_att_mantra, g.costo, g.club,
+                           g.squadra_att, g.detentore_cartellino, g.data_nascita, g.scadenza_contratto,
+                           s.username AS squadra_username, d.username AS detentore_username
+                    FROM giocatore g
+                    LEFT JOIN squadra s ON s.nome = g.squadra_att AND g.squadra_att <> 'Svincolato'
+                    LEFT JOIN squadra d ON d.nome = g.detentore_cartellino AND g.detentore_cartellino <> 'Svincolato'
+                    WHERE g.squadra_att = %s
+                        AND g.tipo_contratto <> 'Primavera';
         ''' , (nome_squadra,))
         rosa_raw = cur.fetchall()
 
@@ -273,7 +277,13 @@ def dashboard_squadra(nome_squadra):
                 "ruolo": ruolo,
                 "quot_att_mantra": g['quot_att_mantra'],
                 "costo": g['costo'],
-                "club": g['club']
+                "club": g['club'],
+                "squadra_att": g['squadra_att'],
+                "squadra_username": g['squadra_username'],
+                "detentore_cartellino": g['detentore_cartellino'],
+                "detentore_username": g['detentore_username'],
+                "data_nascita": formatta_data_nascita_con_eta(g['data_nascita']) or "Non sincronizzata",
+                "scadenza_contratto_reale": formatta_scadenza_contratto(g['scadenza_contratto']) or "Non sincronizzata",
             })
 
         rosa.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
