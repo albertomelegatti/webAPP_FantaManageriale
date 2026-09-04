@@ -1,13 +1,13 @@
 import math
 import pytz
-import telegram_utils
+from app import telegram_utils
 from datetime import datetime
 from psycopg2 import errors as pg_errors
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from db import get_connection, release_connection, resync_sequence
-from user import formatta_data
-from queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori, get_nome_giocatore, sposta_crediti, decadi_vetrina, ruolo_sort_key
+from app.core.db import get_connection, release_connection, resync_sequence
+from app.blueprints.user import formatta_data
+from app.queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori, get_nome_giocatore, sposta_crediti, decadi_vetrina, ruolo_sort_key
 
 rosa_bp = Blueprint('rosa', __name__, url_prefix='/rosa')
 

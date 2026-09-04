@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function () {
     ⚠️ Dati del giocatore non trovati. Impossibile procedere con la richiesta.
 </div>
 <div class="mt-4 text-center">
-    <a href="{{ url_for('dashboard_squadra', nome_squadra=nome_squadra) }}" class="text-sm text-muted hover:text-accent">Torna alla dashboard</a>
+    <a href="{{ url_for('pubblico.dashboard_squadra', nome_squadra=nome_squadra) }}" class="text-sm text-muted hover:text-accent">Torna alla dashboard</a>
 </div>
 {% endif %}
 {% endblock %}

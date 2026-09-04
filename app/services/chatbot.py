@@ -11,9 +11,17 @@ client = OpenAI(
 )
 
 # Carica regolamento
+# Il file vive nella radice del package (app/regolamento.txt), non accanto a
+# questo modulo: risolviamo il percorso partendo da lì invece che da __file__,
+# altrimenti spostare il modulo farebbe fallire la lettura in silenzio.
+REGOLAMENTO_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "regolamento.txt"
+)
+
+
 def load_regolamento():
     try:
-        with open(os.path.join(os.path.dirname(__file__), "regolamento.txt"), "r", encoding="utf-8") as f:
+        with open(REGOLAMENTO_PATH, "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
         return "⚠️ Nessun regolamento disponibile."

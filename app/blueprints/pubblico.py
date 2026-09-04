@@ -1,99 +1,35 @@
-import psycopg2
-import telegram_utils
-import os
-import time
-from dotenv import load_dotenv
-from flask import Flask, render_template, send_from_directory, request, session, flash, redirect, url_for, jsonify
-from flask_compress import Compress
+"""
+Pagine pubbliche: home, elenco squadre, dashboard di una squadra, listone,
+aste, movimenti di mercato, crediti/stadi/slot, regolamento e health check.
+
+Corpo delle funzioni spostato da main.py senza modifiche di logica: cambiano
+solo il decoratore (da @app.route a @pubblico_bp.route) e i nomi degli endpoint
+nelle url_for, ora prefissati dal blueprint.
+"""
+
+from flask import (Blueprint, flash, jsonify, redirect, render_template,
+                   send_from_directory, url_for)
 from psycopg2.extras import RealDictCursor
-from werkzeug.security import generate_password_hash, check_password_hash
-from admin import admin_bp
-from user import user_bp, format_partecipanti, formatta_data
-from user_aste import aste_bp
-from user_mercato import mercato_bp
-from user_prestiti import prestiti_bp
-from user_rosa import rosa_bp
-from webhook import webhook_bp
-from vetrina import vetrina_bp
-from jobs import jobs_bp
-from db import get_connection, release_connection, init_pool
-from telegram_utils import get_all_telegram_ids
-from queries import get_slot_giocatori, get_slot_aste, ruolo_sort_key, ruolo_base_sort_key, \
-    formatta_data_nascita_con_eta, formatta_scadenza_contratto
-from chatbot import get_answer
 
-app = Flask(__name__)
+from app import telegram_utils
+from app.blueprints.user import format_partecipanti, formatta_data
+from app.core.db import get_connection, release_connection
+from app.queries import (formatta_data_nascita_con_eta,
+                         formatta_scadenza_contratto, get_slot_aste,
+                         get_slot_giocatori, ruolo_base_sort_key,
+                         ruolo_sort_key)
 
-load_dotenv()
-init_pool()
-
-app.secret_key = os.getenv("SECRET_KEY", "chiave_segreta_default_per_sviluppo")
-
-app.config['SESSION_PERMANENT'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = 3600 * 24 * 30  # 30 giorni invece di 365
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-
-# Cache lato browser per gli asset statici (CSS/JS/immagini) e compressione gzip/br delle risposte
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 1  # 1 giorno di cache su immagini statiche
-Compress(app)
-
-
-_asset_v_cache = {}
-_ASSET_V_TTL = 5  # secondi: evita uno stat() del file a ogni singola riga/richiesta
-
-def asset_v(rel_path):
-    """Timestamp di modifica di un file statico, da usare come ?v= per invalidare la cache del browser quando il file cambia.
-
-    Il risultato viene tenuto in cache per qualche secondo: senza, una pagina con
-    molte righe (es. la Rosa con 25-30 giocatori) farebbe uno stat() del
-    filesystem per ogni riga a ogni caricamento.
-    """
-    now = time.monotonic()
-    cached = _asset_v_cache.get(rel_path)
-    if cached and now - cached[1] < _ASSET_V_TTL:
-        return cached[0]
-
-    try:
-        value = int(os.path.getmtime(os.path.join(app.static_folder, rel_path)))
-    except OSError:
-        value = 0
-
-    _asset_v_cache[rel_path] = (value, now)
-    return value
-
-
-app.jinja_env.globals['asset_v'] = asset_v
-
-# Inizializza il dizionario telegram al lancio dell'app
-app.config['SQUADRE_TELEGRAM_IDS'] = get_all_telegram_ids()
-
-app.register_blueprint(admin_bp)
-app.register_blueprint(user_bp)
-app.register_blueprint(aste_bp)
-app.register_blueprint(mercato_bp)
-app.register_blueprint(prestiti_bp)
-app.register_blueprint(rosa_bp)
-app.register_blueprint(webhook_bp)
-app.register_blueprint(vetrina_bp)
-app.register_blueprint(jobs_bp)
-
-
-@app.errorhandler(500)
-def handle_500(error):
-    """Handler specifico per errori 500"""
-    return redirect(url_for('home')), 500
+pubblico_bp = Blueprint('pubblico', __name__)
 
 
 # Pagina principale
-@app.route("/")
+@pubblico_bp.route("/")
 def home():
     return render_template("index.html")
 
 
 # Health check endpoint per Render
-@app.route("/health")
+@pubblico_bp.route("/health")
 def health_check():
     try:
         conn = get_connection()
@@ -106,102 +42,8 @@ def health_check():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-# Rotta per login admin
-@app.route("/login", methods=["GET", "POST"])
-def login():
-
-    # Se l'utente è già loggato, viene mandato alla schermata giusta
-    if session.get("logged_in"):
-        if session.get("is_admin"):
-            return redirect(url_for('admin.admin_home'))
-        elif session.get("nome_squadra"):
-            return redirect(url_for('user.squadra_login', nome_squadra=session["nome_squadra"]))
-        return redirect(url_for('home'))
-    
-    error = None
-
-
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-
-        if not username or not password:
-            flash("❌ Compila tutti i campi.", "danger")
-            return redirect(url_for('login'))
-
-        conn = None
-        cur = None
-        try:
-            conn = get_connection()
-            cur = conn.cursor(cursor_factory=RealDictCursor)
-
-            # Login admin
-            if username == "admin":
-                cur.execute('''
-                            SELECT hash_password 
-                            FROM admin 
-                            WHERE username = %s;
-                ''', (username,))
-                row = cur.fetchone()
-
-                if row and check_password_hash(row["hash_password"], password):
-                    session.clear()
-                    session["logged_in"] = True
-                    session["is_admin"] = True
-                    session["username"] = username
-                    session.permanent = True
-                    return redirect(url_for('admin.admin_home'))
-                
-                else:
-                    flash("❌ Credenziali admin errate.", "danger")
-
-            # Login squadra
-            else:
-                cur.execute('''
-                            SELECT hash_password, nome 
-                            FROM squadra 
-                            WHERE username = %s;
-                ''', (username,))
-                row = cur.fetchone()
-
-                if row is not None:
-                    hash_password = row["hash_password"]
-                    nome_squadra = row["nome"]
-                    if check_password_hash(hash_password, password):
-                        session.clear()
-                        session["logged_in"] = True
-                        session["nome_squadra"] = row["nome"]
-                        session["is_admin"] = False
-                        session["username"] = username
-                        session.permanent = True
-                        return redirect(url_for('user.squadra_login', nome_squadra=nome_squadra))
-                    else:
-                        flash("❌ Password errata.", "danger")
-                else:
-                    flash("❌ Username non trovato.", "danger")
-
-        except Exception as e:
-            print("Errore login:", e)
-            flash("❌ Errore di connessione al database.", "danger")
-
-        finally:
-            release_connection(conn, cur)
-
-        return redirect(url_for('login'))
-
-    return render_template("login.html", error=error)
-
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    flash("✅ Hai effettuato il logout.", "success")
-    return redirect(url_for("login"))
-
-
 # Schermata squadre con bottoni
-@app.route("/squadre")
+@pubblico_bp.route("/squadre")
 def squadre():
     conn = None
     try:
@@ -219,13 +61,13 @@ def squadre():
     except Exception as e:
         print("Errore squadre:", e)
         flash("❌ Errore nel recupero squadre.", "danger")
-        return redirect(url_for('home'))
+        return redirect(url_for('pubblico.home'))
 
     finally:
         release_connection(conn, cur)
 
 
-@app.route("/squadra/<nome_squadra>")
+@pubblico_bp.route("/squadra/<nome_squadra>")
 def dashboard_squadra(nome_squadra):
 
     conn = None
@@ -236,16 +78,16 @@ def dashboard_squadra(nome_squadra):
 
         # STADIO
         cur.execute('''
-                    SELECT nome, proprietario, livello 
-                    FROM stadio 
+                    SELECT nome, proprietario, livello
+                    FROM stadio
                     WHERE proprietario = %s;
         ''', (nome_squadra,))
         stadio = cur.fetchone()
 
         # CREDITI
         cur.execute('''
-                    SELECT username, crediti 
-                    FROM squadra 
+                    SELECT username, crediti
+                    FROM squadra
                     WHERE nome = %s;
         ''', (nome_squadra,))
         squadra_raw = cur.fetchone()
@@ -293,9 +135,9 @@ def dashboard_squadra(nome_squadra):
         # PRIMAVERA
         primavera = []
         cur.execute('''
-                    SELECT nome, tipo_contratto, ruolo, quot_att_mantra 
-                    FROM giocatore 
-                    WHERE squadra_att = %s 
+                    SELECT nome, tipo_contratto, ruolo, quot_att_mantra
+                    FROM giocatore
+                    WHERE squadra_att = %s
                         AND tipo_contratto = 'Primavera';
         ''' , (nome_squadra,))
         primavera_raw = cur.fetchall()
@@ -358,8 +200,8 @@ def dashboard_squadra(nome_squadra):
         prestiti_out = []
         cur.execute('''
                     SELECT nome, ruolo, quot_att_mantra, squadra_att
-                    FROM giocatore 
-                    WHERE detentore_cartellino = %s 
+                    FROM giocatore
+                    WHERE detentore_cartellino = %s
                         AND tipo_contratto in ('Fanta-Prestito', 'Prestito Reale');
         ''', (nome_squadra,))
         prestiti_out_raw = cur.fetchall()
@@ -413,16 +255,14 @@ def dashboard_squadra(nome_squadra):
     except Exception as e:
         print("Errore dashboard Squadra:", e)
         flash("❌ Errore nel caricamento della squadra.", "danger")
-        return redirect(url_for('home'))
+        return redirect(url_for('pubblico.home'))
 
     finally:
         release_connection(conn, cur)
 
 
-
-
 # Visualizza tutti gli eventi di mercato con filtri per stagione ed evento
-@app.route("/movimenti_mercato")
+@pubblico_bp.route("/movimenti_mercato")
 def movimenti_mercato():
 
     conn = None
@@ -467,14 +307,13 @@ def movimenti_mercato():
     except Exception as e:
         print("Errore movimenti_mercato:", e)
         flash("❌ Errore nel recupero dei movimenti di mercato.", "danger")
-        return redirect(url_for('home'))
+        return redirect(url_for('pubblico.home'))
 
     finally:
         release_connection(conn, cur)
-        
 
 
-@app.route("/crediti_stadi_slot")
+@pubblico_bp.route("/crediti_stadi_slot")
 def crediti_stadi_slot():
 
     conn = None
@@ -537,13 +376,13 @@ def crediti_stadi_slot():
     except Exception as e:
         print("Errore crediti stadi e slot:", e)
         flash("❌ Errore nel caricamento dati stadi.", "danger")
-        return redirect(url_for('home'))
+        return redirect(url_for('pubblico.home'))
 
     finally:
         release_connection(conn, cur)
 
 
-@app.route("/listone")
+@pubblico_bp.route("/listone")
 def listone():
     conn = None
     cur = None
@@ -608,7 +447,7 @@ def listone():
                             contratti_disponibili=contratti_disponibili)
 
 
-@app.route("/aste")
+@pubblico_bp.route("/aste")
 def aste():
 
     conn = None
@@ -617,7 +456,7 @@ def aste():
     try:
         conn = get_connection()
         cur = conn.cursor(cursor_factory = RealDictCursor)
-    
+
         cur.execute('''
                     SELECT g.nome, g.ruolo, g.club, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
                     FROM asta a
@@ -643,118 +482,25 @@ def aste():
                 "stato": a["stato"],
                 "partecipanti": partecipanti
             })
-    
-    
+
+
     except Exception as e:
         print("Errore lista aste generale:", e)
         flash("❌ Errore nella creazione lista aste.", "danger")
-        return redirect(url_for('home'))
-    
+        return redirect(url_for('pubblico.home'))
+
     finally:
         release_connection(conn, cur)
 
     return render_template("aste.html", aste=aste)
 
 
-
-
-@app.route("/scarica_regolamento")
+@pubblico_bp.route("/scarica_regolamento")
 def vedi_regolamento():
     return send_from_directory('static', 'regolamento.pdf', mimetype='application/pdf', as_attachment=False)
 
 
-@app.route('/cambia_password', methods=['GET', 'POST'])
-def cambia_password():
-
-    if request.method == 'POST':
-        username = session.get('username')
-        old_password = request.form.get('old_password')
-        new_password = request.form.get('new_password')
-        confirm_password = request.form.get('confirm_password')
-
-        if new_password != confirm_password:
-            flash("❌ Le password non corrispondono.", "danger")
-            return redirect(url_for('cambia_password'))
-
-        conn = None
-        cur = None
-        try:
-            conn = get_connection()
-            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
-            cur = conn.cursor(cursor_factory=RealDictCursor)
-
-            cur.execute('''
-                        SELECT hash_password 
-                        FROM squadra 
-                        WHERE username = %s;
-            ''', (username,))
-            row = cur.fetchone()
-
-            if row and check_password_hash(row["hash_password"], old_password):
-                new_hashed_password = generate_password_hash(new_password)
-
-                cur.execute('''
-                            UPDATE squadra 
-                            SET hash_password = %s 
-                            WHERE username = %s;
-                ''', (new_hashed_password, username))
-                conn.commit()
-
-                cur.execute('''
-                            SELECT nome 
-                            FROM squadra 
-                            WHERE username = %s;
-                ''', (username,))
-                nome_squadra = cur.fetchone()["nome"]
-
-
-                return redirect(url_for('user.squadra_login', nome_squadra=nome_squadra))
-
-            flash("❌ Errore nel cambio password.", "danger")
-
-        except Exception as e:
-            print("Errore cambio password:", e)
-            flash("❌ Errore durante l'aggiornamento della password.", "danger")
-
-        finally:
-            release_connection(conn, cur)
-
-        return redirect(url_for('cambia_password'))
-
-    return render_template("change_password.html")
-
-
-@app.route("/keepalive", methods=["GET", "POST"])
+@pubblico_bp.route("/keepalive", methods=["GET", "POST"])
 def keepalive():
         telegram_utils.send_message(903944311)
         return render_template("index.html")
-
-
-
-
-chat_history = []
-
-@app.route("/chat", methods=["GET", "POST"])
-def chat_page():
-    global chat_history
-
-    if request.method == "POST":
-        data = request.get_json(silent=True) or {}
-        user_msg = data.get("question", "").strip()
-
-        if not user_msg:
-            return jsonify({"answer": "⚠️ Inserisci una domanda valida."})
-
-        bot_msg = get_answer(user_msg)
-
-        chat_history.append((user_msg, bot_msg))
-        chat_history = chat_history[-2:]
-
-        return jsonify({"answer": bot_msg})
-
-    return render_template("chat.html")
-
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=True)

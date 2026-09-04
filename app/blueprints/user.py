@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, session, redirect, url_for
-from db import get_connection, release_connection
+from app.core.db import get_connection, release_connection
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
-from queries import get_slot_aste, get_slot_giocatori, get_slot_prestiti_in, get_crediti_squadra, get_stato_gate
+from app.queries import get_slot_aste, get_slot_giocatori, get_slot_prestiti_in, get_crediti_squadra, get_stato_gate
 
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')

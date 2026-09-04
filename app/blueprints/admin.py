@@ -1,13 +1,13 @@
 import json
 import psycopg2
 import time
-import telegram_utils
+from app import telegram_utils
 from datetime import datetime
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
-from user import formatta_data
-from db import get_connection, release_connection
-from queries import decadi_vetrina, get_stato_gate
-from transfermarkt_matching import candidati_fuzzy
+from app.blueprints.user import formatta_data
+from app.core.db import get_connection, release_connection
+from app.queries import decadi_vetrina, get_stato_gate
+from app.domini.matching_transfermarkt import candidati_fuzzy
 from psycopg2.extras import RealDictCursor
 from psycopg2 import extensions
 

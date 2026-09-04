@@ -62,7 +62,7 @@ def _silenzia_telegram():
     quindi impostare la variabile d'ambiente da qui non basterebbe), e alcune
     funzioni accodano senza passare da send_message().
     """
-    import telegram_utils
+    from app import telegram_utils
 
     telegram_utils.NOTIFICATIONS_ENABLED = False
     telegram_utils._enqueue_telegram_message = lambda chat_id, text_to_send: None
@@ -72,21 +72,22 @@ def _silenzia_telegram():
 @pytest.fixture(scope="session")
 def app(_silenzia_telegram):
     """
-    L'app Flask reale.
+    L'app Flask reale, costruita dalla factory.
 
-    L'import di `main` ha effetti collaterali (init_pool e caricamento della
-    mappa ID Telegram), quindi avviene qui dentro e una volta sola per sessione.
+    create_app() apre il connection pool e carica la mappa degli ID Telegram,
+    quindi viene invocata una volta sola per sessione.
     """
-    import main
+    from app import create_app
 
-    main.app.config.update(
+    applicazione = create_app()
+    applicazione.config.update(
         TESTING=True,
         # Il test client parla http://, con il cookie marcato Secure la sessione
         # non verrebbe mai rimandata indietro.
         SESSION_COOKIE_SECURE=False,
         WTF_CSRF_ENABLED=False,
     )
-    return main.app
+    return applicazione
 
 
 @pytest.fixture
@@ -117,13 +118,14 @@ def gate_aperto(app, monkeypatch):
     mai eseguito: gli smoke test resterebbero verdi coprendo solo il redirect,
     proprio sui moduli più complessi del progetto.
 
-    La patch è sul riferimento *dentro ogni blueprint*, non su queries: i moduli
-    importano le funzioni per valore (`from queries import mercato_aperto`), quindi
-    sostituire l'originale non avrebbe effetto. Nessuna scrittura sul database.
+    La patch è sul riferimento *dentro ogni blueprint*, non su app.queries: i
+    moduli importano le funzioni per valore (`from app.queries import
+    mercato_aperto`), quindi sostituire l'originale non avrebbe effetto.
+    Nessuna scrittura sul database.
     """
-    import user_aste
-    import user_mercato
-    import user_prestiti
+    from app.blueprints import aste as user_aste
+    from app.blueprints import mercato as user_mercato
+    from app.blueprints import prestiti as user_prestiti
 
     monkeypatch.setattr(user_aste, "aste_aperte", lambda conn: True)
     monkeypatch.setattr(user_mercato, "mercato_aperto", lambda conn: True)
@@ -150,8 +152,9 @@ def _dati_reali(app):
     Un identificativo valido per ogni tipo di parametro presente nelle route.
     Una sola connessione per sessione: le fixture derivate leggono da qui.
     """
-    from db import get_connection, release_connection
     from psycopg2.extras import RealDictCursor
+
+    from app.core.db import get_connection, release_connection
 
     conn = cur = None
     try:

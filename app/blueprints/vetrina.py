@@ -1,8 +1,8 @@
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from db import get_connection, release_connection
-from user import formatta_data
-from queries import get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in, sposta_crediti, ruolo_base_sort_key
+from app.core.db import get_connection, release_connection
+from app.blueprints.user import formatta_data
+from app.queries import get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in, sposta_crediti, ruolo_base_sort_key
 
 
 

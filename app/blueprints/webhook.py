@@ -1,6 +1,6 @@
-import telegram_utils
+from app import telegram_utils
 from flask import Blueprint, request, jsonify
-from db import get_connection, release_connection
+from app.core.db import get_connection, release_connection
 
 webhook_bp = Blueprint('webhook_bp', __name__)
 

@@ -1,12 +1,12 @@
 import psycopg2
 from datetime import datetime, time
-import telegram_utils
+from app import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from db import get_connection, release_connection
-from user import format_giocatori, formatta_data, redirect_gate_chiuso
-from queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati, get_slot_prestiti_in, decadi_vetrina, mercato_aperto
-from user_prestiti import _get_allowed_prestito_years
+from app.core.db import get_connection, release_connection
+from app.blueprints.user import format_giocatori, formatta_data, redirect_gate_chiuso
+from app.queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati, get_slot_prestiti_in, decadi_vetrina, mercato_aperto
+from app.blueprints.prestiti import _get_allowed_prestito_years
 
 
 mercato_bp = Blueprint('mercato', __name__, url_prefix='/mercato')
