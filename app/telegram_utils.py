@@ -8,8 +8,8 @@ from datetime import datetime
 from flask import current_app
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
-from db import get_connection, release_connection
-from user import format_giocatori, formatta_data
+from app.core.db import get_connection, release_connection
+from app.blueprints.user import format_giocatori, formatta_data
 
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 

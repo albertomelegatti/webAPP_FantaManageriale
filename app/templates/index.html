@@ -8,13 +8,13 @@
 </div>
 
 <div class="flex flex-col gap-2">
-    {{ m.voce_menu(url_for('squadre'), 'bi-shield-fill', 'Squadre') }}
-    {{ m.voce_menu(url_for('crediti_stadi_slot'), 'bi-building', 'Crediti, Stadi e Slot') }}
-    {{ m.voce_menu(url_for('listone'), 'bi-list-ul', 'Listone') }}
-    {{ m.voce_menu(url_for('aste'), 'bi-hammer', 'Aste') }}
+    {{ m.voce_menu(url_for('pubblico.squadre'), 'bi-shield-fill', 'Squadre') }}
+    {{ m.voce_menu(url_for('pubblico.crediti_stadi_slot'), 'bi-building', 'Crediti, Stadi e Slot') }}
+    {{ m.voce_menu(url_for('pubblico.listone'), 'bi-list-ul', 'Listone') }}
+    {{ m.voce_menu(url_for('pubblico.aste'), 'bi-hammer', 'Aste') }}
     {{ m.voce_menu(url_for('vetrina.vetrina'), 'bi-shop-window', 'Vetrina') }}
-    {{ m.voce_menu(url_for('movimenti_mercato'), 'bi-arrow-left-right', 'Movimenti di Mercato') }}
-    {{ m.voce_menu(url_for('chat_page'), 'bi-chat-dots-fill', 'Chatbot regolamento') }}
+    {{ m.voce_menu(url_for('pubblico.movimenti_mercato'), 'bi-arrow-left-right', 'Movimenti di Mercato') }}
+    {{ m.voce_menu(url_for('chat.chat_page'), 'bi-chat-dots-fill', 'Chatbot regolamento') }}
 </div>
 
 <div class="mt-6 text-center">

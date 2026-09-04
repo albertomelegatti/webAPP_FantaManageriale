@@ -29,9 +29,10 @@ def pdf_to_text(pdf_path: str, txt_path: str):
 
 if __name__ == "__main__":
     
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # Lo script vive in scripts/, i file stanno nel package app/
+    radice = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-    PDF_FILE = os.path.join(script_dir, "static", "regolamento.pdf")
-    TXT_FILE = os.path.join(script_dir, "regolamento.txt")
+    PDF_FILE = os.path.join(radice, "app", "static", "regolamento.pdf")
+    TXT_FILE = os.path.join(radice, "app", "regolamento.txt")
 
     pdf_to_text(PDF_FILE, TXT_FILE)

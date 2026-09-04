@@ -28,8 +28,8 @@ from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request
 from psycopg2.extras import RealDictCursor
 
-from db import get_connection, release_connection
-from transfermarkt_matching import candidati_esatti, parse_data_tm
+from app.core.db import get_connection, release_connection
+from app.domini.matching_transfermarkt import candidati_esatti, parse_data_tm
 
 jobs_bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
