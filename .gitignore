@@ -5,3 +5,6 @@ flask_session/
 *.pyc
 notes.txt
 tailwind/tailwindcss
+.pytest_cache/
+.coverage
+htmlcov/
