@@ -1,0 +1,6 @@
+# Dipendenze di sviluppo/test. NON vengono installate su Render:
+# il Procfile usa solo requirements.txt.
+-r requirements.txt
+
+pytest>=8.0
+pytest-cov>=5.0
