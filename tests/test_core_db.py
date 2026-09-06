@@ -7,6 +7,8 @@ una correzione di bug: prima, una route che alzava l'isolamento lo lasciava
 appiccicato alla connessione restituita al pool.
 """
 
+import os
+
 import psycopg2
 import pytest
 from psycopg2 import extensions as ext
@@ -115,3 +117,81 @@ class TestReleaseConnection:
         assert conn.info.transaction_status == ext.TRANSACTION_STATUS_INTRANS
         release_connection(conn, cur)
         assert conn.info.transaction_status == ext.TRANSACTION_STATUS_IDLE
+
+
+class TestPoolEsaurito:
+    """Il pool di psycopg2 non mette in coda: quando è pieno solleva subito
+    PoolError, che NON è un OperationalError. Prima di questa gestione arrivava
+    all'utente come un errore 500."""
+
+    def test_poolerror_non_e_un_operationalerror(self):
+        """Il presupposto del bug: catturare OperationalError non basta."""
+        from psycopg2 import OperationalError
+        from psycopg2.pool import PoolError
+        assert not issubclass(PoolError, OperationalError)
+
+    def test_ritenta_e_recupera_se_una_connessione_si_libera(self, app, monkeypatch):
+        from psycopg2.pool import PoolError
+
+        from app.core import db
+
+        finto = object()
+        tentativi = {"n": 0}
+
+        class PoolFinto:
+            def getconn(self):
+                tentativi["n"] += 1
+                if tentativi["n"] < 3:
+                    raise PoolError("connection pool exhausted")
+                return _ConnFinta()
+
+        class _ConnFinta:
+            autocommit = True
+            closed = 0
+
+        monkeypatch.setattr(db, "pool", PoolFinto())
+        monkeypatch.setattr(db, "_va_validata", lambda conn: False)
+        monkeypatch.setattr(db.time, "sleep", lambda s: None)
+
+        conn = db.get_connection()
+        assert conn is not None
+        assert tentativi["n"] == 3, "avrebbe dovuto ritentare finché una si libera"
+
+    def test_si_arrende_dopo_i_tentativi_previsti(self, app, monkeypatch):
+        from psycopg2.pool import PoolError
+
+        from app.core import db
+
+        tentativi = {"n": 0}
+
+        class PoolSemprePieno:
+            def getconn(self):
+                tentativi["n"] += 1
+                raise PoolError("connection pool exhausted")
+
+        monkeypatch.setattr(db, "pool", PoolSemprePieno())
+        monkeypatch.setattr(db.time, "sleep", lambda s: None)
+
+        with pytest.raises(PoolError):
+            db.get_connection()
+
+        # un tentativo iniziale più uno per ogni attesa prevista
+        assert tentativi["n"] == len(db.ATTESA_POOL_ESAURITO) + 1
+
+    def test_attese_brevi_per_il_pool_e_lunghe_per_il_database(self):
+        """Un pool esaurito si libera in millisecondi, un database irraggiungibile no."""
+        from app.core import db
+        assert sum(db.ATTESA_POOL_ESAURITO) < 2, "attesa troppo lunga per un picco di traffico"
+        assert sum(db.ATTESA_DB_IRRAGGIUNGIBILE) >= 6, "attesa troppo breve per un DB giù"
+
+
+class TestDimensionamentoPool:
+    def test_il_pool_regge_i_thread_previsti_dal_procfile(self):
+        """4 thread per worker, e la pagina mercato consuma 2 connessioni per
+        richiesta finché la N+1 non viene chiusa: servono almeno 8."""
+        from app.core import db
+        assert db.POOL_MAX >= 8
+
+    def test_configurabile_da_ambiente(self):
+        from app.core import db
+        assert db.POOL_MAX == int(os.getenv("DB_POOL_MAX", "10"))

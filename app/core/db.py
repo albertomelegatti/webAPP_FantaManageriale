@@ -19,6 +19,7 @@ import psycopg2
 import psycopg2.pool
 from dotenv import load_dotenv
 from psycopg2 import OperationalError, sql
+from psycopg2.pool import PoolError
 from psycopg2.extras import RealDictCursor
 
 from app.core.logging import get_logger
@@ -49,6 +50,32 @@ ISOLAMENTO_DEFAULT = psycopg2.extensions.ISOLATION_LEVEL_DEFAULT
 # invece eseguita, perché il server può aver chiuso una connessione idle.
 SECONDI_VALIDITA_PRESUNTA = 60
 
+# Dimensione del pool, per worker gunicorn.
+#
+# Misurato con 40 richieste concorrenti su 2 worker x 4 thread: con maxconn=5
+# il pool non si esaurisce mai (zero ritentativi). Il valore precedente era
+# quindi gia' sufficiente per il traffico attuale, e alzarlo a 10 non produce
+# alcun miglioramento misurabile.
+#
+# Il margine serve a una situazione che non e' stato possibile misurare: la
+# pagina mercato consuma due connessioni per richiesta, perche' format_giocatori
+# ne apre una propria mentre la route ne tiene gia' una (la N+1 che verra'
+# chiusa nella Fase 6). Con 4 thread servirebbero 8 connessioni. Quella pagina
+# e' oggi dietro il gate del mercato chiuso, quindi la prova di carico non la
+# raggiunge.
+#
+# Il costo del margine e' nullo: psycopg2 crea le connessioni oltre minconn solo
+# quando servono davvero. Con 2 worker si arriva al massimo a 20 connessioni,
+# contro le 60 che il server concede (8 in uso a riposo).
+POOL_MIN = int(os.getenv("DB_POOL_MIN", "1"))
+POOL_MAX = int(os.getenv("DB_POOL_MAX", "10"))
+
+# Attese fra i tentativi, in secondi.
+# Un pool esaurito si libera in millisecondi: ha senso ritentare spesso e per
+# poco. Un database irraggiungibile no: li' serve attendere sul serio.
+ATTESA_POOL_ESAURITO = (0.05, 0.1, 0.2, 0.4, 0.8)
+ATTESA_DB_IRRAGGIUNGIBILE = (2, 2, 2, 2)
+
 _ultimo_rilascio = {}
 _ultimo_rilascio_lock = threading.Lock()
 
@@ -75,8 +102,8 @@ def init_pool():
     }
 
     try:
-        pool = psycopg2.pool.ThreadedConnectionPool(minconn=1, maxconn=5, **params)
-        logger.info("✅ Pool di connessioni Supabase inizializzato con successo!")
+        pool = psycopg2.pool.ThreadedConnectionPool(minconn=POOL_MIN, maxconn=POOL_MAX, **params)
+        logger.info("✅ Pool di connessioni Supabase inizializzato (min=%s, max=%s)", POOL_MIN, POOL_MAX)
         resync_sequences()
         return pool
     except psycopg2.Error as e:
@@ -152,24 +179,33 @@ def _va_validata(conn):
 
 
 def get_connection():
-    """Preleva una connessione dal pool, riprovando se il database non risponde.
+    """Preleva una connessione dal pool, riprovando in caso di problemi transitori.
+
+    Due condizioni distinte, con attese diverse:
+
+    - PoolError: tutte le connessioni sono occupate. psycopg2 non mette in coda,
+      solleva subito. Ma una connessione si libera in millisecondi, quindi
+      conviene ritentare spesso e brevemente (circa 1,5 secondi in tutto).
+      Senza questa gestione, un picco di richieste concorrenti diventerebbe un
+      errore 500: PoolError non e' un OperationalError e prima non veniva preso.
+    - OperationalError: il database non risponde. Qui l'attesa breve non serve
+      a niente, servono pause vere.
 
     Da preferire il context manager `connessione()`: chi chiama questa funzione
-    è responsabile di invocare `release_connection()` in un `finally`.
+    e' responsabile di invocare `release_connection()` in un `finally`.
     """
-    max_retries = 5
-    cooldown = 2
-
     if pool is None:
-        raise Exception("Connection pool non inizializzato. Chiama init_pool() prima.")
+        raise RuntimeError("Connection pool non inizializzato. Chiama init_pool() prima.")
 
-    retries = 0
-    while retries < max_retries:
+    attese_pool = list(ATTESA_POOL_ESAURITO)
+    attese_db = list(ATTESA_DB_IRRAGGIUNGIBILE)
+
+    while True:
         try:
             conn = pool.getconn()
             conn.autocommit = False
 
-            # Validazione solo se la connessione è stata ferma a lungo: su una
+            # Validazione solo se la connessione e' stata ferma a lungo: su una
             # appena rilasciata sarebbe un round-trip sprecato a ogni richiesta.
             if _va_validata(conn):
                 with conn.cursor() as cur:
@@ -177,16 +213,24 @@ def get_connection():
 
             return conn
 
-        except OperationalError as e:
-            retries += 1
-            logger.warning("[DB] Tentativo %s/%s fallito: %s", retries, max_retries, e)
+        except PoolError:
+            if not attese_pool:
+                logger.error(
+                    "[DB] Pool esaurito (max=%s): tutte le connessioni sono occupate.",
+                    POOL_MAX,
+                )
+                raise
+            attesa = attese_pool.pop(0)
+            logger.warning("[DB] Pool esaurito, ritento fra %.2fs", attesa)
+            time.sleep(attesa)
 
-            if retries < max_retries:
-                logger.info("[DB] Ritento tra %s secondi...", cooldown)
-                time.sleep(cooldown)
-            else:
+        except OperationalError as e:
+            if not attese_db:
                 logger.error("[DB] Impossibile connettersi al database dopo ripetuti tentativi.")
                 raise
+            attesa = attese_db.pop(0)
+            logger.warning("[DB] Database non raggiungibile (%s), ritento fra %ss", e, attesa)
+            time.sleep(attesa)
 
 
 def release_connection(conn=None, cur=None):
