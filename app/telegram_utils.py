@@ -9,9 +9,10 @@ from flask import current_app
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from app.core.db import get_connection, release_connection
-from app.blueprints.user import format_giocatori, formatta_data
+from app.blueprints.user import format_giocatori
 
 from app.core.logging import get_logger
+from app.core.tempo import formatta_data
 
 logger = get_logger(__name__)
 

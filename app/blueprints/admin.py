@@ -4,13 +4,14 @@ import time
 from app import telegram_utils
 from datetime import datetime
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request
-from app.blueprints.user import formatta_data
 from app.core.db import connessione
 from app.queries import decadi_vetrina, get_stato_gate
 from app.domini.matching_transfermarkt import candidati_fuzzy
 from psycopg2 import extensions
 
 from app.core.logging import get_logger
+from app.core.tempo import formatta_data
+from app.domini.ruoli import pulisci_ruolo
 
 logger = get_logger(__name__)
 
@@ -246,7 +247,7 @@ def richiesta_modifica_contratto():
                 richieste.append({
                     "id": r["id"],
                     "nome_giocatore": r["nome"],
-                    "ruolo": (r["ruolo"] or "").strip("{}"),
+                    "ruolo": pulisci_ruolo(r["ruolo"]),
                     "club": r["club"],
                     "contratto_attuale": r["tipo_contratto"],
                     "contratto_richiesto": r["contratto_richiesto"],
@@ -404,7 +405,7 @@ def admin_verifica_corrispondenze():
                     "id": r["id_giocatore"],
                     "nome": r["nome"],
                     "club": r["club"],
-                    "ruolo": (r["ruolo"] or "").strip("{}"),
+                    "ruolo": pulisci_ruolo(r["ruolo"]),
                     "candidati": [],
                     "suggerimenti": [],
                 })

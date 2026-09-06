@@ -4,11 +4,13 @@ from app import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione
-from app.blueprints.user import format_giocatori, formatta_data, redirect_gate_chiuso
-from app.queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati, get_slot_prestiti_in, decadi_vetrina, mercato_aperto
-from app.blueprints.prestiti import _get_allowed_prestito_years
+from app.blueprints.user import format_giocatori, redirect_gate_chiuso
+from app.queries import decadi_vetrina, get_crediti_squadra, get_offerta_totale, get_slot_occupati, get_slot_prestiti_in, mercato_aperto
 
 from app.core.logging import get_logger
+from app.core.tempo import formatta_data
+from app.domini.calendario import anni_prestito_ammessi
+from app.domini.ruoli import pulisci_ruolo
 
 logger = get_logger(__name__)
 
@@ -241,7 +243,7 @@ def nuovo_scambio(nome_squadra):
                     p2_riscatto_off = 0
 
                 # Data di fine: 1 luglio alle 23:59:59 dell'anno scelto (corrente o successivo)
-                anni_scadenza, anno_default_scadenza = _get_allowed_prestito_years()
+                anni_scadenza, anno_default_scadenza = anni_prestito_ammessi()
 
                 def parse_data_fine_prestito(data_fine_raw):
                     anno = None
@@ -495,7 +497,7 @@ def nuovo_scambio(nome_squadra):
                     "nome": g["nome"],
                     "squadra_att": g["squadra_att"],
                     "tipo_contratto": g["tipo_contratto"],
-                    "ruolo": (g["ruolo"] or "").strip("{}"),
+                    "ruolo": pulisci_ruolo(g["ruolo"]),
                     "club": g["club"]
                 }
                 for g in giocatori_raw
@@ -545,7 +547,7 @@ def nuovo_scambio(nome_squadra):
                 for p in pick_raw
             ]
 
-            anni_scadenza, anno_default_scadenza = _get_allowed_prestito_years()
+            anni_scadenza, anno_default_scadenza = anni_prestito_ammessi()
 
             return render_template(
                 "user_nuovo_scambio.html",

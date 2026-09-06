@@ -5,11 +5,13 @@ from app import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione, resync_sequence
-from app.blueprints.user import format_partecipanti, formatta_data, redirect_gate_chiuso
-from app.queries import get_crediti_e_offerta, get_slot_occupati, aste_aperte
+from app.blueprints.user import format_partecipanti, redirect_gate_chiuso
+from app.queries import aste_aperte, get_crediti_e_offerta, get_slot_occupati
 from dotenv import load_dotenv
 
 from app.core.logging import get_logger
+from app.core.tempo import formatta_data
+from app.domini.ruoli import pulisci_ruolo
 
 logger = get_logger(__name__)
 
@@ -119,7 +121,7 @@ def user_aste(nome_squadra):
                 aste.append({
                     "asta_id": a["id"],
                     "giocatore": a["nome"],
-                    "ruolo": a["ruolo"].strip("{}"),
+                    "ruolo": pulisci_ruolo(a["ruolo"]),
                     "club": a["club"],
                     "squadra_vincente": a["squadra_vincente"],
                     "ultima_offerta": a["ultima_offerta"],
@@ -174,7 +176,7 @@ def nuova_asta(nome_squadra):
             giocatori_raw = cur.fetchall()
             giocatori_disponibili_per_asta = [row["nome"] for row in giocatori_raw]
             giocatori_info_per_asta = [
-                {"nome": row["nome"], "ruolo": (row["ruolo"] or "").strip("{}"), "club": row["club"]}
+                {"nome": row["nome"], "ruolo": pulisci_ruolo(row["ruolo"]), "club": row["club"]}
                 for row in giocatori_raw
             ]
 
@@ -468,7 +470,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
                 asta = {
                     "id": asta_id,
                     "giocatore": asta_raw["nome"],
-                    "ruolo": asta_raw["ruolo"].strip("{}"),
+                    "ruolo": pulisci_ruolo(asta_raw["ruolo"]),
                     "club": asta_raw["club"],
                     "ultima_offerta": asta_raw["ultima_offerta"],
                     "squadra_vincente": asta_raw["squadra_vincente"],
