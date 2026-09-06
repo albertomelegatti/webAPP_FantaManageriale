@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, session, redirect, url_for
-from app.core.db import get_connection, release_connection
-from psycopg2.extras import RealDictCursor
+from app.core.db import connessione
 from datetime import datetime
 from app.queries import get_slot_aste, get_slot_giocatori, get_slot_prestiti_in, get_crediti_squadra, get_stato_gate
 
@@ -20,20 +19,16 @@ def redirect_gate_chiuso():
 @user_bp.route("/squadra_login/<nome_squadra>")
 def squadra_login(nome_squadra):
 
-    conn = get_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
+    with connessione() as (conn, cur):
+        cur.execute("SELECT username FROM squadra WHERE nome = %s;", (nome_squadra,))
+        username = cur.fetchone()["username"]
 
-    cur.execute("SELECT username FROM squadra WHERE nome = %s;", (nome_squadra,))
-    username = cur.fetchone()["username"]
+        slot_giocatori = get_slot_giocatori(conn, nome_squadra)
+        slot_aste = get_slot_aste(conn, nome_squadra)
+        slot_occupati = slot_giocatori + slot_aste
+        prestiti_in_num = get_slot_prestiti_in(conn, nome_squadra)
 
-    slot_giocatori = get_slot_giocatori(conn, nome_squadra)
-    slot_aste = get_slot_aste(conn, nome_squadra)
-    slot_occupati = slot_giocatori + slot_aste
-    prestiti_in_num = get_slot_prestiti_in(conn, nome_squadra)
-
-    crediti = get_crediti_squadra(conn, nome_squadra)
-
-    release_connection(conn, cur)
+        crediti = get_crediti_squadra(conn, nome_squadra)
 
     return render_template("squadra_login.html", nome_squadra=nome_squadra, username=username, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num, crediti=crediti)
 
@@ -47,9 +42,8 @@ def _info_chiusura(chiusura, aperto, testo):
 
 @user_bp.route("/mercato_menu/<nome_squadra>")
 def user_mercato_menu(nome_squadra):
-    conn = get_connection()
-    stato_gate = get_stato_gate(conn)
-    release_connection(conn)
+    with connessione() as (conn, _):
+        stato_gate = get_stato_gate(conn)
     return render_template(
         "user_mercato_menu.html",
         nome_squadra=nome_squadra,
@@ -62,9 +56,8 @@ def user_mercato_menu(nome_squadra):
 
 @user_bp.route("/prestiti_menu/<nome_squadra>")
 def user_prestiti_menu(nome_squadra):
-    conn = get_connection()
-    stato_gate = get_stato_gate(conn)
-    release_connection(conn)
+    with connessione() as (conn, _):
+        stato_gate = get_stato_gate(conn)
     return render_template(
         "user_prestiti_menu.html",
         nome_squadra=nome_squadra,
@@ -76,7 +69,6 @@ def user_prestiti_menu(nome_squadra):
 @user_bp.route("/rosa_menu/<nome_squadra>")
 def user_rosa_menu(nome_squadra):
     return render_template("user_rosa_menu.html", nome_squadra=nome_squadra)
-
 
 
 def format_partecipanti(partecipanti):
@@ -96,38 +88,32 @@ def format_giocatori(giocatori):
     if isinstance(giocatori, int):
         giocatori = [giocatori]
     
-    conn = None
-    cur = None
     nomi_ordinati = []
 
     try:
-        conn = get_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        cur.execute('''
-            SELECT id, nome
-            FROM giocatore
-            WHERE id = ANY(%s);
-        ''', (giocatori,))
+        with connessione() as (conn, cur):
+            cur.execute('''
+                SELECT id, nome
+                FROM giocatore
+                WHERE id = ANY(%s);
+            ''', (giocatori,))
         
-        # Mappa i risultati {id: nome}
-        risultati_map = {row['id']: row['nome'] for row in cur.fetchall()} 
+            # Mappa i risultati {id: nome}
+            risultati_map = {row['id']: row['nome'] for row in cur.fetchall()} 
         
-        # Formattazione e Mantenimento dell'Ordine (Cruciale)
-        for giocatore_id in giocatori:
-            nome = risultati_map.get(giocatore_id)
-            if nome:
-                nomi_ordinati.append(nome)
-            else:
-                nomi_ordinati.append(f"ID {giocatore_id} (non trovato)")
+            # Formattazione e Mantenimento dell'Ordine (Cruciale)
+            for giocatore_id in giocatori:
+                nome = risultati_map.get(giocatore_id)
+                if nome:
+                    nomi_ordinati.append(nome)
+                else:
+                    nomi_ordinati.append(f"ID {giocatore_id} (non trovato)")
 
     except Exception as e:
         print(f"❌ Errore durante il recupero dei nomi giocatori: {e}")
         return "Errore nel recupero dei giocatori"
 
-    finally:
-        release_connection(conn, cur)
-    
+
     if not nomi_ordinati:
         return ""
     elif len(nomi_ordinati) == 1:
@@ -135,7 +121,6 @@ def format_giocatori(giocatori):
     else:
         # Ritorna i nomi formattati (es: "Nome1, Nome2, Nome3")
         return ", ".join(nomi_ordinati)
-
 
 
 def formatta_data(data_input):
