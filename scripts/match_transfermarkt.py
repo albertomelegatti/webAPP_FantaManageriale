@@ -171,7 +171,7 @@ def esegui_matching(percorso_input):
 
     n_auto = n_ambigui = n_non_trovati = 0
 
-    with db.DatabaseConnection() as (conn, cur):
+    with db.transazione() as (conn, cur):
         cur.execute("SELECT club, nome_transfermarkt FROM transfermarkt_mappa_club;")
         mappa_club = {r["club"]: r["nome_transfermarkt"] for r in cur.fetchall()}
 

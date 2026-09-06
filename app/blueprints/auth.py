@@ -8,10 +8,9 @@ solo il decoratore e i nomi degli endpoint nelle url_for.
 import psycopg2
 from flask import (Blueprint, flash, redirect, render_template, request,
                    session, url_for)
-from psycopg2.extras import RealDictCursor
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from app.core.db import get_connection, release_connection
+from app.core.db import connessione
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -38,63 +37,57 @@ def login():
             flash("❌ Compila tutti i campi.", "danger")
             return redirect(url_for('auth.login'))
 
-        conn = None
-        cur = None
         try:
-            conn = get_connection()
-            cur = conn.cursor(cursor_factory=RealDictCursor)
+            with connessione() as (conn, cur):
+                # Login admin
+                if username == "admin":
+                    cur.execute('''
+                                SELECT hash_password
+                                FROM admin
+                                WHERE username = %s;
+                    ''', (username,))
+                    row = cur.fetchone()
 
-            # Login admin
-            if username == "admin":
-                cur.execute('''
-                            SELECT hash_password
-                            FROM admin
-                            WHERE username = %s;
-                ''', (username,))
-                row = cur.fetchone()
-
-                if row and check_password_hash(row["hash_password"], password):
-                    session.clear()
-                    session["logged_in"] = True
-                    session["is_admin"] = True
-                    session["username"] = username
-                    session.permanent = True
-                    return redirect(url_for('admin.admin_home'))
-
-                else:
-                    flash("❌ Credenziali admin errate.", "danger")
-
-            # Login squadra
-            else:
-                cur.execute('''
-                            SELECT hash_password, nome
-                            FROM squadra
-                            WHERE username = %s;
-                ''', (username,))
-                row = cur.fetchone()
-
-                if row is not None:
-                    hash_password = row["hash_password"]
-                    nome_squadra = row["nome"]
-                    if check_password_hash(hash_password, password):
+                    if row and check_password_hash(row["hash_password"], password):
                         session.clear()
                         session["logged_in"] = True
-                        session["nome_squadra"] = row["nome"]
-                        session["is_admin"] = False
+                        session["is_admin"] = True
                         session["username"] = username
                         session.permanent = True
-                        return redirect(url_for('user.squadra_login', nome_squadra=nome_squadra))
+                        return redirect(url_for('admin.admin_home'))
+
                     else:
-                        flash("❌ Password errata.", "danger")
+                        flash("❌ Credenziali admin errate.", "danger")
+
+                # Login squadra
                 else:
-                    flash("❌ Username non trovato.", "danger")
+                    cur.execute('''
+                                SELECT hash_password, nome
+                                FROM squadra
+                                WHERE username = %s;
+                    ''', (username,))
+                    row = cur.fetchone()
+
+                    if row is not None:
+                        hash_password = row["hash_password"]
+                        nome_squadra = row["nome"]
+                        if check_password_hash(hash_password, password):
+                            session.clear()
+                            session["logged_in"] = True
+                            session["nome_squadra"] = row["nome"]
+                            session["is_admin"] = False
+                            session["username"] = username
+                            session.permanent = True
+                            return redirect(url_for('user.squadra_login', nome_squadra=nome_squadra))
+                        else:
+                            flash("❌ Password errata.", "danger")
+                    else:
+                        flash("❌ Username non trovato.", "danger")
 
         except Exception as e:
             print("Errore login:", e)
             flash("❌ Errore di connessione al database.", "danger")
 
-        finally:
-            release_connection(conn, cur)
 
         return redirect(url_for('auth.login'))
 
@@ -121,47 +114,40 @@ def cambia_password():
             flash("❌ Le password non corrispondono.", "danger")
             return redirect(url_for('auth.cambia_password'))
 
-        conn = None
-        cur = None
         try:
-            conn = get_connection()
-            conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ)
-            cur = conn.cursor(cursor_factory=RealDictCursor)
-
-            cur.execute('''
-                        SELECT hash_password
-                        FROM squadra
-                        WHERE username = %s;
-            ''', (username,))
-            row = cur.fetchone()
-
-            if row and check_password_hash(row["hash_password"], old_password):
-                new_hashed_password = generate_password_hash(new_password)
-
+            with connessione(isolamento=psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ) as (conn, cur):
                 cur.execute('''
-                            UPDATE squadra
-                            SET hash_password = %s
-                            WHERE username = %s;
-                ''', (new_hashed_password, username))
-                conn.commit()
-
-                cur.execute('''
-                            SELECT nome
+                            SELECT hash_password
                             FROM squadra
                             WHERE username = %s;
                 ''', (username,))
-                nome_squadra = cur.fetchone()["nome"]
+                row = cur.fetchone()
 
-                return redirect(url_for('user.squadra_login', nome_squadra=nome_squadra))
+                if row and check_password_hash(row["hash_password"], old_password):
+                    new_hashed_password = generate_password_hash(new_password)
 
-            flash("❌ Errore nel cambio password.", "danger")
+                    cur.execute('''
+                                UPDATE squadra
+                                SET hash_password = %s
+                                WHERE username = %s;
+                    ''', (new_hashed_password, username))
+                    conn.commit()
+
+                    cur.execute('''
+                                SELECT nome
+                                FROM squadra
+                                WHERE username = %s;
+                    ''', (username,))
+                    nome_squadra = cur.fetchone()["nome"]
+
+                    return redirect(url_for('user.squadra_login', nome_squadra=nome_squadra))
+
+                flash("❌ Errore nel cambio password.", "danger")
 
         except Exception as e:
             print("Errore cambio password:", e)
             flash("❌ Errore durante l'aggiornamento della password.", "danger")
 
-        finally:
-            release_connection(conn, cur)
 
         return redirect(url_for('auth.cambia_password'))
 

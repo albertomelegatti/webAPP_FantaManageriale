@@ -1,19 +1,19 @@
+from flask import Blueprint, jsonify, request
+
 from app import telegram_utils
-from flask import Blueprint, request, jsonify
-from app.core.db import get_connection, release_connection
+from app.core.db import connessione
 
 webhook_bp = Blueprint('webhook_bp', __name__)
 
+
 @webhook_bp.route("/webhook/update_stato_asta", methods=["POST"])
 def webhook_update_stato_asta():
-    
+
     #Gestisce il webhook da Supabase per l'aggiornamento dello stato delle aste.
     #Invia una notifica Telegram quando un'asta passa da 'mostra_interesse' a 'in_corso'.
-    
+
     try:
         data = request.json
-        conn = None
-        conn = get_connection()
 
         # Log per debug
         print("Webhook ricevuto:", data)
@@ -26,25 +26,23 @@ def webhook_update_stato_asta():
             # Controlla che ci sia effettivamente un cambiamento dello stato
             if old_status != new_status:
                 try:
+                    # La connessione serve solo per comporre le notifiche, quindi
+                    # viene presa qui e non all'inizio della richiesta: un webhook
+                    # senza cambio di stato non tocca piu' il pool.
+                    with connessione() as (conn, _):
+                        if old_status == "mostra_interesse" and new_status == "in_corso":
+                            telegram_utils.asta_iniziata(conn, id_asta)
 
-                    if old_status == "mostra_interesse" and new_status == "in_corso":
-                        telegram_utils.asta_iniziata(conn, id_asta)
-
-                    if (old_status == "in_corso" and new_status == "conclusa") or (old_status == "mostra_interesse" and new_status == "conclusa"):
-                        telegram_utils.asta_conclusa(conn, id_asta)
+                        if (old_status == "in_corso" and new_status == "conclusa") or (old_status == "mostra_interesse" and new_status == "conclusa"):
+                            telegram_utils.asta_conclusa(conn, id_asta)
 
                 except Exception as e:
                     print(f"Errore durante l'elaborazione del webhook: {e}")
             else:
                 print(f"Webhook ignorato: nessun cambio di stato per asta {id_asta}")
-                    
 
     except Exception as e:
         print(f"Errore nella ricezione del webhook: {e}")
-
-    finally:
-        release_connection(conn, None)
-
 
     print("Invio risposta al database...")
     return jsonify({"status": "success"}), 200
