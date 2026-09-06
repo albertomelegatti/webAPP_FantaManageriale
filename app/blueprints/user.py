@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from app.core.db import connessione
-from datetime import datetime
-from app.queries import get_slot_aste, get_slot_giocatori, get_slot_prestiti_in, get_crediti_squadra, get_stato_gate
+from app.queries import get_crediti_squadra, get_slot_aste, get_slot_giocatori, get_slot_prestiti_in, get_stato_gate
 
 from app.core.logging import get_logger
 
@@ -125,29 +124,3 @@ def format_giocatori(giocatori):
     else:
         # Ritorna i nomi formattati (es: "Nome1, Nome2, Nome3")
         return ", ".join(nomi_ordinati)
-
-
-def formatta_data(data_input):
-
-    #Converte una data (stringa o datetime) in formato 'dd/mm/YYYY HH:MM'.
-    #Rimuove automaticamente millisecondi e timezone.
-    
-    if data_input is None:
-        return None
-
-    # Se è una stringa ISO, puliscila
-    if isinstance(data_input, str):
-        # Rimuove millisecondi e timezone se presenti
-        data_input = data_input.split("+")[0].split("Z")[0].split(".")[0]
-        try:
-            data_input = datetime.fromisoformat(data_input)
-        except ValueError:
-            return data_input  # se non è una data ISO valida, restituisci com'è
-
-    # Se è un oggetto datetime, formatta
-    if isinstance(data_input, datetime):
-        return data_input.strftime("%d/%m/%Y %H:%M")
-
-    return str(data_input)
-
-

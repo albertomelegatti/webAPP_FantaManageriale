@@ -2,21 +2,14 @@
 Test delle funzioni pure: nessun database, nessuna rete.
 
 Sono la rete di sicurezza più economica del refactoring: queste funzioni si
-sposteranno in app/domini/ e app/core/tempo.py, e questi test devono restare
-verdi identici prima e dopo lo spostamento.
+vivono in app/domini/ e app/core/tempo.py. Sono rimasti verdi identici prima e
+dopo lo spostamento della Fase 5a: e' questo che ne dimostra la neutralita'.
 """
 
 from datetime import date, datetime, timedelta
 
 import pytest
 
-from app.queries import (
-    calcola_eta,
-    formatta_data_nascita_con_eta,
-    formatta_scadenza_contratto,
-    ruolo_base_sort_key,
-    ruolo_sort_key,
-)
 from app.domini.matching_transfermarkt import (
     candidati_esatti,
     candidati_fuzzy,
@@ -24,8 +17,11 @@ from app.domini.matching_transfermarkt import (
     normalizza,
     parse_data_tm,
 )
-from app.blueprints.user import format_partecipanti, formatta_data
-from app.blueprints.prestiti import _get_allowed_prestito_years
+from app.blueprints.user import format_partecipanti
+from app.core.tempo import calcola_eta, formatta_data, formatta_data_nascita_con_eta, formatta_scadenza_contratto
+from app.domini.calendario import anni_prestito_ammessi
+from app.domini.ruoli import (pulisci_ruolo, ruoli_base_presenti,
+                              ruolo_base_sort_key, ruolo_sort_key)
 
 
 # --- Ordinamento dei ruoli ---------------------------------------------------
@@ -145,17 +141,17 @@ class TestFormatPartecipanti:
 
 class TestAnniPrestitoAmmessi:
     def test_prima_del_primo_luglio_parte_dall_anno_corrente(self):
-        anni, default = _get_allowed_prestito_years(datetime(2026, 1, 15))
+        anni, default = anni_prestito_ammessi(datetime(2026, 1, 15))
         assert anni == [2026, 2027]
         assert default == 2026
 
     def test_dopo_il_primo_luglio_parte_dall_anno_successivo(self):
-        anni, default = _get_allowed_prestito_years(datetime(2026, 8, 15))
+        anni, default = anni_prestito_ammessi(datetime(2026, 8, 15))
         assert anni == [2027, 2028]
         assert default == 2027
 
     def test_il_primo_luglio_e_ancora_incluso_nell_anno_corrente(self):
-        anni, default = _get_allowed_prestito_years(datetime(2026, 7, 1, 12, 0, 0))
+        anni, default = anni_prestito_ammessi(datetime(2026, 7, 1, 12, 0, 0))
         assert default == 2026
 
 
@@ -239,3 +235,34 @@ class TestCandidatiFuzzy:
 
     def test_nessun_token_in_comune(self):
         assert candidati_fuzzy("Rossi", [_tm(1, "Frank", "Anguissa")]) == []
+
+
+class TestPulisciRuolo:
+    """Sostituisce 21 ripetizioni a mano della stessa conversione."""
+
+    def test_toglie_le_graffe_dell_array_postgres(self):
+        assert pulisci_ruolo("{DC,DD}") == "DC,DD"
+
+    def test_ruolo_singolo(self):
+        assert pulisci_ruolo("{POR}") == "POR"
+
+    def test_valore_nullo_diventa_stringa_vuota(self):
+        assert pulisci_ruolo(None) == ""
+        assert pulisci_ruolo("") == ""
+
+    def test_stringa_gia_pulita_resta_uguale(self):
+        assert pulisci_ruolo("DC,DD") == "DC,DD"
+
+
+class TestRuoliBasePresenti:
+    def test_scompone_i_ruoli_composti_e_ordina(self):
+        assert ruoli_base_presenti(["Dd,E", "C", "Por"]) == ["Por", "Dd", "E", "C"]
+
+    def test_elimina_i_duplicati(self):
+        assert ruoli_base_presenti(["C", "C,W", "W"]) == ["C", "W"]
+
+    def test_tollera_valori_vuoti(self):
+        assert ruoli_base_presenti([None, "", "C"]) == ["C"]
+
+    def test_elenco_vuoto(self):
+        assert ruoli_base_presenti([]) == []

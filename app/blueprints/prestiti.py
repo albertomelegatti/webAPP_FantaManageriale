@@ -3,10 +3,13 @@ from app import telegram_utils
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione
-from app.blueprints.user import formatta_data, redirect_gate_chiuso
-from app.queries import get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in, sposta_crediti, decadi_vetrina, mercato_aperto
+from app.blueprints.user import redirect_gate_chiuso
+from app.queries import decadi_vetrina, get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in, mercato_aperto, sposta_crediti
 
 from app.core.logging import get_logger
+from app.core.tempo import formatta_data
+from app.domini.calendario import anni_prestito_ammessi
+from app.domini.ruoli import pulisci_ruolo
 
 logger = get_logger(__name__)
 
@@ -19,13 +22,6 @@ def blocca_prestiti_chiuso():
         if not mercato_aperto(conn):
             flash("❌ Il mercato scambi è chiuso.", "danger")
             return redirect_gate_chiuso()
-
-
-def _get_allowed_prestito_years(reference_date=None):
-    reference_date = reference_date or datetime.now()
-    cutoff = datetime(reference_date.year, 7, 1, 23, 59, 59)
-    first_year = reference_date.year if reference_date <= cutoff else reference_date.year + 1
-    return [first_year, first_year + 1], first_year
 
 
 @prestiti_bp.route("/prestiti/<nome_squadra>", methods=["GET", "POST"])
@@ -98,7 +94,7 @@ def user_prestiti(nome_squadra):
                 prestiti.append({
                     "prestito_id": p["prestito_id"],
                     "giocatore": p["nome"],
-                    "ruolo": (p["ruolo"] or "").strip("{}"),
+                    "ruolo": pulisci_ruolo(p["ruolo"]),
                     "club": p["club"],
                     "squadra_prestante": p["squadra_prestante"],
                     "squadra_ricevente": p["squadra_ricevente"],
@@ -134,7 +130,7 @@ def nuovo_prestito(nome_squadra):
     crediti_disponibili = 0
     giocatori = []
     squadre = []
-    anni_scadenza, anno_default_scadenza = _get_allowed_prestito_years()
+    anni_scadenza, anno_default_scadenza = anni_prestito_ammessi()
     default_data_fine = f"{anno_default_scadenza}-07-01"
 
     try:
@@ -234,7 +230,7 @@ def nuovo_prestito(nome_squadra):
                     "id": g["id"],
                     "nome": g["nome"],
                     "squadra_att": g["squadra_att"],
-                    "ruolo": (g["ruolo"] or "").strip("{}"),
+                    "ruolo": pulisci_ruolo(g["ruolo"]),
                     "club": g["club"]
                 })
 

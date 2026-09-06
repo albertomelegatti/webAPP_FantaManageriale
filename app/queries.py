@@ -1,64 +1,16 @@
-import pytz
-from datetime import datetime
+"""Accesso al database per le entita' condivise fra piu' blueprint.
+
+Le funzioni pure che stavano qui (ordinamento dei ruoli, formattazione
+delle date) sono ora in app/domini/ruoli.py e app/core/tempo.py.
+Il resto diventera' app/repositories/ nella prossima fase.
+"""
+
+from app.core.tempo import oggi
 from psycopg2.extras import RealDictCursor
 
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
-
-ROME_TZ = pytz.timezone("Europe/Rome")
-
-# Stesso ordine di ruoli già usato in produzione (vedi static/js/tables.js,
-# RUOLO_PRIORITY): portieri, poi difensori, centrocampisti, esterni/trequartisti,
-# infine attaccanti.
-RUOLO_PRIORITY = {
-    'POR': 1,
-    'DD,E': 2,
-    'DD,DC': 3,
-    'DC': 4,
-    'DD,DS,DC': 5,
-    'DS,DC': 6,
-    'DS,E': 7,
-    'B,DD,E': 8,
-    'B,DD,DS': 9,
-    'B,DS,E': 10,
-    'DD,DS,E': 11,
-    'M,C': 12,
-    'E': 13,
-    'E,M': 14,
-    'E,C': 15,
-    'E,W': 16,
-    'C,T': 17,
-    'C': 18,
-    'C,W,T': 19,
-    'C,W': 20,
-    'W': 21,
-    'W,T': 22,
-    'W,A': 23,
-    'W,T,A': 24,
-    'T,A': 25,
-    'T': 26,
-    'A': 27,
-    'PC': 28,
-}
-
-
-def ruolo_sort_key(ruolo):
-    chiave = ruolo.strip().upper().replace(' ', '')
-    return RUOLO_PRIORITY.get(chiave, 99)
-
-
-# Ordine dei ruoli base (singoli), stesso ordine POR -> difesa -> centrocampo
-# -> esterni/trequartisti -> attacco usato per colorarli (vedi _macros.html)
-RUOLI_BASE_ORDINE = ['Por', 'Dd', 'Ds', 'Dc', 'B', 'E', 'M', 'C', 'W', 'T', 'A', 'Pc']
-
-
-def ruolo_base_sort_key(ruolo):
-    try:
-        return RUOLI_BASE_ORDINE.index(ruolo)
-    except ValueError:
-        return 99
-
 
 def get_crediti_squadra(conn, nome_squadra):
 
@@ -241,7 +193,7 @@ def mercato_aperto(conn):
     chiusura = config["mercato_chiusura"] if config else None
     if chiusura is None:
         return True
-    return datetime.now(ROME_TZ).date() < chiusura
+    return oggi() < chiusura
 
 
 def aste_aperte(conn):
@@ -253,7 +205,7 @@ def aste_aperte(conn):
     chiusura = config["aste_chiusura"] if config else None
     if chiusura is None:
         return True
-    return datetime.now(ROME_TZ).date() < chiusura
+    return oggi() < chiusura
 
 
 def get_stato_gate(conn):
@@ -264,13 +216,13 @@ def get_stato_gate(conn):
     config = get_general_config(conn)
     mercato_chiusura = config["mercato_chiusura"] if config else None
     aste_chiusura = config["aste_chiusura"] if config else None
-    oggi = datetime.now(ROME_TZ).date()
+    data_odierna = oggi()
 
     return {
         "mercato_chiusura": mercato_chiusura,
-        "mercato_aperto": mercato_chiusura is None or oggi < mercato_chiusura,
+        "mercato_aperto": mercato_chiusura is None or data_odierna < mercato_chiusura,
         "aste_chiusura": aste_chiusura,
-        "aste_aperte": aste_chiusura is None or oggi < aste_chiusura,
+        "aste_aperte": aste_chiusura is None or data_odierna < aste_chiusura,
     }
 
 
@@ -302,42 +254,3 @@ def sposta_crediti (conn, squadra_from, squadra_to, crediti):
         cur.close()
 
 
-def calcola_eta(data_nascita):
-    if not data_nascita:
-        return None
-    oggi = datetime.now(ROME_TZ).date()
-    return oggi.year - data_nascita.year - ((oggi.month, oggi.day) < (data_nascita.month, data_nascita.day))
-
-
-def formatta_data_nascita_con_eta(data_nascita):
-    """'07/03/1990 (36 anni)', o None se il dato non è ancora sincronizzato da Transfermarkt."""
-    if not data_nascita:
-        return None
-    return f"{data_nascita.strftime('%d/%m/%Y')} ({calcola_eta(data_nascita)} anni)"
-
-
-def formatta_scadenza_contratto(scadenza_contratto):
-    """'1 anno e 3 mesi', arrotondando i mesi per eccesso (un giorno che avanza
-    conta comunque come un mese intero). 'Scaduto' se la data è passata, None se
-    il dato non è ancora sincronizzato da Transfermarkt."""
-    if not scadenza_contratto:
-        return None
-
-    oggi = datetime.now(ROME_TZ).date()
-    if scadenza_contratto <= oggi:
-        return "Scaduto"
-
-    mesi = (scadenza_contratto.year - oggi.year) * 12 + (scadenza_contratto.month - oggi.month)
-    if scadenza_contratto.day < oggi.day:
-        mesi -= 1
-    if scadenza_contratto.day != oggi.day:
-        mesi += 1
-
-    anni, mesi = divmod(mesi, 12)
-
-    parti = []
-    if anni:
-        parti.append(f"{anni} ann{'o' if anni == 1 else 'i'}")
-    if mesi:
-        parti.append(f"{mesi} mes{'e' if mesi == 1 else 'i'}")
-    return " e ".join(parti)

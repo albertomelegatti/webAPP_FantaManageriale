@@ -11,14 +11,13 @@ from flask import (Blueprint, flash, jsonify, redirect, render_template,
                    send_from_directory, url_for)
 
 from app import telegram_utils
-from app.blueprints.user import format_partecipanti, formatta_data
+from app.blueprints.user import format_partecipanti
 from app.core.db import connessione
-from app.queries import (formatta_data_nascita_con_eta,
-                         formatta_scadenza_contratto, get_slot_aste,
-                         get_slot_giocatori, ruolo_base_sort_key,
-                         ruolo_sort_key)
+from app.queries import get_slot_aste, get_slot_giocatori
 
 from app.core.logging import get_logger
+from app.core.tempo import formatta_data, formatta_data_nascita_con_eta, formatta_scadenza_contratto
+from app.domini.ruoli import pulisci_ruolo, ruoli_base_presenti, ruolo_sort_key
 
 logger = get_logger(__name__)
 
@@ -105,7 +104,7 @@ def dashboard_squadra(nome_squadra):
             rosa_raw = cur.fetchall()
 
             for g in rosa_raw:
-                ruolo = g['ruolo'].strip("{}")
+                ruolo = pulisci_ruolo(g['ruolo'])
                 rosa.append({
                     "nome": g['nome'],
                     "tipo_contratto": g['tipo_contratto'],
@@ -134,7 +133,7 @@ def dashboard_squadra(nome_squadra):
             primavera_raw = cur.fetchall()
 
             for g in primavera_raw:
-                ruolo = g['ruolo'].strip("{}")
+                ruolo = pulisci_ruolo(g['ruolo'])
                 primavera.append({
                     "nome": g['nome'],
                     "ruolo": ruolo,
@@ -154,7 +153,7 @@ def dashboard_squadra(nome_squadra):
             prestiti_in_raw = cur.fetchall()
 
             for g in prestiti_in_raw:
-                ruolo = g['ruolo'].strip("{}")
+                ruolo = pulisci_ruolo(g['ruolo'])
                 prestiti_in.append({
                     "nome": g['nome'],
                     "ruolo": ruolo,
@@ -198,7 +197,7 @@ def dashboard_squadra(nome_squadra):
             prestiti_out_raw = cur.fetchall()
 
             for g in prestiti_out_raw:
-                ruolo = g['ruolo'].strip("{}")
+                ruolo = pulisci_ruolo(g['ruolo'])
                 prestiti_out.append({
                     "nome": g['nome'],
                     "ruolo": ruolo,
@@ -375,7 +374,7 @@ def listone():
             giocatori = [
                 {
                     "nome": g["nome"],
-                    "ruolo": (g["ruolo"] or "").strip("{}"),
+                    "ruolo": pulisci_ruolo(g["ruolo"]),
                     "club": g["club"],
                     "squadra_att": g["squadra_att"],
                     "squadra_username": g["squadra_username"],
@@ -395,13 +394,7 @@ def listone():
         flash("❌ Errore durante il caricamento del listone.", "danger")
 
 
-    ruoli_base = set()
-    for g in giocatori:
-        for token in g["ruolo"].split(","):
-            token = token.strip()
-            if token:
-                ruoli_base.add(token)
-    ruoli_disponibili = sorted(ruoli_base, key=ruolo_base_sort_key)
+    ruoli_disponibili = ruoli_base_presenti([g["ruolo"] for g in giocatori])
 
     club_disponibili = sorted({g["club"] for g in giocatori if g["club"]})
     squadre_disponibili = sorted({g["squadra_att"] for g in giocatori if g["squadra_att"]})
@@ -437,7 +430,7 @@ def aste():
 
                 aste.append({
                     "giocatore": a["nome"],
-                    "ruolo": a["ruolo"].strip("{}"),
+                    "ruolo": pulisci_ruolo(a["ruolo"]),
                     "club": a["club"],
                     "squadra_vincente": a["squadra_vincente"],
                     "ultima_offerta": a["ultima_offerta"],

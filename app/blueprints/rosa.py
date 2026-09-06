@@ -6,10 +6,11 @@ from psycopg2 import errors as pg_errors
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione, resync_sequence
-from app.blueprints.user import formatta_data
-from app.queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori, get_nome_giocatore, sposta_crediti, decadi_vetrina, ruolo_sort_key
+from app.domini.ruoli import pulisci_ruolo, ruolo_sort_key
+from app.queries import decadi_vetrina, get_crediti_squadra, get_nome_giocatore, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori, sposta_crediti
 
 from app.core.logging import get_logger
+from app.core.tempo import formatta_data
 
 logger = get_logger(__name__)
 
@@ -68,7 +69,7 @@ def user_primavera(nome_squadra):
 
             primavera = []
             for p in primavera_raw:
-                ruolo = p['ruolo'].strip("{}")
+                ruolo = pulisci_ruolo(p['ruolo'])
                 primavera.append({
                     "id": p['id'],
                     "nome": p['nome'],
@@ -208,7 +209,7 @@ def user_vetrina(nome_squadra):
             rosa_raw = cur.fetchall()
 
             for giocatore in rosa_raw:
-                ruolo = (giocatore['ruolo'] or '').strip("{}")
+                ruolo = pulisci_ruolo(giocatore['ruolo'])
                 rosa.append({
                     "id": giocatore["id"],
                     "nome": giocatore["nome"],
@@ -292,7 +293,7 @@ def user_tagli(nome_squadra):
 
             rosa = []
             for r in rosa_raw:
-                ruolo = r['ruolo'].strip("{}")
+                ruolo = pulisci_ruolo(r['ruolo'])
                 rosa.append({
                     "id": r['id'],
                     "nome": r['nome'],
@@ -383,7 +384,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
 
             nome_giocatore = giocatore_raw['nome']
             tipo_contratto = giocatore_raw['tipo_contratto']
-            ruolo_giocatore = (giocatore_raw['ruolo'] or "").strip("{}")
+            ruolo_giocatore = pulisci_ruolo(giocatore_raw['ruolo'])
             club_giocatore = giocatore_raw['club']
 
             return render_template("user_richiesta_modifica_contratto.html",
@@ -455,7 +456,7 @@ def user_gestione_prestiti(nome_squadra):
                 prestiti_in.append({
                     "id_prestito": p['id_prestito'],
                     "giocatori": p['nome'],
-                    "ruolo": (p['ruolo'] or "").strip("{}"),
+                    "ruolo": pulisci_ruolo(p['ruolo']),
                     "club": p['club'],
                     "squadra_prestante": p['squadra_prestante'],
                     "squadra_ricevente": p['squadra_ricevente'],
@@ -495,7 +496,7 @@ def user_gestione_prestiti(nome_squadra):
                 prestiti_out.append({
                     "id_prestito": p['id_prestito'],
                     "giocatori": p['nome'],
-                    "ruolo": (p['ruolo'] or "").strip("{}"),
+                    "ruolo": pulisci_ruolo(p['ruolo']),
                     "club": p['club'],
                     "squadra_prestante": p['squadra_prestante'],
                     "squadra_ricevente": p['squadra_ricevente'],

@@ -1,9 +1,10 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione
-from app.blueprints.user import formatta_data
-from app.queries import get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in, sposta_crediti, ruolo_base_sort_key
+from app.queries import get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in, sposta_crediti
 
 from app.core.logging import get_logger
+from app.core.tempo import formatta_data
+from app.domini.ruoli import pulisci_ruolo, ruoli_base_presenti
 
 logger = get_logger(__name__)
 
@@ -27,7 +28,7 @@ def vetrina():
             giocatori_vetrina = cur.fetchall()
 
             for giocatore in giocatori_vetrina:
-                ruolo = (giocatore['ruolo'] or '').strip("{}")
+                ruolo = pulisci_ruolo(giocatore['ruolo'])
                 giocatori.append({
                     'nome': giocatore['nome'],
                     'ruolo': ruolo,
@@ -52,13 +53,6 @@ def vetrina():
         flash("❌ Errore durante il caricamento della vetrina.", "danger")
 
 
-    ruoli_base = set()
-    for g in giocatori:
-        for token in (g['ruolo'] or '').split(','):
-            token = token.strip()
-            if token:
-                ruoli_base.add(token)
-
-    ruoli_disponibili = sorted(ruoli_base, key=ruolo_base_sort_key)
+    ruoli_disponibili = ruoli_base_presenti([g['ruolo'] for g in giocatori])
 
     return render_template('vetrina.html', giocatori=giocatori, squadre=squadre, ruoli_disponibili=ruoli_disponibili)
