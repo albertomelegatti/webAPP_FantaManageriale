@@ -187,3 +187,32 @@ def nome_squadra(_dati_reali):
     if not _dati_reali["squadra"]:
         pytest.skip("Nessuna squadra nel database di sviluppo.")
     return _dati_reali["squadra"]
+
+
+# --- Isolamento per i test che scrivono -------------------------------------
+
+@pytest.fixture
+def db_isolato(app, monkeypatch):
+    """Connessione unica con transazione annullata a fine test.
+
+    Le route scrivono e committano davvero: i confini di transazione sono
+    emulati con i savepoint (vedi tests/isolamento.py), quindi il comportamento
+    e' quello reale ma nulla sopravvive al test.
+    """
+    from tests.isolamento import installa
+
+    proxy, chiudi = installa(monkeypatch, os.getenv("DATABASE_URL"))
+    try:
+        yield proxy
+    finally:
+        chiudi()
+
+
+@pytest.fixture
+def cur(db_isolato):
+    """Cursore sulla connessione isolata, per preparare e verificare lo stato."""
+    from psycopg2.extras import RealDictCursor
+
+    c = db_isolato.cursor(cursor_factory=RealDictCursor)
+    yield c
+    c.close()
