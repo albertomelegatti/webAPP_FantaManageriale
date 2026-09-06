@@ -11,6 +11,10 @@ from dotenv import load_dotenv
 from app.core.db import get_connection, release_connection
 from app.blueprints.user import format_giocatori, formatta_data
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 
 load_dotenv(dotenv_path=env_path, override=True)
@@ -58,11 +62,11 @@ def _telegram_worker():
             try:
                 r = requests.post(url, json=payload, timeout=TELEGRAM_REQUEST_TIMEOUT_SECONDS)
                 if r.status_code == 200:
-                    print(f"✅ Messaggio inviato a {chat_id}")
+                    logger.info(f"✅ Messaggio inviato a {chat_id}")
                 else:
-                    print(f"❌ Errore per {chat_id}: {r.text}")
+                    logger.error(f"❌ Errore per {chat_id}: {r.text}")
             except requests.exceptions.RequestException as e:
-                print(f"❌ Errore di Rete per {chat_id}: {e}")
+                logger.exception("❌ Errore di Rete per %s", chat_id)
         finally:
             time.sleep(TELEGRAM_SEND_DELAY_SECONDS)
             _TELEGRAM_QUEUE.task_done()
@@ -92,7 +96,7 @@ def format_pick(pick_ids, conn):
         return ", ".join(pick_names)
     
     except Exception as e:
-        print(f"Errore nel formattare le pick: {e}")
+        logger.exception("Errore nel formattare le pick")
         return ""
 
 
@@ -103,7 +107,7 @@ def formatta_tipo_prestito(tipo_prestito):
 
 
 if not TOKEN:
-    print("❌ Token non trovato nel file .env")
+    logger.error("❌ Token non trovato nel file .env")
     exit()
 
 url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
@@ -124,7 +128,7 @@ def nuova_asta(conn, id_asta):
         info_asta = cur.fetchone()
 
         if not info_asta:
-            print(f"Nessuna asta trovata con id {id_asta}")
+            logger.info(f"Nessuna asta trovata con id {id_asta}")
             return
 
         giocatore = info_asta['nome']
@@ -141,7 +145,7 @@ def nuova_asta(conn, id_asta):
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
         
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
     
     finally:
         cur.close()
@@ -175,7 +179,7 @@ def asta_iniziata(conn, id_asta):
             send_message(nome_squadra=partecipante, text_to_send=text_to_send)
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
     
     finally:
         cur.close()
@@ -198,7 +202,7 @@ def asta_rilanciata(conn, id_asta):
         info_asta = cur.fetchone()
 
         if not info_asta:
-            print(f"Nessuna asta trovata con id {id_asta}")
+            logger.info(f"Nessuna asta trovata con id {id_asta}")
             return
 
         giocatore = info_asta['nome']
@@ -215,7 +219,7 @@ def asta_rilanciata(conn, id_asta):
             send_message(nome_squadra=partecipante, text_to_send=text_to_send)
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
     
     finally:
         cur.close()
@@ -237,7 +241,7 @@ def asta_conclusa(conn, id_asta):
         info_asta = cur.fetchone()
 
         if not info_asta:
-            print(f"Nessuna asta trovata con id {id_asta}")
+            logger.info(f"Nessuna asta trovata con id {id_asta}")
             return
 
         giocatore = info_asta['nome']
@@ -252,7 +256,7 @@ def asta_conclusa(conn, id_asta):
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
     
     finally:
         cur.close()
@@ -272,7 +276,7 @@ def nuovo_scambio(conn, id_scambio):
         info_scambio = cur.fetchone()
 
         if not info_scambio:
-            print(f"Nessuno scambio trovato con id: {id_scambio}")
+            logger.info(f"Nessuno scambio trovato con id: {id_scambio}")
             return
 
         squadra_proponente = info_scambio['squadra_proponente']
@@ -345,7 +349,7 @@ Richiesta:
         send_message(nome_squadra=squadra_destinataria, text_to_send=text_to_send)
 
     except Exception as e:
-        print(f"Errore in nuovo_scambio: {e}")
+        logger.exception("Errore in nuovo_scambio")
 
     finally:
         cur.close()
@@ -356,7 +360,7 @@ Richiesta:
 def scambio_risposta(conn, id_scambio, risposta):
 
     if not risposta or (risposta != "Accettato" and risposta != "Rifiutato"):
-        print("Errore, il terzo parametro deve essere 'Accettato' o 'Rifiutato'")
+        logger.info("Errore, il terzo parametro deve essere 'Accettato' o 'Rifiutato'")
         return
 
     try:
@@ -370,7 +374,7 @@ def scambio_risposta(conn, id_scambio, risposta):
         info_scambio = cur.fetchone()
 
         if not info_scambio:
-            print(f"Nessuno scambio trovato con id: {id_scambio}")
+            logger.info(f"Nessuno scambio trovato con id: {id_scambio}")
             return
 
         squadra_proponente = info_scambio['squadra_proponente']
@@ -472,7 +476,7 @@ Richiesta:
             send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
 
     finally:
         cur.close()
@@ -519,7 +523,7 @@ def nuovo_prestito(conn, id_prestito):
         send_message(nome_squadra=squadra_prestante, text_to_send=text_to_send)
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
 
     finally:
         cur.close()
@@ -531,7 +535,7 @@ def nuovo_prestito(conn, id_prestito):
 def prestito_risposta(conn, id_prestito, risposta):
 
     if not risposta or (risposta != "Accettato" and risposta != "Rifiutato"):
-        print("Errore, il terzo parametro deve essere 'Accettato' o 'Rifiutato'")
+        logger.info("Errore, il terzo parametro deve essere 'Accettato' o 'Rifiutato'")
         return
     
     try:
@@ -596,7 +600,7 @@ def prestito_risposta(conn, id_prestito, risposta):
             send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
 
     finally:
         cur.close()
@@ -646,7 +650,7 @@ def riscatto_giocatore(conn, id_prestito):
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
 
     except Exception as e:
-        print(f"❌ Errore nel send_message riscatto_giocatore: {e}")
+        logger.exception("❌ Errore nel send_message riscatto_giocatore")
 
     finally:
         cur.close()
@@ -687,7 +691,7 @@ def richiesta_terminazione_prestito(conn, id_prestito):
             send_message(nome_squadra=squadra_prestante, text_to_send=text_to_send)
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
 
     finally:
         cur.close()
@@ -698,7 +702,7 @@ def richiesta_terminazione_prestito(conn, id_prestito):
 def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
 
     if not risposta or (risposta != "Accettato" and risposta != "Rifiutato"):
-        print("Errore, il terzo parametro deve essere 'Accettato' o 'Rifiutato'")
+        logger.info("Errore, il terzo parametro deve essere 'Accettato' o 'Rifiutato'")
         return
     
     try:
@@ -740,7 +744,7 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
         send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
 
     finally:
         cur.close()
@@ -752,7 +756,7 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
 def taglio_giocatore(conn, nome_squadra, giocatore, costo_taglio):
 
     if not nome_squadra or not giocatore or costo_taglio is None:
-        print("Errore, mancano dei parametri.")
+        logger.info("Errore, mancano dei parametri.")
         return
     
     try:
@@ -766,7 +770,7 @@ def taglio_giocatore(conn, nome_squadra, giocatore, costo_taglio):
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
         
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
     
     finally:
         cur.close()
@@ -778,7 +782,7 @@ def taglio_giocatore(conn, nome_squadra, giocatore, costo_taglio):
 def promozione_giocatore_primavera(conn, nome_squadra, giocatore):
 
     if not nome_squadra or not giocatore:
-        print("Errore, mancano dei parametri.")
+        logger.info("Errore, mancano dei parametri.")
         return
     
     try:
@@ -792,7 +796,7 @@ def promozione_giocatore_primavera(conn, nome_squadra, giocatore):
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
         
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
     
     finally:
         cur.close()
@@ -831,7 +835,7 @@ def richiesta_modifica_contratto(conn, squadra_richiedente, id_giocatore, messag
         send_message(id=id_admin[1], text_to_send=text_to_send) # Theo
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
     
     finally:
         cur.close()
@@ -842,7 +846,7 @@ def richiesta_modifica_contratto(conn, squadra_richiedente, id_giocatore, messag
 def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
 
     if risposta != "Accettato" and risposta != "Rifiutato":
-        print("Errore, il terzo parametro deve essere 'Accettato' o 'Rifiutato'")
+        logger.info("Errore, il terzo parametro deve essere 'Accettato' o 'Rifiutato'")
         return
 
     try:
@@ -908,7 +912,7 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
             
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
     
     finally:
         cur.close()
@@ -938,10 +942,10 @@ def salva_movimento(text_to_send):
         ''', (text_to_send, get_stagione()))
         
         conn.commit()
-        print(f"✅ Movimento salvato nel database")
+        logger.info("✅ Movimento salvato nel database")
         
     except Exception as e:
-        print(f"❌ Errore nel salvataggio del movimento: {e}")
+        logger.exception("❌ Errore nel salvataggio del movimento")
         if conn:
             conn.rollback()
     
@@ -955,11 +959,11 @@ def salva_movimento(text_to_send):
 def send_message(id=None, nome_squadra=None, text_to_send=None):
     
     if not text_to_send:
-        print("Errore, inserire il parametro text_to_send.")
+        logger.info("Errore, inserire il parametro text_to_send.")
         return
 
     if not NOTIFICATIONS_ENABLED:
-        print("ℹ️ Notifiche disattivate (NOTIFICHE_ATTIVE=false)")
+        logger.info("ℹ️ Notifiche disattivate (NOTIFICHE_ATTIVE=false)")
         return
 
 
@@ -978,11 +982,11 @@ def send_message(id=None, nome_squadra=None, text_to_send=None):
         CHAT_IDS = IDS_TELEGRAM.get(nome_squadra, [])
 
         if not CHAT_IDS:
-            print(f"⚠️ Attenzione: Nessun ID trovato in cache per la squadra '{nome_squadra}'.")
+            logger.warning(f"⚠️ Attenzione: Nessun ID trovato in cache per la squadra '{nome_squadra}'.")
             return
         
     except Exception as e:
-        print(f"❌ Errore critico di accesso alla cache: {e}")
+        logger.exception("❌ Errore critico di accesso alla cache")
         return
 
     # Salva il movimento se destinatario è il gruppo_comunicazioni
@@ -1066,14 +1070,14 @@ def get_all_telegram_ids():
         SQUADRE_IDS['gruppo_comunicazioni'] = [id_gruppo_comunicazioni]
 
         _TELEGRAM_IDS_CACHE = SQUADRE_IDS
-        print("✅ Inizializzato dizionario ID telegram")
+        logger.info("✅ Inizializzato dizionario ID telegram")
         #print(SQUADRE_IDS)
 
         return SQUADRE_IDS
 
 
     except Exception as e:
-        print(f"❌ Errore critico nel fetching della mappa ID: {e}")
+        logger.exception("❌ Errore critico nel fetching della mappa ID")
         return {}
 
     finally:

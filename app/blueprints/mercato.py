@@ -8,6 +8,10 @@ from app.blueprints.user import format_giocatori, formatta_data, redirect_gate_c
 from app.queries import get_crediti_squadra, get_offerta_totale, get_slot_occupati, get_slot_prestiti_in, decadi_vetrina, mercato_aperto
 from app.blueprints.prestiti import _get_allowed_prestito_years
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 mercato_bp = Blueprint('mercato', __name__, url_prefix='/mercato')
 
@@ -45,7 +49,7 @@ def format_pick(pick_ids, conn):
         return ", ".join(pick_names)
     
     except Exception as e:
-        print(f"Errore nel formattare le pick: {e}")
+        logger.exception("Errore nel formattare le pick")
         return ""
 
 
@@ -61,7 +65,7 @@ def validate_pick_ids(pick_ids, conn):
         return result['cnt'] == len(pick_ids)
     
     except Exception as e:
-        print(f"Errore nella validazione delle pick: {e}")
+        logger.exception("Errore nella validazione delle pick")
         return False
 
 
@@ -121,7 +125,7 @@ def user_mercato(nome_squadra):
                 scambi.append(s_dict)
         
     except Exception as e:
-        print("Errore:", e)
+        logger.exception("Errore")
         flash("❌ Errore durante il caricamento degli scambi.", "danger")
         return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
 
@@ -160,7 +164,7 @@ def visualizza_proposta(scambio_id):
             return render_template("visualizza_proposta.html", scambio=scambio)
     
     except Exception as e:
-        print("Errore:", e)
+        logger.exception("Errore")
         flash("❌ Errore durante il caricamento della proposta.", "danger")
 
         
@@ -559,7 +563,7 @@ def nuovo_scambio(nome_squadra):
             )
 
     except Exception as e:
-        print(f"Errore durante il caricamento di 'nuovo_scambio': {e}")
+        logger.exception("Errore durante il caricamento di 'nuovo_scambio'")
         flash("❌ Si è verificato un errore nel caricamento della pagina.", "danger")
         return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
 
@@ -636,7 +640,7 @@ def controlla_scambio(id, conn):
         return True
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
         return False
 
     finally:
@@ -814,7 +818,7 @@ def effettua_scambio(id, conn, nome_squadra):
     except Exception as e:
         if conn:
             conn.rollback()
-        print(f"Errore durante l'esecuzione dello scambio: {e}")
+        logger.exception("Errore durante l'esecuzione dello scambio")
         flash("❌ Errore nell'esecuzione dello scambio. Rivedere i valori dello scambio.", "danger")
         return False
     
@@ -862,7 +866,7 @@ def annulla_scambio(scambio_id, conn):
         conn.commit()
     
     except Exception as e:
-        print(f"Errore durante l'annullamento dello scambio: {e}")
+        logger.exception("Errore durante l'annullamento dello scambio")
         conn.rollback()
         return False
 
@@ -903,7 +907,7 @@ def rifiuta_scambio(scambio_id, conn):
         telegram_utils.scambio_risposta(conn, scambio_id, "Rifiutato")
         
     except Exception as e:
-        print(f"Errore durante il rifiuto dello scambio: {e}")
+        logger.exception("Errore durante il rifiuto dello scambio")
         conn.rollback()
     
     finally:
@@ -954,7 +958,7 @@ def format_prestito(conn, lista_prestiti, squadra_proponente):
         return "\n".join(prestiti_offerti), "\n".join(prestiti_richiesti)
 
     except Exception as e:
-        print(f"Errore in format_prestito: {e}")
+        logger.exception("Errore in format_prestito")
         return "", ""
 
     finally:

@@ -10,6 +10,10 @@ from app.queries import decadi_vetrina, get_stato_gate
 from app.domini.matching_transfermarkt import candidati_fuzzy
 from psycopg2 import extensions
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 # Rotta per area admin
@@ -38,7 +42,7 @@ def admin_crediti():
                                         WHERE nome = %s;
                             ''', (nuovo_credito, nome))
                         except ValueError:
-                            print(f"Valore crediti non valido per squadra {nome}")
+                            logger.warning("Valore crediti non valido per la squadra %s", nome)
                     i += 1
                 conn.commit()
                 flash("✅ Tutti i crediti sono stati aggiornati con successo!", "success")
@@ -54,7 +58,7 @@ def admin_crediti():
             squadre = [{"nome": s["nome"], "crediti": s["crediti"]} for s in squadre_raw]
 
     except Exception as e:
-        print("Errore", e)
+        logger.exception("Errore")
         flash("❌ Errore durante il caricamento o l'aggiornamento dei crediti.", "danger")
 
 
@@ -96,7 +100,7 @@ def admin_chiusura_mercato_aste():
             stato_gate = get_stato_gate(conn)
 
     except Exception as e:
-        print("Errore:", e)
+        logger.exception("Errore")
         flash("❌ Errore durante il caricamento o l'aggiornamento delle impostazioni.", "danger")
 
 
@@ -121,7 +125,7 @@ def invia_comunicazione():
 
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
 
 
     return render_template("admin_comunicazione.html", squadre=squadre)
@@ -254,7 +258,7 @@ def richiesta_modifica_contratto():
                 })
 
     except Exception as e:
-        print("Errore:", e)
+        logger.exception("Errore")
         flash("❌ Errore durante il caricamento delle richieste.", "danger")
 
 
@@ -465,7 +469,7 @@ def admin_verifica_corrispondenze():
             }
 
     except Exception as e:
-        print("Errore:", e)
+        logger.exception("Errore")
         flash("❌ Errore durante il caricamento delle corrispondenze da rivedere.", "danger")
         conteggi = {"ambiguo": 0, "suggerito": 0, "non_trovato": 0}
 

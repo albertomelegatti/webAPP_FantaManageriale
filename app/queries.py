@@ -2,6 +2,10 @@ import pytz
 from datetime import datetime
 from psycopg2.extras import RealDictCursor
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 ROME_TZ = pytz.timezone("Europe/Rome")
 
 # Stesso ordine di ruoli già usato in produzione (vedi static/js/tables.js,
@@ -291,7 +295,7 @@ def sposta_crediti (conn, squadra_from, squadra_to, crediti):
         conn.commit()
 
     except Exception as e:
-        print(f"Errore durante lo spostamento dei crediti: {e}")
+        logger.exception("Errore durante lo spostamento dei crediti")
         conn.rollback()
 
     finally:

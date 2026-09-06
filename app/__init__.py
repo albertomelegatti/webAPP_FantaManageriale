@@ -11,8 +11,13 @@ import os
 import time
 
 from dotenv import load_dotenv
-from flask import Flask, redirect, url_for
+from flask import Flask, flash, redirect, request, url_for
 from flask_compress import Compress
+
+from app.core.errori import ErroreDominio
+from app.core.logging import configura_logging, get_logger
+
+logger = get_logger(__name__)
 
 _ASSET_V_TTL = 5  # secondi: evita uno stat() del file a ogni singola riga/richiesta
 _asset_v_cache = {}
@@ -74,6 +79,7 @@ def create_app():
     from app.telegram_utils import get_all_telegram_ids
 
     load_dotenv()
+    configura_logging()
 
     app = Flask(__name__)
 
@@ -97,6 +103,14 @@ def create_app():
     app.config['SQUADRE_TELEGRAM_IDS'] = get_all_telegram_ids()
 
     _registra_blueprint(app)
+
+    @app.errorhandler(ErroreDominio)
+    def gestisci_errore_dominio(errore):
+        """Gli errori di dominio sono condizioni attese, non bug: si mostrano
+        all'utente e si registrano a livello info, senza stack trace."""
+        logger.info("errore di dominio su %s: %s", request.path, type(errore).__name__)
+        flash(errore.messaggio_utente, "danger")
+        return redirect(request.referrer or url_for('pubblico.home'))
 
     @app.errorhandler(500)
     def handle_500(error):

@@ -12,6 +12,10 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.core.db import connessione
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 auth_bp = Blueprint('auth', __name__)
 
 
@@ -85,7 +89,7 @@ def login():
                         flash("❌ Username non trovato.", "danger")
 
         except Exception as e:
-            print("Errore login:", e)
+            logger.exception("Errore login")
             flash("❌ Errore di connessione al database.", "danger")
 
 
@@ -145,7 +149,7 @@ def cambia_password():
                 flash("❌ Errore nel cambio password.", "danger")
 
         except Exception as e:
-            print("Errore cambio password:", e)
+            logger.exception("Errore cambio password")
             flash("❌ Errore durante l'aggiornamento della password.", "danger")
 
 

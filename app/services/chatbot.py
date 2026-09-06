@@ -2,6 +2,10 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
@@ -57,6 +61,6 @@ def get_answer(question: str) -> str:
 
         return completion.choices[0].message.content.strip()
     except Exception as e:
-        print("Errore chatbot:", e)
+        logger.exception("Errore chatbot")
         return "⚠️ Errore nella comunicazione con il modello."
 

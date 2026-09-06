@@ -31,6 +31,10 @@ from psycopg2.extras import RealDictCursor
 from app.core.db import get_connection, release_connection
 from app.domini.matching_transfermarkt import candidati_esatti, parse_data_tm
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 jobs_bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 LOCK_KEY_TRANSFERMARKT = 918273645
@@ -68,7 +72,7 @@ def aggiorna_transfermarkt():
             return jsonify({"status": "skipped", "motivo": "già in esecuzione"}), 200
 
     except Exception as e:
-        print(f"❌ Errore preliminare job transfermarkt: {e}")
+        logger.exception("❌ Errore preliminare job transfermarkt")
         release_connection(conn, cur)
         return jsonify({"status": "errore"}), 500
 
@@ -85,16 +89,16 @@ def _esegui_job_in_background(conn, cur):
             percorso_players = _scarica_rosa_serie_a(workdir)
             _esegui_matching(cur, percorso_players)
         conn.commit()
-        print("✅ Job transfermarkt completato con successo.")
+        logger.info("✅ Job transfermarkt completato con successo.")
     except Exception as e:
         conn.rollback()
-        print(f"❌ Job transfermarkt fallito: {e}")
+        logger.exception("❌ Job transfermarkt fallito")
     finally:
         try:
             cur.execute("SELECT pg_advisory_unlock(%s);", (LOCK_KEY_TRANSFERMARKT,))
             conn.commit()
         except Exception as e:
-            print(f"⚠️ Errore nel rilascio del lock: {e}")
+            logger.exception("⚠️ Errore nel rilascio del lock")
         release_connection(conn, cur)
 
 
@@ -252,4 +256,4 @@ def _esegui_matching(cur, percorso_input):
             )
             n_non_trovati += 1
 
-    print(f"🔄 Aggiornati: {n_aggiornati} | ✅ Nuovi: {n_auto} | ⚠️ Ambigui: {n_ambigui} | ❌ Non trovati: {n_non_trovati}")
+    logger.error(f"🔄 Aggiornati: {n_aggiornati} | ✅ Nuovi: {n_auto} | ⚠️ Ambigui: {n_ambigui} | ❌ Non trovati: {n_non_trovati}")

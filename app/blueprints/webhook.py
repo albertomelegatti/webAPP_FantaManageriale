@@ -3,6 +3,10 @@ from flask import Blueprint, jsonify, request
 from app import telegram_utils
 from app.core.db import connessione
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 webhook_bp = Blueprint('webhook_bp', __name__)
 
 
@@ -16,7 +20,7 @@ def webhook_update_stato_asta():
         data = request.json
 
         # Log per debug
-        print("Webhook ricevuto:", data)
+        logger.info("Webhook ricevuto: %s", data)
 
         if data and data.get("type") == "UPDATE" and "record" in data and "old_record" in data:
             old_status = data["old_record"].get("stato")
@@ -37,12 +41,12 @@ def webhook_update_stato_asta():
                             telegram_utils.asta_conclusa(conn, id_asta)
 
                 except Exception as e:
-                    print(f"Errore durante l'elaborazione del webhook: {e}")
+                    logger.exception("Errore durante l'elaborazione del webhook")
             else:
-                print(f"Webhook ignorato: nessun cambio di stato per asta {id_asta}")
+                logger.info(f"Webhook ignorato: nessun cambio di stato per asta {id_asta}")
 
     except Exception as e:
-        print(f"Errore nella ricezione del webhook: {e}")
+        logger.exception("Errore nella ricezione del webhook")
 
-    print("Invio risposta al database...")
+    logger.info("Invio risposta al database...")
     return jsonify({"status": "success"}), 200

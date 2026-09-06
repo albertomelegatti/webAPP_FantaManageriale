@@ -21,6 +21,10 @@ from dotenv import load_dotenv
 from psycopg2 import OperationalError, sql
 from psycopg2.extras import RealDictCursor
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 pool = None
@@ -53,7 +57,7 @@ def init_pool():
     """Inizializza il connection pool (solo una volta)."""
     global pool
     if pool is not None:
-        print("Il pool è già inizializzato.")
+        logger.info("Il pool è già inizializzato.")
         return pool
 
     if not DATABASE_URL:
@@ -72,11 +76,11 @@ def init_pool():
 
     try:
         pool = psycopg2.pool.ThreadedConnectionPool(minconn=1, maxconn=5, **params)
-        print("✅ Pool di connessioni Supabase inizializzato con successo!")
+        logger.info("✅ Pool di connessioni Supabase inizializzato con successo!")
         resync_sequences()
         return pool
     except psycopg2.Error as e:
-        print(f"❌ Errore critico nell'inizializzazione del pool: {e}")
+        logger.exception("❌ Errore critico nell'inizializzazione del pool")
         pool = None
         raise
 
@@ -114,9 +118,9 @@ def resync_sequences():
                     END LOOP;
                 END $$;
             ''')
-        print("✅ Sequence delle tabelle riallineate con successo.")
+        logger.info("✅ Sequence delle tabelle riallineate con successo.")
     except Exception as e:
-        print(f"⚠️ Errore durante il riallineamento delle sequence: {e}")
+        logger.exception("⚠️ Errore durante il riallineamento delle sequence")
 
 
 def resync_sequence(conn, table_name, column_name="id"):
@@ -175,13 +179,13 @@ def get_connection():
 
         except OperationalError as e:
             retries += 1
-            print(f"[DB] Tentativo {retries}/{max_retries} fallito: {e}")
+            logger.warning("[DB] Tentativo %s/%s fallito: %s", retries, max_retries, e)
 
             if retries < max_retries:
-                print(f"[DB] Ritento tra {cooldown} secondi...")
+                logger.info("[DB] Ritento tra %s secondi...", cooldown)
                 time.sleep(cooldown)
             else:
-                print("[DB] ❌ Impossibile connettersi al database dopo ripetuti tentativi.")
+                logger.error("[DB] Impossibile connettersi al database dopo ripetuti tentativi.")
                 raise
 
 
@@ -198,7 +202,7 @@ def release_connection(conn=None, cur=None):
         try:
             cur.close()
         except Exception as e:
-            print(f"⚠️ Impossibile chiudere il cursore: {e}")
+            logger.exception("⚠️ Impossibile chiudere il cursore")
 
     if conn.closed:
         return
@@ -209,7 +213,7 @@ def release_connection(conn=None, cur=None):
             conn.set_isolation_level(ISOLAMENTO_DEFAULT)
     except Exception as e:
         # Connessione in stato incerto: non va rimessa nel pool.
-        print(f"⚠️ Errore nel ripulire la connessione, viene scartata: {e}")
+        logger.exception("⚠️ Errore nel ripulire la connessione, viene scartata")
         _dimentica(conn)
         try:
             pool.putconn(conn, close=True)
@@ -223,7 +227,7 @@ def release_connection(conn=None, cur=None):
     try:
         pool.putconn(conn, close=False)
     except Exception as e:
-        print(f"⚠️ Errore durante putconn: {e}")
+        logger.exception("⚠️ Errore durante putconn")
         _dimentica(conn)
         try:
             conn.close()

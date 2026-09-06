@@ -9,6 +9,10 @@ from app.blueprints.user import format_partecipanti, formatta_data, redirect_gat
 from app.queries import get_crediti_e_offerta, get_slot_occupati, aste_aperte
 from dotenv import load_dotenv
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 load_dotenv()
 
 
@@ -138,7 +142,7 @@ def user_aste(nome_squadra):
                 block_button = True
 
     except Exception as e:
-        print("Errore", e)
+        logger.exception("Errore")
         flash("❌ Errore durante il caricamento delle aste.", "danger")
         return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
 
@@ -319,7 +323,7 @@ def nuova_asta(nome_squadra):
                         return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
 
     except Exception as e:
-        print("Errore nuova_asta:", e)
+        logger.exception("Errore nuova_asta")
         flash("❌ Errore nella creazione dell'asta. Riprova più tardi.", "danger")
 
 
@@ -477,7 +481,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
                 return redirect(url_for("aste.singola_asta_attiva", nome_squadra=nome_squadra))
 
     except Exception as e:
-        print("Errore:", e)
+        logger.exception("Errore")
         flash("❌ Errore durante il caricamento dell'asta.", "danger")
 
 
