@@ -146,3 +146,21 @@ def test_admin_puo_aprire_le_pagine_admin(client_admin):
                 "/admin/verifica_corrispondenze_giocatori"):
         risposta = client_admin.get(url)
         assert risposta.status_code < 500, f"{url} -> {risposta.status_code}"
+
+
+@pytest.mark.db
+def test_utente_anonimo_su_sezione_chiusa_non_riceve_500(client, nome_squadra):
+    """Il caso che aveva prodotto un 500 in produzione.
+
+    Con mercato o aste chiusi, il `before_request` chiama redirect_gate_chiuso(),
+    che per un utente senza squadra in sessione prende un ramo diverso da quello
+    dell'utente autenticato. Gli altri smoke test usano un client autenticato e
+    quel ramo non veniva mai eseguito.
+    """
+    for url in (f"/mercato/mercato/{nome_squadra}",
+                f"/aste/aste/{nome_squadra}",
+                f"/prestiti/prestiti/{nome_squadra}",
+                f"/mercato/nuovo_scambio/{nome_squadra}",
+                f"/prestiti/nuovo_prestito/{nome_squadra}"):
+        risposta = client.get(url)
+        assert risposta.status_code < 500, f"{url} -> {risposta.status_code}"

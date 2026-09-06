@@ -173,7 +173,7 @@ def nuovo_prestito(nome_squadra):
 
                 if not squadra_prestante or not giocatore_richiesto or not data_fine:
                     flash("❌ Errore: seleziona una squadra, un giocatore e una data di fine prestito.", "danger")
-                    return redirect(url_for("user.nuovo_prestito", nome_squadra=nome_squadra))
+                    return redirect(url_for("prestiti.nuovo_prestito", nome_squadra=nome_squadra))
             
                 if len(data_fine) == 4 and data_fine.isdigit():
                     anno_scadenza = int(data_fine)
@@ -183,7 +183,7 @@ def nuovo_prestito(nome_squadra):
 
                 if anno_scadenza not in anni_scadenza:
                     flash("❌ Errore: seleziona uno degli anni di scadenza disponibili.", "danger")
-                    return redirect(url_for("user.nuovo_prestito", nome_squadra=nome_squadra))
+                    return redirect(url_for("prestiti.nuovo_prestito", nome_squadra=nome_squadra))
 
                 data_fine = datetime(anno_scadenza, 7, 1, 23, 59, 59)
 

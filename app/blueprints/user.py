@@ -17,7 +17,7 @@ def redirect_gate_chiuso():
     nome_squadra = session.get("nome_squadra")
     if nome_squadra:
         return redirect(url_for("user.squadra_login", nome_squadra=nome_squadra))
-    return redirect(url_for("home"))
+    return redirect(url_for("pubblico.home"))
 
 # Sezione squadra DOPO LOGIN
 @user_bp.route("/squadra_login/<nome_squadra>")
