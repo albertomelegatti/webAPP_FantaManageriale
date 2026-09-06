@@ -10,22 +10,22 @@ from datetime import date, datetime, timedelta
 
 import pytest
 
-from queries import (
+from app.queries import (
     calcola_eta,
     formatta_data_nascita_con_eta,
     formatta_scadenza_contratto,
     ruolo_base_sort_key,
     ruolo_sort_key,
 )
-from transfermarkt_matching import (
+from app.domini.matching_transfermarkt import (
     candidati_esatti,
     candidati_fuzzy,
     cognome_e_iniziale,
     normalizza,
     parse_data_tm,
 )
-from user import format_partecipanti, formatta_data
-from user_prestiti import _get_allowed_prestito_years
+from app.blueprints.user import format_partecipanti, formatta_data
+from app.blueprints.prestiti import _get_allowed_prestito_years
 
 
 # --- Ordinamento dei ruoli ---------------------------------------------------

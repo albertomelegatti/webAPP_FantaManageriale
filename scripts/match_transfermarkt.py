@@ -51,8 +51,8 @@ import sys
 
 sys.path.insert(0, __file__.rsplit("/", 2)[0])
 
-import db
-from transfermarkt_matching import candidati_esatti, parse_data_tm
+from app.core import db
+from app.domini.matching_transfermarkt import candidati_esatti, parse_data_tm
 
 RE_ID_GIOCATORE = re.compile(r"/spieler/(\d+)")
 

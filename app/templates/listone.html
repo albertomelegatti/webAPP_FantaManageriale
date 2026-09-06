@@ -1,0 +1,358 @@
+{% extends 'base_tailwind.html' %}
+
+{% block content %}
+{% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('pubblico.home')) }}</div>
+<h2 class="mb-4 text-lg font-bold">Listone Giocatori</h2>
+
+<div class="mb-4 rounded-2xl border border-line bg-panel p-4">
+    <label class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Cerca per nome</label>
+    <input type="text" id="filtro-nome" placeholder="Nome giocatore..."
+           class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm outline-none focus:border-accent">
+
+    <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div>
+            <label class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Contratto</label>
+            <select id="filtro-contratto" class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+                <option value="">Tutti</option>
+                {% for c in contratti_disponibili %}
+                <option value="{{ c }}">{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Club</label>
+            <select id="filtro-club" class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+                <option value="">Tutti</option>
+                {% for c in club_disponibili %}
+                <option value="{{ c }}">{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Squadra attuale</label>
+            <select id="filtro-squadra-att" class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+                <option value="">Tutte</option>
+                {% for s in squadre_disponibili %}
+                <option value="{{ s }}">{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <label class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Ruolo</label>
+        <div class="flex flex-wrap gap-1.5" id="filtro-ruolo-chips">
+            {% for ruolo in ruoli_disponibili %}
+            <button type="button" data-ruolo="{{ ruolo }}"
+                    class="chip-ruolo rounded-full border border-line bg-panel-2 px-2.5 py-1 text-xs font-semibold text-muted">
+                {{ ruolo }}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="rounded-2xl border border-line bg-panel p-4">
+    <div class="mb-2 text-xs text-muted"><span id="risultati-count">{{ giocatori|length }}</span> giocatori</div>
+    <table class="w-full table-fixed text-sm sortable-table" id="listoneTable" data-loghi-base="{{ url_for('static', filename='loghi/') }}">
+        <colgroup>
+            <col style="width:34%"><col style="width:14%"><col style="width:13%">
+            <col style="width:13%"><col style="width:13%"><col style="width:13%">
+        </colgroup>
+        <thead>
+            <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                <th class="pb-2 pr-1 font-semibold">Nome</th>
+                <th class="pb-2 pr-1 font-semibold">Ruolo</th>
+                <th class="pb-2 text-center font-semibold">Club</th>
+                <th class="pb-2 font-semibold no-sort"></th>
+                <th class="pb-2 text-center font-semibold">Contr</th>
+                <th class="pb-2 text-right font-semibold desc">QA</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-line" id="listoneBody">
+            {% for g in giocatori %}
+            <tr class="cursor-pointer hover:bg-panel-2" data-nome="{{ g.nome.lower() }}" data-ruolo="{{ g.ruolo }}" data-club="{{ g.club }}"
+                data-squadra="{{ g.squadra_att }}" data-contratto="{{ g.tipo_contratto }}"
+                data-info='{{ {
+                    "nome": g.nome,
+                    "ruolo": g.ruolo,
+                    "club": g.club,
+                    "squadra_att": g.squadra_att,
+                    "squadra_username": g.squadra_username,
+                    "detentore": g.detentore_cartellino,
+                    "detentore_username": g.detentore_username,
+                    "tipo_contratto": g.tipo_contratto,
+                    "quotazione": g.quotazione,
+                    "costo": g.costo,
+                    "data_nascita": g.data_nascita,
+                    "scadenza_contratto_reale": g.scadenza_contratto_reale
+                } | tojson }}'>
+                <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-1 font-medium">{{ g.nome }}</td>
+                <td class="overflow-hidden py-2 pr-1">{{ m.ruolo_colorato(g.ruolo) }}</td>
+                <td class="overflow-hidden py-2 text-center text-muted">{{ m.club_abbr(g.club) }}</td>
+                <td class="py-2 text-muted">
+                    {% if g.squadra_username %}
+                    <img src="{{ url_for('static', filename='loghi/' ~ g.squadra_username ~ '.png') }}?v={{ asset_v('loghi/' ~ g.squadra_username ~ '.png') }}"
+                         alt="{{ g.squadra_att }}" data-sortkey="{{ g.squadra_att }}"
+                         class="mx-auto h-6 w-6 object-contain">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='loghi/svincolato.png') }}?v={{ asset_v('loghi/svincolato.png') }}"
+                         alt="Svincolato" data-sortkey="Svincolato"
+                         class="mx-auto h-6 w-6 object-contain">
+                    {% endif %}
+                </td>
+                <td class="py-2 text-center">{{ m.contratto_icona(g.tipo_contratto, mostra_tip=false) }}</td>
+                <td class="py-2 text-right tabular-nums">{{ g.quotazione }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="hidden py-4 text-center text-sm text-muted" id="noResults">Nessun giocatore trovato con i filtri selezionati.</p>
+</div>
+
+<div id="overlayGiocatore" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-sm rounded-2xl border border-line bg-panel p-4">
+        <div class="mb-3 flex items-center justify-between">
+            <h5 id="modalNome" class="text-base font-bold"></h5>
+            <button type="button" id="btnChiudiGiocatore" class="text-xl leading-none text-muted hover:text-accent">&times;</button>
+        </div>
+        <div class="flex flex-col gap-2 text-sm">
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Ruolo</span>
+                <span id="modalRuolo" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Club</span>
+                <span id="modalClub" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Squadra attuale</span>
+                <span id="modalSquadra" class="flex items-center gap-2 font-medium"></span>
+            </div>
+            <div id="modalDetentoreRow" class="hidden items-center justify-between">
+                <span class="text-muted">Detentore cartellino</span>
+                <span id="modalDetentore" class="flex items-center gap-2 font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Contratto</span>
+                <span id="modalContratto" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Data di nascita</span>
+                <span id="modalDataNascita" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Scadenza contratto</span>
+                <span id="modalScadenzaContratto" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Quotazione</span>
+                <span id="modalQuotazione" class="font-medium tabular-nums"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Prezzo d'acquisto</span>
+                <span id="modalCosto" class="font-medium tabular-nums"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.sortable-table thead th {
+    cursor: pointer;
+    user-select: none;
+}
+.sortable-table thead th.no-sort {
+    cursor: default;
+}
+.sortable-table thead th.no-sort::after {
+    content: '';
+}
+.sortable-table thead th::after {
+    content: ' \2195';
+    color: var(--muted);
+    font-size: 0.85em;
+}
+.sortable-table thead th.asc::after {
+    content: ' \2191';
+    color: var(--accent);
+}
+.sortable-table thead th.desc::after {
+    content: ' \2193';
+    color: var(--accent);
+}
+.chip-ruolo.attivo {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: color-mix(in oklab, var(--accent) 15%, transparent);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const filtroNome = document.getElementById('filtro-nome');
+    const filtroContratto = document.getElementById('filtro-contratto');
+    const filtroClub = document.getElementById('filtro-club');
+    const filtroSquadraAtt = document.getElementById('filtro-squadra-att');
+    const chipRuolo = document.querySelectorAll('.chip-ruolo');
+    const tbody = document.getElementById('listoneBody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const noResults = document.getElementById('noResults');
+    const risultatiCount = document.getElementById('risultati-count');
+
+    function ruoliSelezionati() {
+        return Array.from(chipRuolo).filter(c => c.classList.contains('attivo')).map(c => c.dataset.ruolo);
+    }
+
+    function applicaFiltri() {
+        const nome = filtroNome.value.trim().toLowerCase();
+        const contratto = filtroContratto.value;
+        const club = filtroClub.value;
+        const squadraAtt = filtroSquadraAtt.value;
+        const ruoli = ruoliSelezionati();
+        let visibiliCount = 0;
+
+        rows.forEach(function (row) {
+            const matchNome = !nome || row.dataset.nome.includes(nome);
+            const matchContratto = !contratto || row.dataset.contratto === contratto;
+            const matchClub = !club || row.dataset.club === club;
+            const matchSquadraAtt = !squadraAtt || row.dataset.squadra === squadraAtt;
+            const ruoliGiocatore = row.dataset.ruolo.split(',').map(r => r.trim());
+            const matchRuolo = ruoli.length === 0 || ruoliGiocatore.some(r => ruoli.indexOf(r) !== -1);
+
+            const visibile = matchNome && matchContratto && matchClub && matchSquadraAtt && matchRuolo;
+            row.classList.toggle('hidden', !visibile);
+            if (visibile) visibiliCount++;
+        });
+
+        risultatiCount.textContent = visibiliCount;
+        noResults.classList.toggle('hidden', visibiliCount > 0);
+    }
+
+    filtroNome.addEventListener('keyup', applicaFiltri);
+    filtroContratto.addEventListener('change', applicaFiltri);
+    filtroClub.addEventListener('change', applicaFiltri);
+    filtroSquadraAtt.addEventListener('change', applicaFiltri);
+    chipRuolo.forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            chip.classList.toggle('attivo');
+            applicaFiltri();
+        });
+    });
+
+    // Ordinamento colonne (click sull'intestazione)
+    const table = document.getElementById('listoneTable');
+    const headers = table.querySelectorAll('thead th');
+    const extractNumber = (value) => {
+        const match = value.replace(',', '.').match(/-?\d+(\.\d+)?/);
+        return match ? parseFloat(match[0]) : NaN;
+    };
+    // Le celle con solo icona/immagine (contratto, squadra) non hanno testo:
+    // usa il data-sortkey dell'eventuale elemento interno come chiave di ordinamento.
+    const cellSortValue = (cell) => {
+        const text = cell.textContent.trim();
+        if (text) return text;
+        const withKey = cell.querySelector('[data-sortkey]');
+        return withKey ? withKey.dataset.sortkey : '';
+    };
+    headers.forEach(function (header, index) {
+        if (header.classList.contains('no-sort')) return;
+        header.addEventListener('click', function () {
+            const isAsc = !this.classList.contains('asc');
+            headers.forEach(h => h.classList.remove('asc', 'desc'));
+            this.classList.add(isAsc ? 'asc' : 'desc');
+
+            const sortedRows = Array.from(tbody.querySelectorAll('tr'));
+            sortedRows.sort(function (a, b) {
+                const aValue = cellSortValue(a.children[index]);
+                const bValue = cellSortValue(b.children[index]);
+                const aNum = extractNumber(aValue);
+                const bNum = extractNumber(bValue);
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return isAsc ? aNum - bNum : bNum - aNum;
+                }
+                return isAsc
+                    ? aValue.localeCompare(bValue, 'it')
+                    : bValue.localeCompare(aValue, 'it');
+            });
+            sortedRows.forEach(row => tbody.appendChild(row));
+        });
+    });
+
+    // Card dettaglio giocatore (click su una riga)
+    const loghiBase = table.dataset.loghiBase;
+    const overlayGiocatore = document.getElementById('overlayGiocatore');
+    const btnChiudiGiocatore = document.getElementById('btnChiudiGiocatore');
+    const modalNome = document.getElementById('modalNome');
+    const modalRuolo = document.getElementById('modalRuolo');
+    const modalClub = document.getElementById('modalClub');
+    const modalSquadra = document.getElementById('modalSquadra');
+    const modalDetentoreRow = document.getElementById('modalDetentoreRow');
+    const modalDetentore = document.getElementById('modalDetentore');
+    const modalContratto = document.getElementById('modalContratto');
+    const modalDataNascita = document.getElementById('modalDataNascita');
+    const modalScadenzaContratto = document.getElementById('modalScadenzaContratto');
+    const modalQuotazione = document.getElementById('modalQuotazione');
+    const modalCosto = document.getElementById('modalCosto');
+
+    // Placeholder per i dati non ancora sincronizzati da Transfermarkt: testo
+    // attenuato e corsivo per distinguerli a colpo d'occhio da un valore reale.
+    const impostaCampoTransfermarkt = (elemento, valore) => {
+        const nonSincronizzato = valore === 'Non sincronizzata';
+        elemento.textContent = valore;
+        elemento.classList.toggle('text-muted', nonSincronizzato);
+        elemento.classList.toggle('italic', nonSincronizzato);
+        elemento.classList.toggle('font-medium', !nonSincronizzato);
+    };
+
+    const logoUrl = (username) => loghiBase + (username || 'svincolato') + '.png';
+
+    const squadraHtml = (nome, username) =>
+        '<img src="' + logoUrl(username) + '" alt="" class="h-5 w-5 object-contain">' +
+        '<span>' + (nome || 'Svincolato') + '</span>';
+
+    const apriCardGiocatore = (info) => {
+        modalNome.textContent = info.nome;
+        modalRuolo.textContent = info.ruolo.split(',').map(r => r.trim()).join(', ');
+        modalClub.textContent = info.club;
+        modalSquadra.innerHTML = squadraHtml(info.squadra_att, info.squadra_username);
+        if (info.detentore && info.detentore !== info.squadra_att) {
+            modalDetentore.innerHTML = squadraHtml(info.detentore, info.detentore_username);
+            modalDetentoreRow.classList.remove('hidden');
+            modalDetentoreRow.classList.add('flex');
+        } else {
+            modalDetentoreRow.classList.add('hidden');
+            modalDetentoreRow.classList.remove('flex');
+        }
+        modalContratto.textContent = info.tipo_contratto || '-';
+        impostaCampoTransfermarkt(modalDataNascita, info.data_nascita);
+        impostaCampoTransfermarkt(modalScadenzaContratto, info.scadenza_contratto_reale);
+        modalQuotazione.textContent = info.quotazione;
+        modalCosto.textContent = info.costo;
+
+        overlayGiocatore.classList.remove('hidden');
+        overlayGiocatore.classList.add('flex');
+    };
+
+    const chiudiCardGiocatore = () => {
+        overlayGiocatore.classList.add('hidden');
+        overlayGiocatore.classList.remove('flex');
+    };
+
+    tbody.addEventListener('click', function (e) {
+        const row = e.target.closest('tr');
+        if (!row || !row.dataset.info) return;
+        apriCardGiocatore(JSON.parse(row.dataset.info));
+    });
+
+    btnChiudiGiocatore.addEventListener('click', chiudiCardGiocatore);
+    overlayGiocatore.addEventListener('click', function (e) {
+        if (e.target === overlayGiocatore) chiudiCardGiocatore();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') chiudiCardGiocatore();
+    });
+});
+</script>
+{% endblock %}

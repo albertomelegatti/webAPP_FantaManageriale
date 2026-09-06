@@ -1,0 +1,135 @@
+{% extends 'base_tailwind.html' %}
+
+{% block content %}
+{% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('pubblico.home')) }}</div>
+<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+    <!-- Crediti & Slot -->
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Crediti &amp; Slot</h4>
+        <table class="w-full table-fixed text-sm sortable-table" id="creditiSlotTable">
+            <colgroup>
+                <col style="width:46%"><col style="width:24%"><col style="width:30%">
+            </colgroup>
+            <thead>
+                <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                    <th class="pb-2 font-semibold">Squadra</th>
+                    <th class="pb-2 text-center font-semibold">Crediti</th>
+                    <th class="pb-2 text-center font-semibold">Slot</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-line">
+                {% for squadra in squadre %}
+                {% for slot_riga in slot %}
+                    {% if squadra.nome == slot_riga.squadra_att %}
+                <tr>
+                    <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ squadra.nome }}</td>
+                    <td class="py-2.5 text-center tabular-nums text-accent font-semibold">{{ squadra.crediti }}</td>
+                    <td class="py-2.5 text-center tabular-nums font-semibold">{{ slot_riga.slot_occupati }}/30 · {{ slot_riga.slot_in_prestito }}/2</td>
+                </tr>
+                    {% endif %}
+                {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Stadi -->
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Stadi</h4>
+        <table class="w-full table-fixed text-sm sortable-table" id="stadiTable">
+            <colgroup>
+                <col style="width:47%"><col style="width:39%"><col style="width:14%">
+            </colgroup>
+            <thead>
+                <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                    <th class="pb-2 font-semibold">Squadra</th>
+                    <th class="pb-2 font-semibold">Stadio</th>
+                    <th class="pb-2 text-center font-semibold">Liv.</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-line">
+                {% for stadio in stadi %}
+                <tr>
+                    <td class="break-words py-2.5 pr-2 align-top font-medium">{{ stadio.proprietario }}</td>
+                    <td class="break-words py-2.5 pr-2 align-top">{{ stadio.nome }}</td>
+                    <td class="py-2.5 text-center align-top tabular-nums font-semibold">{{ stadio.livello }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.sortable-table thead th {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+.sortable-table thead th::after {
+    content: ' \2195';
+    color: var(--muted);
+    font-size: 0.85em;
+}
+.sortable-table thead th.asc::after {
+    content: ' \2191';
+    color: var(--accent);
+}
+.sortable-table thead th.desc::after {
+    content: ' \2193';
+    color: var(--accent);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sortableTables = ['creditiSlotTable', 'stadiTable'];
+
+    const extractNumber = (value) => {
+        const match = value.replace(',', '.').match(/-?\d+(\.\d+)?/);
+        return match ? parseFloat(match[0]) : NaN;
+    };
+
+    const attachSorting = (tableId) => {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+
+        const headers = table.querySelectorAll('thead th');
+
+        headers.forEach((header, index) => {
+            header.addEventListener('click', function() {
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                const isAsc = !this.classList.contains('asc');
+
+                headers.forEach(h => h.classList.remove('asc', 'desc'));
+                this.classList.add(isAsc ? 'asc' : 'desc');
+
+                rows.sort((a, b) => {
+                    const aValue = a.children[index].textContent.trim();
+                    const bValue = b.children[index].textContent.trim();
+
+                    const aNum = extractNumber(aValue);
+                    const bNum = extractNumber(bValue);
+
+                    if (!isNaN(aNum) && !isNaN(bNum)) {
+                        return isAsc ? aNum - bNum : bNum - aNum;
+                    }
+
+                    return isAsc
+                        ? aValue.localeCompare(bValue, 'it')
+                        : bValue.localeCompare(aValue, 'it');
+                });
+
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    };
+
+    sortableTables.forEach(attachSorting);
+});
+</script>
+{% endblock %}

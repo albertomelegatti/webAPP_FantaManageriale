@@ -1,0 +1,336 @@
+{% extends 'base_tailwind.html' %}
+
+{% block content %}
+{% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('pubblico.squadre')) }}</div>
+
+<div class="flex flex-col gap-4">
+
+    <!-- Testata squadra -->
+    <div class="flex flex-col items-center gap-4 rounded-2xl border border-line bg-panel p-4 sm:flex-row sm:items-center">
+        {% set logo_file = 'loghi/' ~ username ~ '.png' %}
+        <img src="{{ url_for('static', filename=logo_file) }}?v={{ asset_v(logo_file) }}"
+             alt="Logo {{ nome_squadra }}"
+             class="h-20 w-20 rounded-xl bg-panel-2 object-contain p-1">
+        <div class="flex-1 text-center sm:text-left">
+            <h2 class="text-xl font-bold">{{ nome_squadra }}</h2>
+            <p class="text-sm text-muted">Stadio: {{ stadio.nome }} · Livello {{ stadio.livello }}</p>
+        </div>
+        <div class="grid w-full grid-cols-3 gap-2 sm:w-auto">
+            <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
+                <div class="text-xs text-muted">Slot</div>
+                <div class="text-lg font-bold">{{ slot_giocatori }}/30</div>
+            </div>
+            <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
+                <div class="text-xs text-muted">Prestiti IN</div>
+                <div class="text-lg font-bold">{{ prestiti_in_num }}/2</div>
+            </div>
+            <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
+                <div class="text-xs text-muted">Crediti</div>
+                <div class="text-lg font-bold">{{ crediti }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rosa -->
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Rosa</h4>
+        <table class="w-full table-fixed text-sm">
+            <colgroup>
+                <col style="width:38%"><col style="width:14%"><col style="width:18%"><col style="width:14%"><col style="width:16%">
+            </colgroup>
+            <thead>
+                <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                    <th class="pb-2 font-semibold"></th>
+                    <th class="pb-2 text-center font-semibold">Club</th>
+                    <th class="pb-2 text-center font-semibold">Ruolo</th>
+                    <th class="pb-2 text-center font-semibold">Contr.</th>
+                    <th class="pb-2 text-center font-semibold">QA</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-line" id="rosaBody">
+                {% for g in rosa %}
+                <tr class="cursor-pointer hover:bg-panel-2"
+                    data-info='{{ {
+                        "nome": g.nome,
+                        "ruolo": g.ruolo,
+                        "club": g.club,
+                        "squadra_att": g.squadra_att,
+                        "squadra_username": g.squadra_username,
+                        "detentore": g.detentore_cartellino,
+                        "detentore_username": g.detentore_username,
+                        "tipo_contratto": g.tipo_contratto,
+                        "quotazione": g.quot_att_mantra,
+                        "costo": g.costo,
+                        "data_nascita": g.data_nascita,
+                        "scadenza_contratto_reale": g.scadenza_contratto_reale
+                    } | tojson }}'>
+                    <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
+                    <td class="py-2.5 text-center">{{ m.club_abbr(g.club) }}</td>
+                    <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
+                    <td class="py-2.5 text-center">{{ m.contratto_icona(g.tipo_contratto) }}</td>
+                    <td class="py-2.5 text-center tabular-nums text-muted">{{ g.quot_att_mantra }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+
+        <!-- Primavera -->
+        <div class="rounded-2xl border border-line bg-panel p-4">
+            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Primavera</h4>
+            {% if primavera %}
+            <table class="w-full table-fixed text-sm">
+                <colgroup>
+                    <col style="width:66%"><col style="width:20%"><col style="width:14%">
+                </colgroup>
+                <thead>
+                    <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                        <th class="pb-2 font-semibold"></th>
+                        <th class="pb-2 text-center font-semibold">Ruolo</th>
+                        <th class="pb-2 text-center font-semibold">QA</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-line">
+                    {% for g in primavera %}
+                    <tr>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
+                        <td class="py-2.5 text-center tabular-nums text-muted">{{ g.quot_att_mantra }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessun giocatore</p>
+            {% endif %}
+        </div>
+
+        <!-- Prestiti OUT -->
+        <div class="rounded-2xl border border-line bg-panel p-4">
+            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Prestiti OUT</h4>
+            {% if prestiti_out %}
+            <table class="w-full table-fixed text-sm">
+                <colgroup>
+                    <col style="width:32%"><col style="width:12%"><col style="width:10%"><col style="width:46%">
+                </colgroup>
+                <thead>
+                    <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                        <th class="pb-2 font-semibold"></th>
+                        <th class="pb-2 text-center font-semibold">Ruolo</th>
+                        <th class="pb-2 text-center font-semibold">QA</th>
+                        <th class="pb-2 pl-2 font-semibold">Verso</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-line">
+                    {% for p in prestiti_out %}
+                    <tr>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ p.nome }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(p.ruolo) }}</td>
+                        <td class="py-2.5 text-center tabular-nums text-muted">{{ p.quot_att_mantra }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pl-2 text-muted">{{ 'Prestito Reale' if p.squadra_att == 'Svincolato' else p.squadra_att }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessun prestito in uscita</p>
+            {% endif %}
+        </div>
+
+        <!-- Prestiti IN -->
+        <div class="rounded-2xl border border-line bg-panel p-4">
+            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Prestiti IN</h4>
+            {% if prestiti_in %}
+            <table class="w-full table-fixed text-sm">
+                <colgroup>
+                    <col style="width:32%"><col style="width:12%"><col style="width:10%"><col style="width:46%">
+                </colgroup>
+                <thead>
+                    <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                        <th class="pb-2 font-semibold"></th>
+                        <th class="pb-2 text-center font-semibold">Ruolo</th>
+                        <th class="pb-2 text-center font-semibold">QA</th>
+                        <th class="pb-2 pl-2 font-semibold">Da</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-line">
+                    {% for g in prestiti_in %}
+                    <tr>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
+                        <td class="py-2.5 text-center tabular-nums text-muted">{{ g.quot_att_mantra }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pl-2 text-muted">{{ g.detentore_cartellino }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessun prestito in entrata</p>
+            {% endif %}
+        </div>
+
+        <!-- Draft -->
+        <div class="rounded-2xl border border-line bg-panel p-4">
+            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Draft</h4>
+            {% if draft_pick %}
+            <div class="max-h-80 overflow-y-auto">
+                <table class="w-full table-fixed text-sm">
+                    <colgroup>
+                        <col style="width:34%"><col style="width:16%"><col style="width:14%"><col style="width:36%">
+                    </colgroup>
+                    <thead>
+                        <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                            <th class="pb-2 font-semibold">Detentore</th>
+                            <th class="pb-2 text-center font-semibold">Anno</th>
+                            <th class="pb-2 text-center font-semibold">Num.</th>
+                            <th class="pb-2 pl-2 font-semibold">Giocatore</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        {% for p in draft_pick %}
+                        <tr>
+                            <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ p.detentore_originale }}</td>
+                            <td class="py-2.5 text-center text-muted">{{ p.anno }}</td>
+                            <td class="py-2.5 text-center text-muted">{{ p.numero }}</td>
+                            <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pl-2">{{ p.giocatore_scelto or '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessuna pick disponibile</p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<div id="overlayGiocatore" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-sm rounded-2xl border border-line bg-panel p-4">
+        <div class="mb-3 flex items-center justify-between">
+            <h5 id="modalNome" class="text-base font-bold"></h5>
+            <button type="button" id="btnChiudiGiocatore" class="text-xl leading-none text-muted hover:text-accent">&times;</button>
+        </div>
+        <div class="flex flex-col gap-2 text-sm">
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Ruolo</span>
+                <span id="modalRuolo" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Club</span>
+                <span id="modalClub" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Squadra attuale</span>
+                <span id="modalSquadra" class="flex items-center gap-2 font-medium"></span>
+            </div>
+            <div id="modalDetentoreRow" class="hidden items-center justify-between">
+                <span class="text-muted">Detentore cartellino</span>
+                <span id="modalDetentore" class="flex items-center gap-2 font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Contratto</span>
+                <span id="modalContratto" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Data di nascita</span>
+                <span id="modalDataNascita" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Scadenza contratto</span>
+                <span id="modalScadenzaContratto" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Quotazione</span>
+                <span id="modalQuotazione" class="font-medium tabular-nums"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Prezzo d'acquisto</span>
+                <span id="modalCosto" class="font-medium tabular-nums"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const loghiBase = "{{ url_for('static', filename='loghi/') }}";
+    const overlayGiocatore = document.getElementById('overlayGiocatore');
+    const btnChiudiGiocatore = document.getElementById('btnChiudiGiocatore');
+    const modalNome = document.getElementById('modalNome');
+    const modalRuolo = document.getElementById('modalRuolo');
+    const modalClub = document.getElementById('modalClub');
+    const modalSquadra = document.getElementById('modalSquadra');
+    const modalDetentoreRow = document.getElementById('modalDetentoreRow');
+    const modalDetentore = document.getElementById('modalDetentore');
+    const modalContratto = document.getElementById('modalContratto');
+    const modalDataNascita = document.getElementById('modalDataNascita');
+    const modalScadenzaContratto = document.getElementById('modalScadenzaContratto');
+    const modalQuotazione = document.getElementById('modalQuotazione');
+    const modalCosto = document.getElementById('modalCosto');
+
+    // Placeholder per i dati non ancora sincronizzati da Transfermarkt: testo
+    // attenuato e corsivo per distinguerli a colpo d'occhio da un valore reale.
+    const impostaCampoTransfermarkt = (elemento, valore) => {
+        const nonSincronizzato = valore === 'Non sincronizzata';
+        elemento.textContent = valore;
+        elemento.classList.toggle('text-muted', nonSincronizzato);
+        elemento.classList.toggle('italic', nonSincronizzato);
+        elemento.classList.toggle('font-medium', !nonSincronizzato);
+    };
+
+    const logoUrl = (username) => loghiBase + (username || 'svincolato') + '.png';
+
+    const squadraHtml = (nome, username) =>
+        '<img src="' + logoUrl(username) + '" alt="" class="h-5 w-5 object-contain">' +
+        '<span>' + (nome || 'Svincolato') + '</span>';
+
+    const apriCardGiocatore = (info) => {
+        modalNome.textContent = info.nome;
+        modalRuolo.textContent = info.ruolo.split(',').map(r => r.trim()).join(', ');
+        modalClub.textContent = info.club;
+        modalSquadra.innerHTML = squadraHtml(info.squadra_att, info.squadra_username);
+        if (info.detentore && info.detentore !== info.squadra_att) {
+            modalDetentore.innerHTML = squadraHtml(info.detentore, info.detentore_username);
+            modalDetentoreRow.classList.remove('hidden');
+            modalDetentoreRow.classList.add('flex');
+        } else {
+            modalDetentoreRow.classList.add('hidden');
+            modalDetentoreRow.classList.remove('flex');
+        }
+        modalContratto.textContent = info.tipo_contratto || '-';
+        impostaCampoTransfermarkt(modalDataNascita, info.data_nascita);
+        impostaCampoTransfermarkt(modalScadenzaContratto, info.scadenza_contratto_reale);
+        modalQuotazione.textContent = info.quotazione;
+        modalCosto.textContent = info.costo;
+
+        overlayGiocatore.classList.remove('hidden');
+        overlayGiocatore.classList.add('flex');
+    };
+
+    const chiudiCardGiocatore = () => {
+        overlayGiocatore.classList.add('hidden');
+        overlayGiocatore.classList.remove('flex');
+    };
+
+    document.getElementById('rosaBody')?.addEventListener('click', function (e) {
+        const row = e.target.closest('tr');
+        if (!row || !row.dataset.info) return;
+        apriCardGiocatore(JSON.parse(row.dataset.info));
+    });
+
+    btnChiudiGiocatore.addEventListener('click', chiudiCardGiocatore);
+    overlayGiocatore.addEventListener('click', function (e) {
+        if (e.target === overlayGiocatore) chiudiCardGiocatore();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') chiudiCardGiocatore();
+    });
+});
+</script>
+
+{% endblock %}
