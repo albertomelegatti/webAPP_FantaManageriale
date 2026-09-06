@@ -13,11 +13,12 @@ from flask import (Blueprint, flash, jsonify, redirect, render_template,
 from app import telegram_utils
 from app.blueprints.user import format_partecipanti
 from app.core.db import connessione
-from app.queries import get_slot_aste, get_slot_giocatori
 
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data, formatta_data_nascita_con_eta, formatta_scadenza_contratto
 from app.domini.ruoli import pulisci_ruolo, ruoli_base_presenti, ruolo_sort_key
+from app.repositories import aste as aste_repo
+from app.repositories import giocatori as giocatori_repo
 
 logger = get_logger(__name__)
 
@@ -55,7 +56,7 @@ def squadre():
 
             return render_template("squadre.html", squadre=squadre)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore squadre")
         flash("❌ Errore nel recupero squadre.", "danger")
         return redirect(url_for('pubblico.home'))
@@ -85,8 +86,8 @@ def dashboard_squadra(nome_squadra):
             crediti = squadra_raw["crediti"]
 
             # CONTEGGIO SLOT GIOCATORI E ASTE (slot_occupati = somma dei due, evita di ricalcolare slot_giocatori due volte)
-            slot_giocatori = get_slot_giocatori(conn, nome_squadra)
-            slot_aste = get_slot_aste(conn, nome_squadra)
+            slot_giocatori = giocatori_repo.slot_occupati_da_giocatori(cur, nome_squadra)
+            slot_aste = aste_repo.slot_impegnati(cur, nome_squadra)
             slot_occupati = slot_giocatori + slot_aste
 
             # ROSA
@@ -242,7 +243,7 @@ def dashboard_squadra(nome_squadra):
                 mercato=mercato
             )
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore dashboard Squadra")
         flash("❌ Errore nel caricamento della squadra.", "danger")
         return redirect(url_for('pubblico.home'))
@@ -287,7 +288,7 @@ def movimenti_mercato():
                 squadre=squadre
             )
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore movimenti_mercato")
         flash("❌ Errore nel recupero dei movimenti di mercato.", "danger")
         return redirect(url_for('pubblico.home'))
@@ -349,7 +350,7 @@ def crediti_stadi_slot():
 
             return render_template("crediti_stadi_slot.html", stadi=stadi, squadre=squadre, slot=slot)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore crediti stadi e slot")
         flash("❌ Errore nel caricamento dati stadi.", "danger")
         return redirect(url_for('pubblico.home'))
@@ -389,7 +390,7 @@ def listone():
                 for g in cur.fetchall()
             ]
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore caricamento listone")
         flash("❌ Errore durante il caricamento del listone.", "danger")
 
@@ -441,7 +442,7 @@ def aste():
                 })
 
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore lista aste generale")
         flash("❌ Errore nella creazione lista aste.", "danger")
         return redirect(url_for('pubblico.home'))

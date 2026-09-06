@@ -60,7 +60,7 @@ def get_answer(question: str) -> str:
         )
 
         return completion.choices[0].message.content.strip()
-    except Exception as e:
+    except Exception:
         logger.exception("Errore chatbot")
         return "⚠️ Errore nella comunicazione con il modello."
 

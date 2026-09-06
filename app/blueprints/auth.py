@@ -88,7 +88,7 @@ def login():
                     else:
                         flash("❌ Username non trovato.", "danger")
 
-        except Exception as e:
+        except Exception:
             logger.exception("Errore login")
             flash("❌ Errore di connessione al database.", "danger")
 
@@ -148,7 +148,7 @@ def cambia_password():
 
                 flash("❌ Errore nel cambio password.", "danger")
 
-        except Exception as e:
+        except Exception:
             logger.exception("Errore cambio password")
             flash("❌ Errore durante l'aggiornamento della password.", "danger")
 

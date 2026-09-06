@@ -1,17 +1,16 @@
 import json
 import psycopg2
-import time
 from app import telegram_utils
 from datetime import datetime
-from flask import Blueprint, render_template, session, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione
-from app.queries import decadi_vetrina, get_stato_gate
 from app.domini.matching_transfermarkt import candidati_fuzzy
-from psycopg2 import extensions
 
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data
 from app.domini.ruoli import pulisci_ruolo
+from app.repositories import configurazione as configurazione_repo
+from app.repositories import vetrina as vetrina_repo
 
 logger = get_logger(__name__)
 
@@ -58,7 +57,7 @@ def admin_crediti():
             squadre_raw = cur.fetchall()
             squadre = [{"nome": s["nome"], "crediti": s["crediti"]} for s in squadre_raw]
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
         flash("❌ Errore durante il caricamento o l'aggiornamento dei crediti.", "danger")
 
@@ -106,9 +105,9 @@ def admin_chiusura_mercato_aste():
                 flash("✅ Impostazioni di chiusura aggiornate con successo.", "success")
                 return redirect(url_for("admin.admin_chiusura_mercato_aste"))
 
-            stato_gate = get_stato_gate(conn)
+            stato_gate = configurazione_repo.stato_gate(cur)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
         flash("❌ Errore durante il caricamento o l'aggiornamento delle impostazioni.", "danger")
 
@@ -133,7 +132,7 @@ def invia_comunicazione():
                 flash(f"✅ Messaggi inviati a {len(squadre)} squadre.", "success")
 
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
 
 
@@ -197,7 +196,7 @@ def richiesta_modifica_contratto():
                                         detentore_cartellino = %s
                                     WHERE id = %s;
                         ''', (nuovo_contratto, 'Svincolato', 'Svincolato', id_giocatore))
-                        decadi_vetrina(cur, id_giocatore)
+                        vetrina_repo.decadi(cur, id_giocatore)
                     elif nuovo_contratto == 'Prestito Reale':
                         # Se il contratto è "Prestito Reale",
                         # squadra attuale va a "Svincolato"
@@ -207,7 +206,7 @@ def richiesta_modifica_contratto():
                                         squadra_att = %s
                                     WHERE id = %s;
                         ''', (nuovo_contratto, 'Svincolato', id_giocatore))
-                        decadi_vetrina(cur, id_giocatore)
+                        vetrina_repo.decadi(cur, id_giocatore)
                     elif nuovo_contratto == 'Indeterminato':
                         # Se il contratto è "Indeterminato", 
                         # squadra attuale va a tonra a  detentore cartellino
@@ -266,7 +265,7 @@ def richiesta_modifica_contratto():
                     "stato": r["stato"]
                 })
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
         flash("❌ Errore durante il caricamento delle richieste.", "danger")
 
@@ -477,7 +476,7 @@ def admin_verifica_corrispondenze():
                 "non_trovato": sum(1 for g in giocatori_da_rivedere if g["categoria"] == "non_trovato"),
             }
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
         flash("❌ Errore durante il caricamento delle corrispondenze da rivedere.", "danger")
         conteggi = {"ambiguo": 0, "suggerito": 0, "non_trovato": 0}

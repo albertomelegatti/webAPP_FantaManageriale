@@ -1,6 +1,5 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, flash
 from app.core.db import connessione
-from app.queries import get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in, sposta_crediti
 
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data
@@ -48,7 +47,7 @@ def vetrina():
             ''')
             squadre = cur.fetchall()
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore durante il caricamento della vetrina")
         flash("❌ Errore durante il caricamento della vetrina.", "danger")
 

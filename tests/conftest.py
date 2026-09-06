@@ -118,18 +118,15 @@ def gate_aperto(app, monkeypatch):
     mai eseguito: gli smoke test resterebbero verdi coprendo solo il redirect,
     proprio sui moduli più complessi del progetto.
 
-    La patch è sul riferimento *dentro ogni blueprint*, non su app.queries: i
-    moduli importano le funzioni per valore (`from app.queries import
-    mercato_aperto`), quindi sostituire l'originale non avrebbe effetto.
-    Nessuna scrittura sul database.
+    La patch è sul modulo dei repository, che i blueprint usano per riferimento
+    (`configurazione_repo.mercato_aperto(cur)`) e non per valore: basta quindi
+    sostituirlo una volta sola invece che in ogni blueprint, come serviva prima
+    della Fase 5b. Nessuna scrittura sul database.
     """
-    from app.blueprints import aste as user_aste
-    from app.blueprints import mercato as user_mercato
-    from app.blueprints import prestiti as user_prestiti
+    from app.repositories import configurazione as configurazione_repo
 
-    monkeypatch.setattr(user_aste, "aste_aperte", lambda conn: True)
-    monkeypatch.setattr(user_mercato, "mercato_aperto", lambda conn: True)
-    monkeypatch.setattr(user_prestiti, "mercato_aperto", lambda conn: True)
+    monkeypatch.setattr(configurazione_repo, "aste_aperte", lambda cur: True)
+    monkeypatch.setattr(configurazione_repo, "mercato_aperto", lambda cur: True)
     yield
 
 

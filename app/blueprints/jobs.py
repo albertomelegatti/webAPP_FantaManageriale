@@ -71,7 +71,7 @@ def aggiorna_transfermarkt():
             release_connection(conn, cur)
             return jsonify({"status": "skipped", "motivo": "già in esecuzione"}), 200
 
-    except Exception as e:
+    except Exception:
         logger.exception("❌ Errore preliminare job transfermarkt")
         release_connection(conn, cur)
         return jsonify({"status": "errore"}), 500
@@ -90,14 +90,14 @@ def _esegui_job_in_background(conn, cur):
             _esegui_matching(cur, percorso_players)
         conn.commit()
         logger.info("✅ Job transfermarkt completato con successo.")
-    except Exception as e:
+    except Exception:
         conn.rollback()
         logger.exception("❌ Job transfermarkt fallito")
     finally:
         try:
             cur.execute("SELECT pg_advisory_unlock(%s);", (LOCK_KEY_TRANSFERMARKT,))
             conn.commit()
-        except Exception as e:
+        except Exception:
             logger.exception("⚠️ Errore nel rilascio del lock")
         release_connection(conn, cur)
 

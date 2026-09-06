@@ -7,10 +7,13 @@ from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione, resync_sequence
 from app.domini.ruoli import pulisci_ruolo, ruolo_sort_key
-from app.queries import decadi_vetrina, get_crediti_squadra, get_nome_giocatore, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori, sposta_crediti
 
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data
+from app.repositories import aste as aste_repo
+from app.repositories import giocatori as giocatori_repo
+from app.repositories import squadre as squadre_repo
+from app.repositories import vetrina as vetrina_repo
 
 logger = get_logger(__name__)
 
@@ -35,7 +38,7 @@ def user_primavera(nome_squadra):
                     ''', (id_giocatore_da_promuovere,))
                     conn.commit()
 
-                    nome_giocatore = get_nome_giocatore(conn, id_giocatore_da_promuovere)
+                    nome_giocatore = giocatori_repo.nome(cur, id_giocatore_da_promuovere)
                     flash("✅ Giocatore promosso in prima squadra con successo.", "success")
                     telegram_utils.promozione_giocatore_primavera(conn, nome_squadra, nome_giocatore)
 
@@ -49,9 +52,9 @@ def user_primavera(nome_squadra):
                                     tipo_contratto = 'Svincolato'
                                 WHERE id = %s;
                     ''', (id_giocatore_da_tagliare,))
-                    decadi_vetrina(cur, id_giocatore_da_tagliare)
+                    vetrina_repo.decadi(cur, id_giocatore_da_tagliare)
 
-                    nome_giocatore = get_nome_giocatore(conn, id_giocatore_da_tagliare)
+                    nome_giocatore = giocatori_repo.nome(cur, id_giocatore_da_tagliare)
 
                     conn.commit()
                     flash("✅ Giocatore tagliato con successo.", "success")
@@ -81,7 +84,7 @@ def user_primavera(nome_squadra):
 
             primavera.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore durante il caricamento della primavera.")
         flash("❌ Errore durante il caricamento della primavera.", "danger")
 
@@ -223,7 +226,7 @@ def user_vetrina(nome_squadra):
 
             rosa.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore durante l'aggiornamento dello stato vetrina")
         flash("❌ Errore durante l'aggiornamento dello stato vetrina.", "danger")
 
@@ -239,15 +242,15 @@ def user_tagli(nome_squadra):
 
     try:
         with connessione() as (conn, cur):
-            crediti = get_crediti_squadra(conn, nome_squadra)
-            crediti_disponibili = crediti - get_offerta_totale(conn, nome_squadra)
+            crediti = squadre_repo.crediti(cur, nome_squadra)
+            crediti_disponibili = crediti - aste_repo.offerta_totale(cur, nome_squadra)
 
             if request.method == "POST":
                 id_giocatore_da_tagliare = request.form.get("id_giocatore_da_tagliare")
                 if id_giocatore_da_tagliare:
 
                     # Ottieni la quotazione attuale del giocatore
-                    quotazione_attuale = get_quotazione_attuale(conn, id_giocatore_da_tagliare)
+                    quotazione_attuale = giocatori_repo.quotazione(cur, id_giocatore_da_tagliare)
                     costo_taglio = math.ceil(quotazione_attuale / 2)
 
                     if crediti_disponibili < costo_taglio:
@@ -263,7 +266,7 @@ def user_tagli(nome_squadra):
                                     tipo_contratto = 'Svincolato'
                                 WHERE id = %s;
                     ''', (id_giocatore_da_tagliare,))
-                    decadi_vetrina(cur, id_giocatore_da_tagliare)
+                    vetrina_repo.decadi(cur, id_giocatore_da_tagliare)
 
                     # Aggiorna i crediti della squadra
                     cur.execute('''
@@ -273,7 +276,7 @@ def user_tagli(nome_squadra):
                     ''', (costo_taglio, nome_squadra))
 
                 
-                    nome_giocatore = get_nome_giocatore(conn, id_giocatore_da_tagliare)
+                    nome_giocatore = giocatori_repo.nome(cur, id_giocatore_da_tagliare)
 
                     conn.commit()
                     flash(f"✅ Giocatore tagliato con successo! Costo: {costo_taglio} crediti.", "success")
@@ -305,7 +308,7 @@ def user_tagli(nome_squadra):
 
             rosa.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore durante il caricamento o il taglio dei giocatori")
         flash("❌ Errore durante il caricamento o il taglio dei giocatori.", "danger")
 
@@ -395,7 +398,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
                                    club_giocatore=club_giocatore,
                                    id_giocatore=id_giocatore)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore durante la richiesta di modifica contratto")
         flash("❌ Errore durante la richiesta di modifica contratto.", "danger")
         return redirect(url_for('rosa.user_tagli', nome_squadra=nome_squadra))
@@ -510,11 +513,11 @@ def user_gestione_prestiti(nome_squadra):
                     "crediti_riscatto": p['crediti_riscatto']
                 })
 
-            slot_giocatori = get_slot_giocatori(conn, nome_squadra)
+            slot_giocatori = giocatori_repo.slot_occupati_da_giocatori(cur, nome_squadra)
         
 
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
         flash("❌ Si è verificato un errore. Ricaricare la pagina.", "danger")
 
@@ -576,7 +579,7 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
         # RISCATTO EFFETTUATO:
             
         # 1. Sottrarre i crediti dalla squadra ricevente e aggiungerli alla squadra prestante
-        sposta_crediti(conn, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['crediti_riscatto'])
+        squadre_repo.sposta_crediti(conn, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['crediti_riscatto'])
         
         # 2. Aggiornare il prestito come "riscattato"
         cur.execute('''
@@ -595,13 +598,13 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
                         tipo_contratto = 'Indeterminato'
                     WHERE id = %s;
         ''', (nome_squadra, nome_squadra, prestito['giocatore']))
-        decadi_vetrina(cur, prestito['giocatore'])
+        vetrina_repo.decadi(cur, prestito['giocatore'])
 
         conn.commit()
         flash(f"✅ Giocatore riscattato con successo! Pagati {costo_riscatto} crediti.", "success")
         telegram_utils.riscatto_giocatore(conn, id_prestito)
 
-    except Exception as e:
+    except Exception:
         logger.exception("❌ Errore durante il riscatto del giocatore")
         flash("❌ Si è verificato un errore durante il riscatto. Ricaricare la pagina.", "danger")
         conn.rollback()
@@ -639,7 +642,7 @@ def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
         telegram_utils.richiesta_terminazione_prestito(conn, id_prestito)
 
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
         flash("❌ Errore nel controllo del prestito, riprovare.", "danger")
 
@@ -699,14 +702,14 @@ def accetta_terminazione(conn, id_prestito):
                         tipo_contratto = 'Indeterminato'
                     WHERE id = %s;
         ''', (row['squadra_prestante'], row['giocatore']))
-        decadi_vetrina(cur, row['giocatore'])
+        vetrina_repo.decadi(cur, row['giocatore'])
 
         conn.commit()
         flash("✅ Prestito terminato con successo.", "success")
         telegram_utils.richiesta_terminazione_prestito_risposta(conn, id_prestito, "Accettato")
 
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
         flash("❌ Si è verificato un errore. Ricaricare la pagina.", "danger")
 
@@ -755,7 +758,7 @@ def rifiuta_terminazione(conn, id_prestito):
         telegram_utils.richiesta_terminazione_prestito_risposta(conn, id_prestito, "Rifiutato")
 
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
         flash("❌ Si è verificato un errore. Ricaricare la pagina.", "danger")
 
@@ -779,7 +782,7 @@ def esiste_gia_una_richiesta(conn, id_giocatore):
 
         return row['count'] > 0
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
         return False
 

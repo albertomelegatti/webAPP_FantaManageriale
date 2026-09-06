@@ -1,16 +1,20 @@
 import psycopg2
-from datetime import datetime, time
+from datetime import datetime
 from app import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione
 from app.blueprints.user import format_giocatori, redirect_gate_chiuso
-from app.queries import decadi_vetrina, get_crediti_squadra, get_offerta_totale, get_slot_occupati, get_slot_prestiti_in, mercato_aperto
 
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data
 from app.domini.calendario import anni_prestito_ammessi
 from app.domini.ruoli import pulisci_ruolo
+from app.repositories import aste as aste_repo
+from app.repositories import configurazione as configurazione_repo
+from app.repositories import giocatori as giocatori_repo
+from app.repositories import squadre as squadre_repo
+from app.repositories import vetrina as vetrina_repo
 
 logger = get_logger(__name__)
 
@@ -20,8 +24,8 @@ mercato_bp = Blueprint('mercato', __name__, url_prefix='/mercato')
 
 @mercato_bp.before_request
 def blocca_mercato_chiuso():
-    with connessione() as (conn, _):
-        if not mercato_aperto(conn):
+    with connessione() as (conn, cur):
+        if not configurazione_repo.mercato_aperto(cur):
             flash("❌ Il mercato scambi è chiuso.", "danger")
             return redirect_gate_chiuso()
 
@@ -50,7 +54,7 @@ def format_pick(pick_ids, conn):
         pick_names = [f"{extract_year(p['anno'])} - Giro: {p['giro']}°" for p in picks]
         return ", ".join(pick_names)
     
-    except Exception as e:
+    except Exception:
         logger.exception("Errore nel formattare le pick")
         return ""
 
@@ -66,7 +70,7 @@ def validate_pick_ids(pick_ids, conn):
         result = cur.fetchone()
         return result['cnt'] == len(pick_ids)
     
-    except Exception as e:
+    except Exception:
         logger.exception("Errore nella validazione delle pick")
         return False
 
@@ -100,8 +104,8 @@ def user_mercato(nome_squadra):
 
 
         
-            crediti = get_crediti_squadra(conn, nome_squadra)
-            offerta_totale = get_offerta_totale(conn, nome_squadra)
+            crediti = squadre_repo.crediti(cur, nome_squadra)
+            offerta_totale = aste_repo.offerta_totale(cur, nome_squadra)
             offerta_massima_possibile = crediti - offerta_totale
 
             # Scarico le informazioni sugli scambi della squadra loggata
@@ -126,7 +130,7 @@ def user_mercato(nome_squadra):
                 s_dict['prestiti_richiesti_formattati'] = prestiti_richiesti
                 scambi.append(s_dict)
         
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
         flash("❌ Errore durante il caricamento degli scambi.", "danger")
         return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
@@ -165,7 +169,7 @@ def visualizza_proposta(scambio_id):
         
             return render_template("visualizza_proposta.html", scambio=scambio)
     
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
         flash("❌ Errore durante il caricamento della proposta.", "danger")
 
@@ -291,11 +295,11 @@ def nuovo_scambio(nome_squadra):
                     1 if enable_prestito2 and p2_offerto else 0,
                 ])
 
-                if prestiti_verso_me > 0 and get_slot_prestiti_in(conn, nome_squadra) + prestiti_verso_me > 2:
+                if prestiti_verso_me > 0 and giocatori_repo.slot_prestiti_in(cur, nome_squadra) + prestiti_verso_me > 2:
                     flash(f"❌ {nome_squadra} non ha abbastanza slot prestiti disponibili.", "danger")
                     return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
 
-                if prestiti_verso_loro > 0 and get_slot_prestiti_in(conn, squadra_destinataria) + prestiti_verso_loro > 2:
+                if prestiti_verso_loro > 0 and giocatori_repo.slot_prestiti_in(cur, squadra_destinataria) + prestiti_verso_loro > 2:
                     flash(f"❌ {squadra_destinataria} non ha abbastanza slot prestiti disponibili.", "danger")
                     return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
 
@@ -421,7 +425,7 @@ def nuovo_scambio(nome_squadra):
 
             squadre = []
             crediti_effettivi = 0
-            offerta_totale = get_offerta_totale(conn, nome_squadra)
+            offerta_totale = aste_repo.offerta_totale(cur, nome_squadra)
 
             # Conteggi per TUTTE le squadre in poche query aggregate, invece di 4 query per squadra nel ciclo
             cur.execute('''
@@ -564,7 +568,7 @@ def nuovo_scambio(nome_squadra):
                 anno_default_scadenza=anno_default_scadenza
             )
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore durante il caricamento di 'nuovo_scambio'")
         flash("❌ Si è verificato un errore nel caricamento della pagina.", "danger")
         return redirect(url_for("mercato.user_mercato", nome_squadra=nome_squadra))
@@ -605,7 +609,7 @@ def controlla_scambio(id, conn):
 
         crediti_prop = cur.fetchone()["crediti"]
         
-        offerta_tot_prop = get_offerta_totale(conn, squadra_proponente)
+        offerta_tot_prop = aste_repo.offerta_totale(cur, squadra_proponente)
         crediti_disp_prop = crediti_prop - offerta_tot_prop
         
 
@@ -616,7 +620,7 @@ def controlla_scambio(id, conn):
         ''', (squadra_destinataria,))
         crediti_dest = cur.fetchone()["crediti"]
         
-        offerta_tot_dest = get_offerta_totale(conn, squadra_destinataria)
+        offerta_tot_dest = aste_repo.offerta_totale(cur, squadra_destinataria)
         crediti_disp_dest = crediti_dest - offerta_tot_dest
 
         if crediti_disp_prop < crediti_offerti:
@@ -626,8 +630,8 @@ def controlla_scambio(id, conn):
             return False
         
         # Controllo che le squadre abbiano abbastanza slot giocatori disponibili per effettuare gli scambi
-        slot_squadra_proponente = get_slot_occupati(conn, squadra_proponente)
-        slot_squadra_destinataria = get_slot_occupati(conn, squadra_destinataria)
+        slot_squadra_proponente = aste_repo.slot_occupati_totali(cur, squadra_proponente)
+        slot_squadra_destinataria = aste_repo.slot_occupati_totali(cur, squadra_destinataria)
 
         # Verifica post-scambio: slot occupati dopo aver applicato entrate/uscite
         slot_prop_finali = slot_squadra_proponente - len(giocatori_offerti) + len(giocatori_richiesti)
@@ -641,7 +645,7 @@ def controlla_scambio(id, conn):
 
         return True
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
         return False
 
@@ -727,7 +731,7 @@ def effettua_scambio(id, conn, nome_squadra):
             ''', (giocatore_id, giocatore_id, id))
 
         # I giocatori scambiati decadono dalla vetrina, se presenti
-        decadi_vetrina(cur, giocatori_offerti + giocatori_richiesti)
+        vetrina_repo.decadi(cur, giocatori_offerti + giocatori_richiesti)
 
         # Eseguo il trasferimento delle pick del draft
         for pick_id in pick_offerta:
@@ -791,7 +795,7 @@ def effettua_scambio(id, conn, nome_squadra):
                             squadra_att = %s
                         WHERE id = %s;
             ''', (prestito['squadra_ricevente'], prestito['giocatore']))
-            decadi_vetrina(cur, prestito['giocatore'])
+            vetrina_repo.decadi(cur, prestito['giocatore'])
 
             # Rifiuta altri prestiti in attesa per lo stesso giocatore dalla stessa squadra prestante
             cur.execute('''
@@ -817,7 +821,7 @@ def effettua_scambio(id, conn, nome_squadra):
         telegram_utils.scambio_risposta(conn, id, "Accettato")
         return True
     
-    except Exception as e:
+    except Exception:
         if conn:
             conn.rollback()
         logger.exception("Errore durante l'esecuzione dello scambio")
@@ -867,7 +871,7 @@ def annulla_scambio(scambio_id, conn):
         
         conn.commit()
     
-    except Exception as e:
+    except Exception:
         logger.exception("Errore durante l'annullamento dello scambio")
         conn.rollback()
         return False
@@ -908,7 +912,7 @@ def rifiuta_scambio(scambio_id, conn):
         conn.commit()
         telegram_utils.scambio_risposta(conn, scambio_id, "Rifiutato")
         
-    except Exception as e:
+    except Exception:
         logger.exception("Errore durante il rifiuto dello scambio")
         conn.rollback()
     
@@ -959,7 +963,7 @@ def format_prestito(conn, lista_prestiti, squadra_proponente):
 
         return "\n".join(prestiti_offerti), "\n".join(prestiti_richiesti)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore in format_prestito")
         return "", ""
 
