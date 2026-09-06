@@ -3,6 +3,10 @@ from app.core.db import connessione
 from app.blueprints.user import formatta_data
 from app.queries import get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in, sposta_crediti, ruolo_base_sort_key
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 vetrina_bp = Blueprint('vetrina', __name__, url_prefix='/vetrina')
 
@@ -44,7 +48,7 @@ def vetrina():
             squadre = cur.fetchall()
 
     except Exception as e:
-        print(f"Errore durante il caricamento della vetrina: {e}")
+        logger.exception("Errore durante il caricamento della vetrina")
         flash("❌ Errore durante il caricamento della vetrina.", "danger")
 
 

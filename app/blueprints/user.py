@@ -3,6 +3,10 @@ from app.core.db import connessione
 from datetime import datetime
 from app.queries import get_slot_aste, get_slot_giocatori, get_slot_prestiti_in, get_crediti_squadra, get_stato_gate
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
@@ -110,7 +114,7 @@ def format_giocatori(giocatori):
                     nomi_ordinati.append(f"ID {giocatore_id} (non trovato)")
 
     except Exception as e:
-        print(f"❌ Errore durante il recupero dei nomi giocatori: {e}")
+        logger.exception("❌ Errore durante il recupero dei nomi giocatori")
         return "Errore nel recupero dei giocatori"
 
 

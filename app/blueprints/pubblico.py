@@ -18,6 +18,10 @@ from app.queries import (formatta_data_nascita_con_eta,
                          get_slot_giocatori, ruolo_base_sort_key,
                          ruolo_sort_key)
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 pubblico_bp = Blueprint('pubblico', __name__)
 
 
@@ -35,7 +39,7 @@ def health_check():
             cur.execute("SELECT 1;")
         return jsonify({"status": "ok"}), 200
     except Exception as e:
-        print(f"Health check failed: {e}")
+        logger.exception("Health check failed")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -53,7 +57,7 @@ def squadre():
             return render_template("squadre.html", squadre=squadre)
 
     except Exception as e:
-        print("Errore squadre:", e)
+        logger.exception("Errore squadre")
         flash("❌ Errore nel recupero squadre.", "danger")
         return redirect(url_for('pubblico.home'))
 
@@ -240,7 +244,7 @@ def dashboard_squadra(nome_squadra):
             )
 
     except Exception as e:
-        print("Errore dashboard Squadra:", e)
+        logger.exception("Errore dashboard Squadra")
         flash("❌ Errore nel caricamento della squadra.", "danger")
         return redirect(url_for('pubblico.home'))
 
@@ -285,7 +289,7 @@ def movimenti_mercato():
             )
 
     except Exception as e:
-        print("Errore movimenti_mercato:", e)
+        logger.exception("Errore movimenti_mercato")
         flash("❌ Errore nel recupero dei movimenti di mercato.", "danger")
         return redirect(url_for('pubblico.home'))
 
@@ -347,7 +351,7 @@ def crediti_stadi_slot():
             return render_template("crediti_stadi_slot.html", stadi=stadi, squadre=squadre, slot=slot)
 
     except Exception as e:
-        print("Errore crediti stadi e slot:", e)
+        logger.exception("Errore crediti stadi e slot")
         flash("❌ Errore nel caricamento dati stadi.", "danger")
         return redirect(url_for('pubblico.home'))
 
@@ -387,7 +391,7 @@ def listone():
             ]
 
     except Exception as e:
-        print("Errore caricamento listone:", e)
+        logger.exception("Errore caricamento listone")
         flash("❌ Errore durante il caricamento del listone.", "danger")
 
 
@@ -445,7 +449,7 @@ def aste():
 
 
     except Exception as e:
-        print("Errore lista aste generale:", e)
+        logger.exception("Errore lista aste generale")
         flash("❌ Errore nella creazione lista aste.", "danger")
         return redirect(url_for('pubblico.home'))
 

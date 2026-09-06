@@ -9,6 +9,10 @@ from app.core.db import connessione, resync_sequence
 from app.blueprints.user import formatta_data
 from app.queries import get_crediti_squadra, get_offerta_totale, get_quotazione_attuale, get_slot_giocatori, get_nome_giocatore, sposta_crediti, decadi_vetrina, ruolo_sort_key
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 rosa_bp = Blueprint('rosa', __name__, url_prefix='/rosa')
 
 
@@ -77,7 +81,7 @@ def user_primavera(nome_squadra):
             primavera.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
 
     except Exception as e:
-        print(f"Errore durante il caricamento della primavera.")
+        logger.exception("Errore durante il caricamento della primavera.")
         flash("❌ Errore durante il caricamento della primavera.", "danger")
 
 
@@ -219,7 +223,7 @@ def user_vetrina(nome_squadra):
             rosa.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
 
     except Exception as e:
-        print(f"Errore durante l'aggiornamento dello stato vetrina: {e}")
+        logger.exception("Errore durante l'aggiornamento dello stato vetrina")
         flash("❌ Errore durante l'aggiornamento dello stato vetrina.", "danger")
 
         
@@ -301,7 +305,7 @@ def user_tagli(nome_squadra):
             rosa.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
 
     except Exception as e:
-        print(f"Errore durante il caricamento o il taglio dei giocatori: {e}")
+        logger.exception("Errore durante il caricamento o il taglio dei giocatori")
         flash("❌ Errore durante il caricamento o il taglio dei giocatori.", "danger")
 
 
@@ -391,7 +395,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
                                    id_giocatore=id_giocatore)
 
     except Exception as e:
-        print(f"Errore durante la richiesta di modifica contratto: {e}")
+        logger.exception("Errore durante la richiesta di modifica contratto")
         flash("❌ Errore durante la richiesta di modifica contratto.", "danger")
         return redirect(url_for('rosa.user_tagli', nome_squadra=nome_squadra))
 
@@ -510,7 +514,7 @@ def user_gestione_prestiti(nome_squadra):
 
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
         flash("❌ Si è verificato un errore. Ricaricare la pagina.", "danger")
 
 
@@ -597,7 +601,7 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
         telegram_utils.riscatto_giocatore(conn, id_prestito)
 
     except Exception as e:
-        print(f"❌ Errore durante il riscatto del giocatore: {e}")
+        logger.exception("❌ Errore durante il riscatto del giocatore")
         flash("❌ Si è verificato un errore durante il riscatto. Ricaricare la pagina.", "danger")
         conn.rollback()
 
@@ -635,7 +639,7 @@ def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
 
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
         flash("❌ Errore nel controllo del prestito, riprovare.", "danger")
 
     finally:
@@ -702,7 +706,7 @@ def accetta_terminazione(conn, id_prestito):
 
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
         flash("❌ Si è verificato un errore. Ricaricare la pagina.", "danger")
 
     finally:
@@ -751,7 +755,7 @@ def rifiuta_terminazione(conn, id_prestito):
 
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
         flash("❌ Si è verificato un errore. Ricaricare la pagina.", "danger")
 
     finally:
@@ -775,7 +779,7 @@ def esiste_gia_una_richiesta(conn, id_giocatore):
         return row['count'] > 0
 
     except Exception as e:
-        print(f"Errore: {e}")
+        logger.exception("Errore")
         return False
 
     finally:

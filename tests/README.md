@@ -19,6 +19,7 @@ venv/bin/python -m pytest --cov=. --cov-report=term-missing
 | `test_domini_puri.py` | ordinamento ruoli, formattazione date, matching Transfermarkt, anni prestito | no |
 | `test_smoke_routes.py` | tutte le route GET rispondono senza 5xx | sì, sola lettura |
 | `test_core_db.py` | ciclo di vita delle connessioni, ripristino dell'isolamento, commit/rollback | sì, sola lettura |
+| `test_core_logging_errori.py` | eccezioni di dominio, configurazione del logging, conservazione dello stack trace | no |
 
 ## Sicurezza
 

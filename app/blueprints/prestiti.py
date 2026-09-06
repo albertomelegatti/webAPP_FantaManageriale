@@ -6,6 +6,10 @@ from app.core.db import connessione
 from app.blueprints.user import formatta_data, redirect_gate_chiuso
 from app.queries import get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in, sposta_crediti, decadi_vetrina, mercato_aperto
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 prestiti_bp = Blueprint('prestiti', __name__, url_prefix='/prestiti')
 
 
@@ -115,7 +119,7 @@ def user_prestiti(nome_squadra):
 
 
     except Exception as e:
-        print(f"❌ Errore durante il caricamento della pagina 'prestiti': {e}")
+        logger.exception("❌ Errore durante il caricamento della pagina 'prestiti'")
         return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=0, crediti_disponibili=0, prestiti=[], prestiti_in_num=0, block_button=False)
     
 
@@ -250,7 +254,7 @@ def nuovo_prestito(nome_squadra):
                 })
 
     except Exception as e:
-        print(f"❌ Errore durante il caricamento della pagina 'nuovo_prestito': {e}")
+        logger.exception("❌ Errore durante il caricamento della pagina 'nuovo_prestito'")
         return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=0, crediti_disponibili=0, prestiti=[], prestiti_in_num=0, block_button=False)
     
 
@@ -316,6 +320,6 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
 
 
     except Exception as e:
-        print(f"❌ Errore durante l'attivazione del prestito: {e}")
+        logger.exception("❌ Errore durante l'attivazione del prestito")
         return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=0, crediti_disponibili=0, prestiti=[], prestiti_in_num=0, block_button=False)
     
