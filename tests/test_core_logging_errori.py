@@ -83,17 +83,23 @@ class TestLogging:
 
 
 class TestHandlerErroreDominio:
-    def test_un_errore_di_dominio_diventa_un_redirect_non_un_500(self, app):
+    def test_un_errore_di_dominio_diventa_un_redirect_non_un_500(self):
         """Registrato in create_app: la route puo' sollevare e l'utente vede il
-        messaggio, non una pagina di errore."""
-        @app.route("/__prova_errore_dominio")
+        messaggio, non una pagina di errore.
+
+        Costruisce un'applicazione propria invece di usare la fixture condivisa:
+        Flask vieta di registrare route dopo la prima richiesta, e l'app di
+        sessione ne ha gia' servite. Dipendere dall'ordine dei test la
+        renderebbe fragile.
+        """
+        from app import create_app
+
+        applicazione = create_app()
+        applicazione.config.update(TESTING=False, SESSION_COOKIE_SECURE=False)
+
+        @applicazione.route("/__prova_errore_dominio")
         def _prova():
             raise CreditiInsufficienti("❌ Crediti insufficienti per il test.")
 
-        # TESTING=True fa ri-sollevare le eccezioni: qui vogliamo l'handler.
-        app.config["TESTING"] = False
-        try:
-            risposta = app.test_client().get("/__prova_errore_dominio")
-            assert risposta.status_code == 302
-        finally:
-            app.config["TESTING"] = True
+        risposta = applicazione.test_client().get("/__prova_errore_dominio")
+        assert risposta.status_code == 302
