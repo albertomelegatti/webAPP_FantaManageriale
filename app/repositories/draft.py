@@ -34,3 +34,13 @@ def esistono_tutte(cur, pick_ids) -> bool:
         return True
     cur.execute("SELECT COUNT(*) AS n FROM draft WHERE id = ANY(%s);", (pick_ids,))
     return cur.fetchone()["n"] == len(set(pick_ids))
+
+
+def pick_della_squadra(cur, nome_squadra: str) -> list[dict]:
+    cur.execute(
+        """SELECT d.detentore_originale, d.anno, d.numero, g.nome AS giocatore_scelto
+           FROM draft d LEFT JOIN giocatore g ON d.id_giocatore_scelto = g.id
+           WHERE d.detentore_att = %s
+           ORDER BY d.anno, d.numero;""",
+        (nome_squadra,))
+    return cur.fetchall()
