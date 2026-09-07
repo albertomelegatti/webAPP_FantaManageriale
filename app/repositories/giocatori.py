@@ -43,3 +43,23 @@ def nomi_per_id(cur, id_giocatori) -> dict[int, str]:
         return {}
     cur.execute("SELECT id, nome FROM giocatore WHERE id = ANY(%s);", (id_giocatori,))
     return {r["id"]: r["nome"] for r in cur.fetchall()}
+
+
+def con_cartellino(cur, nome_squadra: str) -> list[dict]:
+    """Giocatori di cui la squadra detiene il cartellino, primavera esclusa."""
+    cur.execute(
+        """SELECT id, nome, ruolo, club, quot_att_mantra FROM giocatore
+           WHERE detentore_cartellino = %s AND tipo_contratto <> 'Primavera'
+           ORDER BY nome;""",
+        (nome_squadra,),
+    )
+    return cur.fetchall()
+
+
+def primavera(cur, nome_squadra: str) -> list[dict]:
+    cur.execute(
+        """SELECT id, nome, ruolo, club, quot_att_mantra FROM giocatore
+           WHERE squadra_att = %s AND tipo_contratto = 'Primavera';""",
+        (nome_squadra,),
+    )
+    return cur.fetchall()
