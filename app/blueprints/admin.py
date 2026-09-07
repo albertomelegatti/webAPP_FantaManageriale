@@ -9,6 +9,7 @@ from app.domini.matching_transfermarkt import candidati_fuzzy
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data
 from app.domini.ruoli import pulisci_ruolo
+from app.repositories import albo_oro as albo_oro_repo
 from app.repositories import configurazione as configurazione_repo
 from app.repositories import vetrina as vetrina_repo
 
@@ -113,6 +114,73 @@ def admin_chiusura_mercato_aste():
 
 
     return render_template("admin_chiusura_mercato_aste.html", stato_gate=stato_gate)
+
+
+@admin_bp.route("/albo_oro", methods=["GET", "POST"])
+def admin_albo_oro():
+    righe = []
+    squadre = []
+    stagione_corrente = telegram_utils.get_stagione()
+
+    try:
+        with connessione() as (conn, cur):
+            if request.method == "POST":
+
+                # ELIMINA RIGA
+                id_elimina = request.form.get("elimina_id")
+                if id_elimina:
+                    albo_oro_repo.elimina(cur, id_elimina)
+                    conn.commit()
+                    flash("✅ Riga eliminata dall'albo d'oro.", "success")
+                    return redirect(url_for("admin.admin_albo_oro"))
+
+                # AGGIUNGI RIGA
+                stagione = request.form.get("stagione", "").strip()
+                competizione = request.form.get("competizione", "").strip()
+                fase = request.form.get("fase", "").strip() or None
+                squadra = request.form.get("squadra", "").strip()
+                posizione_raw = request.form.get("posizione", "").strip()
+                crediti_raw = request.form.get("crediti_generati", "").strip()
+
+                if not (stagione and competizione and squadra and posizione_raw):
+                    flash("❌ Compila tutti i campi obbligatori.", "danger")
+                    return redirect(url_for("admin.admin_albo_oro"))
+
+                try:
+                    posizione = int(posizione_raw)
+                    crediti_generati = int(crediti_raw) if crediti_raw else 0
+                except ValueError:
+                    flash("❌ Posizione o crediti non validi.", "danger")
+                    return redirect(url_for("admin.admin_albo_oro"))
+
+                try:
+                    albo_oro_repo.inserisci(cur, stagione, competizione, fase,
+                                             squadra, posizione, crediti_generati)
+                    conn.commit()
+                except psycopg2.errors.UniqueViolation:
+                    conn.rollback()
+                    flash("❌ Esiste già una riga per questa posizione (o questa squadra) "
+                          "in questa fase/stagione.", "danger")
+                    return redirect(url_for("admin.admin_albo_oro"))
+
+                flash("✅ Riga aggiunta all'albo d'oro.", "success")
+                return redirect(url_for("admin.admin_albo_oro"))
+
+            righe = albo_oro_repo.leggi(cur)
+
+            cur.execute('''
+                        SELECT nome
+                        FROM squadra
+                        WHERE nome <> 'Svincolato'
+                        ORDER BY nome ASC;''')
+            squadre = [r["nome"] for r in cur.fetchall()]
+
+    except Exception:
+        logger.exception("Errore")
+        flash("❌ Errore durante il caricamento o l'aggiornamento dell'albo d'oro.", "danger")
+
+    return render_template("admin_albo_oro.html", righe=righe, squadre=squadre,
+                            stagione_corrente=stagione_corrente)
 
 
 @admin_bp.route("/invia_comunicazione", methods=["GET", "POST"])

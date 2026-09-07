@@ -17,6 +17,7 @@ from app.core.db import connessione
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data, formatta_data_nascita_con_eta, formatta_scadenza_contratto
 from app.domini.ruoli import pulisci_ruolo, ruoli_base_presenti, ruolo_sort_key
+from app.repositories import albo_oro as albo_oro_repo
 from app.repositories import aste as aste_repo
 from app.repositories import giocatori as giocatori_repo
 
@@ -354,6 +355,21 @@ def crediti_stadi_slot():
         logger.exception("Errore crediti stadi e slot")
         flash("❌ Errore nel caricamento dati stadi.", "danger")
         return redirect(url_for('pubblico.home'))
+
+
+@pubblico_bp.route("/albo_oro")
+def albo_oro():
+    righe = []
+
+    try:
+        with connessione() as (conn, cur):
+            righe = albo_oro_repo.leggi(cur)
+    except Exception:
+        logger.exception("Errore albo d'oro")
+        flash("❌ Errore nel caricamento dell'albo d'oro.", "danger")
+        return redirect(url_for('pubblico.home'))
+
+    return render_template("albo_oro.html", righe=righe)
 
 
 @pubblico_bp.route("/listone")

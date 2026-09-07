@@ -1,0 +1,141 @@
+{% extends 'base_tailwind.html' %}
+
+{% block content %}
+{% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('pubblico.home')) }}</div>
+<h2 class="mb-4 text-center text-lg font-bold">Albo d'Oro</h2>
+
+{% set stagioni = righe | map(attribute='stagione') | unique | list %}
+{% for stagione in stagioni %}
+{% set righe_stagione = righe | selectattr('stagione', 'equalto', stagione) | list %}
+{% set fasi_coppa = righe_stagione | selectattr('competizione', 'equalto', 'Coppa') | map(attribute='fase') | unique | list %}
+<div class="mb-4 rounded-2xl border border-line bg-panel p-4">
+    <h3 class="mb-3 text-base font-bold">Stagione {{ stagione }}</h3>
+
+    <!-- Campionato -->
+    <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Campionato</h4>
+    <table class="mb-4 w-full table-fixed text-sm sortable-table" id="campionato-{{ stagione }}">
+        <colgroup>
+            <col style="width:16%"><col style="width:60%"><col style="width:24%">
+        </colgroup>
+        <thead>
+            <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                <th class="pb-2 text-center font-semibold">Pos.</th>
+                <th class="pb-2 font-semibold">Squadra</th>
+                <th class="pb-2 text-center font-semibold">Crediti</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-line">
+            {% for r in righe_stagione if r.competizione == 'Campionato' %}
+            <tr>
+                <td class="py-2 text-center tabular-nums font-semibold">{{ r.posizione }}</td>
+                <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-2 font-medium">{{ r.squadra }}</td>
+                <td class="py-2 text-center tabular-nums text-accent font-semibold">{{ r.crediti_generati }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Coppa: una tabella per ogni fase presente in questa stagione -->
+    {% if fasi_coppa %}
+    <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Coppa</h4>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {% for fase in fasi_coppa %}
+        <div>
+            <h5 class="mb-1 text-xs font-semibold text-muted">{{ fase }}</h5>
+            <table class="w-full table-fixed text-sm sortable-table" id="coppa-{{ stagione }}-{{ loop.index }}">
+                <colgroup>
+                    <col style="width:16%"><col style="width:60%"><col style="width:24%">
+                </colgroup>
+                <thead>
+                    <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                        <th class="pb-2 text-center font-semibold">Pos.</th>
+                        <th class="pb-2 font-semibold">Squadra</th>
+                        <th class="pb-2 text-center font-semibold">Crediti</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-line">
+                    {% for r in righe_stagione if r.competizione == 'Coppa' and r.fase == fase %}
+                    <tr>
+                        <td class="py-2 text-center tabular-nums font-semibold">{{ r.posizione }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-2 font-medium">{{ r.squadra }}</td>
+                        <td class="py-2 text-center tabular-nums text-accent font-semibold">{{ r.crediti_generati }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<p class="py-4 text-center text-sm text-muted">Nessun dato ancora disponibile nell'albo d'oro.</p>
+{% endfor %}
+
+<style>
+.sortable-table thead th {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+.sortable-table thead th::after {
+    content: ' \2195';
+    color: var(--muted);
+    font-size: 0.85em;
+}
+.sortable-table thead th.asc::after {
+    content: ' \2191';
+    color: var(--accent);
+}
+.sortable-table thead th.desc::after {
+    content: ' \2193';
+    color: var(--accent);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const extractNumber = (value) => {
+        const match = value.replace(',', '.').match(/-?\d+(\.\d+)?/);
+        return match ? parseFloat(match[0]) : NaN;
+    };
+
+    const attachSorting = (table) => {
+        const headers = table.querySelectorAll('thead th');
+
+        headers.forEach((header, index) => {
+            header.addEventListener('click', function() {
+                const tbody = table.querySelector('tbody');
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                const isAsc = !this.classList.contains('asc');
+
+                headers.forEach(h => h.classList.remove('asc', 'desc'));
+                this.classList.add(isAsc ? 'asc' : 'desc');
+
+                rows.sort((a, b) => {
+                    const aValue = a.children[index].textContent.trim();
+                    const bValue = b.children[index].textContent.trim();
+
+                    const aNum = extractNumber(aValue);
+                    const bNum = extractNumber(bValue);
+
+                    if (!isNaN(aNum) && !isNaN(bNum)) {
+                        return isAsc ? aNum - bNum : bNum - aNum;
+                    }
+
+                    return isAsc
+                        ? aValue.localeCompare(bValue, 'it')
+                        : bValue.localeCompare(aValue, 'it');
+                });
+
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
+    };
+
+    document.querySelectorAll('.sortable-table').forEach(attachSorting);
+});
+</script>
+{% endblock %}
