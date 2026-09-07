@@ -97,9 +97,8 @@
 <div class="mb-4 rounded-2xl border border-line bg-panel p-4">
     <label class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Stagione</label>
     <select id="filterStagione" class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
-        <option value="">Tutte</option>
         {% for stagione in stagioni %}
-        <option value="{{ stagione }}">{{ stagione }}</option>
+        <option value="{{ stagione }}" {% if loop.first %}selected{% endif %}>{{ stagione }}</option>
         {% endfor %}
     </select>
 </div>
@@ -136,12 +135,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!filterStagione) return;
     const cards = Array.from(document.getElementById('stagioniBody').querySelectorAll('[data-stagione]'));
 
-    filterStagione.addEventListener('change', function() {
-        const selezionata = this.value;
+    function applyFilter() {
+        const selezionata = filterStagione.value;
         cards.forEach(card => {
-            card.classList.toggle('hidden', !!selezionata && card.getAttribute('data-stagione') !== selezionata);
+            card.classList.toggle('hidden', card.getAttribute('data-stagione') !== selezionata);
         });
-    });
+    }
+
+    filterStagione.addEventListener('change', applyFilter);
+    applyFilter(); // il select parte già sull'ultima stagione: nascondi subito le altre
 });
 </script>
 {% endblock %}
