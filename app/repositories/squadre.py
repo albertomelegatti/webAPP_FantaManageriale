@@ -25,32 +25,24 @@ def crediti_e_offerta(cur, nome_squadra: str) -> tuple[int, int]:
     return riga["crediti"], riga["offerta_totale"]
 
 
-def sposta_crediti(conn, squadra_from: str, squadra_to: str, crediti_da_spostare: int) -> None:
-    """Trasferisce crediti fra due squadre.
+def sposta_crediti(cur, squadra_from: str, squadra_to: str, crediti_da_spostare: int) -> None:
+    """Trasferisce crediti fra due squadre, dentro la transazione del chiamante.
 
-    ATTENZIONE - difetto noto, correzione prevista nella Fase 8.
-    A differenza di tutto il resto del pacchetto questa funzione riceve la
-    connessione e committa al proprio interno, committando cosi' la transazione
-    del CHIAMANTE. In attiva_prestito viene invocata prima del commit finale:
-    un errore fra le due lascia i crediti spostati e il prestito non attivato.
-    La correzione e' ricevere un cursore e non committare, come le altre; e'
-    rimandata perche' cambia il comportamento. Vedi il test xfail(strict=True)
-    in tests/test_scrittura_prestiti.py.
+    Non committa e non intercetta errori: se qualcosa fallisce, l'eccezione
+    risale e il chiamante annulla l'intera operazione. E' cio' che rende lo
+    spostamento atomico rispetto al resto - l'attivazione di un prestito, un
+    riscatto - invece di un passo a se' stante che puo' restare a meta'.
     """
-    from app.core.logging import get_logger
+    cur.execute("UPDATE squadra SET crediti = crediti - %s WHERE nome = %s;",
+                (crediti_da_spostare, squadra_from))
+    cur.execute("UPDATE squadra SET crediti = crediti + %s WHERE nome = %s;",
+                (crediti_da_spostare, squadra_to))
 
-    logger = get_logger(__name__)
-    cur = None
-    try:
-        cur = conn.cursor()
-        cur.execute("UPDATE squadra SET crediti = crediti - %s WHERE nome = %s;",
-                    (crediti_da_spostare, squadra_from))
-        cur.execute("UPDATE squadra SET crediti = crediti + %s WHERE nome = %s;",
-                    (crediti_da_spostare, squadra_to))
-        conn.commit()
-    except Exception:
-        logger.exception("Errore durante lo spostamento dei crediti")
-        conn.rollback()
-    finally:
-        if cur:
-            cur.close()
+
+def nomi_diversi_da(cur, nome_squadra: str) -> list[dict]:
+    """Le altre squadre, escluso Svincolato: i possibili interlocutori di uno
+    scambio o di un prestito."""
+    cur.execute(
+        "SELECT nome FROM squadra WHERE nome <> %s AND nome <> 'Svincolato' ORDER BY nome;",
+        (nome_squadra,))
+    return cur.fetchall()

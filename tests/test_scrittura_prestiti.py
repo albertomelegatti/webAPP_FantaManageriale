@@ -1,9 +1,8 @@
 """
 Percorsi di scrittura dei prestiti: attivazione e riscatto.
 
-Contiene anche la documentazione eseguibile di un difetto noto di atomicita',
-marcato xfail(strict=True): oggi fallisce come previsto, e nel momento in cui
-la Fase 8 lo corregge il test passa e la marcatura strict segnala che va tolta.
+Contiene anche i test sull'atomicita' dello spostamento crediti, corretta nella
+Fase 8a: erano marcati xfail finche' il difetto esisteva, ora sono test normali.
 """
 
 import pytest
@@ -111,43 +110,112 @@ class TestAttivazionePrestito:
 
 
 class TestAtomicitaSpostamentoCrediti:
-    """Difetto noto, non ancora corretto.
+    """Lo spostamento dei crediti deve stare nella stessa transazione del resto.
 
-    app/queries.py sposta_crediti() chiama conn.commit() al proprio interno,
-    committando cosi' la transazione del CHIAMANTE. In attiva_prestito viene
-    invocata prima del commit finale: se qualcosa fallisce fra le due, i crediti
-    risultano gia' spostati mentre il prestito non e' stato attivato.
+    Prima della Fase 8a, sposta_crediti() chiamava conn.commit() al proprio
+    interno, committando cosi' la transazione del CHIAMANTE. In attiva_prestito
+    veniva invocata poco prima del commit finale: se qualcosa falliva fra le due,
+    i crediti risultavano gia' spostati mentre il prestito non era stato
+    attivato. Soldi mossi per un'operazione mai avvenuta.
 
-    Il test descrive il comportamento corretto e oggi fallisce. E' marcato
-    xfail(strict=True), quindi quando la Fase 8 rendera' sposta_crediti
-    partecipante alla transazione invece che padrona, il test passera' e la
-    marcatura strict fara' rumore per ricordare di toglierla.
+    Il guasto va iniettato esattamente in quella finestra, cioe' al momento del
+    commit. Iniettarlo dopo non proverebbe nulla: a commit avvenuto l'operazione
+    e' conclusa e i crediti DEVONO essere spostati.
     """
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="sposta_crediti committa la transazione del chiamante: correzione prevista in Fase 8",
-    )
-    def test_se_l_attivazione_fallisce_i_crediti_non_devono_essersi_mossi(
+    def test_se_il_commit_fallisce_i_crediti_non_restano_spostati(
         self, app, cur, db_isolato, gate_aperto, monkeypatch
     ):
-        from app.blueprints import prestiti as modulo
-
         prestante, ricevente = _due_squadre(cur)
         giocatore = _giocatore_di(cur, prestante)
         cur.execute("UPDATE squadra SET crediti = 300 WHERE nome IN (%s, %s);", (prestante, ricevente))
         id_prestito = _crea_prestito(cur, giocatore, prestante, ricevente, costo=40)
         db_isolato.commit()
 
-        # Fa fallire l'operazione DOPO lo spostamento dei crediti e PRIMA del
-        # commit finale: e' la finestra in cui i due passi si separano.
-        def esplode(*args, **kwargs):
-            raise RuntimeError("errore simulato dopo lo spostamento dei crediti")
+        # Da qui in avanti il commit fallisce: e' il punto in cui, con il vecchio
+        # codice, i crediti erano gia' stati committati per conto proprio.
+        commit_originale = type(db_isolato).commit
+        esplodi = {"attivo": False}
 
-        monkeypatch.setattr(modulo.telegram_utils, "prestito_risposta", esplode)
+        def commit_che_fallisce(self):
+            if esplodi["attivo"]:
+                raise RuntimeError("commit fallito, simulato")
+            return commit_originale(self)
+
+        monkeypatch.setattr(type(db_isolato), "commit", commit_che_fallisce)
+        esplodi["attivo"] = True
 
         _client(app, ricevente).post(f"/prestiti/prestiti/{ricevente}",
                                      data={"accetta_prestito": id_prestito})
 
+        esplodi["attivo"] = False
+        monkeypatch.undo()
+
         assert _crediti(cur, ricevente) == 300, "i crediti si sono mossi nonostante il fallimento"
         assert _crediti(cur, prestante) == 300
+
+        cur.execute("SELECT stato FROM prestito WHERE id = %s;", (id_prestito,))
+        assert cur.fetchone()["stato"] == "in_attesa", "il prestito non doveva risultare attivato"
+
+    def test_a_operazione_riuscita_i_crediti_si_muovono(
+        self, app, cur, db_isolato, gate_aperto
+    ):
+        """Il contrappeso del test sopra: senza questo, un codice che non sposta
+        mai i crediti passerebbe comunque."""
+        prestante, ricevente = _due_squadre(cur)
+        giocatore = _giocatore_di(cur, prestante)
+        cur.execute("UPDATE squadra SET crediti = 300 WHERE nome IN (%s, %s);", (prestante, ricevente))
+        id_prestito = _crea_prestito(cur, giocatore, prestante, ricevente, costo=40)
+        db_isolato.commit()
+
+        _client(app, ricevente).post(f"/prestiti/prestiti/{ricevente}",
+                                     data={"accetta_prestito": id_prestito})
+
+        assert _crediti(cur, ricevente) == 260
+        assert _crediti(cur, prestante) == 340
+
+
+class TestAnnullamentoENuovaRichiesta:
+    def test_annullare_una_richiesta_inviata(self, app, cur, db_isolato, gate_aperto):
+        prestante, ricevente = _due_squadre(cur)
+        giocatore = _giocatore_di(cur, prestante)
+        id_prestito = _crea_prestito(cur, giocatore, prestante, ricevente)
+        db_isolato.commit()
+
+        _client(app, ricevente).post(f"/prestiti/prestiti/{ricevente}",
+                                     data={"annulla_prestito": id_prestito})
+
+        cur.execute("SELECT stato FROM prestito WHERE id = %s;", (id_prestito,))
+        assert cur.fetchone()["stato"] == "annullato"
+
+    def test_una_nuova_richiesta_nasce_in_attesa(self, app, cur, db_isolato, gate_aperto):
+        """Il prestito proposto non e' attivo: lo diventa solo se l'altra
+        squadra accetta."""
+        prestante, ricevente = _due_squadre(cur)
+        giocatore = _giocatore_di(cur, prestante)
+        cur.execute("DELETE FROM prestito WHERE giocatore = %s AND stato = 'in_attesa';", (giocatore,))
+        cur.execute("SELECT count(*) AS n FROM prestito;")
+        prima = cur.fetchone()["n"]
+        db_isolato.commit()
+
+        from app.domini.calendario import anni_prestito_ammessi
+        _, anno = anni_prestito_ammessi()
+
+        _client(app, ricevente).post(
+            f"/prestiti/nuovo_prestito/{ricevente}",
+            data={"squadra_prestante": prestante, "giocatore_richiesto": str(giocatore),
+                  "data_fine_anno": str(anno), "tipo_prestito": "Secco",
+                  "costo_prestito": "12", "note": "prova"})
+
+        cur.execute("SELECT count(*) AS n FROM prestito;")
+        assert cur.fetchone()["n"] == prima + 1, "la richiesta doveva essere creata"
+
+        cur.execute(
+            """SELECT stato, squadra_prestante, squadra_ricevente, costo_prestito, tipo_prestito
+               FROM prestito ORDER BY id DESC LIMIT 1;""")
+        p = cur.fetchone()
+        assert p["stato"] == "in_attesa"
+        assert p["squadra_prestante"] == prestante
+        assert p["squadra_ricevente"] == ricevente
+        assert p["costo_prestito"] == 12
+        assert p["tipo_prestito"] == "secco"

@@ -8,9 +8,9 @@ connessione e decide i confini della transazione; il repository si limita a
 leggere e scrivere dentro quei confini.
 
 Secondo: i repository non committano mai. Il commit e' una decisione del
-chiamante, perche' solo lui sa se l'operazione e' completa. Fa eccezione, per
-ora, squadre.sposta_crediti(): committa al proprio interno ed e' un difetto noto
-di atomicita', documentato dove e' definita e coperto da un test xfail.
+chiamante, perche' solo lui sa se l'operazione e' completa, e non intercettano
+le eccezioni: un errore deve risalire perche' il chiamante possa annullare tutto.
+La regola non ha eccezioni.
 
 Nessun modulo qui importa Flask.
 """

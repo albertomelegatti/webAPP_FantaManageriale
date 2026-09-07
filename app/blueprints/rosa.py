@@ -26,50 +26,44 @@ rosa_bp = Blueprint('rosa', __name__, url_prefix='/rosa')
 def user_primavera(nome_squadra):
     primavera = []
 
-    try:
-        with connessione() as (conn, cur):
-            if request.method == "POST":
+    with connessione() as (conn, cur):
+        if request.method == "POST":
 
-                # Promuovi un giocatore in prima squadra
-                id_giocatore_da_promuovere = request.form.get("id_giocatore_da_promuovere")
-                if id_giocatore_da_promuovere:
-                    cur.execute('''
-                                UPDATE giocatore
-                                SET tipo_contratto = 'Indeterminato'
-                                WHERE id = %s;
-                    ''', (id_giocatore_da_promuovere,))
-                    conn.commit()
+            # Promuovi un giocatore in prima squadra
+            id_giocatore_da_promuovere = request.form.get("id_giocatore_da_promuovere")
+            if id_giocatore_da_promuovere:
+                cur.execute('''
+                            UPDATE giocatore
+                            SET tipo_contratto = 'Indeterminato'
+                            WHERE id = %s;
+                ''', (id_giocatore_da_promuovere,))
+                conn.commit()
 
-                    nome_giocatore = giocatori_repo.nome(cur, id_giocatore_da_promuovere)
-                    flash("✅ Giocatore promosso in prima squadra con successo.", "success")
-                    telegram_utils.promozione_giocatore_primavera(conn, nome_squadra, nome_giocatore)
+                nome_giocatore = giocatori_repo.nome(cur, id_giocatore_da_promuovere)
+                flash("✅ Giocatore promosso in prima squadra con successo.", "success")
+                telegram_utils.promozione_giocatore_primavera(conn, nome_squadra, nome_giocatore)
 
-                # Taglia un giocatore dalla primavera
-                id_giocatore_da_tagliare = request.form.get("id_giocatore_da_tagliare")
-                if id_giocatore_da_tagliare:
-                    cur.execute('''
-                                UPDATE giocatore
-                                SET squadra_att = 'Svincolato',
-                                    detentore_cartellino = 'Svincolato',
-                                    tipo_contratto = 'Svincolato'
-                                WHERE id = %s;
-                    ''', (id_giocatore_da_tagliare,))
-                    vetrina_repo.decadi(cur, id_giocatore_da_tagliare)
+            # Taglia un giocatore dalla primavera
+            id_giocatore_da_tagliare = request.form.get("id_giocatore_da_tagliare")
+            if id_giocatore_da_tagliare:
+                cur.execute('''
+                            UPDATE giocatore
+                            SET squadra_att = 'Svincolato',
+                                detentore_cartellino = 'Svincolato',
+                                tipo_contratto = 'Svincolato'
+                            WHERE id = %s;
+                ''', (id_giocatore_da_tagliare,))
+                vetrina_repo.decadi(cur, id_giocatore_da_tagliare)
 
-                    nome_giocatore = giocatori_repo.nome(cur, id_giocatore_da_tagliare)
+                nome_giocatore = giocatori_repo.nome(cur, id_giocatore_da_tagliare)
 
-                    conn.commit()
-                    flash("✅ Giocatore tagliato con successo.", "success")
-                    telegram_utils.taglio_giocatore(conn, nome_squadra, nome_giocatore, 0)
+                conn.commit()
+                flash("✅ Giocatore tagliato con successo.", "success")
+                telegram_utils.taglio_giocatore(conn, nome_squadra, nome_giocatore, 0)
 
 
-            # Selezione dei giocatori in primavera
-            primavera = servizio_rosa.giocatori_primavera(cur, nome_squadra)
-
-    except Exception:
-        logger.exception("Errore durante il caricamento della primavera.")
-        flash("❌ Errore durante il caricamento della primavera.", "danger")
-
+        # Selezione dei giocatori in primavera
+        primavera = servizio_rosa.giocatori_primavera(cur, nome_squadra)
 
     return render_template("user_primavera.html", nome_squadra=nome_squadra, primavera=primavera)
 
@@ -81,138 +75,132 @@ def user_vetrina(nome_squadra):
 
     rosa = []
 
-    try:
-        with connessione() as (conn, cur):
-            if request.method == "POST":
-                vetrina_data_raw = request.form.get("vetrina_data", "")
+    with connessione() as (conn, cur):
+        if request.method == "POST":
+            vetrina_data_raw = request.form.get("vetrina_data", "")
 
-                try:
-                    dati_giocatori = json.loads(vetrina_data_raw) if vetrina_data_raw else []
-                except (ValueError, TypeError):
-                    flash("❌ Dati inviati non validi, ricarica la pagina e riprova.", "danger")
-                    return redirect(url_for("rosa.user_vetrina", nome_squadra=nome_squadra))
+            try:
+                dati_giocatori = json.loads(vetrina_data_raw) if vetrina_data_raw else []
+            except (ValueError, TypeError):
+                flash("❌ Dati inviati non validi, ricarica la pagina e riprova.", "danger")
+                return redirect(url_for("rosa.user_vetrina", nome_squadra=nome_squadra))
 
-                # Recupero i giocatori validi per questa squadra (id -> nome)
-                cur.execute('SELECT id, nome FROM giocatore WHERE detentore_cartellino = %s;', (nome_squadra,))
-                giocatori_validi = {str(r['id']): r['nome'] for r in cur.fetchall()}
+            # Recupero i giocatori validi per questa squadra (id -> nome)
+            cur.execute('SELECT id, nome FROM giocatore WHERE detentore_cartellino = %s;', (nome_squadra,))
+            giocatori_validi = {str(r['id']): r['nome'] for r in cur.fetchall()}
 
-                # Validazione: nota inserita senza uno stato selezionato,
-                # e scarto qualunque id non appartenente a questa squadra
-                nomi_con_errore = []
-                righe_valide = []
-                for riga in dati_giocatori:
-                    id_giocatore = str(riga.get("id", ""))
-                    if id_giocatore not in giocatori_validi:
-                        continue
+            # Validazione: nota inserita senza uno stato selezionato,
+            # e scarto qualunque id non appartenente a questa squadra
+            nomi_con_errore = []
+            righe_valide = []
+            for riga in dati_giocatori:
+                id_giocatore = str(riga.get("id", ""))
+                if id_giocatore not in giocatori_validi:
+                    continue
 
-                    stato_vetrina = riga.get("stato") or ""
-                    nota_pulita = (riga.get("note") or "").strip()
-                    stato_valido = stato_vetrina and stato_vetrina != "rimuovi"
+                stato_vetrina = riga.get("stato") or ""
+                nota_pulita = (riga.get("note") or "").strip()
+                stato_valido = stato_vetrina and stato_vetrina != "rimuovi"
 
-                    if nota_pulita and not stato_valido:
-                        nomi_con_errore.append(giocatori_validi[id_giocatore])
+                if nota_pulita and not stato_valido:
+                    nomi_con_errore.append(giocatori_validi[id_giocatore])
 
-                    righe_valide.append((id_giocatore, stato_vetrina, nota_pulita))
+                righe_valide.append((id_giocatore, stato_vetrina, nota_pulita))
 
-                if nomi_con_errore:
-                    flash(
-                        f"❌ Seleziona uno stato vetrina prima di salvare una nota per: {', '.join(nomi_con_errore)}.",
-                        "danger"
-                    )
-                    return redirect(url_for("rosa.user_vetrina", nome_squadra=nome_squadra))
+            if nomi_con_errore:
+                flash(
+                    f"❌ Seleziona uno stato vetrina prima di salvare una nota per: {', '.join(nomi_con_errore)}.",
+                    "danger"
+                )
+                return redirect(url_for("rosa.user_vetrina", nome_squadra=nome_squadra))
 
-                for id_giocatore, stato_vetrina, nota_pulita in righe_valide:
+            for id_giocatore, stato_vetrina, nota_pulita in righe_valide:
 
-                    # Valore sentinella dall'opzione "Rimuovi da vetrina":
-                    # trattalo come nessuno stato, uguale a stringa vuota
-                    if stato_vetrina == "rimuovi":
-                        stato_vetrina = ""
+                # Valore sentinella dall'opzione "Rimuovi da vetrina":
+                # trattalo come nessuno stato, uguale a stringa vuota
+                if stato_vetrina == "rimuovi":
+                    stato_vetrina = ""
 
-                    cur.execute(
-                        '''
-                        SELECT 1
-                        FROM vetrina
-                        WHERE id_giocatore = %s;
-                        ''',
-                        (id_giocatore,)
-                    )
-                    vetrina_esiste = cur.fetchone() is not None
+                cur.execute(
+                    '''
+                    SELECT 1
+                    FROM vetrina
+                    WHERE id_giocatore = %s;
+                    ''',
+                    (id_giocatore,)
+                )
+                vetrina_esiste = cur.fetchone() is not None
 
-                    if not stato_vetrina:
-                        if vetrina_esiste:
-                            cur.execute(
-                                '''
-                                DELETE FROM vetrina
-                                WHERE id_giocatore = %s;
-                                ''',
-                                (id_giocatore,)
-                            )
-                        continue
-
+                if not stato_vetrina:
                     if vetrina_esiste:
                         cur.execute(
                             '''
-                            UPDATE vetrina
-                            SET stato = %s,
-                                note = %s
+                            DELETE FROM vetrina
                             WHERE id_giocatore = %s;
                             ''',
-                            (stato_vetrina, nota_pulita or None, id_giocatore)
+                            (id_giocatore,)
                         )
-                    else:
-                        cur.execute(
-                            '''
-                            INSERT INTO vetrina (id_giocatore, stato, note, data_inserimento)
-                            VALUES (%s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome');
-                            ''',
-                            (id_giocatore, stato_vetrina, nota_pulita or None)
-                        )
+                    continue
 
-                conn.commit()
-                flash("✅ Vetrina aggiornata con successo.", "success")
-                return redirect(url_for("rosa.user_vetrina", nome_squadra=nome_squadra))
+                if vetrina_esiste:
+                    cur.execute(
+                        '''
+                        UPDATE vetrina
+                        SET stato = %s,
+                            note = %s
+                        WHERE id_giocatore = %s;
+                        ''',
+                        (stato_vetrina, nota_pulita or None, id_giocatore)
+                    )
+                else:
+                    cur.execute(
+                        '''
+                        INSERT INTO vetrina (id_giocatore, stato, note, data_inserimento)
+                        VALUES (%s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome');
+                        ''',
+                        (id_giocatore, stato_vetrina, nota_pulita or None)
+                    )
+
+            conn.commit()
+            flash("✅ Vetrina aggiornata con successo.", "success")
+            return redirect(url_for("rosa.user_vetrina", nome_squadra=nome_squadra))
 
 
-            # Sezione GET
+        # Sezione GET
 
-            cur.execute('''
-                        SELECT
-                            g.id,
-                            g.nome,
-                            g.ruolo,
-                            g.club,
-                            g.quot_att_mantra,
-                            g.tipo_contratto,
-                            v.stato AS stato_vetrina,
-                            v.note AS note
-                        FROM giocatore g
-                        LEFT JOIN vetrina v
-                            ON v.id_giocatore = g.id
-                        WHERE g.detentore_cartellino = %s
-                        ORDER BY g.nome;
-            ''', (nome_squadra,))
-            rosa_raw = cur.fetchall()
+        cur.execute('''
+                    SELECT
+                        g.id,
+                        g.nome,
+                        g.ruolo,
+                        g.club,
+                        g.quot_att_mantra,
+                        g.tipo_contratto,
+                        v.stato AS stato_vetrina,
+                        v.note AS note
+                    FROM giocatore g
+                    LEFT JOIN vetrina v
+                        ON v.id_giocatore = g.id
+                    WHERE g.detentore_cartellino = %s
+                    ORDER BY g.nome;
+        ''', (nome_squadra,))
+        rosa_raw = cur.fetchall()
 
-            for giocatore in rosa_raw:
-                ruolo = pulisci_ruolo(giocatore['ruolo'])
-                rosa.append({
-                    "id": giocatore["id"],
-                    "nome": giocatore["nome"],
-                    "ruolo": ruolo,
-                    "club": giocatore.get("club"),
-                    "quot_att_mantra": giocatore.get("quot_att_mantra"),
-                    "tipo_contratto": giocatore.get("tipo_contratto"),
-                    "stato_vetrina": giocatore.get("stato_vetrina"),
-                    "note": giocatore.get("note"),
-                })
+        for giocatore in rosa_raw:
+            ruolo = pulisci_ruolo(giocatore['ruolo'])
+            rosa.append({
+                "id": giocatore["id"],
+                "nome": giocatore["nome"],
+                "ruolo": ruolo,
+                "club": giocatore.get("club"),
+                "quot_att_mantra": giocatore.get("quot_att_mantra"),
+                "tipo_contratto": giocatore.get("tipo_contratto"),
+                "stato_vetrina": giocatore.get("stato_vetrina"),
+                "note": giocatore.get("note"),
+            })
 
-            rosa.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
+        rosa.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
 
-    except Exception:
-        logger.exception("Errore durante l'aggiornamento dello stato vetrina")
-        flash("❌ Errore durante l'aggiornamento dello stato vetrina.", "danger")
-
-        
     return render_template("user_vetrina.html", nome_squadra=nome_squadra, rosa=rosa)
 
 
@@ -222,57 +210,51 @@ def user_tagli(nome_squadra):
     crediti_disponibili = 0
     rosa = []
 
-    try:
-        with connessione() as (conn, cur):
-            crediti = squadre_repo.crediti(cur, nome_squadra)
-            crediti_disponibili = crediti - aste_repo.offerta_totale(cur, nome_squadra)
+    with connessione() as (conn, cur):
+        crediti = squadre_repo.crediti(cur, nome_squadra)
+        crediti_disponibili = crediti - aste_repo.offerta_totale(cur, nome_squadra)
 
-            if request.method == "POST":
-                id_giocatore_da_tagliare = request.form.get("id_giocatore_da_tagliare")
-                if id_giocatore_da_tagliare:
+        if request.method == "POST":
+            id_giocatore_da_tagliare = request.form.get("id_giocatore_da_tagliare")
+            if id_giocatore_da_tagliare:
 
-                    # Ottieni la quotazione attuale del giocatore
-                    quotazione_attuale = giocatori_repo.quotazione(cur, id_giocatore_da_tagliare)
-                    costo_taglio = math.ceil(quotazione_attuale / 2)
+                # Ottieni la quotazione attuale del giocatore
+                quotazione_attuale = giocatori_repo.quotazione(cur, id_giocatore_da_tagliare)
+                costo_taglio = math.ceil(quotazione_attuale / 2)
 
-                    if crediti_disponibili < costo_taglio:
-                        flash("❌ Non hai abbastanza crediti per tagliare questo giocatore.", "danger")
-                        conn.rollback()
-                        return redirect(url_for("rosa.user_tagli", nome_squadra=nome_squadra))
-
-                    # Aggiorna il giocatore a svincolato
-                    cur.execute('''
-                                UPDATE giocatore
-                                SET squadra_att = 'Svincolato',
-                                    detentore_cartellino = 'Svincolato',
-                                    tipo_contratto = 'Svincolato'
-                                WHERE id = %s;
-                    ''', (id_giocatore_da_tagliare,))
-                    vetrina_repo.decadi(cur, id_giocatore_da_tagliare)
-
-                    # Aggiorna i crediti della squadra
-                    cur.execute('''
-                                UPDATE squadra
-                                SET crediti = crediti - %s
-                                WHERE nome = %s;
-                    ''', (costo_taglio, nome_squadra))
-
-                
-                    nome_giocatore = giocatori_repo.nome(cur, id_giocatore_da_tagliare)
-
-                    conn.commit()
-                    flash(f"✅ Giocatore tagliato con successo! Costo: {costo_taglio} crediti.", "success")
-                    telegram_utils.taglio_giocatore(conn, nome_squadra, nome_giocatore, costo_taglio)
+                if crediti_disponibili < costo_taglio:
+                    flash("❌ Non hai abbastanza crediti per tagliare questo giocatore.", "danger")
+                    conn.rollback()
                     return redirect(url_for("rosa.user_tagli", nome_squadra=nome_squadra))
+
+                # Aggiorna il giocatore a svincolato
+                cur.execute('''
+                            UPDATE giocatore
+                            SET squadra_att = 'Svincolato',
+                                detentore_cartellino = 'Svincolato',
+                                tipo_contratto = 'Svincolato'
+                            WHERE id = %s;
+                ''', (id_giocatore_da_tagliare,))
+                vetrina_repo.decadi(cur, id_giocatore_da_tagliare)
+
+                # Aggiorna i crediti della squadra
+                cur.execute('''
+                            UPDATE squadra
+                            SET crediti = crediti - %s
+                            WHERE nome = %s;
+                ''', (costo_taglio, nome_squadra))
+
             
+                nome_giocatore = giocatori_repo.nome(cur, id_giocatore_da_tagliare)
+
+                conn.commit()
+                flash(f"✅ Giocatore tagliato con successo! Costo: {costo_taglio} crediti.", "success")
+                telegram_utils.taglio_giocatore(conn, nome_squadra, nome_giocatore, costo_taglio)
+                return redirect(url_for("rosa.user_tagli", nome_squadra=nome_squadra))
+        
 
 
-            rosa = servizio_rosa.giocatori_tagliabili(cur, nome_squadra)
-
-    except Exception:
-        logger.exception("Errore durante il caricamento o il taglio dei giocatori")
-        flash("❌ Errore durante il caricamento o il taglio dei giocatori.", "danger")
-
+        rosa = servizio_rosa.giocatori_tagliabili(cur, nome_squadra)
 
     return render_template("user_tagli.html", nome_squadra=nome_squadra, rosa=rosa, crediti=crediti, crediti_disponibili=crediti_disponibili)
 
@@ -361,118 +343,110 @@ def user_gestione_prestiti(nome_squadra):
     prestiti_in = []
     prestiti_out = []
 
-    try:
-        with connessione() as (conn, cur):
-            if request.method == "POST":
+    with connessione() as (conn, cur):
+        if request.method == "POST":
 
-                # Bottone RISCATTA GIOCATORE
-                id_prestito_da_riscattare = request.form.get("riscatta_giocatore")
-                if id_prestito_da_riscattare:
-                    riscatta_giocatore(conn, id_prestito_da_riscattare, nome_squadra)
+            # Bottone RISCATTA GIOCATORE
+            id_prestito_da_riscattare = request.form.get("riscatta_giocatore")
+            if id_prestito_da_riscattare:
+                riscatta_giocatore(conn, id_prestito_da_riscattare, nome_squadra)
 
-                # Bottone RICHIESTA DI TERMINAZIONE ANTICIPATA
-                id_prestito_per_cui_richiedere_terminazione = request.form.get("richiedi_terminazione")
-                if id_prestito_per_cui_richiedere_terminazione:
-                    richiedi_terminazione_prestito(conn, id_prestito_per_cui_richiedere_terminazione, nome_squadra)
-
-
-                # Bottone ACCETTA TERMINAZIONE ANTICIPATA
-                id_prestito_da_terminare_ACCETTA = request.form.get("accetta_terminazione")
-                if id_prestito_da_terminare_ACCETTA:
-                    accetta_terminazione(conn, id_prestito_da_terminare_ACCETTA)
-
-                # Bottone RIFIUTA TERMINAZIONE ANTICIPATA
-                id_prestito_da_terminare_RIFIUTA = request.form.get("rifiuta_terminazione")
-                if id_prestito_da_terminare_RIFIUTA:
-                    rifiuta_terminazione(conn, id_prestito_da_terminare_RIFIUTA)
+            # Bottone RICHIESTA DI TERMINAZIONE ANTICIPATA
+            id_prestito_per_cui_richiedere_terminazione = request.form.get("richiedi_terminazione")
+            if id_prestito_per_cui_richiedere_terminazione:
+                richiedi_terminazione_prestito(conn, id_prestito_per_cui_richiedere_terminazione, nome_squadra)
 
 
-            # Ottengo i dati sui giocatori in prestito IN
-            cur.execute('''
-                        SELECT 
-                            p.id AS id_prestito,
-                            g.id AS id_giocatore,
-                            p.note,
-                            p.costo_prestito,
-                            p.tipo_prestito,
-                            p.crediti_riscatto,
-                            *
-                        FROM prestito p
-                        JOIN giocatore g
-                        ON p.giocatore = g.id
-                        WHERE p.squadra_ricevente = %s
-                            AND p.stato IN ('in_corso', 'richiesta_di_terminazione');
-            ''', (nome_squadra,))
-            prestiti_in_raw = cur.fetchall()
-        
-            prestiti_in = []
+            # Bottone ACCETTA TERMINAZIONE ANTICIPATA
+            id_prestito_da_terminare_ACCETTA = request.form.get("accetta_terminazione")
+            if id_prestito_da_terminare_ACCETTA:
+                accetta_terminazione(conn, id_prestito_da_terminare_ACCETTA)
 
-            for p in prestiti_in_raw:
-                prestiti_in.append({
-                    "id_prestito": p['id_prestito'],
-                    "giocatori": p['nome'],
-                    "ruolo": pulisci_ruolo(p['ruolo']),
-                    "club": p['club'],
-                    "squadra_prestante": p['squadra_prestante'],
-                    "squadra_ricevente": p['squadra_ricevente'],
-                    "stato": p['stato'],
-                    "data_inizio": formatta_data(p['data_inizio']),
-                    "data_fine": formatta_data(p['data_fine']),
-                    "richiedente_terminazione": p['richiedente_terminazione'],
-                    "note": p['note'],
-                    "costo_prestito": p['costo_prestito'],
-                    "tipo_prestito": p['tipo_prestito'],
-                    "crediti_riscatto": p['crediti_riscatto']
-                })
-        
+            # Bottone RIFIUTA TERMINAZIONE ANTICIPATA
+            id_prestito_da_terminare_RIFIUTA = request.form.get("rifiuta_terminazione")
+            if id_prestito_da_terminare_RIFIUTA:
+                rifiuta_terminazione(conn, id_prestito_da_terminare_RIFIUTA)
 
 
-            # Ottengo i dati sui giocatori in prestito OUT
-            cur.execute('''
-                        SELECT 
-                            p.id AS id_prestito,
-                            g.id AS id_giocatore,
-                            p.note,
-                            p.costo_prestito,
-                            p.tipo_prestito,
-                            p.crediti_riscatto,
-                            *
-                        FROM prestito p
-                        JOIN giocatore g
-                        ON p.giocatore = g.id
-                        WHERE p.squadra_prestante = %s
-                            AND stato IN ('in_corso', 'richiesta_di_terminazione');
-            ''', (nome_squadra,))
-            prestiti_out_raw = cur.fetchall()
+        # Ottengo i dati sui giocatori in prestito IN
+        cur.execute('''
+                    SELECT 
+                        p.id AS id_prestito,
+                        g.id AS id_giocatore,
+                        p.note,
+                        p.costo_prestito,
+                        p.tipo_prestito,
+                        p.crediti_riscatto,
+                        *
+                    FROM prestito p
+                    JOIN giocatore g
+                    ON p.giocatore = g.id
+                    WHERE p.squadra_ricevente = %s
+                        AND p.stato IN ('in_corso', 'richiesta_di_terminazione');
+        ''', (nome_squadra,))
+        prestiti_in_raw = cur.fetchall()
+    
+        prestiti_in = []
 
-            prestiti_out = []
-
-            for p in prestiti_out_raw:
-                prestiti_out.append({
-                    "id_prestito": p['id_prestito'],
-                    "giocatori": p['nome'],
-                    "ruolo": pulisci_ruolo(p['ruolo']),
-                    "club": p['club'],
-                    "squadra_prestante": p['squadra_prestante'],
-                    "squadra_ricevente": p['squadra_ricevente'],
-                    "stato": p['stato'],
-                    "data_inizio": formatta_data(p['data_inizio']),
-                    "data_fine": formatta_data(p['data_fine']),
-                    "richiedente_terminazione": p['richiedente_terminazione'],
-                    "note": p['note'],
-                    "costo_prestito": p['costo_prestito'],
-                    "tipo_prestito": p['tipo_prestito'],
-                    "crediti_riscatto": p['crediti_riscatto']
-                })
-
-            slot_giocatori = giocatori_repo.slot_occupati_da_giocatori(cur, nome_squadra)
-        
+        for p in prestiti_in_raw:
+            prestiti_in.append({
+                "id_prestito": p['id_prestito'],
+                "giocatori": p['nome'],
+                "ruolo": pulisci_ruolo(p['ruolo']),
+                "club": p['club'],
+                "squadra_prestante": p['squadra_prestante'],
+                "squadra_ricevente": p['squadra_ricevente'],
+                "stato": p['stato'],
+                "data_inizio": formatta_data(p['data_inizio']),
+                "data_fine": formatta_data(p['data_fine']),
+                "richiedente_terminazione": p['richiedente_terminazione'],
+                "note": p['note'],
+                "costo_prestito": p['costo_prestito'],
+                "tipo_prestito": p['tipo_prestito'],
+                "crediti_riscatto": p['crediti_riscatto']
+            })
+    
 
 
-    except Exception:
-        logger.exception("Errore")
-        flash("❌ Si è verificato un errore. Ricaricare la pagina.", "danger")
+        # Ottengo i dati sui giocatori in prestito OUT
+        cur.execute('''
+                    SELECT 
+                        p.id AS id_prestito,
+                        g.id AS id_giocatore,
+                        p.note,
+                        p.costo_prestito,
+                        p.tipo_prestito,
+                        p.crediti_riscatto,
+                        *
+                    FROM prestito p
+                    JOIN giocatore g
+                    ON p.giocatore = g.id
+                    WHERE p.squadra_prestante = %s
+                        AND stato IN ('in_corso', 'richiesta_di_terminazione');
+        ''', (nome_squadra,))
+        prestiti_out_raw = cur.fetchall()
 
+        prestiti_out = []
+
+        for p in prestiti_out_raw:
+            prestiti_out.append({
+                "id_prestito": p['id_prestito'],
+                "giocatori": p['nome'],
+                "ruolo": pulisci_ruolo(p['ruolo']),
+                "club": p['club'],
+                "squadra_prestante": p['squadra_prestante'],
+                "squadra_ricevente": p['squadra_ricevente'],
+                "stato": p['stato'],
+                "data_inizio": formatta_data(p['data_inizio']),
+                "data_fine": formatta_data(p['data_fine']),
+                "richiedente_terminazione": p['richiedente_terminazione'],
+                "note": p['note'],
+                "costo_prestito": p['costo_prestito'],
+                "tipo_prestito": p['tipo_prestito'],
+                "crediti_riscatto": p['crediti_riscatto']
+            })
+
+        slot_giocatori = giocatori_repo.slot_occupati_da_giocatori(cur, nome_squadra)
 
     return render_template("user_gestione_prestiti.html", nome_squadra=nome_squadra, prestiti_in=prestiti_in, prestiti_out=prestiti_out, slot_giocatori=slot_giocatori)
 
@@ -531,7 +505,7 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
         # RISCATTO EFFETTUATO:
             
         # 1. Sottrarre i crediti dalla squadra ricevente e aggiungerli alla squadra prestante
-        squadre_repo.sposta_crediti(conn, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['crediti_riscatto'])
+        squadre_repo.sposta_crediti(cur, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['crediti_riscatto'])
         
         # 2. Aggiornare il prestito come "riscattato"
         cur.execute('''

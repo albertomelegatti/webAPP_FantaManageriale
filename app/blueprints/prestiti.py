@@ -2,7 +2,7 @@ import psycopg2
 from app import telegram_utils
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from app.core.db import connessione
+from app.core.db import connessione, resync_sequence
 from app.blueprints.user import redirect_gate_chiuso
 
 from app.core.logging import get_logger
@@ -12,6 +12,7 @@ from app.domini.ruoli import pulisci_ruolo
 from app.repositories import aste as aste_repo
 from app.repositories import configurazione as configurazione_repo
 from app.repositories import giocatori as giocatori_repo
+from app.repositories import prestiti as prestiti_repo
 from app.repositories import squadre as squadre_repo
 from app.repositories import vetrina as vetrina_repo
 
@@ -41,11 +42,7 @@ def user_prestiti(nome_squadra):
                 # Bottone ANNULLA prestito
                 id_prestito_da_annullare = request.form.get("annulla_prestito")
                 if id_prestito_da_annullare:
-                    cur.execute('''
-                                UPDATE prestito
-                                SET stato = 'annullato'
-                                WHERE id = %s;
-                    ''', (id_prestito_da_annullare,))
+                    prestiti_repo.cambia_stato(cur, id_prestito_da_annullare, 'annullato')
                     conn.commit()
                     flash("✅ Annullata con successo la richiesta di prestito", "success")
 
@@ -59,11 +56,7 @@ def user_prestiti(nome_squadra):
                 # Bottone RIFIUTA prestito
                 id_prestito_da_rifiutare = request.form.get("rifiuta_prestito")
                 if id_prestito_da_rifiutare:
-                    cur.execute('''
-                                UPDATE prestito
-                                SET stato = 'rifiutato'
-                                WHERE id = %s;
-                    ''', (id_prestito_da_rifiutare,))
+                    prestiti_repo.cambia_stato(cur, id_prestito_da_rifiutare, 'rifiutato')
                     conn.commit()
                     flash("✅ Prestito rifiutato con successo.", "success")
                     telegram_utils.prestito_risposta(conn, id_prestito_da_rifiutare, "Rifiutato")
@@ -74,23 +67,7 @@ def user_prestiti(nome_squadra):
             crediti_disponibili = crediti - offerta_totale
 
             # Selezione dei prestiti che non sono associati con nessuno scambio
-            cur.execute('''
-                        SELECT *, p.id AS prestito_id,
-                               p.note,
-                               p.costo_prestito,
-                               p.tipo_prestito,
-                               p.crediti_riscatto
-                        FROM prestito p
-                        JOIN giocatore g ON p.giocatore = g.id
-                        WHERE (p.squadra_prestante = %s OR p.squadra_ricevente = %s)
-                            AND p.stato = 'in_attesa'
-                            AND NOT EXISTS (
-                                SELECT 1
-                                FROM scambio s
-                                WHERE p.id = ANY(s.prestito_associato)
-                            );
-            ''', (nome_squadra, nome_squadra))
-            prestiti_raw = cur.fetchall()
+            prestiti_raw = prestiti_repo.in_attesa_per_squadra(cur, nome_squadra)
 
             prestiti = []
 
@@ -187,21 +164,16 @@ def nuovo_prestito(nome_squadra):
 
                 data_fine = datetime(anno_scadenza, 7, 1, 23, 59, 59)
 
-                # Resincronizza la sequenza prima dell'insert, per proteggersi da eventuali
-                # inserimenti manuali passati con id espliciti che l'hanno lasciata indietro
-                # (causa nota di "duplicate key value violates unique constraint prestito_pkey")
-                cur.execute("SELECT MAX(id) AS max_id FROM prestito")
-                max_id_prestito = cur.fetchone()['max_id']
-                if max_id_prestito is not None:
-                    cur.execute("SELECT setval('prestito_id_seq', %s, true)", (max_id_prestito,))
+                # Riallinea la sequence prima dell'insert: import o restore manuali
+                # sul database possono averla lasciata indietro rispetto ai dati, ed
+                # e' la causa nota di "duplicate key value violates unique constraint
+                # prestito_pkey". La stessa logica scritta a mano qui esisteva gia'
+                # in app/core/db.py.
+                resync_sequence(conn, 'prestito')
 
-                cur.execute('''
-                            INSERT INTO prestito (
-                            giocatore, squadra_prestante, squadra_ricevente, stato, data_inizio, data_fine, note, costo_prestito, tipo_prestito, crediti_riscatto)
-                            VALUES(%s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s, %s, %s, %s, %s)
-                            RETURNING id;
-                ''', (giocatore_richiesto, squadra_prestante, nome_squadra, 'in_attesa', data_fine, note, costo_prestito, tipo_prestito, crediti_riscatto))
-                id_prestito = cur.fetchone()['id']
+                id_prestito = prestiti_repo.crea(
+                    cur, giocatore_richiesto, squadra_prestante, nome_squadra, data_fine,
+                    note, costo_prestito, tipo_prestito, crediti_riscatto)
                 conn.commit()
                 flash("✅ Richiesta inviata correttamente!", "success")
                 telegram_utils.nuovo_prestito(conn, id_prestito)
@@ -214,19 +186,7 @@ def nuovo_prestito(nome_squadra):
             crediti_disponibili = crediti - offerta_totale
 
             # Selezione dei giocatori
-            cur.execute('''
-                        SELECT id, nome, squadra_att, ruolo, club
-                        FROM giocatore g
-                        WHERE g.tipo_contratto <> 'Fanta-Prestito'
-                        AND g.squadra_att <> 'Svincolato'
-                        AND NOT EXISTS (
-                            SELECT 1
-                            FROM prestito p
-                            WHERE p.giocatore = g.id
-                            AND p.stato = 'in_attesa'
-                            AND p.squadra_ricevente = %s);
-            ''', (nome_squadra,))
-            giocatori_raw = cur.fetchall()
+            giocatori_raw = giocatori_repo.prestabili_verso(cur, nome_squadra)
 
             giocatori = []
             for g in giocatori_raw:
@@ -239,13 +199,7 @@ def nuovo_prestito(nome_squadra):
                 })
 
             # Selezione dei nomi delle squadre, tranne la squadra loggata e Svincolato
-            cur.execute('''
-                        SELECT nome
-                        FROM squadra
-                        WHERE nome <> %s
-                        AND nome <> 'Svincolato';
-            ''', (nome_squadra,))
-            squadre_raw = cur.fetchall()
+            squadre_raw = squadre_repo.nomi_diversi_da(cur, nome_squadra)
 
             squadre = []
             for s in squadre_raw:
@@ -280,39 +234,19 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
     try:
         with connessione() as (conn, cur):
             # Recupero info prestito
-            cur.execute('''
-                        SELECT *
-                        FROM prestito
-                        WHERE id = %s;
-            ''', (id_prestito_da_attivare,))
-            prestito = cur.fetchone()
+            prestito = prestiti_repo.per_id(cur, id_prestito_da_attivare)
 
             # Cambio di stato
-            cur.execute('''
-                        UPDATE prestito
-                        SET stato = 'in_corso'
-                        WHERE id = %s;
-            ''', (id_prestito_da_attivare,))
+            prestiti_repo.cambia_stato(cur, id_prestito_da_attivare, 'in_corso')
         
             # Modifica info giocatore
-            cur.execute('''
-                        UPDATE giocatore
-                        SET squadra_att = %s,
-                        tipo_contratto = 'Fanta-Prestito'
-                        WHERE id = %s;
-            ''', (prestito['squadra_ricevente'], prestito['giocatore']))
+            giocatori_repo.assegna_in_prestito(cur, prestito['giocatore'], prestito['squadra_ricevente'])
             vetrina_repo.decadi(cur, prestito['giocatore'])
 
             # Cancellare altri prestiti per lo stesso giocatore fatti da altre squadre
-            cur.execute('''
-                        UPDATE prestito
-                        SET stato = 'rifiutato'
-                        WHERE squadra_prestante = %s
-                        AND giocatore = %s
-                        AND stato = 'in_attesa';
-            ''', (prestito['squadra_prestante'], prestito['giocatore']))
+            prestiti_repo.rifiuta_concorrenti(cur, prestito['squadra_prestante'], prestito['giocatore'])
         
-            squadre_repo.sposta_crediti(conn, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['costo_prestito'])
+            squadre_repo.sposta_crediti(cur, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['costo_prestito'])
 
             conn.commit()
             flash("✅ Prestito avviato correttamente.", "success")

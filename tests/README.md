@@ -63,10 +63,11 @@ Verificato confrontando un'istantanea del database prima e dopo l'intera suite:
 conteggi di giocatori, scambi, prestiti, vetrina, svincolati e somma dei crediti
 restano identici.
 
-### Un difetto documentato, non ancora corretto
+### Limite noto dell'isolamento
 
-`test_scrittura_prestiti.py` contiene un test marcato `xfail(strict=True)` che
-descrive il comportamento *corretto* dello spostamento crediti. Oggi fallisce,
-perche' `sposta_crediti()` committa la transazione del chiamante. Quando la
-Fase 8 lo correggera', il test passera' e la marcatura `strict` fara' fallire la
-suite per ricordare di rimuoverla.
+I savepoint proteggono solo chi passa dal proxy `ConnessioneIsolata`. Codice che
+raggiunge la connessione sottostante committa davvero. La via d'accesso piu'
+naturale, `cursore.connection`, e' chiusa: il cursore restituito riporta al
+proxy. Se in futuro dovesse emergerne un'altra, il rischio e' che le scritture
+di un test diventino permanenti sul database di sviluppo - e' gia' successo una
+volta.
