@@ -173,3 +173,49 @@ class TestAtomicitaSpostamentoCrediti:
 
         assert _crediti(cur, ricevente) == 260
         assert _crediti(cur, prestante) == 340
+
+
+class TestAnnullamentoENuovaRichiesta:
+    def test_annullare_una_richiesta_inviata(self, app, cur, db_isolato, gate_aperto):
+        prestante, ricevente = _due_squadre(cur)
+        giocatore = _giocatore_di(cur, prestante)
+        id_prestito = _crea_prestito(cur, giocatore, prestante, ricevente)
+        db_isolato.commit()
+
+        _client(app, ricevente).post(f"/prestiti/prestiti/{ricevente}",
+                                     data={"annulla_prestito": id_prestito})
+
+        cur.execute("SELECT stato FROM prestito WHERE id = %s;", (id_prestito,))
+        assert cur.fetchone()["stato"] == "annullato"
+
+    def test_una_nuova_richiesta_nasce_in_attesa(self, app, cur, db_isolato, gate_aperto):
+        """Il prestito proposto non e' attivo: lo diventa solo se l'altra
+        squadra accetta."""
+        prestante, ricevente = _due_squadre(cur)
+        giocatore = _giocatore_di(cur, prestante)
+        cur.execute("DELETE FROM prestito WHERE giocatore = %s AND stato = 'in_attesa';", (giocatore,))
+        cur.execute("SELECT count(*) AS n FROM prestito;")
+        prima = cur.fetchone()["n"]
+        db_isolato.commit()
+
+        from app.domini.calendario import anni_prestito_ammessi
+        _, anno = anni_prestito_ammessi()
+
+        _client(app, ricevente).post(
+            f"/prestiti/nuovo_prestito/{ricevente}",
+            data={"squadra_prestante": prestante, "giocatore_richiesto": str(giocatore),
+                  "data_fine_anno": str(anno), "tipo_prestito": "Secco",
+                  "costo_prestito": "12", "note": "prova"})
+
+        cur.execute("SELECT count(*) AS n FROM prestito;")
+        assert cur.fetchone()["n"] == prima + 1, "la richiesta doveva essere creata"
+
+        cur.execute(
+            """SELECT stato, squadra_prestante, squadra_ricevente, costo_prestito, tipo_prestito
+               FROM prestito ORDER BY id DESC LIMIT 1;""")
+        p = cur.fetchone()
+        assert p["stato"] == "in_attesa"
+        assert p["squadra_prestante"] == prestante
+        assert p["squadra_ricevente"] == ricevente
+        assert p["costo_prestito"] == 12
+        assert p["tipo_prestito"] == "secco"

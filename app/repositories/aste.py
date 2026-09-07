@@ -39,3 +39,73 @@ def slot_occupati_totali(cur, nome_squadra: str) -> int:
     )
     riga = cur.fetchone()
     return riga["slot_giocatori"] + riga["slot_aste"]
+
+
+def stato(cur, asta_id) -> str | None:
+    cur.execute("SELECT stato FROM asta WHERE id = %s;", (asta_id,))
+    riga = cur.fetchone()
+    return riga["stato"] if riga else None
+
+
+def e_iscritta(cur, asta_id, nome_squadra: str) -> bool:
+    cur.execute("SELECT %s = ANY(partecipanti) AS iscritta FROM asta WHERE id = %s;",
+                (nome_squadra, asta_id))
+    riga = cur.fetchone()
+    return bool(riga and riga["iscritta"])
+
+
+def iscrivi(cur, asta_id, nome_squadra: str) -> None:
+    cur.execute("UPDATE asta SET partecipanti = array_append(partecipanti, %s) WHERE id = %s;",
+                (nome_squadra, asta_id))
+
+
+def rinuncia(cur, asta_id, nome_squadra: str) -> None:
+    cur.execute("UPDATE asta SET partecipanti = array_remove(partecipanti, %s) WHERE id = %s;",
+                (nome_squadra, asta_id))
+
+
+def visibili_alla_squadra(cur, nome_squadra: str) -> list[dict]:
+    """Le aste che riguardano la squadra: quelle a cui partecipa, quelle ancora
+    aperte alle iscrizioni, e quelle che ha vinto."""
+    cur.execute(
+        """SELECT a.id, g.nome, g.ruolo, g.club, a.squadra_vincente, a.ultima_offerta,
+                  a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
+           FROM asta a JOIN giocatore g ON a.giocatore = g.id
+           WHERE (a.stato = 'in_corso' AND %s = ANY(a.partecipanti))
+              OR a.stato = 'mostra_interesse'
+              OR (a.stato = 'conclusa' AND a.squadra_vincente = %s)
+           ORDER BY a.tempo_fine_asta DESC;""",
+        (nome_squadra, nome_squadra))
+    return cur.fetchall()
+
+
+def dettaglio(cur, asta_id) -> dict | None:
+    cur.execute(
+        """SELECT g.nome, g.ruolo, g.club, a.ultima_offerta, a.squadra_vincente,
+                  a.tempo_fine_asta, a.partecipanti
+           FROM asta a JOIN giocatore g ON a.giocatore = g.id
+           WHERE a.id = %s;""", (asta_id,))
+    return cur.fetchone()
+
+
+def dati_per_rilancio(cur, asta_id) -> dict | None:
+    """Blocca la riga per aggiornamenti concorrenti prima di leggerla: due
+    rilanci simultanei devono essere serializzati, non sovrascriversi."""
+    cur.execute(
+        "SELECT ultima_offerta, squadra_vincente, stato FROM asta WHERE id = %s FOR UPDATE;",
+        (asta_id,))
+    return cur.fetchone()
+
+
+def registra_rilancio(cur, asta_id, offerta: int, nome_squadra: str) -> None:
+    """Ogni rilancio fa ripartire il conto alla rovescia di un giorno."""
+    cur.execute(
+        """UPDATE asta SET ultima_offerta = %s, squadra_vincente = %s,
+                           tempo_fine_asta = (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day'
+           WHERE id = %s;""", (offerta, nome_squadra, asta_id))
+
+
+def giocatore_dell_asta(cur, asta_id) -> int | None:
+    cur.execute("SELECT giocatore FROM asta WHERE id = %s;", (asta_id,))
+    riga = cur.fetchone()
+    return riga["giocatore"] if riga else None

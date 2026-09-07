@@ -37,3 +37,12 @@ def sposta_crediti(cur, squadra_from: str, squadra_to: str, crediti_da_spostare:
                 (crediti_da_spostare, squadra_from))
     cur.execute("UPDATE squadra SET crediti = crediti + %s WHERE nome = %s;",
                 (crediti_da_spostare, squadra_to))
+
+
+def nomi_diversi_da(cur, nome_squadra: str) -> list[dict]:
+    """Le altre squadre, escluso Svincolato: i possibili interlocutori di uno
+    scambio o di un prestito."""
+    cur.execute(
+        "SELECT nome FROM squadra WHERE nome <> %s AND nome <> 'Svincolato' ORDER BY nome;",
+        (nome_squadra,))
+    return cur.fetchall()
