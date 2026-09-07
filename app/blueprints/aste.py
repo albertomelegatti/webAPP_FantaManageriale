@@ -11,6 +11,7 @@ from app.core.logging import get_logger
 from app.core.tempo import formatta_data
 from app.domini.ruoli import pulisci_ruolo
 from app.repositories import aste as aste_repo
+from app.repositories import giocatori as giocatori_repo
 from app.repositories import configurazione as configurazione_repo
 from app.repositories import squadre as squadre_repo
 
@@ -43,12 +44,7 @@ def user_aste(nome_squadra):
 
                     # Controllo che l'asta non sia scaduta nel mentre che la pagina era aperta
                     tempo_scaduto = False
-                    cur.execute('''
-                                SELECT stato
-                                FROM asta
-                                WHERE id = %s;
-                    ''', (asta_id,))
-                    stato = cur.fetchone()['stato']
+                    stato = aste_repo.stato(cur, asta_id)
 
                     if stato != 'mostra_interesse':
                         tempo_scaduto = True
@@ -58,37 +54,16 @@ def user_aste(nome_squadra):
                 
                     if tempo_scaduto == False:
                         # Controllo se l'utente loggato è già iscritto all'asta, a volte capita che un utente possa iscriversi due volte.
-                        cur.execute('''
-                                    SELECT %s = ANY(partecipanti) AS gia_iscritto
-                                    FROM asta
-                                    WHERE id = %s;
-                        ''', (nome_squadra, asta_id))
-                        gia_iscritto = cur.fetchone()["gia_iscritto"]
+                        gia_iscritto = aste_repo.e_iscritta(cur, asta_id, nome_squadra)
                 
                         # Se non gia iscritto, iscriviti
                         if not gia_iscritto:
-                            cur.execute('''
-                                        UPDATE asta
-                                        SET partecipanti = array_append(partecipanti, %s)
-                                        WHERE id = %s;
-                            ''', (nome_squadra, asta_id))
+                            aste_repo.iscrivi(cur, asta_id, nome_squadra)
                             conn.commit()
 
                             # Recupero info id giocatore dell'asta
-                            cur.execute('''
-                                        SELECT giocatore 
-                                        FROM asta 
-                                        WHERE id = %s;
-                            ''', (asta_id,))
-                            id_giocatore = cur.fetchone()['giocatore']
-
-                            # Recupero info sul nome del giocatore
-                            cur.execute('''
-                                        SELECT nome
-                                        FROM giocatore
-                                        WHERE id = %s;
-                            ''', (id_giocatore,))
-                            nome_giocatore = cur.fetchone()['nome']
+                            id_giocatore = aste_repo.giocatore_dell_asta(cur, asta_id)
+                            nome_giocatore = giocatori_repo.nome(cur, id_giocatore)
 
                             flash(f"✅ Ti sei iscritto all'asta per { nome_giocatore }.", "success")
                             return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
@@ -97,16 +72,7 @@ def user_aste(nome_squadra):
             
             # Lista aste, tutte insieme
             aste = []
-            cur.execute('''
-                        SELECT a.id, g.nome, g.ruolo, g.club, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
-                        FROM asta a
-                        JOIN giocatore g ON a.giocatore = g.id
-                        WHERE (a.stato = 'in_corso' AND %s = ANY(a.partecipanti))
-                        OR a.stato = 'mostra_interesse'
-                        OR (a.stato = 'conclusa' AND a.squadra_vincente = %s)
-                        ORDER BY a.tempo_fine_asta DESC;
-            ''', (nome_squadra, nome_squadra))
-            aste_raw = cur.fetchall()
+            aste_raw = aste_repo.visibili_alla_squadra(cur, nome_squadra)
 
             for a in aste_raw:
 
@@ -166,25 +132,7 @@ def nuova_asta(nome_squadra):
         # non ha una data di nascita sincronizzata, o se è un portiere, nessun
         # filtro viene applicato (i portieri sono sempre chiamabili in asta).
         u21_threshold_year = configurazione_repo.soglia_u21(cur)
-        cur.execute('''
-            SELECT nome, ruolo, club
-            FROM giocatore AS g
-            WHERE tipo_contratto = 'Svincolato'
-              AND priorita = 1
-              AND (
-                    %(soglia)s IS NULL
-                    OR g.data_nascita IS NULL
-                    OR EXTRACT(YEAR FROM g.data_nascita) < %(soglia)s
-                    OR 'Por' = ANY(g.ruolo)
-              )
-              AND NOT EXISTS (
-                    SELECT 1
-                    FROM asta a
-                    WHERE a.giocatore = g.id
-                        AND a.stato IN ('mostra_interesse', 'in_corso')
-              );
-        ''', {"soglia": u21_threshold_year})
-        giocatori_raw = cur.fetchall()
+        giocatori_raw = giocatori_repo.chiamabili_in_asta(cur, u21_threshold_year)
         giocatori_disponibili_per_asta = [row["nome"] for row in giocatori_raw]
         giocatori_info_per_asta = [
             {"nome": row["nome"], "ruolo": pulisci_ruolo(row["ruolo"]), "club": row["club"]}
@@ -218,13 +166,7 @@ def nuova_asta(nome_squadra):
                     return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
             
                 # Verifica che il giocatore non esista già nel database
-                cur.execute('''
-                    SELECT COUNT(*) as count
-                    FROM giocatore 
-                    WHERE LOWER(nome) = LOWER(%s);
-                ''', (nome_nuovo,))
-            
-                if cur.fetchone()["count"] > 0:
+                if giocatori_repo.esiste_con_nome(cur, nome_nuovo):
                     flash("❌ Un giocatore con questo nome esiste già.", "danger")
                     return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
             
@@ -290,18 +232,11 @@ def nuova_asta(nome_squadra):
             if giocatore_scelto:
                 try:
                     # Locka il giocatore per evitare race condition
-                    cur.execute('''
-                                SELECT id 
-                                FROM giocatore 
-                                WHERE nome = %s FOR UPDATE;
-                    ''', (giocatore_scelto,))
-                    giocatore_raw = cur.fetchone()
+                    giocatore_id = giocatori_repo.id_per_nome_bloccando(cur, giocatore_scelto)
 
-                    if not giocatore_raw:
+                    if not giocatore_id:
                         flash("❌ Giocatore non trovato nel database.", "danger")
                         return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
-
-                    giocatore_id = giocatore_raw["id"]
 
                     # Inserisci l'asta
                     sql_asta = '''
@@ -354,11 +289,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
             # Bottone RINUNCIA
             asta_id_rinuncia = request.form.get("bottone_rinuncia")
             if asta_id_rinuncia:
-                cur.execute('''
-                            UPDATE asta
-                            SET partecipanti = array_remove(partecipanti, %s)
-                            WHERE id = %s;
-                ''', (nome_squadra, asta_id_rinuncia))
+                aste_repo.rinuncia(cur, asta_id_rinuncia, nome_squadra)
                 conn.commit()
                 flash("✅ Hai rinunciato all'asta.", "success")
                 return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
@@ -367,12 +298,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
             nuova_offerta = request.form.get("bottone_rilancia")
             if nuova_offerta:
                 # Blocca la riga dell'asta per aggiornamenti concorrenti
-                cur.execute('''
-                            SELECT ultima_offerta, squadra_vincente, stato
-                            FROM asta 
-                            WHERE id = %s FOR UPDATE;
-                ''', (asta_id,))
-                asta_dati = cur.fetchone()
+                asta_dati = aste_repo.dati_per_rilancio(cur, asta_id)
 
                 # Controllo sullo stato dell'asta prima del rilancio
                 if asta_dati['stato'] != 'in_corso':
@@ -383,13 +309,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
                 # Controllo sui valori dell'asta prima di rilanciare
                 if asta_dati['ultima_offerta'] < int(nuova_offerta) and asta_dati['squadra_vincente']:
 
-                    cur.execute('''
-                        UPDATE asta
-                        SET ultima_offerta = %s,
-                            squadra_vincente = %s,
-                            tempo_fine_asta = (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day'
-                        WHERE id = %s;
-                    ''', (nuova_offerta, nome_squadra, asta_id))
+                    aste_repo.registra_rilancio(cur, asta_id, nuova_offerta, nome_squadra)
                     conn.commit()
                     flash(f"✅ Hai rilanciato l'offerta a {nuova_offerta}.", "success")
                     telegram_utils.asta_rilanciata(conn, asta_id)
@@ -402,12 +322,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
             delta_rilancio = request.form.get("delta_rilancio")
             if delta_rilancio in ("1", "2", "5"):
                 # Blocca la riga dell'asta per aggiornamenti concorrenti
-                cur.execute('''
-                            SELECT ultima_offerta, squadra_vincente, stato
-                            FROM asta
-                            WHERE id = %s FOR UPDATE;
-                ''', (asta_id,))
-                asta_dati = cur.fetchone()
+                asta_dati = aste_repo.dati_per_rilancio(cur, asta_id)
 
                 # Controllo sullo stato dell'asta prima del rilancio
                 if asta_dati['stato'] != 'in_corso':
@@ -432,13 +347,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
 
                 nuova_offerta = asta_dati['ultima_offerta'] + int(delta_rilancio)
 
-                cur.execute('''
-                    UPDATE asta
-                    SET ultima_offerta = %s,
-                        squadra_vincente = %s,
-                        tempo_fine_asta = (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day'
-                    WHERE id = %s;
-                ''', (nuova_offerta, nome_squadra, asta_id))
+                aste_repo.registra_rilancio(cur, asta_id, nuova_offerta, nome_squadra)
                 conn.commit()
                 flash(f"✅ Hai rilanciato l'offerta a {nuova_offerta}.", "success")
                 telegram_utils.asta_rilanciata(conn, asta_id)
@@ -447,13 +356,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
 
         # Recupero dati asta (join diretto sull'id dell'asta: un'unica riga,
         # non serve filtrare tutta la tabella giocatore per tipo_contratto)
-        cur.execute('''
-            SELECT g.nome, g.ruolo, g.club, a.ultima_offerta, a.squadra_vincente, a.tempo_fine_asta, a.partecipanti
-            FROM asta a
-            JOIN giocatore g ON a.giocatore = g.id
-            WHERE a.id = %s;
-        ''', (asta_id,))
-        asta_raw = cur.fetchone()
+        asta_raw = aste_repo.dettaglio(cur, asta_id)
 
         if asta_raw:
             # Recupero crediti disponibili
