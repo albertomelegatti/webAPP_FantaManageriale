@@ -102,3 +102,27 @@ class TestAstaSenzaDataDiFine:
 
         risposta = client.get(f"/aste/singola_asta_attiva/{asta_id}/{squadra}")
         assert risposta.status_code == 200, "un'asta senza data di fine deve restare apribile"
+
+
+class TestErrore500Diretto:
+    """L'handler per i 500 sollevati senza un'eccezione Python, ad esempio da
+    abort(500) o da un errore del server web. Nessuna route lo fa oggi: e' una
+    rete di sicurezza, ma deve funzionare quando serve."""
+
+    def test_un_abort_500_mostra_la_pagina_di_errore(self):
+        """Costruisce un'applicazione propria: Flask vieta di registrare route
+        dopo la prima richiesta, e quella di sessione ne ha gia' servite."""
+        from flask import abort
+
+        from app import create_app
+
+        applicazione = create_app()
+        applicazione.config.update(TESTING=False, SESSION_COOKIE_SECURE=False)
+
+        @applicazione.route("/__prova_500")
+        def _prova():
+            abort(500)
+
+        risposta = applicazione.test_client().get("/__prova_500")
+        assert risposta.status_code == 500
+        assert "andato storto" in risposta.get_data(as_text=True).lower()
