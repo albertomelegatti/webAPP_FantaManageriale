@@ -19,11 +19,23 @@ from app.core.tempo import formatta_data, formatta_data_nascita_con_eta, formatt
 from app.domini.ruoli import pulisci_ruolo, ruoli_base_presenti, ruolo_sort_key
 from app.repositories import albo_oro as albo_oro_repo
 from app.repositories import aste as aste_repo
+from app.repositories import configurazione as configurazione_repo
 from app.repositories import giocatori as giocatori_repo
 
 logger = get_logger(__name__)
 
 pubblico_bp = Blueprint('pubblico', __name__)
+
+
+def _stato_u21(data_nascita, soglia_u21):
+    """Stato U21 di un giocatore per il filtro del listone.
+
+    U21 sono i nati nell'anno di soglia o dopo (stessa regola delle aste).
+    Ritorna 'si'/'no', oppure '' quando non è determinabile (nessuna soglia
+    impostata o data di nascita non sincronizzata)."""
+    if soglia_u21 is None or data_nascita is None:
+        return ""
+    return "si" if data_nascita.year >= soglia_u21 else "no"
 
 
 # Pagina principale
@@ -370,6 +382,7 @@ def listone():
     giocatori = []
 
     with connessione() as (conn, cur):
+        u21_threshold_year = configurazione_repo.soglia_u21(cur)
         cur.execute("""
             SELECT g.nome, g.ruolo, g.club, g.squadra_att, g.tipo_contratto, g.quot_att_mantra, g.costo,
                    g.detentore_cartellino, s.username AS squadra_username, d.username AS detentore_username,
@@ -394,6 +407,9 @@ def listone():
                 "costo": g["costo"],
                 "data_nascita": formatta_data_nascita_con_eta(g["data_nascita"]) or "Non sincronizzata",
                 "scadenza_contratto_reale": formatta_scadenza_contratto(g["scadenza_contratto"]) or "Non sincronizzata",
+                # 'si'/'no' se la data di nascita è nota e la soglia è impostata,
+                # '' quando lo stato U21 non è determinabile.
+                "u21": _stato_u21(g["data_nascita"], u21_threshold_year),
             }
             for g in cur.fetchall()
         ]
@@ -409,7 +425,8 @@ def listone():
                             ruoli_disponibili=ruoli_disponibili,
                             club_disponibili=club_disponibili,
                             squadre_disponibili=squadre_disponibili,
-                            contratti_disponibili=contratti_disponibili)
+                            contratti_disponibili=contratti_disponibili,
+                            u21_threshold_year=u21_threshold_year)
 
 
 @pubblico_bp.route("/aste")
