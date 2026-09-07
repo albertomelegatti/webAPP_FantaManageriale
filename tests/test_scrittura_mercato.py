@@ -244,3 +244,72 @@ class TestNuovoScambioConPrestito:
 
         cur.execute("SELECT count(*) AS n FROM scambio;")
         assert cur.fetchone()["n"] == scambi_prima, "nessuno scambio doveva essere creato"
+
+
+class TestAtomicitaScambio:
+    """Lo scambio e' l'operazione piu' complessa: sposta giocatori, pick e
+    crediti fra due squadre e annulla le proposte concorrenti. Se si interrompe
+    a meta', deve non lasciare nulla.
+
+    Non e' stata modificata dalla Fase 8a - aveva gia' un commit unico alla fine
+    - ma la struttura non e' una prova: questo test la verifica eseguendola.
+    """
+
+    def _prepara(self, cur, db_isolato):
+        prop, dest = _due_squadre(cur)
+        g_prop, g_dest = _un_giocatore_di(cur, prop), _un_giocatore_di(cur, dest)
+        cur.execute("UPDATE squadra SET crediti = 300 WHERE nome IN (%s, %s);", (prop, dest))
+        id_scambio = _crea_scambio(cur, prop, dest, [g_prop["id"]], [g_dest["id"]],
+                                   crediti_offerti=50, crediti_richiesti=20)
+        db_isolato.commit()
+        return prop, dest, g_prop["id"], g_dest["id"], id_scambio
+
+    def _accetta(self, app, dest, id_scambio):
+        client = app.test_client()
+        with client.session_transaction() as s:
+            s.update(logged_in=True, is_admin=False, nome_squadra=dest, username="test")
+        return client.post(f"/mercato/mercato/{dest}", data={"accetta_scambio": id_scambio})
+
+    def test_un_guasto_a_meta_scambio_non_lascia_nulla_a_meta(
+        self, app, cur, db_isolato, gate_aperto, monkeypatch
+    ):
+        """Il guasto e' iniettato dopo il trasferimento dei giocatori e prima del
+        commit: e' il momento in cui uno scambio parziale sarebbe piu' dannoso,
+        con i cartellini gia' passati di mano e i crediti no."""
+        from app.blueprints import mercato as blueprint_mercato
+
+        prop, dest, g_prop, g_dest, id_scambio = self._prepara(cur, db_isolato)
+
+        def esplode(*args, **kwargs):
+            raise RuntimeError("guasto simulato a meta' scambio")
+
+        monkeypatch.setattr(blueprint_mercato.vetrina_repo, "decadi", esplode)
+
+        self._accetta(app, dest, id_scambio)
+
+        cur.execute("SELECT id, squadra_att FROM giocatore WHERE id = ANY(%s);", ([g_prop, g_dest],))
+        per_id = {r["id"]: r["squadra_att"] for r in cur.fetchall()}
+        assert per_id[g_prop] == prop, "il giocatore offerto ha cambiato squadra a scambio fallito"
+        assert per_id[g_dest] == dest, "il giocatore richiesto ha cambiato squadra a scambio fallito"
+
+        assert _crediti(cur, prop) == 300, "i crediti si sono mossi a scambio fallito"
+        assert _crediti(cur, dest) == 300
+
+        cur.execute("SELECT stato FROM scambio WHERE id = %s;", (id_scambio,))
+        assert cur.fetchone()["stato"] == "in_attesa", "lo scambio non doveva risultare accettato"
+
+    def test_a_scambio_riuscito_tutto_si_muove_insieme(
+        self, app, cur, db_isolato, gate_aperto
+    ):
+        prop, dest, g_prop, g_dest, id_scambio = self._prepara(cur, db_isolato)
+
+        self._accetta(app, dest, id_scambio)
+
+        cur.execute("SELECT id, squadra_att FROM giocatore WHERE id = ANY(%s);", ([g_prop, g_dest],))
+        per_id = {r["id"]: r["squadra_att"] for r in cur.fetchall()}
+        assert per_id[g_prop] == dest
+        assert per_id[g_dest] == prop
+        assert _crediti(cur, prop) == 300 - 50 + 20
+        assert _crediti(cur, dest) == 300 - 20 + 50
+        cur.execute("SELECT stato FROM scambio WHERE id = %s;", (id_scambio,))
+        assert cur.fetchone()["stato"] == "accettato"
