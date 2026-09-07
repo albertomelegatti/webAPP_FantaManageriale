@@ -105,7 +105,7 @@ def test_gate_chiuso_reindirizza_invece_di_errore(client_squadra, nome_squadra):
 def test_route_pubbliche_rispondono_200(client):
     """Le pagine senza autenticazione devono essere raggiungibili da chiunque."""
     for url in ("/", "/login", "/squadre", "/listone", "/aste", "/vetrina/vetrina",
-                "/movimenti_mercato", "/crediti_stadi_slot", "/health"):
+                "/movimenti_mercato", "/crediti_stadi_slot", "/albo_oro", "/health"):
         risposta = client.get(url)
         assert risposta.status_code == 200, f"{url} -> {risposta.status_code}"
 
