@@ -148,3 +148,99 @@ class TestAccettazioneScambio:
         cur.execute("SELECT stato FROM scambio WHERE id = %s;", (id_scambio,))
         assert cur.fetchone()["stato"] == "rifiutato"
         assert _crediti(cur, prop) == 300 and _crediti(cur, dest) == 300
+
+
+class TestNuovoScambioConPrestito:
+    """Copre il ramo che verifica gli slot prestito prima di creare la proposta.
+
+    E' il percorso piu' complesso dell'applicazione (il form ha una venticinquina
+    di campi) ed era scoperto: la Fase 6 lo riscrive, quindi serve una rete.
+    """
+
+    def _giocatore_di(self, cur, squadra):
+        cur.execute(
+            """SELECT id FROM giocatore WHERE squadra_att = %s
+               AND tipo_contratto NOT IN ('Fanta-Prestito', 'Hold') LIMIT 1;""",
+            (squadra,))
+        riga = cur.fetchone()
+        if not riga:
+            pytest.skip(f"Nessun giocatore per {squadra}.")
+        return riga["id"]
+
+    def _libera_slot_prestito(self, cur, squadra):
+        """Nel DB di sviluppo alcune squadre hanno gia' i due prestiti in entrata
+        consentiti, quindi il limite scatterebbe a prescindere dal test."""
+        cur.execute(
+            """UPDATE giocatore SET tipo_contratto = 'Indeterminato',
+                                    detentore_cartellino = squadra_att
+               WHERE squadra_att = %s AND tipo_contratto = 'Fanta-Prestito';""",
+            (squadra,))
+
+    def _proponi(self, app, prop, dest, giocatore):
+        client = app.test_client()
+        with client.session_transaction() as s:
+            s.update(logged_in=True, is_admin=False, nome_squadra=prop, username="test")
+        return client.post(f"/mercato/nuovo_scambio/{prop}", data={
+            "squadra_destinataria": dest,
+            "enable_prestito1": "on",
+            "prestito1_richiesto": str(giocatore),
+            "prestito1_tipo_richiesto": "Secco",
+            "prestito1_data_fine_richiesta": "2027",
+        })
+
+    def test_con_slot_liberi_nascono_la_proposta_e_il_prestito_collegato(
+        self, app, cur, db_isolato, gate_aperto
+    ):
+        prop, dest = _due_squadre(cur)
+        giocatore = self._giocatore_di(cur, dest)
+        cur.execute("UPDATE squadra SET crediti = 300 WHERE nome IN (%s, %s);", (prop, dest))
+        self._libera_slot_prestito(cur, prop)
+        cur.execute("SELECT count(*) AS n FROM scambio;")
+        scambi_prima = cur.fetchone()["n"]
+        db_isolato.commit()
+
+        assert self._proponi(app, prop, dest, giocatore).status_code == 302
+
+        cur.execute("SELECT count(*) AS n FROM scambio;")
+        assert cur.fetchone()["n"] == scambi_prima + 1, "la proposta doveva essere creata"
+
+        cur.execute(
+            """SELECT prestito_associato FROM scambio
+               WHERE squadra_proponente = %s ORDER BY id DESC LIMIT 1;""", (prop,))
+        associati = cur.fetchone()["prestito_associato"]
+        assert associati, "lo scambio deve referenziare il prestito creato"
+
+        cur.execute(
+            """SELECT stato, squadra_prestante, squadra_ricevente, tipo_prestito
+               FROM prestito WHERE id = ANY(%s);""", (associati,))
+        prestito = cur.fetchone()
+        assert prestito["stato"] == "in_attesa", "il prestito nasce sospeso, si attiva con lo scambio"
+        assert prestito["squadra_prestante"] == dest
+        assert prestito["squadra_ricevente"] == prop
+        assert prestito["tipo_prestito"] == "secco"
+
+    def test_con_gli_slot_prestito_pieni_la_proposta_viene_rifiutata(
+        self, app, cur, db_isolato, gate_aperto
+    ):
+        """Il limite e' due prestiti in entrata per squadra."""
+        prop, dest = _due_squadre(cur)
+        giocatore = self._giocatore_di(cur, dest)
+        cur.execute("UPDATE squadra SET crediti = 300 WHERE nome IN (%s, %s);", (prop, dest))
+        self._libera_slot_prestito(cur, prop)
+        cur.execute(
+            """UPDATE giocatore SET tipo_contratto = 'Fanta-Prestito'
+               WHERE id IN (SELECT id FROM giocatore WHERE squadra_att = %s
+                            AND tipo_contratto = 'Indeterminato' LIMIT 2);""",
+            (prop,))
+        cur.execute(
+            "SELECT count(*) AS n FROM giocatore WHERE squadra_att = %s AND tipo_contratto = 'Fanta-Prestito';",
+            (prop,))
+        assert cur.fetchone()["n"] == 2, "preparazione: gli slot devono essere saturi"
+        cur.execute("SELECT count(*) AS n FROM scambio;")
+        scambi_prima = cur.fetchone()["n"]
+        db_isolato.commit()
+
+        self._proponi(app, prop, dest, giocatore)
+
+        cur.execute("SELECT count(*) AS n FROM scambio;")
+        assert cur.fetchone()["n"] == scambi_prima, "nessuno scambio doveva essere creato"

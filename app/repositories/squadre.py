@@ -25,15 +25,6 @@ def crediti_e_offerta(cur, nome_squadra: str) -> tuple[int, int]:
     return riga["crediti"], riga["offerta_totale"]
 
 
-def elenco_attive(cur) -> list[dict]:
-    """Tutte le squadre tranne Svincolato, che non e' una squadra vera ma il
-    contenitore dei giocatori senza proprietario."""
-    cur.execute(
-        "SELECT nome, username, crediti FROM squadra WHERE nome <> 'Svincolato' ORDER BY nome ASC;"
-    )
-    return cur.fetchall()
-
-
 def sposta_crediti(conn, squadra_from: str, squadra_to: str, crediti_da_spostare: int) -> None:
     """Trasferisce crediti fra due squadre.
 
