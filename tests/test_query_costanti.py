@@ -94,3 +94,60 @@ class TestPaginaMercato:
         # una per il gate del mercato, una per la pagina
         assert conteggi["checkout"] <= 2, (
             f"{conteggi['checkout']} connessioni prelevate per una sola richiesta")
+
+
+class TestPagineRosa:
+    """Entrambe le pagine chiedevano, per ogni giocatore, se avesse gia' una
+    richiesta di modifica contratto aperta: una query per riga dentro il ciclo
+    di rendering."""
+
+    def _client(self, app, squadra):
+        c = app.test_client()
+        with c.session_transaction() as s:
+            s.update(logged_in=True, is_admin=False, nome_squadra=squadra, username="test")
+        return c
+
+    def _sposta_giocatori(self, cur, verso, quanti, contratto):
+        """Assegna altri giocatori alla squadra, per far crescere la pagina."""
+        cur.execute(
+            """UPDATE giocatore SET detentore_cartellino = %s, squadra_att = %s,
+                                    tipo_contratto = %s
+               WHERE id IN (SELECT id FROM giocatore
+                            WHERE squadra_att = 'Svincolato' LIMIT %s);""",
+            (verso, verso, contratto, quanti))
+
+    def test_i_tagli_non_crescono_con_la_rosa(
+        self, app, cur, db_isolato, monkeypatch, nome_squadra
+    ):
+        client = self._client(app, nome_squadra)
+        with conta_query(monkeypatch) as base:
+            client.get(f"/rosa/user_tagli/{nome_squadra}")
+        iniziali = base["query"]
+
+        self._sposta_giocatori(cur, nome_squadra, 20, "Indeterminato")
+        db_isolato.commit()
+
+        with conta_query(monkeypatch) as dopo:
+            risposta = client.get(f"/rosa/user_tagli/{nome_squadra}")
+
+        assert risposta.status_code == 200
+        assert dopo["query"] == iniziali, (
+            f"20 giocatori in piu' hanno aggiunto {dopo['query'] - iniziali} query")
+
+    def test_la_primavera_non_cresce_con_i_giocatori(
+        self, app, cur, db_isolato, monkeypatch, nome_squadra
+    ):
+        client = self._client(app, nome_squadra)
+        with conta_query(monkeypatch) as base:
+            client.get(f"/rosa/user_primavera/{nome_squadra}")
+        iniziali = base["query"]
+
+        self._sposta_giocatori(cur, nome_squadra, 15, "Primavera")
+        db_isolato.commit()
+
+        with conta_query(monkeypatch) as dopo:
+            risposta = client.get(f"/rosa/user_primavera/{nome_squadra}")
+
+        assert risposta.status_code == 200
+        assert dopo["query"] == iniziali, (
+            f"15 giocatori in piu' hanno aggiunto {dopo['query'] - iniziali} query")

@@ -12,6 +12,8 @@ from app.core.logging import get_logger
 from app.core.tempo import formatta_data
 from app.repositories import aste as aste_repo
 from app.repositories import giocatori as giocatori_repo
+from app.repositories import richieste as richieste_repo
+from app.services import rosa as servizio_rosa
 from app.repositories import squadre as squadre_repo
 from app.repositories import vetrina as vetrina_repo
 
@@ -62,27 +64,7 @@ def user_primavera(nome_squadra):
 
 
             # Selezione dei giocatori in primavera
-            cur.execute('''
-                        SELECT id, nome, ruolo, club, quot_att_mantra
-                        FROM giocatore
-                        WHERE squadra_att = %s
-                        AND tipo_contratto = 'Primavera';
-            ''', (nome_squadra,))
-            primavera_raw = cur.fetchall()
-
-            primavera = []
-            for p in primavera_raw:
-                ruolo = pulisci_ruolo(p['ruolo'])
-                primavera.append({
-                    "id": p['id'],
-                    "nome": p['nome'],
-                    "ruolo": ruolo,
-                    "club": p['club'],
-                    "quot_att_mantra": p['quot_att_mantra'],
-                    "esiste_gia_una_richiesta": esiste_gia_una_richiesta(conn, p['id'])
-                })
-
-            primavera.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
+            primavera = servizio_rosa.giocatori_primavera(cur, nome_squadra)
 
     except Exception:
         logger.exception("Errore durante il caricamento della primavera.")
@@ -285,28 +267,7 @@ def user_tagli(nome_squadra):
             
 
 
-            cur.execute('''
-                        SELECT id, nome, ruolo, club, quot_att_mantra
-                        FROM giocatore
-                        WHERE detentore_cartellino = %s
-                            AND tipo_contratto <> 'Primavera'
-                        ORDER BY nome;
-            ''', (nome_squadra,))
-            rosa_raw = cur.fetchall()
-
-            rosa = []
-            for r in rosa_raw:
-                ruolo = pulisci_ruolo(r['ruolo'])
-                rosa.append({
-                    "id": r['id'],
-                    "nome": r['nome'],
-                    "ruolo": ruolo,
-                    "club": r['club'],
-                    "quot_att_mantra": r['quot_att_mantra'],
-                    "esiste_gia_una_richiesta": esiste_gia_una_richiesta(conn, r['id'])
-                })
-
-            rosa.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
+            rosa = servizio_rosa.giocatori_tagliabili(cur, nome_squadra)
 
     except Exception:
         logger.exception("Errore durante il caricamento o il taglio dei giocatori")
@@ -343,28 +304,19 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
                 cur.execute("SELECT tipo_contratto FROM giocatore WHERE id = %s", (id_giocatore,))
                 tipo_contratto_attuale = cur.fetchone()['tipo_contratto']
 
-                insert_richiesta_sql = '''
-                    INSERT INTO richiesta_modifica_contratto (
-                        giocatore,
-                        contratto_richiesto,
-                        squadra_richiedente,
-                        crediti_richiesti,
-                        messaggio,
-                        data,
-                        stato
-                    ) VALUES (%s, %s, %s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome', %s)
-                '''
-                insert_richiesta_params = (id_giocatore, nuovo_tipo_contratto, nome_squadra, crediti_richiesti, messaggio, 'in_elaborazione')
+                def inserisci_richiesta(cursore):
+                    richieste_repo.crea(cursore, id_giocatore, nuovo_tipo_contratto,
+                                        nome_squadra, crediti_richiesti, messaggio)
 
                 try:
-                    cur.execute(insert_richiesta_sql, insert_richiesta_params)
+                    inserisci_richiesta(cur)
                 except pg_errors.UniqueViolation:
                     # La sequence dell'id è rimasta indietro rispetto ai dati (es. import/restore
                     # manuale sul DB). La riallineiamo e riproviamo, così l'utente non vede l'errore.
                     conn.rollback()
                     resync_sequence(conn, 'richiesta_modifica_contratto')
                     cur = conn.cursor(cursor_factory=RealDictCursor)
-                    cur.execute(insert_richiesta_sql, insert_richiesta_params)
+                    inserisci_richiesta(cur)
 
                 conn.commit()
 
@@ -767,26 +719,3 @@ def rifiuta_terminazione(conn, id_prestito):
 
 
 #Funzione che verifica se esiste già una richiesta in fase di elaborazione per un giocatore
-def esiste_gia_una_richiesta(conn, id_giocatore):
-    cur = None
-    try:
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        cur.execute('''
-                    SELECT COUNT(*)
-                    FROM richiesta_modifica_contratto
-                    WHERE giocatore = %s
-                        AND stato = 'in_elaborazione';
-        ''', (id_giocatore,))
-        row = cur.fetchone()
-
-        return row['count'] > 0
-
-    except Exception:
-        logger.exception("Errore")
-        return False
-
-    finally:
-        cur.close()
-        
-
