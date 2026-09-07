@@ -9,7 +9,7 @@ from flask import current_app
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from app.core.db import get_connection, release_connection
-from app.blueprints.user import format_giocatori
+from app.repositories import giocatori as giocatori_repo
 
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data
@@ -99,6 +99,17 @@ def format_pick(pick_ids, conn):
     except Exception:
         logger.exception("Errore nel formattare le pick")
         return ""
+
+
+def _elenca_nomi(id_giocatori, nomi):
+    """Nomi separati da virgola, nell'ordine dello scambio.
+
+    Stessa semantica di format_giocatori, ma senza aprire una connessione: la
+    mappa dei nomi arriva gia' risolta dal chiamante.
+    """
+    if not id_giocatori:
+        return ""
+    return ", ".join(nomi.get(i, f"ID {i} (non trovato)") for i in id_giocatori)
 
 
 def formatta_tipo_prestito(tipo_prestito):
@@ -282,8 +293,12 @@ def nuovo_scambio(conn, id_scambio):
 
         squadra_proponente = info_scambio['squadra_proponente']
         squadra_destinataria = info_scambio['squadra_destinataria']
-        giocatori_offerti_raw = format_giocatori(info_scambio['giocatori_offerti'])
-        giocatori_richiesti_raw = format_giocatori(info_scambio['giocatori_richiesti'])
+        # I nomi si risolvono con la connessione gia' in mano: format_giocatori
+        # ne prelevava una seconda dal pool mentre questa era ancora occupata.
+        nomi = giocatori_repo.nomi_per_id(
+            cur, (info_scambio['giocatori_offerti'] or []) + (info_scambio['giocatori_richiesti'] or []))
+        giocatori_offerti_raw = _elenca_nomi(info_scambio['giocatori_offerti'], nomi)
+        giocatori_richiesti_raw = _elenca_nomi(info_scambio['giocatori_richiesti'], nomi)
         giocatori_offerti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_offerti_raw.split(',') if g.strip()]
         giocatori_richiesti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_richiesti_raw.split(',') if g.strip()]
         crediti_offerti = info_scambio['crediti_offerti'] or 0
@@ -380,8 +395,12 @@ def scambio_risposta(conn, id_scambio, risposta):
 
         squadra_proponente = info_scambio['squadra_proponente']
         squadra_destinataria = info_scambio['squadra_destinataria']
-        giocatori_offerti_raw = format_giocatori(info_scambio['giocatori_offerti'])
-        giocatori_richiesti_raw = format_giocatori(info_scambio['giocatori_richiesti'])
+        # I nomi si risolvono con la connessione gia' in mano: format_giocatori
+        # ne prelevava una seconda dal pool mentre questa era ancora occupata.
+        nomi = giocatori_repo.nomi_per_id(
+            cur, (info_scambio['giocatori_offerti'] or []) + (info_scambio['giocatori_richiesti'] or []))
+        giocatori_offerti_raw = _elenca_nomi(info_scambio['giocatori_offerti'], nomi)
+        giocatori_richiesti_raw = _elenca_nomi(info_scambio['giocatori_richiesti'], nomi)
         giocatori_offerti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_offerti_raw.split(',') if g.strip()]
         giocatori_richiesti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_richiesti_raw.split(',') if g.strip()]
         crediti_offerti = info_scambio['crediti_offerti'] or 0
