@@ -49,6 +49,22 @@
                value="{{ stato_gate.aste_chiusura if stato_gate and stato_gate.aste_chiusura else '' }}">
     </div>
 
+    <div class="rounded-2xl border border-line bg-panel p-3">
+        <div class="mb-2 flex items-center justify-between gap-2">
+            <label for="u21_threshold_year" class="flex items-center gap-2 font-medium">
+                <i class="bi bi-person-badge text-accent"></i> Anno soglia U21
+            </label>
+        </div>
+        <p class="mb-2 text-xs text-muted">
+            I giocatori nati in questo anno o dopo sono considerati U21 ed esclusi dal listone
+            chiamabile in asta (acquistabili solo tramite draft), esclusi i portieri, sempre
+            chiamabili indipendentemente dall'anno di nascita. Lascia vuoto per non applicare alcun filtro.
+        </p>
+        <input type="number" id="u21_threshold_year" name="u21_threshold_year" step="1" inputmode="numeric"
+               class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm outline-none focus:border-accent"
+               value="{{ stato_gate.u21_threshold_year if stato_gate and stato_gate.u21_threshold_year else '' }}">
+    </div>
+
     <button type="submit"
             class="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white">
         <i class="bi bi-save-fill"></i> Salva

@@ -75,6 +75,7 @@ def admin_chiusura_mercato_aste():
             if request.method == "POST":
                 mercato_chiusura_raw = request.form.get("mercato_chiusura") or None
                 aste_chiusura_raw = request.form.get("aste_chiusura") or None
+                u21_threshold_year_raw = request.form.get("u21_threshold_year") or None
 
                 def parse_data(data_raw):
                     if not data_raw:
@@ -88,12 +89,19 @@ def admin_chiusura_mercato_aste():
                     flash("❌ Data non valida.", "danger")
                     return redirect(url_for("admin.admin_chiusura_mercato_aste"))
 
+                try:
+                    u21_threshold_year = int(u21_threshold_year_raw) if u21_threshold_year_raw else None
+                except ValueError:
+                    flash("❌ Anno soglia U21 non valido.", "danger")
+                    return redirect(url_for("admin.admin_chiusura_mercato_aste"))
+
                 cur.execute('''
                             UPDATE general_config
                             SET mercato_chiusura = %s,
-                                aste_chiusura = %s
+                                aste_chiusura = %s,
+                                u21_threshold_year = %s
                             WHERE id = 1;
-                ''', (mercato_chiusura, aste_chiusura))
+                ''', (mercato_chiusura, aste_chiusura, u21_threshold_year))
                 conn.commit()
                 flash("✅ Impostazioni di chiusura aggiornate con successo.", "success")
                 return redirect(url_for("admin.admin_chiusura_mercato_aste"))
