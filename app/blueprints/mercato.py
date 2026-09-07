@@ -4,14 +4,15 @@ from app import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione
-from app.blueprints.user import format_giocatori, redirect_gate_chiuso
+from app.blueprints.user import redirect_gate_chiuso
 
 from app.core.logging import get_logger
-from app.core.tempo import formatta_data
 from app.domini.calendario import anni_prestito_ammessi
 from app.domini.ruoli import pulisci_ruolo
 from app.repositories import aste as aste_repo
 from app.repositories import configurazione as configurazione_repo
+from app.repositories import draft as draft_repo
+from app.services import mercato as servizio_mercato
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import squadre as squadre_repo
 from app.repositories import vetrina as vetrina_repo
@@ -30,49 +31,10 @@ def blocca_mercato_chiuso():
             return redirect_gate_chiuso()
 
 
-def format_pick(pick_ids, conn):
-    # Formatta una lista di IDs di pick dal draft in nomi leggibili (es. '1, 2, 3')
-    
-    if not pick_ids:
-        return ""
-    
-    try:
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute('''
-            SELECT id, anno, giro, numero, detentore_att
-            FROM draft
-            WHERE id = ANY(%s)
-            ORDER BY anno, giro, numero;
-        ''', (pick_ids,))
-        picks = cur.fetchall()
-
-        def extract_year(value):
-            if value is None:
-                return "N/D"
-            return str(value.year if hasattr(value, "year") else value)
-
-        pick_names = [f"{extract_year(p['anno'])} - Giro: {p['giro']}°" for p in picks]
-        return ", ".join(pick_names)
-    
-    except Exception:
-        logger.exception("Errore nel formattare le pick")
-        return ""
-
-
 def validate_pick_ids(pick_ids, conn):
     # Valida che gli ID delle pick esistano effettivamente nella tabella draft
-    if not pick_ids:
-        return True
-    
-    try:
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT COUNT(*) as cnt FROM draft WHERE id = ANY(%s)", (pick_ids,))
-        result = cur.fetchone()
-        return result['cnt'] == len(pick_ids)
-    
-    except Exception:
-        logger.exception("Errore nella validazione delle pick")
-        return False
+    with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        return draft_repo.esistono_tutte(cur, pick_ids)
 
 
 @mercato_bp.route("/mercato/<nome_squadra>", methods=["GET", "POST"])
@@ -108,27 +70,7 @@ def user_mercato(nome_squadra):
             offerta_totale = aste_repo.offerta_totale(cur, nome_squadra)
             offerta_massima_possibile = crediti - offerta_totale
 
-            # Scarico le informazioni sugli scambi della squadra loggata
-            cur.execute('''
-                        SELECT *
-                        FROM scambio
-                        WHERE squadra_proponente = %s
-                        OR squadra_destinataria = %s
-                        ORDER BY data_proposta DESC;
-            ''', (nome_squadra, nome_squadra))
-            scambi_raw = cur.fetchall()
-
-            scambi = []
-            for s_raw in scambi_raw:
-                s_dict = dict(s_raw)
-                s_dict['giocatori_offerti_nomi'] = format_giocatori(s_dict['giocatori_offerti'])
-                s_dict['giocatori_richiesti_nomi'] = format_giocatori(s_dict['giocatori_richiesti'])
-                s_dict['pick_offerta_nomi'] = format_pick(s_dict['pick_offerta'], conn)
-                s_dict['pick_richiesta_nomi'] = format_pick(s_dict['pick_richiesta'], conn)
-                prestiti_offerti, prestiti_richiesti = format_prestito(conn, s_dict['prestito_associato'], s_dict['squadra_proponente'])
-                s_dict['prestiti_offerti_formattati'] = prestiti_offerti
-                s_dict['prestiti_richiesti_formattati'] = prestiti_richiesti
-                scambi.append(s_dict)
+            scambi = servizio_mercato.scambi_della_squadra(cur, nome_squadra)
         
     except Exception:
         logger.exception("Errore")
@@ -141,40 +83,14 @@ def user_mercato(nome_squadra):
 
 @mercato_bp.route("/visualizza_proposta/<scambio_id>", methods=["GET", "POST"])
 def visualizza_proposta(scambio_id):
+    with connessione() as (conn, cur):
+        scambio = servizio_mercato.dettaglio_proposta(cur, scambio_id)
 
-    try:
-        with connessione() as (conn, cur):
-        
-            cur.execute('''
-                        SELECT *
-                        FROM scambio
-                        WHERE id = %s;
-            ''', (scambio_id,))
-            scambio_raw = cur.fetchone()
-        
-            scambio = {
-                "scambio_id": scambio_raw['id'],
-                "squadra_proponente": scambio_raw['squadra_proponente'],
-                "data_proposta": formatta_data(scambio_raw['data_proposta']),
-                "messaggio": scambio_raw['messaggio'],
-                "stato": scambio_raw['stato'],
-                "crediti_offerti": scambio_raw['crediti_offerti'],
-                "crediti_richiesti": scambio_raw['crediti_richiesti'],
-                "giocatori_offerti": format_giocatori(scambio_raw['giocatori_offerti']),
-                "giocatori_richiesti": format_giocatori(scambio_raw['giocatori_richiesti']),
-                "pick_offerta": format_pick(scambio_raw['pick_offerta'], conn),
-                "pick_richiesta": format_pick(scambio_raw['pick_richiesta'], conn),
-                "prestito_associato": format_prestito(conn, scambio_raw['prestito_associato'], scambio_raw['squadra_proponente'])
-            }
-        
-            return render_template("visualizza_proposta.html", scambio=scambio)
-    
-    except Exception:
-        logger.exception("Errore")
-        flash("❌ Errore durante il caricamento della proposta.", "danger")
+    if not scambio:
+        flash("❌ Proposta non trovata.", "danger")
+        return redirect(url_for("pubblico.home"))
 
-        
-        
+    return render_template("visualizza_proposta.html", scambio=scambio)
 
 
 @mercato_bp.route("/nuovo_scambio/<nome_squadra>", methods=["GET", "POST"])
@@ -916,56 +832,5 @@ def rifiuta_scambio(scambio_id, conn):
         logger.exception("Errore durante il rifiuto dello scambio")
         conn.rollback()
     
-    finally:
-        cur.close()
-
-
-def format_prestito(conn, lista_prestiti, squadra_proponente):
-    if not lista_prestiti:
-        return "", ""
-
-    prestiti_offerti = []
-    prestiti_richiesti = []
-    cur = None
-    try:
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-
-        # Una sola query batch invece di una query per ogni prestito nel ciclo
-        cur.execute('''
-                    SELECT p.id, g.nome, p.tipo_prestito, p.crediti_riscatto, p.squadra_prestante
-                    FROM prestito p
-                    JOIN giocatore g
-                    ON p.giocatore = g.id
-                    WHERE p.id = ANY(%s);
-        ''', (lista_prestiti,))
-        info_map = {row['id']: row for row in cur.fetchall()}
-
-        tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
-
-        for prestito_id in lista_prestiti:
-            info_prestito = info_map.get(prestito_id)
-
-            if info_prestito:
-                giocatore = info_prestito['nome']
-                tipo_prestito = info_prestito['tipo_prestito']
-                crediti_riscatto = info_prestito['crediti_riscatto']
-
-                tipo_str = tipo_map.get(tipo_prestito, tipo_prestito)
-                riscatto_str = f" (risc. {crediti_riscatto})" if crediti_riscatto and crediti_riscatto > 0 else ""
-
-                prestito_str = f"• {giocatore} [Prestito {tipo_str}{riscatto_str}]"
-
-                # Smista i prestiti in base a chi è la squadra prestante
-                if info_prestito['squadra_prestante'] == squadra_proponente:
-                    prestiti_offerti.append(prestito_str)
-                else:
-                    prestiti_richiesti.append(prestito_str)
-
-        return "\n".join(prestiti_offerti), "\n".join(prestiti_richiesti)
-
-    except Exception:
-        logger.exception("Errore in format_prestito")
-        return "", ""
-
     finally:
         cur.close()
