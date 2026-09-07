@@ -33,7 +33,10 @@
             <label class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Squadra attuale</label>
             <select id="filtro-squadra-att" class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
                 <option value="">Tutte</option>
-                {% for s in squadre_disponibili %}
+                {% if 'Svincolato' in squadre_disponibili %}
+                <option value="Svincolato">— Svincolati —</option>
+                {% endif %}
+                {% for s in squadre_disponibili if s != 'Svincolato' %}
                 <option value="{{ s }}">{{ s }}</option>
                 {% endfor %}
             </select>
