@@ -531,7 +531,7 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
         # RISCATTO EFFETTUATO:
             
         # 1. Sottrarre i crediti dalla squadra ricevente e aggiungerli alla squadra prestante
-        squadre_repo.sposta_crediti(conn, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['crediti_riscatto'])
+        squadre_repo.sposta_crediti(cur, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['crediti_riscatto'])
         
         # 2. Aggiornare il prestito come "riscattato"
         cur.execute('''

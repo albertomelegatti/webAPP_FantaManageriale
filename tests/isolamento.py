@@ -28,11 +28,30 @@ SAVEPOINT = "sp_test"
 
 
 class ConnessioneIsolata:
-    """Delega tutto alla connessione vera, tranne commit e rollback."""
+    """Delega tutto alla connessione vera, tranne commit e rollback.
+
+    ATTENZIONE: l'isolamento vale solo per chi passa da questo oggetto. Codice
+    che raggiunge la connessione sottostante - tipicamente via
+    `cursore.connection` - la committa davvero, e le scritture del test
+    diventano permanenti.
+
+    E' successo: una simulazione temporanea del vecchio sposta_crediti scritta
+    con `cur.connection.commit()` ha committato sul serio, lasciando prestiti e
+    crediti alterati sul database di sviluppo. Per questo il cursore viene
+    avvolto (vedi CursoreIsolato) in modo che `.connection` riporti al proxy e
+    non alla connessione grezza.
+    """
 
     def __init__(self, conn):
         self._conn = conn
         self._apri_savepoint()
+
+    def cursor(self, *args, **kwargs):
+        """Cursore il cui attributo .connection riporta a questo proxy.
+
+        Senza, `cur.connection.commit()` scavalcherebbe i savepoint.
+        """
+        return CursoreIsolato(self._conn.cursor(*args, **kwargs), self)
 
     def _apri_savepoint(self):
         with self._conn.cursor() as cur:
@@ -56,6 +75,31 @@ class ConnessioneIsolata:
         return getattr(self._conn, nome)
 
 
+class CursoreIsolato:
+    """Cursore che, interrogato sulla propria connessione, risponde con il proxy.
+
+    E' l'unica differenza rispetto al cursore vero, e serve a chiudere la via
+    di fuga descritta in ConnessioneIsolata.
+    """
+
+    def __init__(self, cur, proxy):
+        self._cur = cur
+        self.connection = proxy
+
+    def __getattr__(self, nome):
+        return getattr(self._cur, nome)
+
+    def __enter__(self):
+        self._cur.__enter__()
+        return self
+
+    def __exit__(self, *args):
+        return self._cur.__exit__(*args)
+
+    def __iter__(self):
+        return iter(self._cur)
+
+
 def installa(monkeypatch, database_url):
     """Reindirizza il pool verso un'unica connessione isolata.
 
@@ -67,8 +111,21 @@ def installa(monkeypatch, database_url):
 
     from app.core import db
 
+    def rilascia(conn=None, cur=None):
+        """Come release_connection in produzione: chiude il cursore E annulla la
+        transazione non committata, senza restituire nulla al pool.
+
+        Il rollback conta: senza, un fallimento a meta' operazione lascerebbe
+        nel test modifiche che in produzione verrebbero annullate, e i test
+        sull'atomicita' misurerebbero un comportamento che non esiste.
+        """
+        if cur:
+            cur.close()
+        if conn is not None:
+            conn.rollback()
+
     monkeypatch.setattr(db, "get_connection", lambda: proxy)
-    monkeypatch.setattr(db, "release_connection", lambda conn=None, cur=None: cur.close() if cur else None)
+    monkeypatch.setattr(db, "release_connection", rilascia)
 
     # I moduli hanno importato i nomi per valore: vanno sostituiti uno per uno.
     import importlib
@@ -79,8 +136,7 @@ def installa(monkeypatch, database_url):
         if hasattr(modulo, "get_connection"):
             monkeypatch.setattr(modulo, "get_connection", lambda: proxy, raising=False)
         if hasattr(modulo, "release_connection"):
-            monkeypatch.setattr(modulo, "release_connection",
-                                lambda conn=None, cur=None: cur.close() if cur else None, raising=False)
+            monkeypatch.setattr(modulo, "release_connection", rilascia, raising=False)
 
     def chiudi():
         try:

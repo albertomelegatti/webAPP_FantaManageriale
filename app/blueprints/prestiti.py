@@ -312,7 +312,7 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
                         AND stato = 'in_attesa';
             ''', (prestito['squadra_prestante'], prestito['giocatore']))
         
-            squadre_repo.sposta_crediti(conn, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['costo_prestito'])
+            squadre_repo.sposta_crediti(cur, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['costo_prestito'])
 
             conn.commit()
             flash("✅ Prestito avviato correttamente.", "success")
