@@ -4,12 +4,16 @@ from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione
 from app.blueprints.user import redirect_gate_chiuso
-from app.queries import decadi_vetrina, get_crediti_squadra, get_offerta_totale, get_slot_prestiti_in, mercato_aperto, sposta_crediti
 
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data
 from app.domini.calendario import anni_prestito_ammessi
 from app.domini.ruoli import pulisci_ruolo
+from app.repositories import aste as aste_repo
+from app.repositories import configurazione as configurazione_repo
+from app.repositories import giocatori as giocatori_repo
+from app.repositories import squadre as squadre_repo
+from app.repositories import vetrina as vetrina_repo
 
 logger = get_logger(__name__)
 
@@ -18,8 +22,8 @@ prestiti_bp = Blueprint('prestiti', __name__, url_prefix='/prestiti')
 
 @prestiti_bp.before_request
 def blocca_prestiti_chiuso():
-    with connessione() as (conn, _):
-        if not mercato_aperto(conn):
+    with connessione() as (conn, cur):
+        if not configurazione_repo.mercato_aperto(cur):
             flash("❌ Il mercato scambi è chiuso.", "danger")
             return redirect_gate_chiuso()
 
@@ -65,8 +69,8 @@ def user_prestiti(nome_squadra):
                     telegram_utils.prestito_risposta(conn, id_prestito_da_rifiutare, "Rifiutato")
 
 
-            crediti = get_crediti_squadra(conn, nome_squadra)
-            offerta_totale = get_offerta_totale(conn, nome_squadra)
+            crediti = squadre_repo.crediti(cur, nome_squadra)
+            offerta_totale = aste_repo.offerta_totale(cur, nome_squadra)
             crediti_disponibili = crediti - offerta_totale
 
             # Selezione dei prestiti che non sono associati con nessuno scambio
@@ -109,12 +113,12 @@ def user_prestiti(nome_squadra):
 
         
             block_button = False
-            prestiti_in_num = get_slot_prestiti_in(conn, nome_squadra)
+            prestiti_in_num = giocatori_repo.slot_prestiti_in(cur, nome_squadra)
             if prestiti_in_num >= 2:
                 block_button = True
 
 
-    except Exception as e:
+    except Exception:
         logger.exception("❌ Errore durante il caricamento della pagina 'prestiti'")
         return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=0, crediti_disponibili=0, prestiti=[], prestiti_in_num=0, block_button=False)
     
@@ -205,8 +209,8 @@ def nuovo_prestito(nome_squadra):
             
 
 
-            crediti = get_crediti_squadra(conn, nome_squadra)
-            offerta_totale = get_offerta_totale(conn, nome_squadra)
+            crediti = squadre_repo.crediti(cur, nome_squadra)
+            offerta_totale = aste_repo.offerta_totale(cur, nome_squadra)
             crediti_disponibili = crediti - offerta_totale
 
             # Selezione dei giocatori
@@ -249,7 +253,7 @@ def nuovo_prestito(nome_squadra):
                     "nome": s["nome"]
                 })
 
-    except Exception as e:
+    except Exception:
         logger.exception("❌ Errore durante il caricamento della pagina 'nuovo_prestito'")
         return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=0, crediti_disponibili=0, prestiti=[], prestiti_in_num=0, block_button=False)
     
@@ -297,7 +301,7 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
                         tipo_contratto = 'Fanta-Prestito'
                         WHERE id = %s;
             ''', (prestito['squadra_ricevente'], prestito['giocatore']))
-            decadi_vetrina(cur, prestito['giocatore'])
+            vetrina_repo.decadi(cur, prestito['giocatore'])
 
             # Cancellare altri prestiti per lo stesso giocatore fatti da altre squadre
             cur.execute('''
@@ -308,14 +312,14 @@ def attiva_prestito(id_prestito_da_attivare, nome_squadra):
                         AND stato = 'in_attesa';
             ''', (prestito['squadra_prestante'], prestito['giocatore']))
         
-            sposta_crediti(conn, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['costo_prestito'])
+            squadre_repo.sposta_crediti(conn, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['costo_prestito'])
 
             conn.commit()
             flash("✅ Prestito avviato correttamente.", "success")
             telegram_utils.prestito_risposta(conn, id_prestito_da_attivare, "Accettato")
 
 
-    except Exception as e:
+    except Exception:
         logger.exception("❌ Errore durante l'attivazione del prestito")
         return render_template("user_prestiti.html", nome_squadra=nome_squadra, crediti=0, crediti_disponibili=0, prestiti=[], prestiti_in_num=0, block_button=False)
     

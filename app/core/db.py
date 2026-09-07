@@ -106,7 +106,7 @@ def init_pool():
         logger.info("✅ Pool di connessioni Supabase inizializzato (min=%s, max=%s)", POOL_MIN, POOL_MAX)
         resync_sequences()
         return pool
-    except psycopg2.Error as e:
+    except psycopg2.Error:
         logger.exception("❌ Errore critico nell'inizializzazione del pool")
         pool = None
         raise
@@ -146,7 +146,7 @@ def resync_sequences():
                 END $$;
             ''')
         logger.info("✅ Sequence delle tabelle riallineate con successo.")
-    except Exception as e:
+    except Exception:
         logger.exception("⚠️ Errore durante il riallineamento delle sequence")
 
 
@@ -245,7 +245,7 @@ def release_connection(conn=None, cur=None):
     if cur:
         try:
             cur.close()
-        except Exception as e:
+        except Exception:
             logger.exception("⚠️ Impossibile chiudere il cursore")
 
     if conn.closed:
@@ -255,7 +255,7 @@ def release_connection(conn=None, cur=None):
         conn.rollback()
         if conn.isolation_level != ISOLAMENTO_DEFAULT:
             conn.set_isolation_level(ISOLAMENTO_DEFAULT)
-    except Exception as e:
+    except Exception:
         # Connessione in stato incerto: non va rimessa nel pool.
         logger.exception("⚠️ Errore nel ripulire la connessione, viene scartata")
         _dimentica(conn)
@@ -270,7 +270,7 @@ def release_connection(conn=None, cur=None):
 
     try:
         pool.putconn(conn, close=False)
-    except Exception as e:
+    except Exception:
         logger.exception("⚠️ Errore durante putconn")
         _dimentica(conn)
         try:

@@ -6,12 +6,14 @@ from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione, resync_sequence
 from app.blueprints.user import format_partecipanti, redirect_gate_chiuso
-from app.queries import aste_aperte, get_crediti_e_offerta, get_general_config, get_slot_occupati
 from dotenv import load_dotenv
 
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data
 from app.domini.ruoli import pulisci_ruolo
+from app.repositories import aste as aste_repo
+from app.repositories import configurazione as configurazione_repo
+from app.repositories import squadre as squadre_repo
 
 logger = get_logger(__name__)
 
@@ -23,8 +25,8 @@ aste_bp = Blueprint('aste', __name__, url_prefix='/aste')
 
 @aste_bp.before_request
 def blocca_aste_chiuse():
-    with connessione() as (conn, _):
-        if not aste_aperte(conn):
+    with connessione() as (conn, cur):
+        if not configurazione_repo.aste_aperte(cur):
             flash("❌ Le aste sono chiuse.", "danger")
             return redirect_gate_chiuso()
 
@@ -135,15 +137,15 @@ def user_aste(nome_squadra):
         
 
             # Ottengo i crediti e i crediti disponibili
-            crediti, offerta_totale = get_crediti_e_offerta(conn, nome_squadra)
+            crediti, offerta_totale = squadre_repo.crediti_e_offerta(cur, nome_squadra)
             offerta_massima_possibile = crediti - offerta_totale
-            slot_occupati = get_slot_occupati(conn, nome_squadra)
+            slot_occupati = aste_repo.slot_occupati_totali(cur, nome_squadra)
 
             block_button = False
             if crediti == 0 or offerta_massima_possibile == 0 or slot_occupati >= 30:
                 block_button = True
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
         flash("❌ Errore durante il caricamento delle aste.", "danger")
         return redirect(url_for("aste.user_aste", nome_squadra=nome_squadra))
@@ -165,8 +167,7 @@ def nuova_asta(nome_squadra):
             # u21_threshold_year o dopo. Se la soglia non è impostata, se il giocatore
             # non ha una data di nascita sincronizzata, o se è un portiere, nessun
             # filtro viene applicato (i portieri sono sempre chiamabili in asta).
-            config = get_general_config(conn)
-            u21_threshold_year = config["u21_threshold_year"] if config else None
+            u21_threshold_year = configurazione_repo.soglia_u21(cur)
             cur.execute('''
                 SELECT nome, ruolo, club
                 FROM giocatore AS g
@@ -336,7 +337,7 @@ def nuova_asta(nome_squadra):
                         flash("Un altro utente ha appena creato un'asta per questo giocatore. Riprova.", "warning")
                         return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore nuova_asta")
         flash("❌ Errore nella creazione dell'asta. Riprova più tardi.", "danger")
 
@@ -464,7 +465,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
 
             if asta_raw:
                 # Recupero crediti disponibili
-                crediti, offerta_totale = get_crediti_e_offerta(conn, nome_squadra)
+                crediti, offerta_totale = squadre_repo.crediti_e_offerta(cur, nome_squadra)
 
 
                 # Calcolo offerta massima possibile
@@ -494,7 +495,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
                 flash("Asta non trovata.", "warning")
                 return redirect(url_for("aste.singola_asta_attiva", nome_squadra=nome_squadra))
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
         flash("❌ Errore durante il caricamento dell'asta.", "danger")
 

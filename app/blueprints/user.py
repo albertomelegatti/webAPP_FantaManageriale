@@ -1,8 +1,11 @@
 from flask import Blueprint, render_template, session, redirect, url_for
 from app.core.db import connessione
-from app.queries import get_crediti_squadra, get_slot_aste, get_slot_giocatori, get_slot_prestiti_in, get_stato_gate
 
 from app.core.logging import get_logger
+from app.repositories import aste as aste_repo
+from app.repositories import configurazione as configurazione_repo
+from app.repositories import giocatori as giocatori_repo
+from app.repositories import squadre as squadre_repo
 
 logger = get_logger(__name__)
 
@@ -26,12 +29,12 @@ def squadra_login(nome_squadra):
         cur.execute("SELECT username FROM squadra WHERE nome = %s;", (nome_squadra,))
         username = cur.fetchone()["username"]
 
-        slot_giocatori = get_slot_giocatori(conn, nome_squadra)
-        slot_aste = get_slot_aste(conn, nome_squadra)
+        slot_giocatori = giocatori_repo.slot_occupati_da_giocatori(cur, nome_squadra)
+        slot_aste = aste_repo.slot_impegnati(cur, nome_squadra)
         slot_occupati = slot_giocatori + slot_aste
-        prestiti_in_num = get_slot_prestiti_in(conn, nome_squadra)
+        prestiti_in_num = giocatori_repo.slot_prestiti_in(cur, nome_squadra)
 
-        crediti = get_crediti_squadra(conn, nome_squadra)
+        crediti = squadre_repo.crediti(cur, nome_squadra)
 
     return render_template("squadra_login.html", nome_squadra=nome_squadra, username=username, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num, crediti=crediti)
 
@@ -45,8 +48,8 @@ def _info_chiusura(chiusura, aperto, testo):
 
 @user_bp.route("/mercato_menu/<nome_squadra>")
 def user_mercato_menu(nome_squadra):
-    with connessione() as (conn, _):
-        stato_gate = get_stato_gate(conn)
+    with connessione() as (conn, cur):
+        stato_gate = configurazione_repo.stato_gate(cur)
     return render_template(
         "user_mercato_menu.html",
         nome_squadra=nome_squadra,
@@ -59,8 +62,8 @@ def user_mercato_menu(nome_squadra):
 
 @user_bp.route("/prestiti_menu/<nome_squadra>")
 def user_prestiti_menu(nome_squadra):
-    with connessione() as (conn, _):
-        stato_gate = get_stato_gate(conn)
+    with connessione() as (conn, cur):
+        stato_gate = configurazione_repo.stato_gate(cur)
     return render_template(
         "user_prestiti_menu.html",
         nome_squadra=nome_squadra,
@@ -112,7 +115,7 @@ def format_giocatori(giocatori):
                 else:
                     nomi_ordinati.append(f"ID {giocatore_id} (non trovato)")
 
-    except Exception as e:
+    except Exception:
         logger.exception("❌ Errore durante il recupero dei nomi giocatori")
         return "Errore nel recupero dei giocatori"
 

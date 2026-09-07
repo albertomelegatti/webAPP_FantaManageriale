@@ -66,7 +66,7 @@ def _telegram_worker():
                     logger.info(f"✅ Messaggio inviato a {chat_id}")
                 else:
                     logger.error(f"❌ Errore per {chat_id}: {r.text}")
-            except requests.exceptions.RequestException as e:
+            except requests.exceptions.RequestException:
                 logger.exception("❌ Errore di Rete per %s", chat_id)
         finally:
             time.sleep(TELEGRAM_SEND_DELAY_SECONDS)
@@ -96,7 +96,7 @@ def format_pick(pick_ids, conn):
         pick_names = [f"Giro {p['giro']}, Pick {p['numero']} ({p['detentore_att']})" for p in picks]
         return ", ".join(pick_names)
     
-    except Exception as e:
+    except Exception:
         logger.exception("Errore nel formattare le pick")
         return ""
 
@@ -145,7 +145,7 @@ def nuova_asta(conn, id_asta):
 
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
         
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
     
     finally:
@@ -179,7 +179,7 @@ def asta_iniziata(conn, id_asta):
         for partecipante in partecipanti:
             send_message(nome_squadra=partecipante, text_to_send=text_to_send)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
     
     finally:
@@ -219,7 +219,7 @@ def asta_rilanciata(conn, id_asta):
         for partecipante in info_asta['partecipanti']:
             send_message(nome_squadra=partecipante, text_to_send=text_to_send)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
     
     finally:
@@ -256,7 +256,7 @@ def asta_conclusa(conn, id_asta):
 
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
     
     finally:
@@ -349,7 +349,7 @@ Richiesta:
 
         send_message(nome_squadra=squadra_destinataria, text_to_send=text_to_send)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore in nuovo_scambio")
 
     finally:
@@ -476,7 +476,7 @@ Richiesta:
 '''
             send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
 
     finally:
@@ -523,7 +523,7 @@ def nuovo_prestito(conn, id_prestito):
 
         send_message(nome_squadra=squadra_prestante, text_to_send=text_to_send)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
 
     finally:
@@ -600,7 +600,7 @@ def prestito_risposta(conn, id_prestito, risposta):
             ''')
             send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
 
     finally:
@@ -650,7 +650,7 @@ def riscatto_giocatore(conn, id_prestito):
         ''')
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
 
-    except Exception as e:
+    except Exception:
         logger.exception("❌ Errore nel send_message riscatto_giocatore")
 
     finally:
@@ -691,7 +691,7 @@ def richiesta_terminazione_prestito(conn, id_prestito):
         else:
             send_message(nome_squadra=squadra_prestante, text_to_send=text_to_send)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
 
     finally:
@@ -744,7 +744,7 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
             ''')
         send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
 
     finally:
@@ -770,7 +770,7 @@ def taglio_giocatore(conn, nome_squadra, giocatore, costo_taglio):
 
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
         
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
     
     finally:
@@ -796,7 +796,7 @@ def promozione_giocatore_primavera(conn, nome_squadra, giocatore):
 
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
         
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
     
     finally:
@@ -835,7 +835,7 @@ def richiesta_modifica_contratto(conn, squadra_richiedente, id_giocatore, messag
         send_message(id=id_admin[0], text_to_send=text_to_send) # Mura
         send_message(id=id_admin[1], text_to_send=text_to_send) # Theo
 
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
     
     finally:
@@ -912,7 +912,7 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
 
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
             
-    except Exception as e:
+    except Exception:
         logger.exception("Errore")
     
     finally:
@@ -945,7 +945,7 @@ def salva_movimento(text_to_send):
         conn.commit()
         logger.info("✅ Movimento salvato nel database")
         
-    except Exception as e:
+    except Exception:
         logger.exception("❌ Errore nel salvataggio del movimento")
         if conn:
             conn.rollback()
@@ -986,7 +986,7 @@ def send_message(id=None, nome_squadra=None, text_to_send=None):
             logger.warning(f"⚠️ Attenzione: Nessun ID trovato in cache per la squadra '{nome_squadra}'.")
             return
         
-    except Exception as e:
+    except Exception:
         logger.exception("❌ Errore critico di accesso alla cache")
         return
 
@@ -1077,7 +1077,7 @@ def get_all_telegram_ids():
         return SQUADRE_IDS
 
 
-    except Exception as e:
+    except Exception:
         logger.exception("❌ Errore critico nel fetching della mappa ID")
         return {}
 
