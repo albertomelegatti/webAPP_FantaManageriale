@@ -46,3 +46,21 @@ def nomi_diversi_da(cur, nome_squadra: str) -> list[dict]:
         "SELECT nome FROM squadra WHERE nome <> %s AND nome <> 'Svincolato' ORDER BY nome;",
         (nome_squadra,))
     return cur.fetchall()
+
+
+def con_stadio(cur, nome_squadra: str) -> dict | None:
+    """Dati della squadra e del suo stadio in una query sola.
+
+    Lo stadio e' in rapporto uno a uno con la squadra (proprietario e' unique),
+    quindi non c'e' ragione di leggerli separatamente. LEFT JOIN perche' una
+    squadra senza stadio deve comunque comparire.
+    """
+    cur.execute(
+        """SELECT s.username, s.crediti,
+                  st.nome AS stadio_nome, st.proprietario AS stadio_proprietario,
+                  st.livello AS stadio_livello
+           FROM squadra s
+           LEFT JOIN stadio st ON st.proprietario = s.nome
+           WHERE s.nome = %s;""",
+        (nome_squadra,))
+    return cur.fetchone()

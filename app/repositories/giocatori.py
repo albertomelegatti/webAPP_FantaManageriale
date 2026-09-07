@@ -122,3 +122,27 @@ def assegna_in_prestito(cur, id_giocatore, squadra_ricevente: str) -> None:
     cur.execute(
         """UPDATE giocatore SET squadra_att = %s, tipo_contratto = 'Fanta-Prestito'
            WHERE id = %s;""", (squadra_ricevente, id_giocatore))
+
+
+def collegati_alla_squadra(cur, nome_squadra: str) -> list[dict]:
+    """Tutti i giocatori che la dashboard deve mostrare, in una query sola.
+
+    La pagina ne elenca quattro gruppi - rosa, primavera, prestiti in entrata e
+    in uscita - che prima erano quattro interrogazioni sulla stessa tabella con
+    filtri diversi sulla stessa squadra. Ognuna costava un viaggio di rete.
+
+    Qui si prendono insieme i giocatori che la squadra schiera (squadra_att) e
+    quelli di cui detiene il cartellino pur non avendoli in rosa
+    (detentore_cartellino, cioe' i prestiti in uscita), e la divisione nei
+    quattro gruppi avviene in memoria.
+    """
+    cur.execute(
+        """SELECT g.nome, g.tipo_contratto, g.ruolo, g.quot_att_mantra, g.costo, g.club,
+                  g.squadra_att, g.detentore_cartellino, g.data_nascita, g.scadenza_contratto,
+                  s.username AS squadra_username, d.username AS detentore_username
+           FROM giocatore g
+           LEFT JOIN squadra s ON s.nome = g.squadra_att AND g.squadra_att <> 'Svincolato'
+           LEFT JOIN squadra d ON d.nome = g.detentore_cartellino AND g.detentore_cartellino <> 'Svincolato'
+           WHERE g.squadra_att = %s OR g.detentore_cartellino = %s;""",
+        (nome_squadra, nome_squadra))
+    return cur.fetchall()

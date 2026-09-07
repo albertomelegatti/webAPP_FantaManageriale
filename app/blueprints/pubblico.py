@@ -16,10 +16,10 @@ from app.core.db import connessione
 
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data, formatta_data_nascita_con_eta, formatta_scadenza_contratto
-from app.domini.ruoli import pulisci_ruolo, ruoli_base_presenti, ruolo_sort_key
+from app.domini.ruoli import pulisci_ruolo, ruoli_base_presenti
 from app.repositories import albo_oro as albo_oro_repo
-from app.repositories import aste as aste_repo
-from app.repositories import giocatori as giocatori_repo
+from app.repositories import movimenti as movimenti_repo
+from app.services import dashboard as servizio_dashboard
 
 logger = get_logger(__name__)
 
@@ -65,189 +65,19 @@ def squadre():
 
 @pubblico_bp.route("/squadra/<nome_squadra>")
 def dashboard_squadra(nome_squadra):
+    with connessione() as (conn, cur):
+        dati = servizio_dashboard.dati_squadra(cur, nome_squadra)
 
-    try:
-        with connessione() as (conn, cur):
-            # STADIO
-            cur.execute('''
-                        SELECT nome, proprietario, livello
-                        FROM stadio
-                        WHERE proprietario = %s;
-            ''', (nome_squadra,))
-            stadio = cur.fetchone()
-
-            # CREDITI
-            cur.execute('''
-                        SELECT username, crediti
-                        FROM squadra
-                        WHERE nome = %s;
-            ''', (nome_squadra,))
-            squadra_raw = cur.fetchone()
-            username = squadra_raw["username"]
-            crediti = squadra_raw["crediti"]
-
-            # CONTEGGIO SLOT GIOCATORI E ASTE (slot_occupati = somma dei due, evita di ricalcolare slot_giocatori due volte)
-            slot_giocatori = giocatori_repo.slot_occupati_da_giocatori(cur, nome_squadra)
-            slot_aste = aste_repo.slot_impegnati(cur, nome_squadra)
-            slot_occupati = slot_giocatori + slot_aste
-
-            # ROSA
-            rosa = []
-            cur.execute('''
-                        SELECT g.nome, g.tipo_contratto, g.ruolo, g.quot_att_mantra, g.costo, g.club,
-                               g.squadra_att, g.detentore_cartellino, g.data_nascita, g.scadenza_contratto,
-                               s.username AS squadra_username, d.username AS detentore_username
-                        FROM giocatore g
-                        LEFT JOIN squadra s ON s.nome = g.squadra_att AND g.squadra_att <> 'Svincolato'
-                        LEFT JOIN squadra d ON d.nome = g.detentore_cartellino AND g.detentore_cartellino <> 'Svincolato'
-                        WHERE g.squadra_att = %s
-                            AND g.tipo_contratto <> 'Primavera';
-            ''' , (nome_squadra,))
-            rosa_raw = cur.fetchall()
-
-            for g in rosa_raw:
-                ruolo = pulisci_ruolo(g['ruolo'])
-                rosa.append({
-                    "nome": g['nome'],
-                    "tipo_contratto": g['tipo_contratto'],
-                    "ruolo": ruolo,
-                    "quot_att_mantra": g['quot_att_mantra'],
-                    "costo": g['costo'],
-                    "club": g['club'],
-                    "squadra_att": g['squadra_att'],
-                    "squadra_username": g['squadra_username'],
-                    "detentore_cartellino": g['detentore_cartellino'],
-                    "detentore_username": g['detentore_username'],
-                    "data_nascita": formatta_data_nascita_con_eta(g['data_nascita']) or "Non sincronizzata",
-                    "scadenza_contratto_reale": formatta_scadenza_contratto(g['scadenza_contratto']) or "Non sincronizzata",
-                })
-
-            rosa.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
-
-            # PRIMAVERA
-            primavera = []
-            cur.execute('''
-                        SELECT nome, tipo_contratto, ruolo, quot_att_mantra
-                        FROM giocatore
-                        WHERE squadra_att = %s
-                            AND tipo_contratto = 'Primavera';
-            ''' , (nome_squadra,))
-            primavera_raw = cur.fetchall()
-
-            for g in primavera_raw:
-                ruolo = pulisci_ruolo(g['ruolo'])
-                primavera.append({
-                    "nome": g['nome'],
-                    "ruolo": ruolo,
-                    "quot_att_mantra": g['quot_att_mantra']
-                })
-
-            primavera.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
-
-            # PRESTITI IN (prestiti_in_num ricavato da len(), evita una COUNT separata con la stessa WHERE)
-            prestiti_in = []
-            cur.execute('''
-                        SELECT nome, ruolo, quot_att_mantra, detentore_cartellino
-                        FROM giocatore
-                        WHERE squadra_att = %s
-                            AND tipo_contratto = 'Fanta-Prestito';
-            ''', (nome_squadra,))
-            prestiti_in_raw = cur.fetchall()
-
-            for g in prestiti_in_raw:
-                ruolo = pulisci_ruolo(g['ruolo'])
-                prestiti_in.append({
-                    "nome": g['nome'],
-                    "ruolo": ruolo,
-                    "quot_att_mantra": g['quot_att_mantra'],
-                    "detentore_cartellino": g["detentore_cartellino"]
-                })
-
-            prestiti_in.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
-
-            prestiti_in_num = len(prestiti_in)
-
-            # DRAFT - pick detenute dalla squadra
-            draft_pick = []
-            cur.execute('''
-                        SELECT d.detentore_originale, d.anno, d.numero, g.nome AS giocatore_scelto
-                        FROM draft d
-                        LEFT JOIN giocatore g
-                            ON d.id_giocatore_scelto = g.id
-                        WHERE d.detentore_att = %s
-                        ORDER BY d.anno, d.numero;
-            ''', (nome_squadra,))
-            draft_pick_raw = cur.fetchall()
-
-            for p in draft_pick_raw:
-                anno = p['anno'].year if hasattr(p['anno'], 'year') else p['anno']
-                draft_pick.append({
-                    "detentore_originale": p["detentore_originale"],
-                    "anno": anno,
-                    "numero": p["numero"],
-                    "giocatore_scelto": p["giocatore_scelto"] or "—"
-                })
-
-            # PRESTITI OUT
-            prestiti_out = []
-            cur.execute('''
-                        SELECT nome, ruolo, quot_att_mantra, squadra_att
-                        FROM giocatore
-                        WHERE detentore_cartellino = %s
-                            AND tipo_contratto in ('Fanta-Prestito', 'Prestito Reale');
-            ''', (nome_squadra,))
-            prestiti_out_raw = cur.fetchall()
-
-            for g in prestiti_out_raw:
-                ruolo = pulisci_ruolo(g['ruolo'])
-                prestiti_out.append({
-                    "nome": g['nome'],
-                    "ruolo": ruolo,
-                    "quot_att_mantra": g['quot_att_mantra'],
-                    "squadra_att": g['squadra_att']
-                })
-
-            prestiti_out.sort(key=lambda g: ruolo_sort_key(g['ruolo']))
-
-            # MOVIMENTI DI MERCATO
-            mercato = []
-            cur.execute('''
-                    SELECT data, evento, stagione
-                    FROM movimenti_squadra
-                    WHERE evento ILIKE %s and evento not ilike '%%🏷️ ASTA%%'
-                    ORDER BY data DESC;
-            ''', (f'%{nome_squadra}%',))
-            mercato_raw = cur.fetchall()
-
-            for m in mercato_raw:
-                mercato.append({
-                    "data": m['data'],
-                    "evento": m['evento'],
-                    "stagione": m['stagione']
-                })
-
-            return render_template(
-                "dashboard_squadra.html",
-                nome_squadra=nome_squadra,
-                rosa=rosa,
-                primavera=primavera,
-                prestiti_in=prestiti_in,
-                prestiti_in_num=prestiti_in_num,
-                draft_pick=draft_pick,
-                prestiti_out=prestiti_out,
-                stadio=stadio,
-                username=username,
-                crediti=crediti,
-                squadra=[],
-                slot_occupati=slot_occupati,
-                slot_giocatori=slot_giocatori,
-                mercato=mercato
-            )
-
-    except Exception:
-        logger.exception("Errore dashboard Squadra")
-        flash("❌ Errore nel caricamento della squadra.", "danger")
+    if dati is None:
+        flash("❌ Squadra non trovata.", "danger")
         return redirect(url_for('pubblico.home'))
+
+    return render_template(
+        "dashboard_squadra.html",
+        nome_squadra=nome_squadra,
+        squadra=[],   # atteso dal template, non usato
+        **dati,
+    )
 
 
 # Visualizza tutti gli eventi di mercato con filtri per stagione ed evento
@@ -256,14 +86,7 @@ def movimenti_mercato():
 
     try:
         with connessione() as (conn, cur):
-            # Recupera tutti gli eventi di mercato
-            cur.execute('''
-                        SELECT data, evento, stagione
-                        FROM movimenti_squadra
-                        WHERE evento NOT ILIKE '%%🏷️ ASTA%%'
-                        ORDER BY data DESC;
-            ''')
-            mercato_raw = cur.fetchall()
+            mercato_raw = movimenti_repo.tutti(cur)
 
             mercato = []
             for m in mercato_raw:
