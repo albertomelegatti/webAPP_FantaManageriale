@@ -306,3 +306,89 @@ class TestRichiestaModificaContratto:
         riga = cur.fetchone()
         assert riga is not None, "la richiesta doveva essere creata al secondo tentativo"
         assert riga["messaggio"] == "retry"
+
+
+class TestAtomicitaRiscatto:
+    """Il riscatto e' il caso piu' netto: lo spostamento crediti avviene PRIMA
+    delle altre scritture.
+
+    Con il vecchio sposta_crediti, che committava per conto proprio, un guasto
+    successivo annullava il resto ma lasciava i crediti gia' spostati: la squadra
+    aveva pagato un giocatore che non aveva riscattato.
+    """
+
+    def _prepara(self, cur, db_isolato):
+        cur.execute("SELECT nome FROM squadra WHERE nome <> 'Svincolato' ORDER BY nome LIMIT 2;")
+        righe = cur.fetchall()
+        if len(righe) < 2:
+            pytest.skip("Servono due squadre.")
+        prestante, ricevente = righe[0]["nome"], righe[1]["nome"]
+
+        cur.execute(
+            """SELECT id FROM giocatore WHERE squadra_att = %s
+               AND tipo_contratto NOT IN ('Fanta-Prestito','Primavera') LIMIT 1;""", (prestante,))
+        riga = cur.fetchone()
+        if not riga:
+            pytest.skip("Nessun giocatore disponibile.")
+        giocatore = riga["id"]
+
+        cur.execute("UPDATE squadra SET crediti = 300 WHERE nome IN (%s, %s);", (prestante, ricevente))
+        cur.execute(
+            """UPDATE giocatore SET squadra_att = %s, detentore_cartellino = %s,
+                                    tipo_contratto = 'Fanta-Prestito' WHERE id = %s;""",
+            (ricevente, prestante, giocatore))
+        cur.execute(
+            """INSERT INTO prestito (giocatore, squadra_prestante, squadra_ricevente, stato,
+                                     data_inizio, data_fine, costo_prestito, tipo_prestito,
+                                     crediti_riscatto, note)
+               VALUES (%s, %s, %s, 'in_corso', NOW() AT TIME ZONE 'Europe/Rome',
+                       (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '300 days',
+                       0, 'diritto_di_riscatto', 45, '')
+               RETURNING id;""", (giocatore, prestante, ricevente))
+        id_prestito = cur.fetchone()["id"]
+        db_isolato.commit()
+        return prestante, ricevente, giocatore, id_prestito
+
+    def test_un_guasto_a_meta_operazione_non_lascia_i_crediti_spostati(
+        self, app, cur, db_isolato, monkeypatch
+    ):
+        """Il guasto e' iniettato DOPO lo spostamento crediti e PRIMA del commit:
+        e' la finestra in cui il vecchio codice lasciava soldi mossi per
+        un'operazione mai completata."""
+        from app.blueprints import rosa as blueprint_rosa
+
+        prestante, ricevente, giocatore, id_prestito = self._prepara(cur, db_isolato)
+
+        def esplode(*args, **kwargs):
+            raise RuntimeError("guasto simulato a meta' riscatto")
+
+        monkeypatch.setattr(blueprint_rosa.vetrina_repo, "decadi", esplode)
+
+        _client(app, ricevente).post(
+            f"/rosa/user_gestione_prestiti/{ricevente}",
+            data={"riscatta_giocatore": id_prestito})
+
+        assert _crediti(cur, ricevente) == 300, "i crediti sono stati spostati per un riscatto fallito"
+        assert _crediti(cur, prestante) == 300
+
+        cur.execute("SELECT stato FROM prestito WHERE id = %s;", (id_prestito,))
+        assert cur.fetchone()["stato"] == "in_corso", "il prestito non doveva risultare terminato"
+
+        cur.execute("SELECT detentore_cartellino FROM giocatore WHERE id = %s;", (giocatore,))
+        assert cur.fetchone()["detentore_cartellino"] == prestante, \
+            "il cartellino non doveva passare di mano"
+
+    def test_a_operazione_riuscita_tutto_si_muove_insieme(self, app, cur, db_isolato):
+        """Contrappeso: senza, un codice che non fa mai nulla passerebbe."""
+        prestante, ricevente, giocatore, id_prestito = self._prepara(cur, db_isolato)
+
+        _client(app, ricevente).post(
+            f"/rosa/user_gestione_prestiti/{ricevente}",
+            data={"riscatta_giocatore": id_prestito})
+
+        assert _crediti(cur, ricevente) == 255
+        assert _crediti(cur, prestante) == 345
+        cur.execute("SELECT stato FROM prestito WHERE id = %s;", (id_prestito,))
+        assert cur.fetchone()["stato"] == "terminato"
+        cur.execute("SELECT detentore_cartellino FROM giocatore WHERE id = %s;", (giocatore,))
+        assert cur.fetchone()["detentore_cartellino"] == ricevente
