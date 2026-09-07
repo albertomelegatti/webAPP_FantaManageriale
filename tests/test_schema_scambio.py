@@ -149,3 +149,28 @@ class TestPrestitiNellaProposta:
 
     def test_un_prestito_rende_la_proposta_non_vuota(self):
         assert not self._con_prestito("richiesto").e_vuota
+
+
+class TestValoriMalformati:
+    """Casi che non arrivano da un utente normale ma da un form manomesso o da
+    un browser che invia qualcosa di inatteso."""
+
+    def test_un_anno_non_numerico_ricade_sul_predefinito(self):
+        p = _proposta(squadra_destinataria="Roma", enable_prestito1="on",
+                      prestito1_richiesto="42", prestito1_tipo_richiesto="Secco",
+                      prestito1_data_fine_richiesta="non-un-anno")
+        assert p.prestiti_richiesti[0].data_fine.year == DEFAULT
+
+    def test_un_anno_mancante_ricade_sul_predefinito(self):
+        p = _proposta(squadra_destinataria="Roma", enable_prestito1="on",
+                      prestito1_richiesto="42", prestito1_tipo_richiesto="Secco")
+        assert p.prestiti_richiesti[0].data_fine.year == DEFAULT
+
+    def test_un_tipo_di_prestito_sconosciuto_fa_ignorare_il_prestito(self):
+        """Meglio scartare il prestito che salvarlo con un tipo che l'enum del
+        database non accetta."""
+        p = _proposta(squadra_destinataria="Roma", enable_prestito1="on",
+                      prestito1_richiesto="42",
+                      prestito1_tipo_richiesto="Tipo Inventato",
+                      prestito1_data_fine_richiesta="2027")
+        assert not p.prestiti_richiesti
