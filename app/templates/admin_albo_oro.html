@@ -57,47 +57,91 @@
     </form>
 </div>
 
+{% macro tabella_righe(righe_da_mostrare, mostra_fase) %}
+<table class="w-full text-sm">
+    <thead>
+        <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+            {% if mostra_fase %}<th class="pb-2 font-semibold">Fase</th>{% endif %}
+            <th class="pb-2 text-center font-semibold">Pos.</th>
+            <th class="pb-2 font-semibold">Squadra</th>
+            <th class="pb-2 text-center font-semibold">Crediti</th>
+            <th class="pb-2"></th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-line">
+        {% for r in righe_da_mostrare %}
+        <tr>
+            {% if mostra_fase %}<td class="py-2 pr-2 text-muted">{{ r.fase or '—' }}</td>{% endif %}
+            <td class="py-2 text-center tabular-nums font-semibold">{{ r.posizione }}</td>
+            <td class="py-2 pr-2 font-medium">{{ r.squadra }}</td>
+            <td class="py-2 text-center tabular-nums text-accent font-semibold">{{ r.crediti_generati }}</td>
+            <td class="py-2 text-right">
+                <form method="POST" action="{{ url_for('admin.admin_albo_oro') }}" class="inline">
+                    <input type="hidden" name="elimina_id" value="{{ r.id }}">
+                    <button type="submit"
+                            onclick="return confirm('Eliminare questa riga dall\'albo d\'oro?');"
+                            class="text-ko" aria-label="Elimina">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endmacro %}
+
 {% set stagioni = righe | map(attribute='stagione') | unique | list %}
-{% for stagione in stagioni %}
+
+{% if stagioni %}
 <div class="mb-4 rounded-2xl border border-line bg-panel p-4">
+    <label class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Stagione</label>
+    <select id="filterStagione" class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+        <option value="">Tutte</option>
+        {% for stagione in stagioni %}
+        <option value="{{ stagione }}">{{ stagione }}</option>
+        {% endfor %}
+    </select>
+</div>
+{% endif %}
+
+<div id="stagioniBody">
+{% for stagione in stagioni %}
+{% set righe_stagione = righe | selectattr('stagione', 'equalto', stagione) | list %}
+<div class="mb-4 rounded-2xl border border-line bg-panel p-4" data-stagione="{{ stagione }}">
     <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Stagione {{ stagione }}</h4>
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
-                    <th class="pb-2 font-semibold">Competizione</th>
-                    <th class="pb-2 font-semibold">Fase</th>
-                    <th class="pb-2 text-center font-semibold">Pos.</th>
-                    <th class="pb-2 font-semibold">Squadra</th>
-                    <th class="pb-2 text-center font-semibold">Crediti</th>
-                    <th class="pb-2"></th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-line">
-                {% for r in righe if r.stagione == stagione %}
-                <tr>
-                    <td class="py-2 pr-2">{{ r.competizione }}</td>
-                    <td class="py-2 pr-2 text-muted">{{ r.fase or '—' }}</td>
-                    <td class="py-2 text-center tabular-nums font-semibold">{{ r.posizione }}</td>
-                    <td class="py-2 pr-2 font-medium">{{ r.squadra }}</td>
-                    <td class="py-2 text-center tabular-nums text-accent font-semibold">{{ r.crediti_generati }}</td>
-                    <td class="py-2 text-right">
-                        <form method="POST" action="{{ url_for('admin.admin_albo_oro') }}" class="inline">
-                            <input type="hidden" name="elimina_id" value="{{ r.id }}">
-                            <button type="submit"
-                                    onclick="return confirm('Eliminare questa riga dall\'albo d\'oro?');"
-                                    class="text-ko" aria-label="Elimina">
-                                <i class="bi bi-trash-fill"></i>
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div class="rounded-xl border border-line bg-panel-2 p-3">
+            <h5 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Campionato</h5>
+            <div class="overflow-x-auto">
+                {{ tabella_righe(righe_stagione | selectattr('competizione', 'equalto', 'Campionato') | list, false) }}
+            </div>
+        </div>
+        <div class="rounded-xl border border-line bg-panel-2 p-3">
+            <h5 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Coppa</h5>
+            <div class="overflow-x-auto">
+                {{ tabella_righe(righe_stagione | selectattr('competizione', 'equalto', 'Coppa') | list, true) }}
+            </div>
+        </div>
     </div>
 </div>
 {% else %}
 <p class="py-4 text-center text-sm text-muted">Nessuna riga presente nell'albo d'oro.</p>
 {% endfor %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterStagione = document.getElementById('filterStagione');
+    if (!filterStagione) return;
+    const cards = Array.from(document.getElementById('stagioniBody').querySelectorAll('[data-stagione]'));
+
+    filterStagione.addEventListener('change', function() {
+        const selezionata = this.value;
+        cards.forEach(card => {
+            card.classList.toggle('hidden', !!selezionata && card.getAttribute('data-stagione') !== selezionata);
+        });
+    });
+});
+</script>
 {% endblock %}

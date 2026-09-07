@@ -6,44 +6,29 @@
 <h2 class="mb-4 text-center text-lg font-bold">Albo d'Oro</h2>
 
 {% set stagioni = righe | map(attribute='stagione') | unique | list %}
+
+<div class="mb-4 rounded-2xl border border-line bg-panel p-4">
+    <label class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Stagione</label>
+    <select id="filterStagione" class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+        <option value="">Tutte</option>
+        {% for stagione in stagioni %}
+        <option value="{{ stagione }}">{{ stagione }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<div id="stagioniBody">
 {% for stagione in stagioni %}
 {% set righe_stagione = righe | selectattr('stagione', 'equalto', stagione) | list %}
 {% set fasi_coppa = righe_stagione | selectattr('competizione', 'equalto', 'Coppa') | map(attribute='fase') | unique | list %}
-<div class="mb-4 rounded-2xl border border-line bg-panel p-4">
+<div class="mb-4 rounded-2xl border border-line bg-panel p-4" data-stagione="{{ stagione }}">
     <h3 class="mb-3 text-base font-bold">Stagione {{ stagione }}</h3>
 
-    <!-- Campionato -->
-    <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Campionato</h4>
-    <table class="mb-4 w-full table-fixed text-sm sortable-table" id="campionato-{{ stagione }}">
-        <colgroup>
-            <col style="width:16%"><col style="width:60%"><col style="width:24%">
-        </colgroup>
-        <thead>
-            <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
-                <th class="pb-2 text-center font-semibold">Pos.</th>
-                <th class="pb-2 font-semibold">Squadra</th>
-                <th class="pb-2 text-center font-semibold">Crediti</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-line">
-            {% for r in righe_stagione if r.competizione == 'Campionato' %}
-            <tr>
-                <td class="py-2 text-center tabular-nums font-semibold">{{ r.posizione }}</td>
-                <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-2 font-medium">{{ r.squadra }}</td>
-                <td class="py-2 text-center tabular-nums text-accent font-semibold">{{ r.crediti_generati }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <!-- Coppa: una tabella per ogni fase presente in questa stagione -->
-    {% if fasi_coppa %}
-    <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Coppa</h4>
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {% for fase in fasi_coppa %}
-        <div>
-            <h5 class="mb-1 text-xs font-semibold text-muted">{{ fase }}</h5>
-            <table class="w-full table-fixed text-sm sortable-table" id="coppa-{{ stagione }}-{{ loop.index }}">
+        <!-- Campionato -->
+        <div class="rounded-xl border border-line bg-panel-2 p-3">
+            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Campionato</h4>
+            <table class="w-full table-fixed text-sm sortable-table" id="campionato-{{ stagione }}">
                 <colgroup>
                     <col style="width:16%"><col style="width:60%"><col style="width:24%">
                 </colgroup>
@@ -55,7 +40,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-line">
-                    {% for r in righe_stagione if r.competizione == 'Coppa' and r.fase == fase %}
+                    {% for r in righe_stagione if r.competizione == 'Campionato' %}
                     <tr>
                         <td class="py-2 text-center tabular-nums font-semibold">{{ r.posizione }}</td>
                         <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-2 font-medium">{{ r.squadra }}</td>
@@ -65,13 +50,55 @@
                 </tbody>
             </table>
         </div>
-        {% endfor %}
+
+        <!-- Coppa: una tabella per ogni fase presente in questa stagione. Nei
+             gironi i crediti non sono significativi (0/1, solo per l'accesso
+             alla fase successiva) e non vengono mostrati; nelle altre fasi
+             (es. Final 4) sì. -->
+        <div class="rounded-xl border border-line bg-panel-2 p-3">
+            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Coppa</h4>
+            {% for fase in fasi_coppa %}
+            {% set mostra_crediti = 'girone' not in (fase or '') | lower %}
+            <h5 class="mb-1 mt-3 text-xs font-semibold text-muted first:mt-0">{{ fase }}</h5>
+            <table class="w-full table-fixed text-sm sortable-table" id="coppa-{{ stagione }}-{{ loop.index }}">
+                <colgroup>
+                    {% if mostra_crediti %}
+                    <col style="width:16%"><col style="width:60%"><col style="width:24%">
+                    {% else %}
+                    <col style="width:20%"><col style="width:80%">
+                    {% endif %}
+                </colgroup>
+                <thead>
+                    <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                        <th class="pb-2 text-center font-semibold">Pos.</th>
+                        <th class="pb-2 font-semibold">Squadra</th>
+                        {% if mostra_crediti %}
+                        <th class="pb-2 text-center font-semibold">Crediti</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-line">
+                    {% for r in righe_stagione if r.competizione == 'Coppa' and r.fase == fase %}
+                    <tr>
+                        <td class="py-2 text-center tabular-nums font-semibold">{{ r.posizione }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-2 font-medium">{{ r.squadra }}</td>
+                        {% if mostra_crediti %}
+                        <td class="py-2 text-center tabular-nums text-accent font-semibold">{{ r.crediti_generati }}</td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endfor %}
+        </div>
     </div>
-    {% endif %}
 </div>
 {% else %}
 <p class="py-4 text-center text-sm text-muted">Nessun dato ancora disponibile nell'albo d'oro.</p>
 {% endfor %}
+</div>
+
+<p class="hidden py-4 text-center text-sm text-muted" id="noResults">Nessuna stagione trovata.</p>
 
 <style>
 .sortable-table thead th {
@@ -96,6 +123,24 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const filterStagione = document.getElementById('filterStagione');
+    const stagioniBody = document.getElementById('stagioniBody');
+    const noResults = document.getElementById('noResults');
+    const cards = Array.from(stagioniBody.querySelectorAll('[data-stagione]'));
+
+    function applyFilter() {
+        const selezionata = filterStagione.value;
+        let visibili = 0;
+        cards.forEach(card => {
+            const visibile = !selezionata || card.getAttribute('data-stagione') === selezionata;
+            card.classList.toggle('hidden', !visibile);
+            if (visibile) visibili++;
+        });
+        noResults.classList.toggle('hidden', visibili > 0);
+    }
+
+    filterStagione.addEventListener('change', applyFilter);
+
     const extractNumber = (value) => {
         const match = value.replace(',', '.').match(/-?\d+(\.\d+)?/);
         return match ? parseFloat(match[0]) : NaN;
