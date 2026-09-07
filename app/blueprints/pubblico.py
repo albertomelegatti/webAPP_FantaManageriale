@@ -359,15 +359,8 @@ def crediti_stadi_slot():
 
 @pubblico_bp.route("/albo_oro")
 def albo_oro():
-    righe = []
-
-    try:
-        with connessione() as (conn, cur):
-            righe = albo_oro_repo.leggi(cur)
-    except Exception:
-        logger.exception("Errore albo d'oro")
-        flash("❌ Errore nel caricamento dell'albo d'oro.", "danger")
-        return redirect(url_for('pubblico.home'))
+    with connessione() as (conn, cur):
+        righe = albo_oro_repo.leggi(cur)
 
     return render_template("albo_oro.html", righe=righe)
 
