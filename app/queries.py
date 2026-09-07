@@ -175,7 +175,7 @@ def get_general_config(conn):
 
     cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute('''
-                SELECT mercato_chiusura, aste_chiusura
+                SELECT mercato_chiusura, aste_chiusura, u21_threshold_year
                 FROM general_config
                 WHERE id = 1;
     ''')
@@ -216,6 +216,7 @@ def get_stato_gate(conn):
     config = get_general_config(conn)
     mercato_chiusura = config["mercato_chiusura"] if config else None
     aste_chiusura = config["aste_chiusura"] if config else None
+    u21_threshold_year = config["u21_threshold_year"] if config else None
     data_odierna = oggi()
 
     return {
@@ -223,6 +224,7 @@ def get_stato_gate(conn):
         "mercato_aperto": mercato_chiusura is None or data_odierna < mercato_chiusura,
         "aste_chiusura": aste_chiusura,
         "aste_aperte": aste_chiusura is None or data_odierna < aste_chiusura,
+        "u21_threshold_year": u21_threshold_year,
     }
 
 

@@ -6,7 +6,7 @@ from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione, resync_sequence
 from app.blueprints.user import format_partecipanti, redirect_gate_chiuso
-from app.queries import aste_aperte, get_crediti_e_offerta, get_slot_occupati
+from app.queries import aste_aperte, get_crediti_e_offerta, get_general_config, get_slot_occupati
 from dotenv import load_dotenv
 
 from app.core.logging import get_logger
@@ -160,19 +160,29 @@ def nuova_asta(nome_squadra):
 
     try:
         with connessione(isolamento=psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE) as (conn, cur):
-            # Recupera i giocatori disponibili per l'asta
+            # Recupera i giocatori disponibili per l'asta, esclusi gli U21 (chiamabili
+            # solo tramite draft): sono considerati U21 i giocatori nati nell'anno
+            # u21_threshold_year o dopo. Se la soglia non è impostata, o se il giocatore
+            # non ha una data di nascita sincronizzata, nessun filtro viene applicato.
+            config = get_general_config(conn)
+            u21_threshold_year = config["u21_threshold_year"] if config else None
             cur.execute('''
                 SELECT nome, ruolo, club
                 FROM giocatore AS g
                 WHERE tipo_contratto = 'Svincolato'
                   AND priorita = 1
+                  AND (
+                        %(soglia)s IS NULL
+                        OR g.data_nascita IS NULL
+                        OR EXTRACT(YEAR FROM g.data_nascita) < %(soglia)s
+                  )
                   AND NOT EXISTS (
                         SELECT 1
                         FROM asta a
                         WHERE a.giocatore = g.id
                             AND a.stato IN ('mostra_interesse', 'in_corso')
                   );
-            ''')
+            ''', {"soglia": u21_threshold_year})
             giocatori_raw = cur.fetchall()
             giocatori_disponibili_per_asta = [row["nome"] for row in giocatori_raw]
             giocatori_info_per_asta = [
