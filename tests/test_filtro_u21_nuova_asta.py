@@ -15,7 +15,7 @@ import pytest
 pytestmark = pytest.mark.db
 
 
-def _crea_giocatore_svincolato(cur, nome, anno_nascita):
+def _crea_giocatore_svincolato(cur, nome, anno_nascita, ruolo="PlaceHolderRole"):
     """Crea un giocatore svincolato, non ancora in asta, con l'anno di nascita
     indicato (None per un giocatore senza data di nascita sincronizzata)."""
     cur.execute(
@@ -23,10 +23,10 @@ def _crea_giocatore_svincolato(cur, nome, anno_nascita):
                nome, ruolo, tipo_contratto, squadra_att, detentore_cartellino,
                quot_att_mantra, costo, priorita, club, data_nascita
            )
-           VALUES (%s, ARRAY['PlaceHolderRole']::ruolo_mantra[], 'Svincolato',
+           VALUES (%s, ARRAY[%s]::ruolo_mantra[], 'Svincolato',
                    'Svincolato', 'Svincolato', 1, 0, 1, 'Test', %s)
            RETURNING id;""",
-        (nome, f"{anno_nascita}-06-15" if anno_nascita is not None else None),
+        (nome, ruolo, f"{anno_nascita}-06-15" if anno_nascita is not None else None),
     )
     return cur.fetchone()["id"]
 
@@ -102,3 +102,20 @@ class TestFiltroU21NuovaAsta:
         nomi = _nomi_giocatori_in_pagina(_pagina_nuova_asta(app, nome_squadra))
 
         assert nome_senza_data in nomi
+
+    def test_portiere_u21_e_comunque_chiamabile(
+        self, app, cur, db_isolato, gate_aperto, nome_squadra
+    ):
+        """I portieri sono sempre chiamabili in asta, indipendentemente
+        dall'anno di nascita: solo gli altri ruoli vengono esclusi da U21."""
+        cur.execute("UPDATE general_config SET u21_threshold_year = 2003 WHERE id = 1;")
+        nome_portiere_u21 = "Test Filtro U21 Portiere"
+        nome_attaccante_u21 = "Test Filtro U21 Attaccante"
+        _crea_giocatore_svincolato(cur, nome_portiere_u21, 2005, ruolo="Por")
+        _crea_giocatore_svincolato(cur, nome_attaccante_u21, 2005, ruolo="A")
+        db_isolato.commit()
+
+        nomi = _nomi_giocatori_in_pagina(_pagina_nuova_asta(app, nome_squadra))
+
+        assert nome_portiere_u21 in nomi
+        assert nome_attaccante_u21 not in nomi

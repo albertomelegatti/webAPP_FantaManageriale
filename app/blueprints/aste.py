@@ -162,8 +162,9 @@ def nuova_asta(nome_squadra):
         with connessione(isolamento=psycopg2.extensions.ISOLATION_LEVEL_SERIALIZABLE) as (conn, cur):
             # Recupera i giocatori disponibili per l'asta, esclusi gli U21 (chiamabili
             # solo tramite draft): sono considerati U21 i giocatori nati nell'anno
-            # u21_threshold_year o dopo. Se la soglia non è impostata, o se il giocatore
-            # non ha una data di nascita sincronizzata, nessun filtro viene applicato.
+            # u21_threshold_year o dopo. Se la soglia non è impostata, se il giocatore
+            # non ha una data di nascita sincronizzata, o se è un portiere, nessun
+            # filtro viene applicato (i portieri sono sempre chiamabili in asta).
             config = get_general_config(conn)
             u21_threshold_year = config["u21_threshold_year"] if config else None
             cur.execute('''
@@ -175,6 +176,7 @@ def nuova_asta(nome_squadra):
                         %(soglia)s IS NULL
                         OR g.data_nascita IS NULL
                         OR EXTRACT(YEAR FROM g.data_nascita) < %(soglia)s
+                        OR 'Por' = ANY(g.ruolo)
                   )
                   AND NOT EXISTS (
                         SELECT 1
