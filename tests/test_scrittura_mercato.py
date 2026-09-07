@@ -244,3 +244,61 @@ class TestNuovoScambioConPrestito:
 
         cur.execute("SELECT count(*) AS n FROM scambio;")
         assert cur.fetchone()["n"] == scambi_prima, "nessuno scambio doveva essere creato"
+
+
+class TestValidazionePick:
+    """Le pick devono esistere davvero: lo schema valida la forma dei dati, non
+    la loro coerenza con lo stato del gioco."""
+
+    def _proponi_con_pick(self, app, prop, dest, campo, valore):
+        client = app.test_client()
+        with client.session_transaction() as s:
+            s.update(logged_in=True, is_admin=False, nome_squadra=prop, username="test")
+        return client.post(f"/mercato/nuovo_scambio/{prop}",
+                           data={"squadra_destinataria": dest, campo: valore})
+
+    def test_una_pick_offerta_inesistente_blocca_la_proposta(
+        self, app, cur, db_isolato, gate_aperto
+    ):
+        prop, dest = _due_squadre(cur)
+        cur.execute("SELECT count(*) AS n FROM scambio;")
+        prima = cur.fetchone()["n"]
+        cur.execute("SELECT COALESCE(max(id), 0) + 1000 AS inesistente FROM draft;")
+        pick_inesistente = str(cur.fetchone()["inesistente"])
+        db_isolato.commit()
+
+        self._proponi_con_pick(app, prop, dest, "pick_offerta", pick_inesistente)
+
+        cur.execute("SELECT count(*) AS n FROM scambio;")
+        assert cur.fetchone()["n"] == prima, "nessuna proposta doveva essere creata"
+
+    def test_una_pick_richiesta_inesistente_blocca_la_proposta(
+        self, app, cur, db_isolato, gate_aperto
+    ):
+        prop, dest = _due_squadre(cur)
+        cur.execute("SELECT count(*) AS n FROM scambio;")
+        prima = cur.fetchone()["n"]
+        cur.execute("SELECT COALESCE(max(id), 0) + 1000 AS inesistente FROM draft;")
+        pick_inesistente = str(cur.fetchone()["inesistente"])
+        db_isolato.commit()
+
+        self._proponi_con_pick(app, prop, dest, "pick_richiesta", pick_inesistente)
+
+        cur.execute("SELECT count(*) AS n FROM scambio;")
+        assert cur.fetchone()["n"] == prima
+
+    def test_una_pick_reale_viene_accettata(self, app, cur, db_isolato, gate_aperto):
+        """Il contrappeso: senza, un codice che rifiuta sempre passerebbe."""
+        prop, dest = _due_squadre(cur)
+        cur.execute("SELECT id FROM draft LIMIT 1;")
+        riga = cur.fetchone()
+        if not riga:
+            pytest.skip("Nessuna pick nel draft.")
+        cur.execute("SELECT count(*) AS n FROM scambio;")
+        prima = cur.fetchone()["n"]
+        db_isolato.commit()
+
+        self._proponi_con_pick(app, prop, dest, "pick_offerta", str(riga["id"]))
+
+        cur.execute("SELECT count(*) AS n FROM scambio;")
+        assert cur.fetchone()["n"] == prima + 1, "la proposta doveva essere creata"

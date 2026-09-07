@@ -1,8 +1,8 @@
 import psycopg2
-from datetime import datetime
 from app import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
+from pydantic import ValidationError
 from app.core.db import connessione
 from app.blueprints.user import redirect_gate_chiuso
 
@@ -12,6 +12,7 @@ from app.domini.ruoli import pulisci_ruolo
 from app.repositories import aste as aste_repo
 from app.repositories import configurazione as configurazione_repo
 from app.repositories import draft as draft_repo
+from app.schemas.scambio import PropostaScambio
 from app.services import mercato as servizio_mercato
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import squadre as squadre_repo
@@ -99,225 +100,37 @@ def nuovo_scambio(nome_squadra):
     try:
         with connessione() as (conn, cur):
             if request.method == "POST":
-                squadra_destinataria = request.form.get("squadra_destinataria")
-                crediti_offerti = int(request.form.get("crediti_offerti") or 0)
-                crediti_richiesti = int(request.form.get("crediti_richiesti") or 0)
-                giocatori_offerti = [int(g) for g in request.form.getlist("giocatori_offerti") if g.isdigit()]
-                giocatori_richiesti = [int(g) for g in request.form.getlist("giocatori_richiesti") if g.isdigit()]
-                pick_offerta = [int(p) for p in request.form.getlist("pick_offerta") if p.isdigit()]
-                pick_richiesta = [int(p) for p in request.form.getlist("pick_richiesta") if p.isdigit()]
-                messaggio = (request.form.get("messaggio") or "").strip()
-
-                # Validazione delle pick
-                if pick_offerta and not validate_pick_ids(pick_offerta, conn):
-                    flash("❌ Una o più pick offerte non valide.", "danger")
-                    return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
-            
-                if pick_richiesta and not validate_pick_ids(pick_richiesta, conn):
-                    flash("❌ Una o più pick richieste non valide.", "danger")
-                    return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
-
-                # Nuovi campi prestito (due blocchi opzionali)
-                enable_prestito1 = request.form.get("enable_prestito1") is not None
-                enable_prestito2 = request.form.get("enable_prestito2") is not None
-
-                # Prestito 1
-                p1_richiesto = request.form.get("prestito1_richiesto")
-                p1_offerto = request.form.get("prestito1_offerto")
-                p1_tipo_richiesto = (request.form.get("prestito1_tipo_richiesto") or "").strip()
-                p1_tipo_offerto = (request.form.get("prestito1_tipo_offerto") or "").strip()
-                p1_riscatto_rich = int(request.form.get("prestito1_riscatto_richiesto") or 0)
-                p1_riscatto_off = int(request.form.get("prestito1_riscatto_offerto") or 0)
-                p1_data_fine_rich = request.form.get("prestito1_data_fine_richiesta")
-                p1_data_fine_off = request.form.get("prestito1_data_fine_offerta")
-
-                # Prestito 2
-                p2_richiesto = request.form.get("prestito2_richiesto")
-                p2_offerto = request.form.get("prestito2_offerto")
-                p2_tipo_richiesto = (request.form.get("prestito2_tipo_richiesto") or "").strip()
-                p2_tipo_offerto = (request.form.get("prestito2_tipo_offerto") or "").strip()
-                p2_riscatto_rich = int(request.form.get("prestito2_riscatto_richiesto") or 0)
-                p2_riscatto_off = int(request.form.get("prestito2_riscatto_offerto") or 0)
-                p2_data_fine_rich = request.form.get("prestito2_data_fine_richiesta")
-                p2_data_fine_off = request.form.get("prestito2_data_fine_offerta")
-
-                def map_tipo(val):
-                    if not val:
-                        return ''
-                    elif val == 'Secco':
-                        return 'secco'
-                    elif val in ('Con diritto di riscatto', 'Diritto'):
-                        return 'diritto_di_riscatto'
-                    elif val in ('Con obbligo di riscatto', 'Obbligo'):
-                        return 'obbligo_di_riscatto'
-                    return ''
-
-                # Se secco, forza riscatto a 0
-                if map_tipo(p1_tipo_richiesto) == 'secco':
-                    p1_riscatto_rich = 0
-                if map_tipo(p1_tipo_offerto) == 'secco':
-                    p1_riscatto_off = 0
-                if map_tipo(p2_tipo_richiesto) == 'secco':
-                    p2_riscatto_rich = 0
-                if map_tipo(p2_tipo_offerto) == 'secco':
-                    p2_riscatto_off = 0
-
-                # Data di fine: 1 luglio alle 23:59:59 dell'anno scelto (corrente o successivo)
-                anni_scadenza, anno_default_scadenza = anni_prestito_ammessi()
-
-                def parse_data_fine_prestito(data_fine_raw):
-                    anno = None
-                    if data_fine_raw:
-                        try:
-                            anno = int(str(data_fine_raw)[:4])
-                        except ValueError:
-                            anno = None
-                    if anno not in anni_scadenza:
-                        anno = anno_default_scadenza
-                    return datetime(anno, 7, 1, 23, 59, 59)
-
-                p1_data_fine_rich = parse_data_fine_prestito(p1_data_fine_rich)
-                p1_data_fine_off = parse_data_fine_prestito(p1_data_fine_off)
-                p2_data_fine_rich = parse_data_fine_prestito(p2_data_fine_rich)
-                p2_data_fine_off = parse_data_fine_prestito(p2_data_fine_off)
-
-                # Validazioni base
-                if not squadra_destinataria:
+                try:
+                    proposta = PropostaScambio.da_form(
+                        request.form, *anni_prestito_ammessi())
+                except ValidationError:
                     flash("Seleziona una squadra destinataria.", "warning")
                     return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
 
-                offerta_vuota = (
-                    not giocatori_offerti and crediti_offerti == 0 and not pick_offerta
-                    and not (enable_prestito1 and p1_offerto) and not (enable_prestito2 and p2_offerto)
-                )
-                richiesta_vuota = (
-                    not giocatori_richiesti and crediti_richiesti == 0 and not pick_richiesta
-                    and not (enable_prestito1 and p1_richiesto) and not (enable_prestito2 and p2_richiesto)
-                )
-
-                if offerta_vuota and richiesta_vuota:
+                if proposta.e_vuota:
                     flash("La proposta non può essere completamente vuota: offri o richiedi almeno un giocatore, dei crediti, una pick o un prestito.", "warning")
                     return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
 
-                # Validazione slot prestiti: il giocatore "richiesto" arriva in prestito a me,
-                # il giocatore "offerto" va in prestito a loro, quindi il limite di 2 slot va
-                # verificato sulla squadra che riceverebbe effettivamente il prestito.
-                prestiti_verso_me = sum([
-                    1 if enable_prestito1 and p1_richiesto else 0,
-                    1 if enable_prestito2 and p2_richiesto else 0,
-                ])
-                prestiti_verso_loro = sum([
-                    1 if enable_prestito1 and p1_offerto else 0,
-                    1 if enable_prestito2 and p2_offerto else 0,
-                ])
-
-                if prestiti_verso_me > 0 and giocatori_repo.slot_prestiti_in(cur, nome_squadra) + prestiti_verso_me > 2:
-                    flash(f"❌ {nome_squadra} non ha abbastanza slot prestiti disponibili.", "danger")
+                # Le pick devono esistere davvero: lo schema valida la forma dei
+                # dati, non la loro coerenza con lo stato del gioco.
+                if not draft_repo.esistono_tutte(cur, proposta.pick_offerta):
+                    flash("❌ Una o più pick offerte non valide.", "danger")
                     return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
 
-                if prestiti_verso_loro > 0 and giocatori_repo.slot_prestiti_in(cur, squadra_destinataria) + prestiti_verso_loro > 2:
-                    flash(f"❌ {squadra_destinataria} non ha abbastanza slot prestiti disponibili.", "danger")
+                if not draft_repo.esistono_tutte(cur, proposta.pick_richiesta):
+                    flash("❌ Una o più pick richieste non valide.", "danger")
                     return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
 
+                # Il limite di due prestiti in entrata va verificato sulla squadra
+                # che riceverebbe davvero il giocatore: chi lo chiede per i prestiti
+                # richiesti, l'altra per quelli offerti.
+                for squadra, quanti in ((nome_squadra, len(proposta.prestiti_richiesti)),
+                                        (proposta.squadra_destinataria, len(proposta.prestiti_offerti))):
+                    if quanti and giocatori_repo.slot_prestiti_in(cur, squadra) + quanti > 2:
+                        flash(f"❌ {squadra} non ha abbastanza slot prestiti disponibili.", "danger")
+                        return redirect(url_for("mercato.nuovo_scambio", nome_squadra=nome_squadra))
 
-                # Inserisci eventuali prestiti collegati (costo_prestito=0)
-                def crea_prestito(giocatore_id, squadra_prestante, squadra_ricevente, tipo_txt, riscatto, data_fine):
-
-                    if not giocatore_id or not tipo_txt:
-                        return None
-                
-                    tipo_db = map_tipo(tipo_txt)
-                    if tipo_db == 'secco':
-                        riscatto = 0
-
-                    # Resincronizza la sequenza prima dell'insert, per proteggersi da eventuali
-                    # inserimenti manuali passati con id espliciti che l'hanno lasciata indietro
-                    # (causa nota di "duplicate key value violates unique constraint prestito_pkey")
-                    cur.execute("SELECT MAX(id) AS max_id FROM prestito")
-                    max_id_prestito = cur.fetchone()['max_id']
-                    if max_id_prestito is not None:
-                        cur.execute("SELECT setval('prestito_id_seq', %s, true)", (max_id_prestito,))
-
-                    cur.execute('''
-                        INSERT INTO prestito (
-                            giocatore, squadra_prestante, squadra_ricevente, stato, data_inizio, data_fine, costo_prestito, tipo_prestito, crediti_riscatto, note
-                        ) VALUES (%s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome', %s, %s, %s, %s, %s)
-                        RETURNING id;
-                    ''', (
-                        int(giocatore_id),
-                        squadra_prestante,
-                        squadra_ricevente,
-                        data_fine,
-                        0,
-                        tipo_db,
-                        int(riscatto or 0),
-                        ''
-                    ))
-                    return cur.fetchone()['id']
-            
-            
-            
-
-
-                created_prestiti = []
-
-                if enable_prestito1:
-                    if p1_richiesto:
-                        created_prestiti.append(
-                            crea_prestito(p1_richiesto, squadra_destinataria, nome_squadra, p1_tipo_richiesto, p1_riscatto_rich, p1_data_fine_rich)
-                        )
-                    if p1_offerto:
-                        created_prestiti.append(
-                            crea_prestito(p1_offerto, nome_squadra, squadra_destinataria, p1_tipo_offerto, p1_riscatto_off, p1_data_fine_off)
-                        )
-
-                if enable_prestito2:
-                    if p2_richiesto:
-                        created_prestiti.append(
-                            crea_prestito(p2_richiesto, squadra_destinataria, nome_squadra, p2_tipo_richiesto, p2_riscatto_rich, p2_data_fine_rich)
-                        )
-                    if p2_offerto:
-                        created_prestiti.append(
-                            crea_prestito(p2_offerto, nome_squadra, squadra_destinataria, p2_tipo_offerto, p2_riscatto_off, p2_data_fine_off)
-                        )
-
-
-                if len(created_prestiti) == 0:
-                    created_prestiti = None
-
-
-                # Resincronizza la sequenza prima dell'insert, per proteggersi da eventuali
-                # inserimenti manuali passati con id espliciti che l'hanno lasciata indietro
-                # (causa nota di "duplicate key value violates unique constraint scambio_pkey")
-                cur.execute("SELECT MAX(id) AS max_id FROM scambio")
-                max_id_scambio = cur.fetchone()['max_id']
-                if max_id_scambio is not None:
-                    cur.execute("SELECT setval('scambio_id_seq', %s, true)", (max_id_scambio,))
-
-                # Inserisci la proposta di scambio
-                cur.execute('''
-                    INSERT INTO scambio (
-                        squadra_proponente, squadra_destinataria, 
-                        crediti_offerti, crediti_richiesti, 
-                        giocatori_offerti, giocatori_richiesti, 
-                        pick_offerta, pick_richiesta,
-                        messaggio, stato, data_proposta, prestito_associato
-                    )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'in_attesa', NOW() AT TIME ZONE 'Europe/Rome', %s)
-                    RETURNING id;
-                ''', (
-                    nome_squadra,
-                    squadra_destinataria,
-                    crediti_offerti,
-                    crediti_richiesti,
-                    giocatori_offerti,
-                    giocatori_richiesti,
-                    pick_offerta,
-                    pick_richiesta,
-                    messaggio,
-                    created_prestiti
-                ))
-                id_scambio = cur.fetchone()['id']
+                id_scambio = servizio_mercato.crea_proposta(conn, cur, nome_squadra, proposta)
 
                 conn.commit()
 

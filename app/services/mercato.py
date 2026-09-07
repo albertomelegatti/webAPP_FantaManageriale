@@ -15,10 +15,12 @@ Qui gli identificativi vengono raccolti da tutte le righe e risolti in blocco,
 prima del ciclo. Il numero di query non dipende piu' da quanti scambi ci sono.
 """
 
+from app.core.db import resync_sequence
 from app.core.tempo import formatta_data
 from app.repositories import draft as draft_repo
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import prestiti as prestiti_repo
+from app.repositories import prestiti as prestiti_repo_scritture
 from app.repositories import scambi as scambi_repo
 
 
@@ -120,3 +122,34 @@ def dettaglio_proposta(cur, id_scambio) -> dict | None:
         "pick_richiesta": _elenca_pick(riga["pick_richiesta"], pick),
         "prestito_associato": (offerti, richiesti),
     }
+
+
+def crea_proposta(conn, cur, proponente: str, proposta) -> int:
+    """Crea la proposta e gli eventuali prestiti collegati, come un blocco solo.
+
+    I prestiti nascono sospesi e referenziati dallo scambio: si attivano solo se
+    la proposta viene accettata. Il costo di un prestito dentro uno scambio e'
+    sempre zero, perche' il corrispettivo sta nei crediti dello scambio stesso.
+
+    Le sequence vengono riallineate prima degli insert: import o restore manuali
+    sul database possono averle lasciate indietro rispetto ai dati, ed e' la
+    causa nota dei conflitti di chiave primaria su prestito e scambio.
+    """
+    resync_sequence(conn, 'prestito')
+
+    id_prestiti = []
+    for prestito, prestante, ricevente in (
+            [(p, proposta.squadra_destinataria, proponente) for p in proposta.prestiti_richiesti]
+            + [(p, proponente, proposta.squadra_destinataria) for p in proposta.prestiti_offerti]):
+        id_prestiti.append(prestiti_repo_scritture.crea(
+            cur, prestito.giocatore, prestante, ricevente, prestito.data_fine,
+            "", 0, prestito.tipo, prestito.crediti_riscatto))
+
+    resync_sequence(conn, 'scambio')
+
+    return scambi_repo.crea(
+        cur, proponente, proposta.squadra_destinataria,
+        proposta.crediti_offerti, proposta.crediti_richiesti,
+        proposta.giocatori_offerti, proposta.giocatori_richiesti,
+        proposta.pick_offerta, proposta.pick_richiesta,
+        proposta.messaggio, id_prestiti)
