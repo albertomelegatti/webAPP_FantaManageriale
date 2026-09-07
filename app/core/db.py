@@ -79,19 +79,24 @@ ATTESA_DB_IRRAGGIUNGIBILE = (2, 2, 2, 2)
 _ultimo_rilascio = {}
 _ultimo_rilascio_lock = threading.Lock()
 
+# PID del processo che ha creato il pool. Serve a riconoscere di essere finiti
+# in un processo figlio dopo un fork: vedi _assicura_pool_del_processo().
+_pid_pool = None
+_pid_pool_lock = threading.Lock()
 
-def init_pool():
-    """Inizializza il connection pool (solo una volta)."""
-    global pool
-    if pool is not None:
-        logger.info("Il pool è già inizializzato.")
-        return pool
 
+def _crea_pool():
+    """Costruisce un pool nuovo senza toccare lo stato globale.
+
+    Separata da init_pool() perche' la ricostruzione dopo un fork deve poter
+    preparare il pool nuovo PRIMA di sostituire quello vecchio: azzerare la
+    variabile globale e ricrearla lascerebbe una finestra in cui gli altri
+    thread di questo processo vedono un pool inesistente.
+    """
     if not DATABASE_URL:
         raise ValueError("Variabile d'ambiente DATABASE_URL non trovata")
 
     result = urlparse(DATABASE_URL)
-
     params = {
         "user": result.username,
         "password": result.password,
@@ -100,11 +105,23 @@ def init_pool():
         "dbname": "postgres",
         "connect_timeout": 10,
     }
+    return psycopg2.pool.ThreadedConnectionPool(minconn=POOL_MIN, maxconn=POOL_MAX, **params)
+
+
+def init_pool(riallinea_sequence=True):
+    """Inizializza il connection pool (solo una volta)."""
+    global pool, _pid_pool
+    if pool is not None:
+        logger.info("Il pool è già inizializzato.")
+        return pool
 
     try:
-        pool = psycopg2.pool.ThreadedConnectionPool(minconn=POOL_MIN, maxconn=POOL_MAX, **params)
-        logger.info("✅ Pool di connessioni Supabase inizializzato (min=%s, max=%s)", POOL_MIN, POOL_MAX)
-        resync_sequences()
+        pool = _crea_pool()
+        _pid_pool = os.getpid()
+        logger.info("✅ Pool di connessioni Supabase inizializzato (min=%s, max=%s, pid=%s)",
+                    POOL_MIN, POOL_MAX, _pid_pool)
+        if riallinea_sequence:
+            resync_sequences()
         return pool
     except psycopg2.Error:
         logger.exception("❌ Errore critico nell'inizializzazione del pool")
@@ -168,6 +185,44 @@ def resync_sequence(conn, table_name, column_name="id"):
     conn.commit()
 
 
+def _assicura_pool_del_processo():
+    """Ricostruisce il pool se ci troviamo in un processo diverso da quello che
+    lo ha creato.
+
+    Serve quando gunicorn parte con --preload: l'applicazione viene costruita
+    una volta sola nel processo padre e i worker nascono da un fork, ereditando
+    le connessioni gia' aperte. Una connessione SSL non sopravvive al fork: due
+    processi che scrivono sulla stessa socket corrompono il flusso a vicenda, e
+    il sintomo sono errori come "SSL error: bad record mac" oppure
+    "SSL SYSCALL error: EOF detected" su query del tutto normali.
+
+    Le connessioni ereditate vengono abbandonate SENZA chiuderle: una close()
+    manderebbe un messaggio di chiusura TLS sulla socket condivisa, rompendo il
+    processo che la sta legittimamente usando. Restano in carico al padre.
+    """
+    global pool, _pid_pool
+
+    if pool is None or _pid_pool == os.getpid():
+        return
+
+    with _pid_pool_lock:
+        if pool is None or _pid_pool == os.getpid():
+            return
+        logger.warning(
+            "[DB] Pool ereditato dal processo %s, ricostruito per il processo %s "
+            "(gunicorn --preload): le connessioni SSL non sopravvivono al fork.",
+            _pid_pool, os.getpid(),
+        )
+        # Il pool nuovo si costruisce PRIMA di sostituire quello vecchio: se
+        # azzerassimo la variabile globale, gli altri thread di questo stesso
+        # processo troverebbero un pool inesistente nel frattempo.
+        nuovo = _crea_pool()
+        pool = nuovo
+        _pid_pool = os.getpid()
+        with _ultimo_rilascio_lock:
+            _ultimo_rilascio.clear()
+
+
 def _va_validata(conn):
     """True se la connessione è rimasta inattiva abbastanza a lungo da poter
     essere stata chiusa dal server."""
@@ -194,6 +249,8 @@ def get_connection():
     Da preferire il context manager `connessione()`: chi chiama questa funzione
     e' responsabile di invocare `release_connection()` in un `finally`.
     """
+    _assicura_pool_del_processo()
+
     if pool is None:
         raise RuntimeError("Connection pool non inizializzato. Chiama init_pool() prima.")
 
