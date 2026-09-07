@@ -164,3 +164,16 @@ def test_utente_anonimo_su_sezione_chiusa_non_riceve_500(client, nome_squadra):
                 f"/prestiti/nuovo_prestito/{nome_squadra}"):
         risposta = client.get(url)
         assert risposta.status_code < 500, f"{url} -> {risposta.status_code}"
+
+
+@pytest.mark.db
+def test_la_chat_non_conserva_stato_condiviso(app):
+    """La cronologia era una lista globale, condivisa fra tutti gli utenti e non
+    protetta da lock, nonostante il Procfile preveda quattro thread per worker.
+    Veniva scritta e mai riletta: era solo memoria trattenuta, con in piu' il
+    rischio di corruzione in concorrenza.
+    """
+    from app.blueprints import chat
+
+    assert not hasattr(chat, "chat_history"), \
+        "la cronologia globale e' tornata: e' condivisa fra tutti gli utenti"
