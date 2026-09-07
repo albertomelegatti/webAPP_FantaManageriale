@@ -1,11 +1,11 @@
 """
 Filtro U21 nella pagina "listone".
 
-Il listone mostra tutti i giocatori di prima fascia; il filtro U21 (lato client)
-permette di restringere la vista a U21, non-U21 o entrambi. Sono U21 i giocatori
-nati nell'anno di soglia (general_config.u21_threshold_year) o dopo, stessa regola
-delle aste. Qui verifichiamo che il server marchi correttamente le righe con
-`data-u21` e mostri il filtro solo quando la soglia e' configurata.
+Il listone mostra tutti i giocatori di prima fascia; il filtro Draft (lato
+client) ha due checkbox indipendenti, "Draft (U21)" e "Non-draft". Sono U21 i
+giocatori nati nell'anno di soglia (general_config.u21_threshold_year) o dopo,
+stessa regola delle aste. Qui verifichiamo che il server marchi correttamente le
+righe con `data-u21` e mostri il filtro solo quando la soglia e' configurata.
 """
 
 import re
@@ -73,8 +73,9 @@ class TestFiltroU21Listone:
     def test_filtro_mostrato_solo_con_soglia_configurata(self, app, cur, db_isolato):
         cur.execute("UPDATE general_config SET u21_threshold_year = 2003 WHERE id = 1;")
         db_isolato.commit()
-        assert 'id="filtro-u21"' in app.test_client().get("/listone").get_data(as_text=True)
+        corpo = app.test_client().get("/listone").get_data(as_text=True)
+        assert corpo.count('type="checkbox" data-u21=') == 2
 
         cur.execute("UPDATE general_config SET u21_threshold_year = NULL WHERE id = 1;")
         db_isolato.commit()
-        assert 'id="filtro-u21"' not in app.test_client().get("/listone").get_data(as_text=True)
+        assert 'type="checkbox" data-u21=' not in app.test_client().get("/listone").get_data(as_text=True)
