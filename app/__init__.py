@@ -11,7 +11,7 @@ import os
 import time
 
 from dotenv import load_dotenv
-from flask import Flask, flash, redirect, request, url_for
+from flask import Flask, flash, redirect, render_template, request, url_for
 from flask_compress import Compress
 
 from app.core.errori import ErroreDominio
@@ -112,9 +112,26 @@ def create_app():
         flash(errore.messaggio_utente, "danger")
         return redirect(request.referrer or url_for('pubblico.home'))
 
+    @app.errorhandler(Exception)
+    def gestisci_errore_imprevisto(errore):
+        """Un errore imprevisto non deve MAI essere presentato come successo.
+
+        Prima ogni route intercettava le proprie eccezioni, registrava un
+        messaggio e proseguiva: la pagina usciva con i dati vuoti e stato 200.
+        L'utente vedeva un elenco senza righe invece di un errore, e nessun
+        monitoraggio basato sui codici di stato poteva accorgersene. E'
+        esattamente cosi' che un guasto al connection pool ha servito il listone
+        vuoto per un'ora senza che nulla lo segnalasse.
+
+        Ora l'eccezione risale fin qui, viene registrata con lo stack trace e
+        l'utente riceve una pagina d'errore esplicita con stato 500.
+        """
+        logger.exception("errore non gestito su %s", request.path)
+        return render_template("errore.html"), 500
+
     @app.errorhandler(500)
     def handle_500(error):
-        """Handler specifico per errori 500"""
-        return redirect(url_for('pubblico.home')), 500
+        """Errori 500 sollevati direttamente, senza un'eccezione Python."""
+        return render_template("errore.html"), 500
 
     return app
