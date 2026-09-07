@@ -11,15 +11,15 @@ def leggi(cur) -> list[dict]:
 
     fase e' NULL per il Campionato: NULLS FIRST cosi' compare prima dei nomi
     di fase della Coppa nello stesso ordinamento. Dentro la Coppa, le fasi il
-    cui nome inizia per "Final" vanno sempre per ultime (un ordinamento
-    puramente alfabetico le metterebbe prima di "Girone A/B"): fase e' testo
+    cui nome inizia per "Final" vanno sempre per prime (un ordinamento
+    puramente alfabetico le metterebbe dopo "Girone A/B"): fase e' testo
     libero, quindi non c'e' un ordine cronologico vero e proprio da DB.
     """
     cur.execute(
         """
         SELECT id, stagione, competizione, fase, squadra, posizione, crediti_generati
         FROM albo_oro
-        ORDER BY stagione DESC, competizione, (fase ILIKE 'Final%%'), fase NULLS FIRST, posizione;
+        ORDER BY stagione DESC, competizione, (fase NOT ILIKE 'Final%%'), fase NULLS FIRST, posizione;
         """
     )
     return cur.fetchall()
