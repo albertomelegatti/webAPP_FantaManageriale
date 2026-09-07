@@ -7,4 +7,5 @@ pytz
 requests
 openpyxl>=3.1.0
 Flask-Compress
+pydantic>=2.0
 transfermarkt-scraper @ https://github.com/dcaribou/transfermarkt-scraper/archive/6c1eb59a59349f6869155164808e17c617b0e80d.tar.gz
