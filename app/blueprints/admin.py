@@ -307,7 +307,7 @@ def admin_verifica_corrispondenze():
                     if id_tm_fuzzy_raw.isdigit():
                         cur.execute(
                             '''
-                            SELECT id_transfermarkt, data_nascita, scadenza_contratto
+                            SELECT id_transfermarkt, data_nascita, scadenza_contratto, valore_mercato
                             FROM transfermarkt_giocatori
                             WHERE id_transfermarkt = %s;
                             ''',
@@ -319,12 +319,13 @@ def admin_verifica_corrispondenze():
                                 "id_transfermarkt": row["id_transfermarkt"],
                                 "data_nascita": row["data_nascita"],
                                 "scadenza_contratto": row["scadenza_contratto"],
+                                "valore_mercato": row["valore_mercato"],
                             }
 
                 elif valore_scelto.isdigit():
                     cur.execute(
                         '''
-                        SELECT id_transfermarkt, data_nascita, scadenza_contratto
+                        SELECT id_transfermarkt, data_nascita, scadenza_contratto, valore_mercato
                         FROM transfermarkt_giocatori
                         WHERE id_giocatore = %s AND id_transfermarkt = %s;
                         ''',
@@ -344,11 +345,12 @@ def admin_verifica_corrispondenze():
                     UPDATE giocatore
                     SET id_transfermarkt = %s,
                         data_nascita = %s,
-                        scadenza_contratto = %s
+                        scadenza_contratto = %s,
+                        valore_mercato = %s
                     WHERE id = %s;
                     ''',
                     (candidato["id_transfermarkt"], candidato["data_nascita"],
-                     candidato["scadenza_contratto"], id_giocatore),
+                     candidato["scadenza_contratto"], candidato["valore_mercato"], id_giocatore),
                 )
                 rimuovi_dalla_coda(id_giocatore)
 

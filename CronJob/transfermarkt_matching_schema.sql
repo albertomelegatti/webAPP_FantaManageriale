@@ -1,5 +1,6 @@
 -- Schema per l'abbinamento dei giocatori con Transfermarkt (data di nascita,
--- scadenza contratto reale). Eseguire una tantum sul DB (es. Supabase SQL editor).
+-- scadenza contratto reale, valore di mercato). Eseguire una tantum sul DB (es.
+-- Supabase SQL editor).
 --
 -- La connessione usata da Claude Code verso questo DB è in sola lettura, quindi questo
 -- script va lanciato manualmente.
@@ -7,7 +8,8 @@
 ALTER TABLE giocatore
     ADD COLUMN IF NOT EXISTS id_transfermarkt integer,
     ADD COLUMN IF NOT EXISTS data_nascita date,
-    ADD COLUMN IF NOT EXISTS scadenza_contratto date;
+    ADD COLUMN IF NOT EXISTS scadenza_contratto date,
+    ADD COLUMN IF NOT EXISTS valore_mercato bigint;  -- valore di mercato Transfermarkt in euro
 
 -- Mappa club fantacalcio (giocatore.club) -> nome ufficiale su Transfermarkt, usata da
 -- scripts/match_transfermarkt.py per sapere quale club scaricato corrisponde a quale
@@ -66,6 +68,7 @@ CREATE TABLE IF NOT EXISTS transfermarkt_giocatori (
     cognome text,
     data_nascita date,
     scadenza_contratto date,
+    valore_mercato bigint,
     id_giocatore integer REFERENCES giocatore(id),
     aggiornato_il timestamptz NOT NULL DEFAULT now()
 );
