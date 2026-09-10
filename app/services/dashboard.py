@@ -31,6 +31,11 @@ from app.repositories import squadre as squadre_repo
 # proprieta' della squadra.
 CONTRATTI_IN_USCITA = ('Fanta-Prestito', 'Prestito Reale')
 
+# Il valore di mercato della rosa somma solo i giocatori di cui la squadra
+# detiene il cartellino; il prestito reale ne e' escluso perche' il giocatore
+# ha di fatto lasciato la rosa.
+CONTRATTO_FUORI_ROSA = 'Prestito Reale'
+
 NON_SINCRONIZZATO = "Non sincronizzata"
 
 
@@ -93,6 +98,42 @@ def _dividi_giocatori(giocatori: list[dict], nome_squadra: str) -> dict:
     }
 
 
+def _valore_di_mercato(giocatori) -> str | None:
+    """Somma dei valori di mercato noti, formattata in milioni.
+
+    None quando nessuno dei giocatori ha un valore sincronizzato da
+    Transfermarkt: una rosa ancora senza dati non e' una rosa che vale zero.
+    """
+    valori = [g["valore_mercato"] for g in giocatori if g["valore_mercato"] is not None]
+    return formatta_valore_mercato_mln(sum(valori)) if valori else None
+
+
+def _valori_rosa(giocatori: list[dict], nome_squadra: str) -> dict:
+    """Valore di mercato della rosa: il totale in testata e la sua ripartizione.
+
+    Il totale considera i giocatori di cui la squadra detiene il cartellino,
+    prestiti reali esclusi. I sottototali seguono invece i quattro elenchi cosi'
+    come la pagina li mostra - quello della rosa comprende i prestiti in entrata,
+    che pure hanno un riquadro a parte - quindi la somma dei riquadri non
+    coincide per forza col totale.
+    """
+    in_rosa = [g for g in giocatori if g["squadra_att"] == nome_squadra]
+    col_cartellino = [g for g in giocatori if g["detentore_cartellino"] == nome_squadra]
+
+    return {
+        "valore_rosa_totale": _valore_di_mercato(
+            g for g in col_cartellino if g["tipo_contratto"] != CONTRATTO_FUORI_ROSA),
+        "valore_rosa": _valore_di_mercato(
+            g for g in in_rosa if g["tipo_contratto"] != "Primavera"),
+        "valore_primavera": _valore_di_mercato(
+            g for g in in_rosa if g["tipo_contratto"] == "Primavera"),
+        "valore_prestiti_in": _valore_di_mercato(
+            g for g in in_rosa if g["tipo_contratto"] == "Fanta-Prestito"),
+        "valore_prestiti_out": _valore_di_mercato(
+            g for g in col_cartellino if g["tipo_contratto"] in CONTRATTI_IN_USCITA),
+    }
+
+
 def _pick(righe: list[dict]) -> list[dict]:
     return [{
         "detentore_originale": p["detentore_originale"],
@@ -114,6 +155,7 @@ def dati_squadra(cur, nome_squadra: str) -> dict | None:
 
     giocatori = giocatori_repo.collegati_alla_squadra(cur, nome_squadra)
     elenchi = _dividi_giocatori(giocatori, nome_squadra)
+    valori = _valori_rosa(giocatori, nome_squadra)
 
     # Gli slot occupati da giocatori sotto contratto si contano sulle righe che
     # abbiamo gia' in memoria: non serve chiederlo al database.
@@ -138,4 +180,5 @@ def dati_squadra(cur, nome_squadra: str) -> dict | None:
         "draft_pick": _pick(draft_repo.pick_della_squadra(cur, nome_squadra)),
         "mercato": movimenti_repo.per_squadra(cur, nome_squadra),
         **elenchi,
+        **valori,
     }

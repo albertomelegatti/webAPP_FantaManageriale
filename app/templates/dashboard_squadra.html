@@ -16,7 +16,7 @@
             <h2 class="text-xl font-bold">{{ nome_squadra }}</h2>
             <p class="text-sm text-muted">Stadio: {{ stadio.nome }} · Livello {{ stadio.livello }}</p>
         </div>
-        <div class="grid w-full grid-cols-3 gap-2 sm:w-auto">
+        <div class="grid w-full grid-cols-2 gap-2 sm:w-auto sm:grid-cols-4">
             <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
                 <div class="text-xs text-muted">Slot</div>
                 <div class="text-lg font-bold">{{ slot_giocatori }}/30</div>
@@ -29,12 +29,16 @@
                 <div class="text-xs text-muted">Crediti</div>
                 <div class="text-lg font-bold">{{ crediti }}</div>
             </div>
+            <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
+                <div class="text-xs text-muted">Valore rosa</div>
+                <div class="text-lg font-bold tabular-nums">{{ valore_rosa_totale or '—' }}</div>
+            </div>
         </div>
     </div>
 
     <!-- Rosa -->
     <div class="rounded-2xl border border-line bg-panel p-4">
-        <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Rosa</h4>
+        {{ m.titolo_riquadro('Rosa', valore_rosa) }}
         <table class="w-full table-fixed text-sm">
             <colgroup>
                 <col style="width:38%"><col style="width:14%"><col style="width:18%"><col style="width:14%"><col style="width:16%">
@@ -81,7 +85,7 @@
 
         <!-- Primavera -->
         <div class="rounded-2xl border border-line bg-panel p-4">
-            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Primavera</h4>
+            {{ m.titolo_riquadro('Primavera', valore_primavera) }}
             {% if primavera %}
             <table class="w-full table-fixed text-sm">
                 <colgroup>
@@ -111,7 +115,7 @@
 
         <!-- Prestiti OUT -->
         <div class="rounded-2xl border border-line bg-panel p-4">
-            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Prestiti OUT</h4>
+            {{ m.titolo_riquadro('Prestiti OUT', valore_prestiti_out) }}
             {% if prestiti_out %}
             <table class="w-full table-fixed text-sm">
                 <colgroup>
@@ -143,7 +147,7 @@
 
         <!-- Prestiti IN -->
         <div class="rounded-2xl border border-line bg-panel p-4">
-            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Prestiti IN</h4>
+            {{ m.titolo_riquadro('Prestiti IN', valore_prestiti_in) }}
             {% if prestiti_in %}
             <table class="w-full table-fixed text-sm">
                 <colgroup>
@@ -175,7 +179,7 @@
 
         <!-- Draft -->
         <div class="rounded-2xl border border-line bg-panel p-4">
-            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Draft</h4>
+            {{ m.titolo_riquadro('Draft') }}
             {% if draft_pick %}
             <div class="max-h-80 overflow-y-auto">
                 <table class="w-full table-fixed text-sm">

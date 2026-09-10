@@ -27,6 +27,13 @@
 {% endif %}
 {% endmacro %}
 
+{% macro titolo_riquadro(testo, valore=none) %}
+<div class="mb-2 flex items-baseline justify-between gap-2">
+    <h4 class="text-sm font-bold uppercase tracking-wide text-muted">{{ testo }}</h4>
+    {% if valore %}<span class="shrink-0 text-xs font-semibold tabular-nums text-muted">{{ valore }}</span>{% endif %}
+</div>
+{% endmacro %}
+
 {% macro ruolo_colorato(ruolo) %}
 {%- set colori = {
     'por': '#e0951b',
