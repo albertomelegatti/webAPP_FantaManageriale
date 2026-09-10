@@ -53,16 +53,20 @@ def parse_data_tm(testo):
         return None
 
 
-_SCALE_VALORE_MERCATO = {"k": 1_000, "m": 1_000_000, "bn": 1_000_000_000}
+_SCALE_VALORE_MERCATO = {
+    "th": 1_000, "k": 1_000,
+    "m": 1_000_000,
+    "bn": 1_000_000_000, "mld": 1_000_000_000,
+}
 
 
 def parse_valore_mercato_tm(testo):
     """'€75.00m' -> 75000000, '€800k' -> 800000. None/'-'/'' -> None.
 
     Transfermarkt riporta il valore di mercato come stringa con simbolo di
-    valuta e suffisso di scala ('m' milioni, 'k' migliaia); qui lo si normalizza
-    a numero intero di euro. Il separatore decimale è il punto (rendering
-    inglese di transfermarkt.co.uk, quello di default dello scraper); una
+    valuta (€ o £) e suffisso di scala ('m'/'M' milioni, 'k'/'Th' migliaia); qui
+    lo si normalizza a numero intero. Il separatore decimale è il punto
+    (rendering inglese, quello di default dello scraper e dell'API ceapi); una
     virgola viene comunque trattata come decimale e più di un punto come
     separatore di migliaia ('1.234.567').
     """
@@ -72,7 +76,9 @@ def parse_valore_mercato_tm(testo):
     if pulito in ("", "-"):
         return None
 
-    match = re.search(r"([\d.,]+)(m|k|bn)?", pulito)
+    # 'th'/'bn'/'mld' prima di 'm'/'k' nell'alternanza: sono prefissati da cifre
+    # ma vanno riconosciuti interi, non troncati alla prima lettera.
+    match = re.search(r"([\d.,]+)(th|bn|mld|m|k)?", pulito)
     if not match or not match.group(1):
         return None
 
@@ -85,6 +91,31 @@ def parse_valore_mercato_tm(testo):
         return None
 
     return int(round(valore * _SCALE_VALORE_MERCATO.get(match.group(2), 1)))
+
+
+def valore_mercato_da_ceapi(payload):
+    """Valore di mercato corrente in euro dal JSON di
+    /ceapi/marketValueDevelopment/graph/<id>.
+
+    Il payload è ``{"list": [ {"mw": "€75.00m", "datum_mw": "...", ...}, ... ]}``
+    in ordine cronologico: il valore corrente è l'ultima voce con un ``mw``
+    valorizzato. None se la struttura non è quella attesa o non c'è alcun valore
+    (giocatore senza valutazione).
+    """
+    if not isinstance(payload, dict):
+        return None
+    lista = payload.get("list")
+    if not isinstance(lista, list):
+        return None
+    for voce in reversed(lista):
+        if not isinstance(voce, dict):
+            continue
+        mw = voce.get("mw")
+        if isinstance(mw, str) and mw.strip() not in ("", "-"):
+            valore = parse_valore_mercato_tm(mw)
+            if valore is not None:
+                return valore
+    return None
 
 
 def _filtra_per_iniziale(candidati, iniziale):

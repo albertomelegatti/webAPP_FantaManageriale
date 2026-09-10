@@ -18,6 +18,11 @@ Poi questo script legge `players.json` da disco e aggiorna il DB:
 
     python scripts/match_transfermarkt.py --input players.json
 
+Il valore di mercato NON arriva dal dump (lo scraper non lo estrae più: markup
+Transfermarkt cambiato). Lo script lo recupera a parte dall'API pubblica
+/ceapi/marketValueDevelopment/graph/<id> — vedi app/core/transfermarkt_api.py —
+per ogni giocatore del dump, prima del matching.
+
 La mappa club fantacalcio -> nome ufficiale Transfermarkt vive nella tabella
 `transfermarkt_mappa_club` (CronJob/transfermarkt_matching_schema.sql), non è
 hard-coded qui: se un nome cambia o un club viene promosso/retrocesso si
@@ -35,9 +40,10 @@ l'admin non li conferma.
 
 Per i giocatori che hanno GIÀ un `id_transfermarkt` (assegnato in un run precedente,
 a mano o in automatico), lo script aggiorna solo `data_nascita`/`scadenza_contratto`/
-`valore_mercato` se cambiati nel dump più recente: `id_transfermarkt`, una volta
-trovato, non viene mai più toccato. Pensato per essere lanciato periodicamente
-(es. una volta al giorno) senza bisogno di supervisione.
+`valore_mercato` se cambiati: `id_transfermarkt`, una volta trovato, non viene mai
+più toccato. Il valore di mercato viene riscritto solo se l'API ne ha restituito
+uno nuovo — un recupero fallito lascia intatto quello già a DB. Pensato per essere
+lanciato periodicamente (es. una volta al giorno) senza bisogno di supervisione.
 
 Per proteggere un run non presidiato da uno scraping fallito/incompleto, lo script
 si rifiuta di scrivere qualunque cosa (aborta con eccezione, nessuna modifica al DB)
@@ -52,6 +58,7 @@ import sys
 sys.path.insert(0, __file__.rsplit("/", 2)[0])
 
 from app.core import db
+from app.core.transfermarkt_api import recupera_valori_mercato
 from app.domini.matching_transfermarkt import (
     candidati_esatti,
     parse_data_tm,
@@ -97,10 +104,26 @@ def carica_giocatori_transfermarkt(percorso_input):
                 "club_tm": club_tm,
                 "data_nascita": parse_data_tm(dato.get("date_of_birth")),
                 "scadenza_contratto": parse_data_tm(dato.get("contract_expires")),
+                # Oggi lo scraper non lo estrae più (markup Transfermarkt cambiato):
+                # è quasi sempre None e viene rimpiazzato da arricchisci_valori_mercato
+                # con quello dell'API ceapi. Resta qui come innesto se lo scraper torna
+                # a funzionare.
                 "valore_mercato": parse_valore_mercato_tm(dato.get("current_market_value")),
             })
 
     return per_club_tm
+
+
+def arricchisci_valori_mercato(giocatori_tm_per_club_tm):
+    """Rimpiazza il valore di mercato del dump (assente) con quello dell'API
+    ceapi di Transfermarkt. Un id non risolto lascia il valore com'era: il
+    resto della pipeline non sovrascrive mai con None un valore già a DB."""
+    tutti = [g for giocatori in giocatori_tm_per_club_tm.values() for g in giocatori]
+    valori = recupera_valori_mercato(g["id_transfermarkt"] for g in tutti)
+    for g in tutti:
+        recuperato = valori.get(g["id_transfermarkt"])
+        if recuperato is not None:
+            g["valore_mercato"] = recuperato
 
 
 def salva_cache(cur, giocatori_tm_per_club_tm):
@@ -122,8 +145,13 @@ def salva_cache(cur, giocatori_tm_per_club_tm):
 
 
 def aggiorna_gia_matchati(cur, per_id_transfermarkt):
-    """Aggiorna data_nascita/scadenza_contratto dei giocatori già mappati in un run
-    precedente, SENZA mai toccare id_transfermarkt: una volta trovato, resta fisso."""
+    """Aggiorna data_nascita/scadenza_contratto/valore_mercato dei giocatori già
+    mappati in un run precedente, SENZA mai toccare id_transfermarkt: una volta
+    trovato, resta fisso.
+
+    Il valore di mercato viene aggiornato solo quando l'API ne ha restituito uno
+    nuovo: se il recupero è fallito (None) si tiene quello già a DB invece di
+    azzerarlo."""
     cur.execute(
         '''
         SELECT id, id_transfermarkt, data_nascita, scadenza_contratto, valore_mercato
@@ -140,9 +168,13 @@ def aggiorna_gia_matchati(cur, per_id_transfermarkt):
             # Non più nella rosa scaricata (es. ha lasciato la Serie A): lascia i
             # dati com'erano piuttosto che cancellarli.
             continue
+
+        valore_mercato = (aggiornato["valore_mercato"]
+                          if aggiornato["valore_mercato"] is not None
+                          else g["valore_mercato"])
         if (aggiornato["data_nascita"] == g["data_nascita"]
                 and aggiornato["scadenza_contratto"] == g["scadenza_contratto"]
-                and aggiornato["valore_mercato"] == g["valore_mercato"]):
+                and valore_mercato == g["valore_mercato"]):
             continue
 
         cur.execute(
@@ -154,7 +186,7 @@ def aggiorna_gia_matchati(cur, per_id_transfermarkt):
             WHERE id = %s;
             ''',
             (aggiornato["data_nascita"], aggiornato["scadenza_contratto"],
-             aggiornato["valore_mercato"], g["id"]),
+             valore_mercato, g["id"]),
         )
         n_aggiornati += 1
 
@@ -170,6 +202,8 @@ def esegui_matching(percorso_input):
             f"Solo {totale_giocatori} giocatori nel dump (attesi almeno {SOGLIA_MINIMA_GIOCATORI}): "
             "probabile scraping fallito o incompleto."
         )
+
+    arricchisci_valori_mercato(giocatori_tm_per_club_tm)
 
     per_id_transfermarkt = {
         g["id_transfermarkt"]: g

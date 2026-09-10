@@ -29,6 +29,7 @@ from flask import Blueprint, jsonify, request
 from psycopg2.extras import RealDictCursor
 
 from app.core.db import get_connection, release_connection
+from app.core.transfermarkt_api import recupera_valori_mercato
 from app.domini.matching_transfermarkt import (
     candidati_esatti,
     parse_data_tm,
@@ -176,9 +177,23 @@ def _carica_giocatori_transfermarkt(percorso_input):
                 "club_tm": club_tm,
                 "data_nascita": parse_data_tm(dato.get("date_of_birth")),
                 "scadenza_contratto": parse_data_tm(dato.get("contract_expires")),
+                # Lo scraper non lo estrae più: quasi sempre None, rimpiazzato sotto
+                # da _arricchisci_valori_mercato con quello dell'API ceapi.
                 "valore_mercato": parse_valore_mercato_tm(dato.get("current_market_value")),
             })
     return per_club_tm
+
+
+def _arricchisci_valori_mercato(giocatori_tm_per_club_tm):
+    """Rimpiazza il valore di mercato del dump (assente) con quello dell'API
+    ceapi. Un id non risolto lascia il valore com'era: il refresh più sotto non
+    sovrascrive mai con None un valore già a DB."""
+    tutti = [g for giocatori in giocatori_tm_per_club_tm.values() for g in giocatori]
+    valori = recupera_valori_mercato(g["id_transfermarkt"] for g in tutti)
+    for g in tutti:
+        recuperato = valori.get(g["id_transfermarkt"])
+        if recuperato is not None:
+            g["valore_mercato"] = recuperato
 
 
 def _esegui_matching(cur, percorso_input):
@@ -189,6 +204,8 @@ def _esegui_matching(cur, percorso_input):
         raise DumpNonAffidabile(
             f"Solo {totale_giocatori} giocatori nel dump (attesi almeno {SOGLIA_MINIMA_GIOCATORI})."
         )
+
+    _arricchisci_valori_mercato(giocatori_tm_per_club_tm)
 
     per_id_transfermarkt = {
         g["id_transfermarkt"]: g
@@ -226,14 +243,19 @@ def _esegui_matching(cur, percorso_input):
         aggiornato = per_id_transfermarkt.get(g["id_transfermarkt"])
         if not aggiornato:
             continue
+        # Valore di mercato: si aggiorna solo se l'API ne ha dato uno nuovo; un
+        # recupero fallito (None) tiene quello già a DB invece di azzerarlo.
+        valore_mercato = (aggiornato["valore_mercato"]
+                          if aggiornato["valore_mercato"] is not None
+                          else g["valore_mercato"])
         if (aggiornato["data_nascita"] == g["data_nascita"]
                 and aggiornato["scadenza_contratto"] == g["scadenza_contratto"]
-                and aggiornato["valore_mercato"] == g["valore_mercato"]):
+                and valore_mercato == g["valore_mercato"]):
             continue
         cur.execute(
             "UPDATE giocatore SET data_nascita = %s, scadenza_contratto = %s, valore_mercato = %s WHERE id = %s;",
             (aggiornato["data_nascita"], aggiornato["scadenza_contratto"],
-             aggiornato["valore_mercato"], g["id"]),
+             valore_mercato, g["id"]),
         )
         n_aggiornati += 1
 
