@@ -15,6 +15,7 @@ from app.blueprints.user import format_partecipanti
 from app.core.db import connessione
 
 from app.core.logging import get_logger
+from app.core.formato import formatta_valore_mercato_mln
 from app.core.tempo import formatta_data, formatta_data_nascita_con_eta, formatta_scadenza_contratto
 from app.domini.ruoli import pulisci_ruolo, ruoli_base_presenti
 from app.repositories import albo_oro as albo_oro_repo
@@ -211,7 +212,7 @@ def listone():
         cur.execute("""
             SELECT g.nome, g.ruolo, g.club, g.squadra_att, g.tipo_contratto, g.quot_att_mantra, g.costo,
                    g.detentore_cartellino, s.username AS squadra_username, d.username AS detentore_username,
-                   g.data_nascita, g.scadenza_contratto
+                   g.data_nascita, g.scadenza_contratto, g.valore_mercato
             FROM giocatore g
             LEFT JOIN squadra s ON s.nome = g.squadra_att AND g.squadra_att <> 'Svincolato'
             LEFT JOIN squadra d ON d.nome = g.detentore_cartellino AND g.detentore_cartellino <> 'Svincolato'
@@ -232,6 +233,7 @@ def listone():
                 "costo": g["costo"],
                 "data_nascita": formatta_data_nascita_con_eta(g["data_nascita"]) or "Non sincronizzata",
                 "scadenza_contratto_reale": formatta_scadenza_contratto(g["scadenza_contratto"]) or "Non sincronizzata",
+                "valore_mercato": formatta_valore_mercato_mln(g["valore_mercato"]) or "Non sincronizzato",
                 # 'si'/'no' se la data di nascita è nota e la soglia è impostata,
                 # '' quando lo stato U21 non è determinabile.
                 "u21": _stato_u21(g["data_nascita"], u21_threshold_year),

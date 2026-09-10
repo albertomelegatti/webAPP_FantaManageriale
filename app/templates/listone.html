@@ -107,7 +107,8 @@
                     "quotazione": g.quotazione,
                     "costo": g.costo,
                     "data_nascita": g.data_nascita,
-                    "scadenza_contratto_reale": g.scadenza_contratto_reale
+                    "scadenza_contratto_reale": g.scadenza_contratto_reale,
+                    "valore_mercato": g.valore_mercato
                 } | tojson }}'>
                 <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-1 font-medium">{{ g.nome }}</td>
                 <td class="overflow-hidden py-2 pr-1">{{ m.ruolo_colorato(g.ruolo) }}</td>
@@ -166,6 +167,10 @@
             <div class="flex items-center justify-between">
                 <span class="text-muted">Scadenza contratto</span>
                 <span id="modalScadenzaContratto" class="font-medium"></span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-muted">Valore TM</span>
+                <span id="modalValoreMercato" class="font-medium tabular-nums"></span>
             </div>
             <div class="flex items-center justify-between">
                 <span class="text-muted">Quotazione</span>
@@ -343,13 +348,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalContratto = document.getElementById('modalContratto');
     const modalDataNascita = document.getElementById('modalDataNascita');
     const modalScadenzaContratto = document.getElementById('modalScadenzaContratto');
+    const modalValoreMercato = document.getElementById('modalValoreMercato');
     const modalQuotazione = document.getElementById('modalQuotazione');
     const modalCosto = document.getElementById('modalCosto');
 
     // Placeholder per i dati non ancora sincronizzati da Transfermarkt: testo
     // attenuato e corsivo per distinguerli a colpo d'occhio da un valore reale.
     const impostaCampoTransfermarkt = (elemento, valore) => {
-        const nonSincronizzato = valore === 'Non sincronizzata';
+        const nonSincronizzato = String(valore).startsWith('Non sincronizzat');
         elemento.textContent = valore;
         elemento.classList.toggle('text-muted', nonSincronizzato);
         elemento.classList.toggle('italic', nonSincronizzato);
@@ -378,6 +384,7 @@ document.addEventListener('DOMContentLoaded', function () {
         modalContratto.textContent = info.tipo_contratto || '-';
         impostaCampoTransfermarkt(modalDataNascita, info.data_nascita);
         impostaCampoTransfermarkt(modalScadenzaContratto, info.scadenza_contratto_reale);
+        impostaCampoTransfermarkt(modalValoreMercato, info.valore_mercato);
         modalQuotazione.textContent = info.quotazione;
         modalCosto.textContent = info.costo;
 

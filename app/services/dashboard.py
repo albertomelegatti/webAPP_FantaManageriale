@@ -16,6 +16,7 @@ Le dieci diventano cinque, senza cambiare nulla di cio' che la pagina mostra:
   in aste
 """
 
+from app.core.formato import formatta_valore_mercato_mln
 from app.core.tempo import (formatta_data_nascita_con_eta,
                             formatta_scadenza_contratto)
 from app.domini.ruoli import pulisci_ruolo, ruolo_sort_key
@@ -59,6 +60,7 @@ def _riga_rosa(g: dict) -> dict:
         "detentore_username": g["detentore_username"],
         "data_nascita": formatta_data_nascita_con_eta(g["data_nascita"]) or NON_SINCRONIZZATO,
         "scadenza_contratto_reale": formatta_scadenza_contratto(g["scadenza_contratto"]) or NON_SINCRONIZZATO,
+        "valore_mercato": formatta_valore_mercato_mln(g["valore_mercato"]) or "Non sincronizzato",
     }
 
 
