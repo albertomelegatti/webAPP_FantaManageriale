@@ -24,6 +24,10 @@ class TestValoreDiMercato:
     def test_somma_i_valori_noti_e_li_formatta_in_milioni(self):
         assert _valore_di_mercato([_g("Hold", 40_000_000), _g("Hold", 35_000_000)]) == "75 Mln"
 
+    def test_arrotonda_al_milione_piu_vicino(self):
+        assert _valore_di_mercato([_g("Hold", 40_400_000), _g("Hold", 35_300_000)]) == "76 Mln"
+        assert _valore_di_mercato([_g("Hold", 1_800_000)]) == "2 Mln"
+
     def test_ignora_i_giocatori_senza_valore_sincronizzato(self):
         assert _valore_di_mercato([_g("Hold", 10_000_000), _g("Hold", None)]) == "10 Mln"
 

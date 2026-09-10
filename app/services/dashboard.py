@@ -99,13 +99,18 @@ def _dividi_giocatori(giocatori: list[dict], nome_squadra: str) -> dict:
 
 
 def _valore_di_mercato(giocatori) -> str | None:
-    """Somma dei valori di mercato noti, formattata in milioni.
+    """Somma dei valori di mercato noti, in milioni arrotondati all'intero.
+
+    A livello di rosa il decimale non aggiunge nulla e allunga solo la cifra:
+    la somma si arrotonda al milione piu' vicino prima di formattarla.
 
     None quando nessuno dei giocatori ha un valore sincronizzato da
     Transfermarkt: una rosa ancora senza dati non e' una rosa che vale zero.
     """
     valori = [g["valore_mercato"] for g in giocatori if g["valore_mercato"] is not None]
-    return formatta_valore_mercato_mln(sum(valori)) if valori else None
+    if not valori:
+        return None
+    return formatta_valore_mercato_mln(round(sum(valori), -6))
 
 
 def _valori_rosa(giocatori: list[dict], nome_squadra: str) -> dict:
