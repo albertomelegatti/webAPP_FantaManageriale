@@ -52,24 +52,9 @@
                     <th class="pb-2 text-center font-semibold">QA</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-line" id="rosaBody">
+            <tbody class="divide-y divide-line">
                 {% for g in rosa %}
-                <tr class="cursor-pointer hover:bg-panel-2"
-                    data-info='{{ {
-                        "nome": g.nome,
-                        "ruolo": g.ruolo,
-                        "club": g.club,
-                        "squadra_att": g.squadra_att,
-                        "squadra_username": g.squadra_username,
-                        "detentore": g.detentore_cartellino,
-                        "detentore_username": g.detentore_username,
-                        "tipo_contratto": g.tipo_contratto,
-                        "quotazione": g.quot_att_mantra,
-                        "costo": g.costo,
-                        "data_nascita": g.data_nascita,
-                        "scadenza_contratto_reale": g.scadenza_contratto_reale,
-                        "valore_mercato": g.valore_mercato
-                    } | tojson }}'>
+                <tr class="cursor-pointer hover:bg-panel-2" {{ m.info_giocatore(g) }}>
                     <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
                     <td class="py-2.5 text-center">{{ m.club_abbr(g.club) }}</td>
                     <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
@@ -100,7 +85,7 @@
                 </thead>
                 <tbody class="divide-y divide-line">
                     {% for g in primavera %}
-                    <tr>
+                    <tr class="cursor-pointer hover:bg-panel-2" {{ m.info_giocatore(g) }}>
                         <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
                         <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
                         <td class="py-2.5 text-center tabular-nums text-muted">{{ g.quot_att_mantra }}</td>
@@ -131,7 +116,7 @@
                 </thead>
                 <tbody class="divide-y divide-line">
                     {% for p in prestiti_out %}
-                    <tr>
+                    <tr class="cursor-pointer hover:bg-panel-2" {{ m.info_giocatore(p) }}>
                         <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ p.nome }}</td>
                         <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(p.ruolo) }}</td>
                         <td class="py-2.5 text-center tabular-nums text-muted">{{ p.quot_att_mantra }}</td>
@@ -163,7 +148,7 @@
                 </thead>
                 <tbody class="divide-y divide-line">
                     {% for g in prestiti_in %}
-                    <tr>
+                    <tr class="cursor-pointer hover:bg-panel-2" {{ m.info_giocatore(g) }}>
                         <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
                         <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
                         <td class="py-2.5 text-center tabular-nums text-muted">{{ g.quot_att_mantra }}</td>
@@ -196,7 +181,7 @@
                     </thead>
                     <tbody class="divide-y divide-line">
                         {% for p in draft_pick %}
-                        <tr>
+                        <tr {% if p.info %}class="cursor-pointer hover:bg-panel-2" {{ m.info_giocatore(p.info) }}{% endif %}>
                             <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ p.detentore_originale }}</td>
                             <td class="py-2.5 text-center text-muted">{{ p.anno }}</td>
                             <td class="py-2.5 text-center text-muted">{{ p.numero }}</td>
@@ -328,9 +313,11 @@ document.addEventListener('DOMContentLoaded', function () {
         overlayGiocatore.classList.remove('flex');
     };
 
-    document.getElementById('rosaBody')?.addEventListener('click', function (e) {
-        const row = e.target.closest('tr');
-        if (!row || !row.dataset.info) return;
+    // Delega unica per tutte le tabelle della pagina (rosa, primavera, prestiti
+    // in entrata e in uscita, pick del draft gia' usate).
+    document.addEventListener('click', function (e) {
+        const row = e.target.closest('tr[data-info]');
+        if (!row) return;
         apriCardGiocatore(JSON.parse(row.dataset.info));
     });
 

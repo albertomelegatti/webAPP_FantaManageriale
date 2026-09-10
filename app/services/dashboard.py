@@ -69,13 +69,6 @@ def _riga_rosa(g: dict) -> dict:
     }
 
 
-def _riga_breve(g: dict, *campi: str) -> dict:
-    riga = {"nome": g["nome"], "ruolo": pulisci_ruolo(g["ruolo"]),
-            "quot_att_mantra": g["quot_att_mantra"]}
-    riga.update({c: g[c] for c in campi})
-    return riga
-
-
 def _dividi_giocatori(giocatori: list[dict], nome_squadra: str) -> dict:
     """I quattro elenchi della pagina, ricavati da un unico insieme di righe.
 
@@ -88,11 +81,11 @@ def _dividi_giocatori(giocatori: list[dict], nome_squadra: str) -> dict:
     return {
         "rosa": _ordina([_riga_rosa(g) for g in in_rosa
                          if g["tipo_contratto"] != "Primavera"]),
-        "primavera": _ordina([_riga_breve(g) for g in in_rosa
+        "primavera": _ordina([_riga_rosa(g) for g in in_rosa
                               if g["tipo_contratto"] == "Primavera"]),
-        "prestiti_in": _ordina([_riga_breve(g, "detentore_cartellino") for g in in_rosa
+        "prestiti_in": _ordina([_riga_rosa(g) for g in in_rosa
                                 if g["tipo_contratto"] == "Fanta-Prestito"]),
-        "prestiti_out": _ordina([_riga_breve(g, "squadra_att") for g in giocatori
+        "prestiti_out": _ordina([_riga_rosa(g) for g in giocatori
                                  if g["detentore_cartellino"] == nome_squadra
                                  and g["tipo_contratto"] in CONTRATTI_IN_USCITA]),
     }
@@ -146,6 +139,9 @@ def _pick(righe: list[dict]) -> list[dict]:
         "anno": p["anno"].year if hasattr(p["anno"], "year") else p["anno"],
         "numero": p["numero"],
         "giocatore_scelto": p["giocatore_scelto"] or "—",
+        # La scheda per il pop-up c'e' solo quando la pick e' gia' stata usata.
+        "info": _riga_rosa({**p, "nome": p["giocatore_scelto"]})
+                if p["giocatore_scelto"] else None,
     } for p in righe]
 
 
