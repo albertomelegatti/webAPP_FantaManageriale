@@ -20,6 +20,7 @@ from app.domini.matching_transfermarkt import (
     valore_mercato_da_ceapi,
 )
 from app.blueprints.user import format_partecipanti
+from app.core.formato import formatta_valore_mercato_mln
 from app.core.tempo import calcola_eta, formatta_data, formatta_data_nascita_con_eta, formatta_scadenza_contratto
 from app.domini.calendario import anni_prestito_ammessi
 from app.domini.ruoli import (pulisci_ruolo, ruoli_base_presenti,
@@ -226,6 +227,23 @@ class TestParseValoreMercatoTm:
     @pytest.mark.parametrize("valore", [None, "", "   ", "-", "n/d"])
     def test_valori_non_parsabili(self, valore):
         assert parse_valore_mercato_tm(valore) is None
+
+
+class TestFormattaValoreMercatoMln:
+    def test_none_resta_none(self):
+        assert formatta_valore_mercato_mln(None) is None
+
+    def test_sotto_il_milione_due_decimali(self):
+        assert formatta_valore_mercato_mln(750_000) == "0,75 Mln"
+
+    def test_un_decimale_significativo(self):
+        assert formatta_valore_mercato_mln(1_500_000) == "1,5 Mln"
+
+    def test_valore_tondo_senza_decimali(self):
+        assert formatta_valore_mercato_mln(75_000_000) == "75 Mln"
+
+    def test_arrotonda_a_due_decimali(self):
+        assert formatta_valore_mercato_mln(1_234_567) == "1,23 Mln"
 
 
 class TestValoreMercatoDaCeapi:
