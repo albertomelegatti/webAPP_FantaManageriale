@@ -59,11 +59,7 @@ sys.path.insert(0, __file__.rsplit("/", 2)[0])
 
 from app.core import db
 from app.core.transfermarkt_api import recupera_valori_mercato
-from app.domini.matching_transfermarkt import (
-    candidati_esatti,
-    parse_data_tm,
-    parse_valore_mercato_tm,
-)
+from app.domini.matching_transfermarkt import candidati_esatti, parse_data_tm
 
 RE_ID_GIOCATORE = re.compile(r"/spieler/(\d+)")
 
@@ -104,26 +100,21 @@ def carica_giocatori_transfermarkt(percorso_input):
                 "club_tm": club_tm,
                 "data_nascita": parse_data_tm(dato.get("date_of_birth")),
                 "scadenza_contratto": parse_data_tm(dato.get("contract_expires")),
-                # Oggi lo scraper non lo estrae più (markup Transfermarkt cambiato):
-                # è quasi sempre None e viene rimpiazzato da arricchisci_valori_mercato
-                # con quello dell'API ceapi. Resta qui come innesto se lo scraper torna
-                # a funzionare.
-                "valore_mercato": parse_valore_mercato_tm(dato.get("current_market_value")),
+                # Il valore di mercato non è nel dump (lo scraper non lo estrae
+                # più): lo mette arricchisci_valori_mercato dall'API ceapi.
             })
 
     return per_club_tm
 
 
 def arricchisci_valori_mercato(giocatori_tm_per_club_tm):
-    """Rimpiazza il valore di mercato del dump (assente) con quello dell'API
-    ceapi di Transfermarkt. Un id non risolto lascia il valore com'era: il
-    resto della pipeline non sovrascrive mai con None un valore già a DB."""
+    """Mette su ogni giocatore del dump il valore di mercato preso dall'API ceapi
+    di Transfermarkt. Un id non risolto resta None: il resto della pipeline non
+    sovrascrive mai con None un valore già a DB."""
     tutti = [g for giocatori in giocatori_tm_per_club_tm.values() for g in giocatori]
     valori = recupera_valori_mercato(g["id_transfermarkt"] for g in tutti)
     for g in tutti:
-        recuperato = valori.get(g["id_transfermarkt"])
-        if recuperato is not None:
-            g["valore_mercato"] = recuperato
+        g["valore_mercato"] = valori.get(g["id_transfermarkt"])
 
 
 def salva_cache(cur, giocatori_tm_per_club_tm):

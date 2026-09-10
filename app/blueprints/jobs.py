@@ -30,11 +30,7 @@ from psycopg2.extras import RealDictCursor
 
 from app.core.db import get_connection, release_connection
 from app.core.transfermarkt_api import recupera_valori_mercato
-from app.domini.matching_transfermarkt import (
-    candidati_esatti,
-    parse_data_tm,
-    parse_valore_mercato_tm,
-)
+from app.domini.matching_transfermarkt import candidati_esatti, parse_data_tm
 
 from app.core.logging import get_logger
 
@@ -177,23 +173,20 @@ def _carica_giocatori_transfermarkt(percorso_input):
                 "club_tm": club_tm,
                 "data_nascita": parse_data_tm(dato.get("date_of_birth")),
                 "scadenza_contratto": parse_data_tm(dato.get("contract_expires")),
-                # Lo scraper non lo estrae più: quasi sempre None, rimpiazzato sotto
-                # da _arricchisci_valori_mercato con quello dell'API ceapi.
-                "valore_mercato": parse_valore_mercato_tm(dato.get("current_market_value")),
+                # Il valore di mercato lo mette _arricchisci_valori_mercato
+                # dall'API ceapi: non è nel dump.
             })
     return per_club_tm
 
 
 def _arricchisci_valori_mercato(giocatori_tm_per_club_tm):
-    """Rimpiazza il valore di mercato del dump (assente) con quello dell'API
-    ceapi. Un id non risolto lascia il valore com'era: il refresh più sotto non
-    sovrascrive mai con None un valore già a DB."""
+    """Mette su ogni giocatore del dump il valore di mercato preso dall'API
+    ceapi. Un id non risolto resta None: il refresh più sotto non sovrascrive
+    mai con None un valore già a DB."""
     tutti = [g for giocatori in giocatori_tm_per_club_tm.values() for g in giocatori]
     valori = recupera_valori_mercato(g["id_transfermarkt"] for g in tutti)
     for g in tutti:
-        recuperato = valori.get(g["id_transfermarkt"])
-        if recuperato is not None:
-            g["valore_mercato"] = recuperato
+        g["valore_mercato"] = valori.get(g["id_transfermarkt"])
 
 
 def _esegui_matching(cur, percorso_input):
