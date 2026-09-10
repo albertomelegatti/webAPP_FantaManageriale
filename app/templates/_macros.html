@@ -34,6 +34,26 @@
 </div>
 {% endmacro %}
 
+{# Attributo data-info per il pop-up con la scheda del giocatore: la riga deve
+   avere le chiavi prodotte da dashboard._riga_rosa. #}
+{% macro info_giocatore(g) -%}
+data-info='{{ {
+    "nome": g.nome,
+    "ruolo": g.ruolo,
+    "club": g.club,
+    "squadra_att": g.squadra_att,
+    "squadra_username": g.squadra_username,
+    "detentore": g.detentore_cartellino,
+    "detentore_username": g.detentore_username,
+    "tipo_contratto": g.tipo_contratto,
+    "quotazione": g.quot_att_mantra,
+    "costo": g.costo,
+    "data_nascita": g.data_nascita,
+    "scadenza_contratto_reale": g.scadenza_contratto_reale,
+    "valore_mercato": g.valore_mercato
+} | tojson }}'
+{%- endmacro %}
+
 {% macro ruolo_colorato(ruolo) %}
 {%- set colori = {
     'por': '#e0951b',

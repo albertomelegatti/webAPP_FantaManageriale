@@ -38,8 +38,16 @@ def esistono_tutte(cur, pick_ids) -> bool:
 
 def pick_della_squadra(cur, nome_squadra: str) -> list[dict]:
     cur.execute(
-        """SELECT d.detentore_originale, d.anno, d.numero, g.nome AS giocatore_scelto
-           FROM draft d LEFT JOIN giocatore g ON d.id_giocatore_scelto = g.id
+        """SELECT d.detentore_originale, d.anno, d.numero,
+                  g.nome AS giocatore_scelto, g.tipo_contratto, g.ruolo,
+                  g.quot_att_mantra, g.costo, g.club, g.squadra_att,
+                  g.detentore_cartellino, g.data_nascita, g.scadenza_contratto,
+                  g.valore_mercato,
+                  s.username AS squadra_username, dc.username AS detentore_username
+           FROM draft d
+           LEFT JOIN giocatore g ON d.id_giocatore_scelto = g.id
+           LEFT JOIN squadra s ON s.nome = g.squadra_att AND g.squadra_att <> 'Svincolato'
+           LEFT JOIN squadra dc ON dc.nome = g.detentore_cartellino AND g.detentore_cartellino <> 'Svincolato'
            WHERE d.detentore_att = %s
            ORDER BY d.anno, d.numero;""",
         (nome_squadra,))
