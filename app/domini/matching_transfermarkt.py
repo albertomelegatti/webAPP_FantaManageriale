@@ -6,6 +6,7 @@ al volo i suggerimenti fuzzy da mostrare nella pagina di revisione, senza
 persisterli finché l'admin non li conferma).
 """
 
+import re
 import unicodedata
 from datetime import datetime
 
@@ -50,6 +51,40 @@ def parse_data_tm(testo):
         return datetime.strptime(testo.strip(), "%d/%m/%Y").date()
     except ValueError:
         return None
+
+
+_SCALE_VALORE_MERCATO = {"k": 1_000, "m": 1_000_000, "bn": 1_000_000_000}
+
+
+def parse_valore_mercato_tm(testo):
+    """'€75.00m' -> 75000000, '€800k' -> 800000. None/'-'/'' -> None.
+
+    Transfermarkt riporta il valore di mercato come stringa con simbolo di
+    valuta e suffisso di scala ('m' milioni, 'k' migliaia); qui lo si normalizza
+    a numero intero di euro. Il separatore decimale è il punto (rendering
+    inglese di transfermarkt.co.uk, quello di default dello scraper); una
+    virgola viene comunque trattata come decimale e più di un punto come
+    separatore di migliaia ('1.234.567').
+    """
+    if not testo:
+        return None
+    pulito = testo.strip().lower().replace("\xa0", "").replace(" ", "")
+    if pulito in ("", "-"):
+        return None
+
+    match = re.search(r"([\d.,]+)(m|k|bn)?", pulito)
+    if not match or not match.group(1):
+        return None
+
+    numero = match.group(1).replace(",", ".")
+    if numero.count(".") > 1:  # '1.234.567' -> separatori di migliaia
+        numero = numero.replace(".", "")
+    try:
+        valore = float(numero)
+    except ValueError:
+        return None
+
+    return int(round(valore * _SCALE_VALORE_MERCATO.get(match.group(2), 1)))
 
 
 def _filtra_per_iniziale(candidati, iniziale):

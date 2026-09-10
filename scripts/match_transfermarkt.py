@@ -1,7 +1,7 @@
 """
 Script standalone per abbinare i giocatori di `giocatore` ai profili scaricati
 con transfermarkt-scraper (github.com/dcaribou/transfermarkt-scraper), per
-recuperare data di nascita e scadenza contratto reale.
+recuperare data di nascita, scadenza contratto reale e valore di mercato.
 
 Non fa parte dell'app Flask: transfermarkt-scraper va eseguito a parte (è un
 progetto Poetry indipendente) per produrre il file di input, seguendo la
@@ -34,10 +34,10 @@ giocatori "non trovati", mostrandoli solo in revisione senza mai persisterli fin
 l'admin non li conferma.
 
 Per i giocatori che hanno GIÀ un `id_transfermarkt` (assegnato in un run precedente,
-a mano o in automatico), lo script aggiorna solo `data_nascita`/`scadenza_contratto`
-se cambiati nel dump più recente: `id_transfermarkt`, una volta trovato, non viene
-mai più toccato. Pensato per essere lanciato periodicamente (es. una volta al
-giorno) senza bisogno di supervisione.
+a mano o in automatico), lo script aggiorna solo `data_nascita`/`scadenza_contratto`/
+`valore_mercato` se cambiati nel dump più recente: `id_transfermarkt`, una volta
+trovato, non viene mai più toccato. Pensato per essere lanciato periodicamente
+(es. una volta al giorno) senza bisogno di supervisione.
 
 Per proteggere un run non presidiato da uno scraping fallito/incompleto, lo script
 si rifiuta di scrivere qualunque cosa (aborta con eccezione, nessuna modifica al DB)
@@ -52,7 +52,11 @@ import sys
 sys.path.insert(0, __file__.rsplit("/", 2)[0])
 
 from app.core import db
-from app.domini.matching_transfermarkt import candidati_esatti, parse_data_tm
+from app.domini.matching_transfermarkt import (
+    candidati_esatti,
+    parse_data_tm,
+    parse_valore_mercato_tm,
+)
 
 RE_ID_GIOCATORE = re.compile(r"/spieler/(\d+)")
 
@@ -93,6 +97,7 @@ def carica_giocatori_transfermarkt(percorso_input):
                 "club_tm": club_tm,
                 "data_nascita": parse_data_tm(dato.get("date_of_birth")),
                 "scadenza_contratto": parse_data_tm(dato.get("contract_expires")),
+                "valore_mercato": parse_valore_mercato_tm(dato.get("current_market_value")),
             })
 
     return per_club_tm
@@ -108,11 +113,11 @@ def salva_cache(cur, giocatori_tm_per_club_tm):
             cur.execute(
                 """
                 INSERT INTO transfermarkt_giocatori
-                    (id_transfermarkt, club_tm, nome, cognome, data_nascita, scadenza_contratto)
-                VALUES (%s, %s, %s, %s, %s, %s);
+                    (id_transfermarkt, club_tm, nome, cognome, data_nascita, scadenza_contratto, valore_mercato)
+                VALUES (%s, %s, %s, %s, %s, %s, %s);
                 """,
                 (g["id_transfermarkt"], club_tm, g["nome"], g["cognome"],
-                 g["data_nascita"], g["scadenza_contratto"]),
+                 g["data_nascita"], g["scadenza_contratto"], g["valore_mercato"]),
             )
 
 
@@ -121,7 +126,7 @@ def aggiorna_gia_matchati(cur, per_id_transfermarkt):
     precedente, SENZA mai toccare id_transfermarkt: una volta trovato, resta fisso."""
     cur.execute(
         '''
-        SELECT id, id_transfermarkt, data_nascita, scadenza_contratto
+        SELECT id, id_transfermarkt, data_nascita, scadenza_contratto, valore_mercato
         FROM giocatore
         WHERE id_transfermarkt IS NOT NULL AND priorita = 1;
         '''
@@ -136,17 +141,20 @@ def aggiorna_gia_matchati(cur, per_id_transfermarkt):
             # dati com'erano piuttosto che cancellarli.
             continue
         if (aggiornato["data_nascita"] == g["data_nascita"]
-                and aggiornato["scadenza_contratto"] == g["scadenza_contratto"]):
+                and aggiornato["scadenza_contratto"] == g["scadenza_contratto"]
+                and aggiornato["valore_mercato"] == g["valore_mercato"]):
             continue
 
         cur.execute(
             '''
             UPDATE giocatore
             SET data_nascita = %s,
-                scadenza_contratto = %s
+                scadenza_contratto = %s,
+                valore_mercato = %s
             WHERE id = %s;
             ''',
-            (aggiornato["data_nascita"], aggiornato["scadenza_contratto"], g["id"]),
+            (aggiornato["data_nascita"], aggiornato["scadenza_contratto"],
+             aggiornato["valore_mercato"], g["id"]),
         )
         n_aggiornati += 1
 
@@ -204,10 +212,12 @@ def esegui_matching(percorso_input):
                     UPDATE giocatore
                     SET id_transfermarkt = %s,
                         data_nascita = %s,
-                        scadenza_contratto = %s
+                        scadenza_contratto = %s,
+                        valore_mercato = %s
                     WHERE id = %s;
                     """,
-                    (c["id_transfermarkt"], c["data_nascita"], c["scadenza_contratto"], giocatore["id"]),
+                    (c["id_transfermarkt"], c["data_nascita"], c["scadenza_contratto"],
+                     c["valore_mercato"], giocatore["id"]),
                 )
                 n_auto += 1
 

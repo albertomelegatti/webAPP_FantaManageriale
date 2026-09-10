@@ -29,7 +29,11 @@ from flask import Blueprint, jsonify, request
 from psycopg2.extras import RealDictCursor
 
 from app.core.db import get_connection, release_connection
-from app.domini.matching_transfermarkt import candidati_esatti, parse_data_tm
+from app.domini.matching_transfermarkt import (
+    candidati_esatti,
+    parse_data_tm,
+    parse_valore_mercato_tm,
+)
 
 from app.core.logging import get_logger
 
@@ -172,6 +176,7 @@ def _carica_giocatori_transfermarkt(percorso_input):
                 "club_tm": club_tm,
                 "data_nascita": parse_data_tm(dato.get("date_of_birth")),
                 "scadenza_contratto": parse_data_tm(dato.get("contract_expires")),
+                "valore_mercato": parse_valore_mercato_tm(dato.get("current_market_value")),
             })
     return per_club_tm
 
@@ -204,16 +209,16 @@ def _esegui_matching(cur, percorso_input):
             cur.execute(
                 """
                 INSERT INTO transfermarkt_giocatori
-                    (id_transfermarkt, club_tm, nome, cognome, data_nascita, scadenza_contratto)
-                VALUES (%s, %s, %s, %s, %s, %s);
+                    (id_transfermarkt, club_tm, nome, cognome, data_nascita, scadenza_contratto, valore_mercato)
+                VALUES (%s, %s, %s, %s, %s, %s, %s);
                 """,
                 (g["id_transfermarkt"], club_tm, g["nome"], g["cognome"],
-                 g["data_nascita"], g["scadenza_contratto"]),
+                 g["data_nascita"], g["scadenza_contratto"], g["valore_mercato"]),
             )
 
     # Refresh dei già mappati: id_transfermarkt non viene mai ricalcolato.
     cur.execute(
-        "SELECT id, id_transfermarkt, data_nascita, scadenza_contratto FROM giocatore "
+        "SELECT id, id_transfermarkt, data_nascita, scadenza_contratto, valore_mercato FROM giocatore "
         "WHERE id_transfermarkt IS NOT NULL AND priorita = 1;"
     )
     n_aggiornati = 0
@@ -222,11 +227,13 @@ def _esegui_matching(cur, percorso_input):
         if not aggiornato:
             continue
         if (aggiornato["data_nascita"] == g["data_nascita"]
-                and aggiornato["scadenza_contratto"] == g["scadenza_contratto"]):
+                and aggiornato["scadenza_contratto"] == g["scadenza_contratto"]
+                and aggiornato["valore_mercato"] == g["valore_mercato"]):
             continue
         cur.execute(
-            "UPDATE giocatore SET data_nascita = %s, scadenza_contratto = %s WHERE id = %s;",
-            (aggiornato["data_nascita"], aggiornato["scadenza_contratto"], g["id"]),
+            "UPDATE giocatore SET data_nascita = %s, scadenza_contratto = %s, valore_mercato = %s WHERE id = %s;",
+            (aggiornato["data_nascita"], aggiornato["scadenza_contratto"],
+             aggiornato["valore_mercato"], g["id"]),
         )
         n_aggiornati += 1
 
@@ -239,8 +246,9 @@ def _esegui_matching(cur, percorso_input):
         if len(candidati) == 1:
             c = candidati[0]
             cur.execute(
-                "UPDATE giocatore SET id_transfermarkt = %s, data_nascita = %s, scadenza_contratto = %s WHERE id = %s;",
-                (c["id_transfermarkt"], c["data_nascita"], c["scadenza_contratto"], giocatore["id"]),
+                "UPDATE giocatore SET id_transfermarkt = %s, data_nascita = %s, scadenza_contratto = %s, valore_mercato = %s WHERE id = %s;",
+                (c["id_transfermarkt"], c["data_nascita"], c["scadenza_contratto"],
+                 c["valore_mercato"], giocatore["id"]),
             )
             n_auto += 1
         elif len(candidati) >= 2:

@@ -16,6 +16,7 @@ from app.domini.matching_transfermarkt import (
     cognome_e_iniziale,
     normalizza,
     parse_data_tm,
+    parse_valore_mercato_tm,
 )
 from app.blueprints.user import format_partecipanti
 from app.core.tempo import calcola_eta, formatta_data, formatta_data_nascita_con_eta, formatta_scadenza_contratto
@@ -196,6 +197,27 @@ class TestParseDataTm:
     @pytest.mark.parametrize("valore", [None, "", "   ", "-", "boh"])
     def test_valori_non_parsabili(self, valore):
         assert parse_data_tm(valore) is None
+
+
+class TestParseValoreMercatoTm:
+    def test_milioni(self):
+        assert parse_valore_mercato_tm("€75.00m") == 75_000_000
+
+    def test_milioni_con_decimali(self):
+        assert parse_valore_mercato_tm("€1.20m") == 1_200_000
+
+    def test_migliaia(self):
+        assert parse_valore_mercato_tm("€800k") == 800_000
+
+    def test_virgola_come_separatore_decimale(self):
+        assert parse_valore_mercato_tm("€75,00m") == 75_000_000
+
+    def test_separatori_di_migliaia_senza_suffisso(self):
+        assert parse_valore_mercato_tm("€1.234.567") == 1_234_567
+
+    @pytest.mark.parametrize("valore", [None, "", "   ", "-", "n/d"])
+    def test_valori_non_parsabili(self, valore):
+        assert parse_valore_mercato_tm(valore) is None
 
 
 def _tm(id_transfermarkt, nome, cognome):
