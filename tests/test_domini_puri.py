@@ -17,6 +17,7 @@ from app.domini.matching_transfermarkt import (
     normalizza,
     parse_data_tm,
     parse_valore_mercato_tm,
+    valore_mercato_da_ceapi,
 )
 from app.blueprints.user import format_partecipanti
 from app.core.tempo import calcola_eta, formatta_data, formatta_data_nascita_con_eta, formatta_scadenza_contratto
@@ -215,9 +216,35 @@ class TestParseValoreMercatoTm:
     def test_separatori_di_migliaia_senza_suffisso(self):
         assert parse_valore_mercato_tm("€1.234.567") == 1_234_567
 
+    def test_sterline_e_suffisso_maiuscolo(self):
+        # L'API/lo scraper a volte rendono in £ e con la M maiuscola.
+        assert parse_valore_mercato_tm("£67.60M") == 67_600_000
+
+    def test_suffisso_th_sono_migliaia(self):
+        assert parse_valore_mercato_tm("€500Th.") == 500_000
+
     @pytest.mark.parametrize("valore", [None, "", "   ", "-", "n/d"])
     def test_valori_non_parsabili(self, valore):
         assert parse_valore_mercato_tm(valore) is None
+
+
+class TestValoreMercatoDaCeapi:
+    def _payload(self, *mw):
+        return {"list": [{"mw": v, "datum_mw": "Jun 1, 2026"} for v in mw]}
+
+    def test_prende_l_ultima_voce_valorizzata(self):
+        assert valore_mercato_da_ceapi(self._payload("€40.00m", "€75.00m")) == 75_000_000
+
+    def test_salta_a_ritroso_le_voci_senza_valore(self):
+        assert valore_mercato_da_ceapi(self._payload("€40.00m", "-", "")) == 40_000_000
+
+    def test_lista_vuota_o_assente(self):
+        assert valore_mercato_da_ceapi({"list": []}) is None
+        assert valore_mercato_da_ceapi({}) is None
+
+    @pytest.mark.parametrize("payload", [None, [], "boh", {"list": "x"}])
+    def test_payload_non_valido(self, payload):
+        assert valore_mercato_da_ceapi(payload) is None
 
 
 def _tm(id_transfermarkt, nome, cognome):
