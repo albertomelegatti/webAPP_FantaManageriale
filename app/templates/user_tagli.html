@@ -26,11 +26,13 @@
     {% for giocatore in rosa %}
     {% set costo_taglio = ((giocatore.quot_att_mantra / 2) | round(0, 'ceil')) | int %}
     <div class="flex items-center gap-1.5 rounded-2xl border border-line bg-panel px-3 py-2.5">
-        <div class="flex min-w-0 flex-1 items-center">
+        <div class="flex min-w-0 flex-1 flex-col">
             <span class="min-w-0 truncate font-medium">{{ giocatore.nome }}</span>
-            <span class="ml-1 shrink-0">{{ m.ruolo_colorato(giocatore.ruolo) }}</span>
-            <span class="mx-1 shrink-0 text-muted">-</span>
-            <span class="shrink-0">{{ m.club_abbr(giocatore.club) }}</span>
+            <div class="flex items-center gap-1 text-xs">
+                {{ m.ruolo_colorato(giocatore.ruolo) }}
+                <span class="text-muted">-</span>
+                {{ m.club_abbr(giocatore.club) }}
+            </div>
         </div>
 
         <form method="POST" action="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}" class="shrink-0"

@@ -10,11 +10,13 @@
 <div class="flex flex-col gap-2">
     {% for giocatore in primavera %}
     <div class="flex items-center gap-1.5 rounded-2xl border border-line bg-panel px-3 py-2.5">
-        <div class="flex min-w-0 flex-1 items-center">
+        <div class="flex min-w-0 flex-1 flex-col">
             <span class="min-w-0 truncate font-medium">{{ giocatore.nome }}</span>
-            <span class="ml-1 shrink-0">{{ m.ruolo_colorato(giocatore.ruolo) }}</span>
-            <span class="mx-1 shrink-0 text-muted">-</span>
-            <span class="shrink-0">{{ m.club_abbr(giocatore.club) }}</span>
+            <div class="flex items-center gap-1 text-xs">
+                {{ m.ruolo_colorato(giocatore.ruolo) }}
+                <span class="text-muted">-</span>
+                {{ m.club_abbr(giocatore.club) }}
+            </div>
         </div>
 
         <form method="POST" action="{{ url_for('rosa.user_primavera', nome_squadra=nome_squadra) }}" class="shrink-0"
