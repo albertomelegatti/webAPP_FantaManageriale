@@ -113,6 +113,35 @@ def _elenca_nomi(id_giocatori, nomi):
     return ", ".join(nomi.get(i, f"ID {i} (non trovato)") for i in id_giocatori)
 
 
+def _blocco_lato_scambio(titolo, voci_text, crediti, etichetta_crediti):
+    """Blocco 'Offerta:'/'Richiesta:' di uno scambio, omettendo le voci vuote.
+
+    Non stampa la riga crediti se crediti e' 0/None e non stampa il blocco
+    (titolo compreso) se non c'e' proprio nulla da mostrare su quel lato.
+    """
+    righe = []
+    if voci_text:
+        righe.append(voci_text)
+    if crediti:
+        righe.append(f"{etichetta_crediti} {crediti}")
+    if not righe:
+        return None
+    return f"{titolo}\n" + "\n".join(righe)
+
+
+def _blocco_ricevuto_scambio(voci_text, crediti):
+    """Blocco 'cosa riceve' per l'annuncio ufficiale di scambio concluso."""
+    righe = []
+    if voci_text:
+        righe.append("⚽")
+        righe.append(voci_text)
+    if crediti:
+        righe.append(f"🪙 {crediti} crediti")
+    if not righe:
+        return None
+    return "\n".join(righe)
+
+
 def formatta_tipo_prestito(tipo_prestito):
     """Converte il tipo di prestito (es. 'diritto_di_riscatto') in una forma leggibile (es. 'DDR')"""
     tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
@@ -351,19 +380,20 @@ def nuovo_scambio(conn, id_scambio):
             pick_richiesta_formatted = [f"• {p}" for p in format_pick(pick_richiesta_ids, conn).split(",") if p.strip()]
             richiesta_text += "\n" + "\n".join(pick_richiesta_formatted)
 
-        text_to_send = f'''🟢 NUOVA PROPOSTA DI SCAMBIO
-La squadra {squadra_proponente} ti ha inviato una proposta di scambio
+        sezioni = [
+            "🟢 NUOVA PROPOSTA DI SCAMBIO\n"
+            f"La squadra {squadra_proponente} ti ha inviato una proposta di scambio"
+        ]
+        blocco_offerta = _blocco_lato_scambio("Offerta:", offerta_text, crediti_offerti, "💰 Crediti offerti:")
+        if blocco_offerta:
+            sezioni.append(blocco_offerta)
+        blocco_richiesta = _blocco_lato_scambio("Richiesta:", richiesta_text, crediti_richiesti, "💰 Crediti richiesti:")
+        if blocco_richiesta:
+            sezioni.append(blocco_richiesta)
+        if messaggio and messaggio.strip():
+            sezioni.append(f"✉️ Messaggio: {messaggio.strip()}")
 
-Offerta:
-{offerta_text}
-💰 Crediti offerti: {crediti_offerti}
-
-Richiesta:
-{richiesta_text}
-💰 Crediti richiesti: {crediti_richiesti}
-
-✉️ Messaggio: {messaggio}
-'''
+        text_to_send = "\n\n".join(sezioni)
 
         send_message(nome_squadra=squadra_destinataria, text_to_send=text_to_send)
 
@@ -408,7 +438,7 @@ def scambio_risposta(conn, id_scambio, risposta):
         giocatori_richiesti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_richiesti_raw.split(',') if g.strip()]
         crediti_offerti = info_scambio['crediti_offerti'] or 0
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
-        messaggio = info_scambio['messaggio'] or "Nessuna Condizione."
+        messaggio = info_scambio['messaggio']
         pick_offerta_ids = info_scambio['pick_offerta'] or []
         pick_richiesta_ids = info_scambio['pick_richiesta'] or []
         prestito_associato_ids = info_scambio['prestito_associato']
@@ -453,50 +483,48 @@ def scambio_risposta(conn, id_scambio, risposta):
             richiesta_text += "\n" + "\n".join(pick_richiesta_formatted)
 
         if risposta == "Accettato":
-            text_to_send = f'''SCAMBIO ACCETTATO
-La squadra {squadra_destinataria} ha accettato la tua offerta di scambio.
-
-Offerta:
-{offerta_text}
-💰 Crediti offerti: {crediti_offerti}
-
-Richiesta:
-{richiesta_text}
-💰 Crediti richiesti: {crediti_richiesti}
-'''
+            sezioni = [
+                "SCAMBIO ACCETTATO\n"
+                f"La squadra {squadra_destinataria} ha accettato la tua offerta di scambio."
+            ]
+            blocco_offerta = _blocco_lato_scambio("Offerta:", offerta_text, crediti_offerti, "💰 Crediti offerti:")
+            if blocco_offerta:
+                sezioni.append(blocco_offerta)
+            blocco_richiesta = _blocco_lato_scambio("Richiesta:", richiesta_text, crediti_richiesti, "💰 Crediti richiesti:")
+            if blocco_richiesta:
+                sezioni.append(blocco_richiesta)
+            text_to_send = "\n\n".join(sezioni)
             send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
             # invia notifica a tutte le squadre
-            text_to_send = f'''📢 SCAMBIO UFFICIALE: 🔥
-Le squadre {squadra_proponente} e {squadra_destinataria} hanno concluso un scambio:
-
-✅ {squadra_proponente} riceve:
-⚽
-{richiesta_text}
-🪙 {crediti_richiesti} crediti
-
-✅ {squadra_destinataria} riceve:
-⚽
-{offerta_text}
-🪙 {crediti_offerti} crediti
-
-📝 Condizioni/Bonus: {messaggio}
-'''
+            sezioni = [
+                "📢 SCAMBIO UFFICIALE: 🔥\n"
+                f"Le squadre {squadra_proponente} e {squadra_destinataria} hanno concluso un scambio:"
+            ]
+            blocco_proponente_riceve = _blocco_ricevuto_scambio(richiesta_text, crediti_richiesti)
+            if blocco_proponente_riceve:
+                sezioni.append(f"✅ {squadra_proponente} riceve:\n{blocco_proponente_riceve}")
+            blocco_destinataria_riceve = _blocco_ricevuto_scambio(offerta_text, crediti_offerti)
+            if blocco_destinataria_riceve:
+                sezioni.append(f"✅ {squadra_destinataria} riceve:\n{blocco_destinataria_riceve}")
+            if messaggio and messaggio.strip():
+                sezioni.append(f"📝 Condizioni/Bonus: {messaggio.strip()}")
+            text_to_send = "\n\n".join(sezioni)
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
                          squadre_evento=[squadra_proponente, squadra_destinataria])
 
         else:
-            text_to_send = f'''SCAMBIO RIFIUTATO
-La squadra {squadra_destinataria} ha rifiutato la tua offerta di scambio.
-
-Offerta:
-{offerta_text}
-💰 Crediti offerti: {crediti_offerti}
-
-Richiesta:
-{richiesta_text}
-💰 Crediti richiesti: {crediti_richiesti}
-'''
+            sezioni = [
+                "SCAMBIO RIFIUTATO\n"
+                f"La squadra {squadra_destinataria} ha rifiutato la tua offerta di scambio."
+            ]
+            blocco_offerta = _blocco_lato_scambio("Offerta:", offerta_text, crediti_offerti, "💰 Crediti offerti:")
+            if blocco_offerta:
+                sezioni.append(blocco_offerta)
+            blocco_richiesta = _blocco_lato_scambio("Richiesta:", richiesta_text, crediti_richiesti, "💰 Crediti richiesti:")
+            if blocco_richiesta:
+                sezioni.append(blocco_richiesta)
+            text_to_send = "\n\n".join(sezioni)
             send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
     except Exception:
