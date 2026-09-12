@@ -31,3 +31,29 @@ def leggi(cur) -> list[dict]:
         """
     )
     return cur.fetchall()
+
+
+def palmares(cur, nome_squadra: str) -> dict:
+    """Quante volte la squadra ha vinto Campionato e Coppa, in totale.
+
+    Vittoria = posizione 1. Per il Campionato basta quello, perche' non ha
+    fasi; per la Coppa serve anche restringere a una fase finale (stesso
+    `ILIKE 'Final%%'` usato in leggi() per ordinarle), altrimenti il primo
+    posto in un girone conterebbe come titolo.
+    """
+    cur.execute(
+        """
+        SELECT competizione, COUNT(*) AS vittorie
+        FROM albo_oro
+        WHERE squadra = %s
+          AND posizione = 1
+          AND (competizione = 'Campionato' OR fase ILIKE 'Final%%')
+        GROUP BY competizione;
+        """,
+        (nome_squadra,)
+    )
+    righe = {r["competizione"]: r["vittorie"] for r in cur.fetchall()}
+    return {
+        "campionati": righe.get("Campionato", 0),
+        "coppe": righe.get("Coppa", 0),
+    }

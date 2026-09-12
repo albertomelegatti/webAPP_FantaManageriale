@@ -14,12 +14,17 @@ Le dieci diventano cinque, senza cambiare nulla di cio' che la pagina mostra:
 - gli slot occupati da giocatori erano un conteggio a parte, ma si ricavano
   dalle righe gia' lette: resta da chiedere al database solo quelli impegnati
   in aste
+
+Il palmares (titoli vinti) e' una sesta query, su una tabella diversa
+(albo_oro) senza alcun rapporto con le altre cinque: non c'era modo di
+unirla senza le contorcere.
 """
 
 from app.core.formato import formatta_valore_mercato_mln
 from app.core.tempo import (formatta_data_nascita_con_eta,
                             formatta_scadenza_contratto)
 from app.domini.ruoli import pulisci_ruolo, ruolo_sort_key
+from app.repositories import albo_oro as albo_oro_repo
 from app.repositories import aste as aste_repo
 from app.repositories import draft as draft_repo
 from app.repositories import giocatori as giocatori_repo
@@ -178,6 +183,7 @@ def dati_squadra(cur, nome_squadra: str) -> dict | None:
         "slot_occupati": slot_giocatori + slot_aste,
         "slot_giocatori": slot_giocatori,
         "prestiti_in_num": len(elenchi["prestiti_in"]),
+        "palmares": albo_oro_repo.palmares(cur, nome_squadra),
         "draft_pick": _pick(draft_repo.pick_della_squadra(cur, nome_squadra)),
         "mercato": movimenti_repo.per_squadra(cur, nome_squadra),
         **elenchi,
