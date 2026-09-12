@@ -103,7 +103,7 @@ data-info='{{ {
    vinto. Il tooltip riporta la stagione di quella vittoria, non il totale. #}
 {% macro palmares_badge(icona, colore, stagioni, etichetta) %}
 {%- for stagione in stagioni %}
-<span class="inline-flex items-center {{ colore }}" data-tip="{{ etichetta }} vinto nel {{ stagione }}">
+<span class="inline-flex items-center {{ colore }}" data-tip="{{ etichetta }} {{ stagione }}">
     <i class="bi {{ icona }}"></i>
 </span>
 {%- endfor -%}
