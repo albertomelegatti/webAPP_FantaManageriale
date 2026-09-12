@@ -100,6 +100,45 @@ class TestOrdinamento:
         assert [r[3] for r in _ordine(albo_pulito)] == [1, 2], \
             "dentro la stessa fase conta la posizione"
 
+
+class TestPalmares:
+    def test_una_squadra_senza_titoli_ha_liste_vuote(self, albo_pulito, due_squadre):
+        from app.repositories import albo_oro as albo_oro_repo
+        prima, _ = due_squadre
+        assert albo_oro_repo.palmares(albo_pulito, prima) == {"campionati": [], "coppe": []}
+
+    def test_elenca_le_stagioni_vinte_in_campionato(self, albo_pulito, db_isolato, due_squadre):
+        from app.repositories import albo_oro as albo_oro_repo
+        prima, _ = due_squadre
+        _inserisci(albo_pulito, "23-24", "Campionato", None, prima, 1)
+        _inserisci(albo_pulito, "24-25", "Campionato", None, prima, 2)
+        _inserisci(albo_pulito, "25-26", "Campionato", None, prima, 1)
+        db_isolato.commit()
+
+        assert albo_oro_repo.palmares(albo_pulito, prima)["campionati"] == ["25-26", "23-24"]
+
+    def test_conta_solo_i_primi_posti_nella_fase_finale_di_coppa(
+        self, albo_pulito, db_isolato, due_squadre
+    ):
+        """Il primo posto in un girone non e' un titolo: la Coppa si vince in finale."""
+        from app.repositories import albo_oro as albo_oro_repo
+        prima, _ = due_squadre
+        _inserisci(albo_pulito, "24-25", "Coppa", "Girone A", prima, 1)
+        _inserisci(albo_pulito, "25-26", "Coppa", "Finale", prima, 1)
+        db_isolato.commit()
+
+        assert albo_oro_repo.palmares(albo_pulito, prima)["coppe"] == ["25-26"]
+
+    def test_non_conta_i_titoli_delle_altre_squadre(self, albo_pulito, db_isolato, due_squadre):
+        from app.repositories import albo_oro as albo_oro_repo
+        prima, seconda = due_squadre
+        _inserisci(albo_pulito, "25-26", "Campionato", None, seconda, 1)
+        db_isolato.commit()
+
+        assert albo_oro_repo.palmares(albo_pulito, prima) == {"campionati": [], "coppe": []}
+
+
+class TestOrdinamentoCompleto:
     def test_l_ordinamento_completo(self, albo_pulito, db_isolato, due_squadre):
         """Tutte le regole insieme, nell'ordine in cui si applicano."""
         prima, seconda = due_squadre

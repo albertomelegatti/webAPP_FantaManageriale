@@ -65,6 +65,13 @@ class TestOrdinamento:
         assert primo == secondo
 
 
+class TestPalmares:
+    def test_il_palmares_e_nei_dati_della_dashboard(self, dati):
+        """Conteggio a parte in test_albo_oro.py: qui basta che il service lo
+        esponga con le chiavi che il template si aspetta."""
+        assert set(dati["palmares"]) == {"campionati", "coppe"}
+
+
 class TestSlot:
     def test_gli_slot_occupati_sono_la_somma_di_giocatori_e_aste(self, cur, nome_squadra, dati):
         from app.repositories import aste as aste_repo

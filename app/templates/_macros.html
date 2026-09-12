@@ -98,3 +98,13 @@ data-info='{{ {
 <span class="text-xs text-muted">{{ tipo }}</span>
 {%- endif -%}
 {% endmacro %}
+
+{# Un'iconcina per stagione vinta, in fila; nulla se la squadra non l'ha mai
+   vinto. Il tooltip riporta la stagione di quella vittoria, non il totale. #}
+{% macro palmares_badge(icona, colore, stagioni, etichetta) %}
+{%- for stagione in stagioni %}
+<span class="inline-flex items-center {{ colore }}" data-tip="{{ etichetta }} {{ stagione }}">
+    <i class="bi {{ icona }}"></i>
+</span>
+{%- endfor -%}
+{% endmacro %}
