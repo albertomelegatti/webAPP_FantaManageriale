@@ -5,9 +5,9 @@
 <div class="mb-2">{{ m.torna_indietro(url_for('pubblico.home')) }}</div>
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
     <h2 class="text-lg font-bold">Listone Giocatori</h2>
-    <a href="{{ url_for('pubblico.listone_export') }}"
-       class="flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-white">
-        <i class="bi bi-file-earmark-excel-fill"></i> Esporta Excel
+    <a href="{{ url_for('pubblico.listone_export') }}" data-tip="Esporta Excel"
+       class="flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-lg text-white">
+        <i class="bi bi-download"></i>
     </a>
 </div>
 
