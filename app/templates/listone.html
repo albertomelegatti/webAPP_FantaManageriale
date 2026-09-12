@@ -3,7 +3,13 @@
 {% block content %}
 {% import '_macros.html' as m %}
 <div class="mb-2">{{ m.torna_indietro(url_for('pubblico.home')) }}</div>
-<h2 class="mb-4 text-lg font-bold">Listone Giocatori</h2>
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+    <h2 class="text-lg font-bold">Listone Giocatori</h2>
+    <a href="{{ url_for('pubblico.listone_export') }}" data-tip="Esporta Excel"
+       class="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-panel-2 text-xl text-text">
+        <i class="bi bi-download"></i>
+    </a>
+</div>
 
 <div class="mb-4 rounded-2xl border border-line bg-panel p-4">
     <label class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Cerca per nome</label>

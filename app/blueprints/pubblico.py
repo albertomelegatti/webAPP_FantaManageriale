@@ -8,7 +8,7 @@ nelle url_for, ora prefissati dal blueprint.
 """
 
 from flask import (Blueprint, flash, jsonify, redirect, render_template,
-                   send_from_directory, url_for)
+                   send_file, send_from_directory, url_for)
 
 from app import telegram_utils
 from app.blueprints.user import format_partecipanti
@@ -24,6 +24,7 @@ from app.repositories import configurazione as configurazione_repo
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import movimenti as movimenti_repo
 from app.services import dashboard as servizio_dashboard
+from app.services import export_excel as export_excel_servizio
 
 logger = get_logger(__name__)
 
@@ -254,6 +255,19 @@ def listone():
                             squadre_disponibili=squadre_disponibili,
                             contratti_disponibili=contratti_disponibili,
                             u21_threshold_year=u21_threshold_year)
+
+
+@pubblico_bp.route("/listone/export")
+def listone_export():
+    with connessione() as (conn, cur):
+        giocatori = giocatori_repo.per_export_listone(cur)
+
+    return send_file(
+        export_excel_servizio.listone_xlsx(giocatori),
+        as_attachment=True,
+        download_name="listone_FMM.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
 
 
 @pubblico_bp.route("/aste")
