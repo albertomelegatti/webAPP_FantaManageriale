@@ -154,18 +154,20 @@ class TestPagineRosa:
 
 
 class TestDashboardSquadra:
-    def test_la_dashboard_non_supera_cinque_query(
+    def test_la_dashboard_non_supera_sei_query(
         self, app, cur, db_isolato, monkeypatch, nome_squadra
     ):
-        """Era a dieci. Il tetto e' esplicito perche' su questo database il
-        tempo della pagina e' quasi interamente il numero di viaggi di rete:
-        una query in piu' sono cinquanta millisecondi in piu'."""
+        """Era a dieci, poi cinque; il palmares in testata ne ha aggiunta una
+        sesta (tabella diversa, non c'era modo di unirla alle altre). Il tetto
+        resta esplicito perche' su questo database il tempo della pagina e'
+        quasi interamente il numero di viaggi di rete: una query in piu' sono
+        cinquanta millisecondi in piu'."""
         client = app.test_client()
         with conta_query(monkeypatch) as conteggi:
             risposta = client.get(f"/squadra/{nome_squadra}")
 
         assert risposta.status_code == 200
-        assert conteggi["query"] <= 5, f"{conteggi['query']} query per la dashboard"
+        assert conteggi["query"] <= 6, f"{conteggi['query']} query per la dashboard"
 
     def test_le_query_non_crescono_con_la_rosa(
         self, app, cur, db_isolato, monkeypatch, nome_squadra

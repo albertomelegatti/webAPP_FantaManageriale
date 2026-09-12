@@ -124,6 +124,23 @@ def assegna_in_prestito(cur, id_giocatore, squadra_ricevente: str) -> None:
            WHERE id = %s;""", (squadra_ricevente, id_giocatore))
 
 
+def per_export_listone(cur) -> list[dict]:
+    """Le righe del listone da esportare in Excel, valori grezzi.
+
+    Stesso filtro e ordinamento della pagina (solo priorita' 1, per
+    quotazione decrescente), cosi' l'export corrisponde a quello che l'utente
+    sta guardando.
+    """
+    cur.execute(
+        """SELECT nome, squadra_att, detentore_cartellino, club, quot_att_mantra,
+                  tipo_contratto, ruolo, costo, scadenza_contratto, data_nascita,
+                  valore_mercato
+           FROM giocatore
+           WHERE priorita = 1
+           ORDER BY quot_att_mantra DESC;""")
+    return cur.fetchall()
+
+
 def collegati_alla_squadra(cur, nome_squadra: str) -> list[dict]:
     """Tutti i giocatori che la dashboard deve mostrare, in una query sola.
 
