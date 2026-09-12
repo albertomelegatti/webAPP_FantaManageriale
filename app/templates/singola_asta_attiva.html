@@ -37,6 +37,7 @@
 
         <form method="POST"
               action="{{ url_for('aste.singola_asta_attiva', asta_id=asta.id, nome_squadra=nome_squadra) }}"
+              onsubmit="return confirm('Sei sicuro di voler rilanciare a ' + ({{ asta.ultima_offerta }} + Number(event.submitter.value)) + ' cr?');"
               class="flex items-center gap-2">
             <input type="hidden" name="offerta_attesa" value="{{ asta.ultima_offerta }}">
             <span class="shrink-0 text-xs text-muted">Rilancio rapido</span>
