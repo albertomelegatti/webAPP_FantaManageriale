@@ -102,12 +102,12 @@ class TestOrdinamento:
 
 
 class TestPalmares:
-    def test_una_squadra_senza_titoli_ha_zero_e_zero(self, albo_pulito, due_squadre):
+    def test_una_squadra_senza_titoli_ha_liste_vuote(self, albo_pulito, due_squadre):
         from app.repositories import albo_oro as albo_oro_repo
         prima, _ = due_squadre
-        assert albo_oro_repo.palmares(albo_pulito, prima) == {"campionati": 0, "coppe": 0}
+        assert albo_oro_repo.palmares(albo_pulito, prima) == {"campionati": [], "coppe": []}
 
-    def test_conta_i_primi_posti_in_campionato(self, albo_pulito, db_isolato, due_squadre):
+    def test_elenca_le_stagioni_vinte_in_campionato(self, albo_pulito, db_isolato, due_squadre):
         from app.repositories import albo_oro as albo_oro_repo
         prima, _ = due_squadre
         _inserisci(albo_pulito, "23-24", "Campionato", None, prima, 1)
@@ -115,7 +115,7 @@ class TestPalmares:
         _inserisci(albo_pulito, "25-26", "Campionato", None, prima, 1)
         db_isolato.commit()
 
-        assert albo_oro_repo.palmares(albo_pulito, prima)["campionati"] == 2
+        assert albo_oro_repo.palmares(albo_pulito, prima)["campionati"] == ["25-26", "23-24"]
 
     def test_conta_solo_i_primi_posti_nella_fase_finale_di_coppa(
         self, albo_pulito, db_isolato, due_squadre
@@ -127,7 +127,7 @@ class TestPalmares:
         _inserisci(albo_pulito, "25-26", "Coppa", "Finale", prima, 1)
         db_isolato.commit()
 
-        assert albo_oro_repo.palmares(albo_pulito, prima)["coppe"] == 1
+        assert albo_oro_repo.palmares(albo_pulito, prima)["coppe"] == ["25-26"]
 
     def test_non_conta_i_titoli_delle_altre_squadre(self, albo_pulito, db_isolato, due_squadre):
         from app.repositories import albo_oro as albo_oro_repo
@@ -135,7 +135,7 @@ class TestPalmares:
         _inserisci(albo_pulito, "25-26", "Campionato", None, seconda, 1)
         db_isolato.commit()
 
-        assert albo_oro_repo.palmares(albo_pulito, prima) == {"campionati": 0, "coppe": 0}
+        assert albo_oro_repo.palmares(albo_pulito, prima) == {"campionati": [], "coppe": []}
 
 
 class TestOrdinamentoCompleto:

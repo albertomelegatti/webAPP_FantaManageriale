@@ -34,26 +34,28 @@ def leggi(cur) -> list[dict]:
 
 
 def palmares(cur, nome_squadra: str) -> dict:
-    """Quante volte la squadra ha vinto Campionato e Coppa, in totale.
+    """Le stagioni in cui la squadra ha vinto Campionato e Coppa.
 
-    Vittoria = posizione 1. Per il Campionato basta quello, perche' non ha
-    fasi; per la Coppa serve anche restringere a una fase finale (stesso
-    `ILIKE 'Final%%'` usato in leggi() per ordinarle), altrimenti il primo
-    posto in un girone conterebbe come titolo.
+    Un trofeo per stagione vinta (la pagina ne disegna uno per elemento della
+    lista, col tooltip sulla stagione), non un conteggio. Vittoria = posizione
+    1. Per il Campionato basta quello, perche' non ha fasi; per la Coppa serve
+    anche restringere a una fase finale (stesso `ILIKE 'Final%%'` usato in
+    leggi() per ordinarle), altrimenti il primo posto in un girone
+    conterebbe come titolo.
     """
     cur.execute(
         """
-        SELECT competizione, COUNT(*) AS vittorie
+        SELECT competizione, stagione
         FROM albo_oro
         WHERE squadra = %s
           AND posizione = 1
           AND (competizione = 'Campionato' OR fase ILIKE 'Final%%')
-        GROUP BY competizione;
+        ORDER BY stagione DESC;
         """,
         (nome_squadra,)
     )
-    righe = {r["competizione"]: r["vittorie"] for r in cur.fetchall()}
+    righe = cur.fetchall()
     return {
-        "campionati": righe.get("Campionato", 0),
-        "coppe": righe.get("Coppa", 0),
+        "campionati": [r["stagione"] for r in righe if r["competizione"] == "Campionato"],
+        "coppe": [r["stagione"] for r in righe if r["competizione"] == "Coppa"],
     }

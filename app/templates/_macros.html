@@ -99,12 +99,12 @@ data-info='{{ {
 {%- endif -%}
 {% endmacro %}
 
-{# Un'iconcina per titolo vinto, nulla se la squadra non l'ha mai vinto. #}
-{% macro palmares_badge(icona, colore, volte, etichetta) %}
-{%- if volte and volte > 0 -%}
-<span class="inline-flex items-center gap-1 {{ colore }}" data-tip="{{ etichetta }} vinto {{ volte }} volt{{ 'a' if volte == 1 else 'e' }}">
+{# Un'iconcina per stagione vinta, in fila; nulla se la squadra non l'ha mai
+   vinto. Il tooltip riporta la stagione di quella vittoria, non il totale. #}
+{% macro palmares_badge(icona, colore, stagioni, etichetta) %}
+{%- for stagione in stagioni %}
+<span class="inline-flex items-center {{ colore }}" data-tip="{{ etichetta }} vinto nel {{ stagione }}">
     <i class="bi {{ icona }}"></i>
-    {%- if volte > 1 %}<span class="text-xs font-bold">x{{ volte }}</span>{% endif -%}
 </span>
-{%- endif -%}
+{%- endfor -%}
 {% endmacro %}
