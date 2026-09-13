@@ -39,6 +39,16 @@ def sposta_crediti(cur, squadra_from: str, squadra_to: str, crediti_da_spostare:
                 (crediti_da_spostare, squadra_to))
 
 
+def nomi(cur) -> list[str]:
+    """I nomi delle squadre in gioco, in ordine alfabetico.
+
+    'Svincolato' e' una riga della tabella `squadra` ma non e' una squadra:
+    tiene i giocatori senza proprietario, e non va mai offerta in un elenco.
+    """
+    cur.execute("SELECT nome FROM squadra WHERE nome <> 'Svincolato' ORDER BY nome;")
+    return [riga["nome"] for riga in cur.fetchall()]
+
+
 def nomi_diversi_da(cur, nome_squadra: str) -> list[dict]:
     """Le altre squadre, escluso Svincolato: i possibili interlocutori di uno
     scambio o di un prestito."""

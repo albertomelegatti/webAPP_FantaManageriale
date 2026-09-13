@@ -56,9 +56,9 @@
         <h4 class="mb-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-muted">
             <span class="h-2 w-2 rounded-full bg-muted"></span> Concluse
         </h4>
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-2" id="asteConcluse">
             {% for asta in aste if asta.stato == 'conclusa' %}
-            <div class="rounded-xl bg-panel-2 px-3 py-2.5">
+            <div class="asta-conclusa rounded-xl bg-panel-2 px-3 py-2.5">
                 <div class="flex items-start justify-between gap-3">
                     <span class="min-w-0 flex-1 font-medium">{{ asta.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(asta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(asta.club) }}</span>
                     <span class="shrink-0 tabular-nums text-muted">{{ asta.ultima_offerta }} cr</span>
@@ -70,7 +70,13 @@
             <p class="py-2 text-center text-sm text-muted">Nessuna asta conclusa</p>
             {% endfor %}
         </div>
+        <div class="mt-4 flex items-center justify-center gap-1" id="paginazione"></div>
     </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/paginazione.js') }}?v={{ asset_v('js/paginazione.js') }}"></script>
+<script src="{{ url_for('static', filename='js/aste.js') }}?v={{ asset_v('js/aste.js') }}"></script>
 {% endblock %}

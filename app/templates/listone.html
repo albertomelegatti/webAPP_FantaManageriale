@@ -102,15 +102,7 @@
     </table>
     <p class="hidden py-4 text-center text-sm text-muted" id="noResults">Nessun giocatore trovato con i filtri selezionati.</p>
 
-    <div class="mt-4 flex items-center justify-center gap-1" id="paginazione">
-        <button type="button" id="paginaPrecedente" class="freccia-pagina" aria-label="Pagina precedente">
-            <i class="bi bi-chevron-left"></i>
-        </button>
-        <div class="flex flex-wrap items-center justify-center gap-1" id="numeriPagina"></div>
-        <button type="button" id="paginaSuccessiva" class="freccia-pagina" aria-label="Pagina successiva">
-            <i class="bi bi-chevron-right"></i>
-        </button>
-    </div>
+    <div class="mt-4 flex items-center justify-center gap-1" id="paginazione"></div>
 </div>
 
 {# I giocatori in forma compatta: i nomi dei campi una volta, poi i valori.
@@ -192,43 +184,6 @@
     content: ' \2193';
     color: var(--accent);
 }
-/* Paginazione: niente bordi, solo la pagina corrente e' piena. Il testo sul
-   pieno usa il colore di sfondo della pagina, che resta leggibile sull'accento
-   sia nel tema chiaro sia in quello scuro. */
-.numero-pagina,
-.freccia-pagina {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 2rem;
-    height: 2rem;
-    border-radius: 0.625rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--muted);
-    cursor: pointer;
-    transition: color 0.12s ease, background-color 0.12s ease;
-}
-.numero-pagina:hover,
-.freccia-pagina:not(:disabled):hover {
-    color: var(--text);
-    background: var(--panel-2);
-}
-.numero-pagina.attivo,
-.numero-pagina.attivo:hover {
-    color: var(--bg);
-    background: var(--accent);
-    cursor: default;
-}
-.freccia-pagina:disabled {
-    opacity: 0.3;
-    cursor: default;
-}
-.puntini-pagina {
-    padding: 0 0.125rem;
-    font-size: 0.8rem;
-    color: var(--muted);
-}
 .chip-ruolo.attivo {
     border-color: var(--accent);
     color: var(--accent);
@@ -264,5 +219,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/paginazione.js') }}?v={{ asset_v('js/paginazione.js') }}"></script>
 <script src="{{ url_for('static', filename='js/listone.js') }}?v={{ asset_v('js/listone.js') }}"></script>
 {% endblock %}

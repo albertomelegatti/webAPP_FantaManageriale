@@ -6,10 +6,10 @@ JSON che ripeteva i nomi dei tredici campi della scheda di dettaglio. Ora manda
 solo i dati, in forma compatta, e le righe le disegna static/js/listone.js.
 
 Il grosso della logica si e' quindi spostato nel JavaScript, che questa suite non
-esegue. Quello che si puo' proteggere da qui e' il *contratto* fra le due parti:
-i campi che il servizio spedisce, gli identificatori che il JavaScript cerca nel
-template, e le due mappe di colori e icone duplicate dalle macro Jinja. Sono
-proprio le cose che si rompono in silenzio rinominando qualcosa.
+esegue. Qui restano i controlli propri del listone: i campi che il servizio
+spedisce e le due mappe di colori e icone duplicate dalle macro Jinja. I
+controlli validi per tutte le pagine che disegnano da se' stanno in
+tests/test_contratto_javascript.py.
 """
 
 import json
@@ -21,8 +21,6 @@ import pytest
 
 JS_LISTONE = Path(__file__).resolve().parent.parent / "app" / "static" / "js" / "listone.js"
 MACROS = Path(__file__).resolve().parent.parent / "app" / "templates" / "_macros.html"
-TEMPLATE = Path(__file__).resolve().parent.parent / "app" / "templates" / "listone.html"
-CSS = Path(__file__).resolve().parent.parent / "app" / "static" / "css" / "tailwind.css"
 
 
 @pytest.fixture(scope="module")
@@ -97,14 +95,6 @@ class TestContrattoConIlJavascript:
         assert letti - self.CAMPI_DERIVATI <= set(CAMPI), \
             f"campi letti dal JavaScript ma non spediti: {sorted(letti - self.CAMPI_DERIVATI - set(CAMPI))}"
 
-    @pytest.mark.db
-    def test_trova_nel_template_tutti_gli_elementi_che_cerca(self, client, sorgente_js):
-        html = client.get("/listone").get_data(as_text=True)
-
-        cercati = set(re.findall(r"getElementById\('([^']+)'\)", sorgente_js))
-        mancanti = [i for i in cercati if f'id="{i}"' not in html]
-        assert not mancanti, f"identificatori cercati dal JavaScript ma assenti dalla pagina: {mancanti}"
-
     def test_i_colori_dei_ruoli_non_divergono_dalle_macro(self, sorgente_js):
         """Le stesse coppie ruolo/colore stanno in due posti: devono coincidere."""
         nel_js = dict(re.findall(r"(\w+): '(#[0-9a-f]{6})'",
@@ -123,42 +113,6 @@ class TestContrattoConIlJavascript:
                                       re.search(r"set icone = \{(.*?)\}", macro, re.S).group(1)))
 
         assert nel_js == nelle_macro
-
-
-class TestClassiEsistenti:
-    """Le classi che il JavaScript mette sulle righe devono esistere davvero.
-
-    `tailwind.css` e' committato gia' compilato e nel repository non c'e' una
-    build che lo rigeneri: una utility non presente nel file non fa nulla, e
-    siccome non fa nulla *in silenzio* non se ne accorge nessuno. Qui si
-    controllano le classi generate dal JavaScript, che nessun occhio incrocia
-    leggendo il template.
-    """
-
-    # Le icone arrivano dal CDN di Bootstrap Icons, non da tailwind.css.
-    CLASSI_ESTERNE = {"bi"}
-
-    @staticmethod
-    def _classi_compilate():
-        css = CSS.read_text(encoding="utf-8")
-        return {re.sub(r"\\(.)", r"\1", c) for c in re.findall(r"\.((?:[-\w]|\\.)+)", css)}
-
-    @staticmethod
-    def _classi_della_pagina():
-        """Le classi definite dal foglio di stile interno al template."""
-        stile = re.search(r"<style>(.*?)</style>", TEMPLATE.read_text(encoding="utf-8"), re.S).group(1)
-        return set(re.findall(r"\.([-\w]+)", stile))
-
-    def test_ogni_classe_usata_dal_javascript_e_definita(self, sorgente_js):
-        # Le stringhe di classi nel JavaScript sono quelle passate a `testo()`,
-        # assegnate a `.className` o costruite per le righe della tabella.
-        stringhe = re.findall(r"className = '([^']*)'|testo\('\w+', '([^']*)'", sorgente_js)
-        stringhe += [(s, "") for s in re.findall(r"cella\('([^']*)'", sorgente_js)]
-
-        usate = {c for coppia in stringhe for s in coppia for c in s.split() if c}
-        definite = self._classi_compilate() | self._classi_della_pagina() | self.CLASSI_ESTERNE
-
-        assert usate <= definite, f"classi che non esistono in nessun foglio di stile: {sorted(usate - definite)}"
 
 
 class TestStatoU21:

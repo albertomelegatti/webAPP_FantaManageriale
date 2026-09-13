@@ -42,29 +42,6 @@ const ICONE_CONTRATTO = {
 // qui il testo resta quello del club, ed e' anche la chiave di ordinamento.
 const abbreviazioneClub = (club) => (club || '').slice(0, 3);
 
-/**
- * I numeri di pagina da mostrare: sempre il primo, l'ultimo e quelli attorno
- * alla pagina corrente, con `null` dove la sequenza salta (si disegna come
- * puntini). Con venti pagine mostrarle tutte non ci starebbe su un telefono,
- * ma il primo e l'ultimo devono restare raggiungibili con un clic.
- */
-const numeriPagina = (corrente, totali) => {
-    const daMostrare = new Set([1, totali, corrente - 1, corrente, corrente + 1]);
-    // Vicino ai bordi la finestra si allarga, cosi' la fila non si accorcia.
-    if (corrente <= 3) [2, 3, 4].forEach((n) => daMostrare.add(n));
-    if (corrente >= totali - 2) [totali - 3, totali - 2, totali - 1].forEach((n) => daMostrare.add(n));
-
-    const numeri = [...daMostrare].filter((n) => n >= 1 && n <= totali).sort((a, b) => a - b);
-    const conPuntini = [];
-    numeri.forEach(function (n, i) {
-        if (i > 0 && n - numeri[i - 1] > 1) conPuntini.push(null);
-        conPuntini.push(n);
-    });
-    return conPuntini;
-};
-
-
-
 /** Espande la tabella compatta del server in un giocatore per oggetto. */
 const espandiGiocatori = (compatti) =>
     compatti.righe.map((valori) => {
@@ -74,7 +51,6 @@ const espandiGiocatori = (compatti) =>
         g.ruoli = g.ruolo.split(',').map((r) => r.trim());
         return g;
     });
-
 
 document.addEventListener('DOMContentLoaded', function () {
     const tabella = document.getElementById('listoneTable');
@@ -89,21 +65,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const checkU21 = document.querySelectorAll('.filtro-u21-check');
     const chipRuolo = document.querySelectorAll('.chip-ruolo');
 
-    const paginazione = document.getElementById('paginazione');
-    const btnPrecedente = document.getElementById('paginaPrecedente');
-    const btnSuccessiva = document.getElementById('paginaSuccessiva');
-    const contenitoreNumeri = document.getElementById('numeriPagina');
 
     const giocatori = espandiGiocatori(JSON.parse(document.getElementById('datiGiocatori').textContent));
     const loghiBase = tabella.dataset.loghiBase;
     const versioniLoghi = JSON.parse(tabella.dataset.loghiVersioni);
 
-    // Lo stato dell'interfaccia: da questi tre valori discende tutto il resto.
     // L'ordinamento iniziale e' quello in cui i giocatori arrivano dal server
     // (quotazione decrescente), segnalato dalla colonna QA gia' marcata.
-    let pagina = 1;
     let ordinamento = null;
     let crescente = false;
+
+    const paginatore = creaPaginazione({
+        contenitore: document.getElementById('paginazione'),
+        perPagina: GIOCATORI_PER_PAGINA,
+        disegna: (dellaPagina) => corpo.replaceChildren(
+            ...dellaPagina.map(disegnaRiga)),
+        risaliA: tabella,
+    });
 
     // --- Filtri -------------------------------------------------------------
 
@@ -219,19 +197,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return riga;
     };
 
-    const disegnaNumeriPagina = (pagineTotali) => {
-        contenitoreNumeri.replaceChildren(...numeriPagina(pagina, pagineTotali).map(function (n) {
-            if (n === null) return testo('span', 'puntini-pagina', '\u2026');
-
-            const corrente = n === pagina;
-            const bottone = testo('button', corrente ? 'numero-pagina attivo' : 'numero-pagina', n);
-            bottone.type = 'button';
-            if (corrente) bottone.setAttribute('aria-current', 'page');
-            else bottone.addEventListener('click', () => vaiA(n));
-            return bottone;
-        }));
-    };
-
     // --- Aggiornamento ------------------------------------------------------
 
     const aggiorna = () => {
@@ -243,34 +208,9 @@ document.addEventListener('DOMContentLoaded', function () {
         // stessi giocatori.
         if (ordinamento !== null) selezionati.sort(confronto(ORDINAMENTI[ordinamento], crescente));
 
-        const pagineTotali = Math.max(1, Math.ceil(selezionati.length / GIOCATORI_PER_PAGINA));
-        pagina = Math.min(pagina, pagineTotali);
-        const inizio = (pagina - 1) * GIOCATORI_PER_PAGINA;
-
-        const nuoveRighe = document.createDocumentFragment();
-        selezionati.slice(inizio, inizio + GIOCATORI_PER_PAGINA).forEach((g) => nuoveRighe.appendChild(disegnaRiga(g)));
-        corpo.replaceChildren(nuoveRighe);
-
         risultatiCount.textContent = selezionati.length;
         noResults.classList.toggle('hidden', selezionati.length > 0);
-
-        disegnaNumeriPagina(pagineTotali);
-        paginazione.classList.toggle('hidden', pagineTotali === 1);
-        btnPrecedente.disabled = pagina === 1;
-        btnSuccessiva.disabled = pagina === pagineTotali;
-    };
-
-    /** Cambiare filtro o ordinamento riporta alla prima pagina: restare sulla
-     *  ventesima davanti a un elenco che ne ha due non direbbe nulla. */
-    const aggiornaDaCapo = () => {
-        pagina = 1;
-        aggiorna();
-    };
-
-    const vaiA = (nuovaPagina) => {
-        pagina = nuovaPagina;
-        aggiorna();
-        tabella.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        paginatore.mostra(selezionati);
     };
 
     // --- Scheda di dettaglio ------------------------------------------------
@@ -326,14 +266,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Collegamento dei controlli -----------------------------------------
 
-    filtroNome.addEventListener('input', aggiornaDaCapo);
-    filtroContratto.addEventListener('change', aggiornaDaCapo);
-    filtroClub.addEventListener('change', aggiornaDaCapo);
-    filtroSquadraAtt.addEventListener('change', aggiornaDaCapo);
-    checkU21.forEach((c) => c.addEventListener('change', aggiornaDaCapo));
+    filtroNome.addEventListener('input', aggiorna);
+    filtroContratto.addEventListener('change', aggiorna);
+    filtroClub.addEventListener('change', aggiorna);
+    filtroSquadraAtt.addEventListener('change', aggiorna);
+    checkU21.forEach((c) => c.addEventListener('change', aggiorna));
     chipRuolo.forEach((chip) => chip.addEventListener('click', function () {
         chip.classList.toggle('attivo');
-        aggiornaDaCapo();
+        aggiorna();
     }));
 
     const intestazioni = tabella.querySelectorAll('thead th');
@@ -344,12 +284,9 @@ document.addEventListener('DOMContentLoaded', function () {
             ordinamento = indice;
             intestazioni.forEach((h) => h.classList.remove('asc', 'desc'));
             intestazione.classList.add(crescente ? 'asc' : 'desc');
-            aggiornaDaCapo();
+            aggiorna();
         });
     });
-
-    btnPrecedente.addEventListener('click', () => vaiA(pagina - 1));
-    btnSuccessiva.addEventListener('click', () => vaiA(pagina + 1));
 
     document.getElementById('btnChiudiGiocatore').addEventListener('click', chiudiScheda);
     overlayGiocatore.addEventListener('click', function (e) {
