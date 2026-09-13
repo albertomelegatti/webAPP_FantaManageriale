@@ -54,6 +54,10 @@ data-info='{{ {
 } | tojson }}'
 {%- endmacro %}
 
+{# I colori dei ruoli e le icone dei contratti sono ripetuti in
+   static/js/listone.js, che disegna le righe del listone nel browser:
+   una modifica qui va riportata anche la', o il listone diverge dal
+   resto dell'app. #}
 {% macro ruolo_colorato(ruolo) %}
 {%- set colori = {
     'por': '#e0951b',

@@ -7,39 +7,30 @@ solo il decoratore (da @app.route a @pubblico_bp.route) e i nomi degli endpoint
 nelle url_for, ora prefissati dal blueprint.
 """
 
-from flask import (Blueprint, flash, jsonify, redirect, render_template,
-                   send_file, send_from_directory, url_for)
+from flask import (Blueprint, current_app, flash, jsonify, redirect,
+                   render_template, send_file, send_from_directory, url_for)
 
 from app import telegram_utils
 from app.blueprints.user import format_partecipanti
+from app.core.asset import versione as versione_asset
 from app.core.db import connessione
 
 from app.core.logging import get_logger
-from app.core.formato import formatta_valore_mercato_mln
-from app.core.tempo import formatta_data, formatta_data_nascita_con_eta, formatta_scadenza_contratto
-from app.domini.ruoli import pulisci_ruolo, ruoli_base_presenti
+
+from app.core.tempo import formatta_data
+from app.domini.ruoli import pulisci_ruolo
 from app.repositories import albo_oro as albo_oro_repo
-from app.repositories import aste as aste_repo
-from app.repositories import configurazione as configurazione_repo
+
+
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import movimenti as movimenti_repo
 from app.services import dashboard as servizio_dashboard
 from app.services import export_excel as export_excel_servizio
+from app.services import listone as servizio_listone
 
 logger = get_logger(__name__)
 
 pubblico_bp = Blueprint('pubblico', __name__)
-
-
-def _stato_u21(data_nascita, soglia_u21):
-    """Stato U21 di un giocatore per il filtro del listone.
-
-    U21 sono i nati nell'anno di soglia o dopo (stessa regola delle aste).
-    Ritorna 'si'/'no', oppure '' quando non è determinabile (nessuna soglia
-    impostata o data di nascita non sincronizzata)."""
-    if soglia_u21 is None or data_nascita is None:
-        return ""
-    return "si" if data_nascita.year >= soglia_u21 else "no"
 
 
 # Pagina principale
@@ -204,57 +195,26 @@ def albo_oro():
     return render_template("albo_oro.html", righe=righe)
 
 
+def _versioni_loghi(username: list[str]) -> dict:
+    """Il `?v=` di ogni logo mostrato dal listone, per nome utente della squadra.
+
+    Le righe del listone le disegna il browser, quindi l'URL dei loghi non passa
+    piu' da `url_for` in un template e la versione dei file deve viaggiare con i
+    dati: senza, un logo cambiato resterebbe quello vecchio nella cache.
+    """
+    statici = current_app.static_folder
+    versioni = {u: versione_asset(statici, f"loghi/{u}.png") for u in username}
+    versioni["svincolato"] = versione_asset(statici, "loghi/svincolato.png")
+    return versioni
+
+
 @pubblico_bp.route("/listone")
 def listone():
-    giocatori = []
-
     with connessione() as (conn, cur):
-        u21_threshold_year = configurazione_repo.soglia_u21(cur)
-        cur.execute("""
-            SELECT g.nome, g.ruolo, g.club, g.squadra_att, g.tipo_contratto, g.quot_att_mantra, g.costo,
-                   g.detentore_cartellino, s.username AS squadra_username, d.username AS detentore_username,
-                   g.data_nascita, g.scadenza_contratto, g.valore_mercato
-            FROM giocatore g
-            LEFT JOIN squadra s ON s.nome = g.squadra_att AND g.squadra_att <> 'Svincolato'
-            LEFT JOIN squadra d ON d.nome = g.detentore_cartellino AND g.detentore_cartellino <> 'Svincolato'
-            WHERE g.priorita = 1
-            ORDER BY g.quot_att_mantra DESC;
-        """)
-        giocatori = [
-            {
-                "nome": g["nome"],
-                "ruolo": pulisci_ruolo(g["ruolo"]),
-                "club": g["club"],
-                "squadra_att": g["squadra_att"],
-                "squadra_username": g["squadra_username"],
-                "detentore_cartellino": g["detentore_cartellino"],
-                "detentore_username": g["detentore_username"],
-                "tipo_contratto": g["tipo_contratto"],
-                "quotazione": g["quot_att_mantra"],
-                "costo": g["costo"],
-                "data_nascita": formatta_data_nascita_con_eta(g["data_nascita"]) or "Non sincronizzata",
-                "scadenza_contratto_reale": formatta_scadenza_contratto(g["scadenza_contratto"]) or "Non sincronizzata",
-                "valore_mercato": formatta_valore_mercato_mln(g["valore_mercato"]) or "Non sincronizzato",
-                # 'si'/'no' se la data di nascita è nota e la soglia è impostata,
-                # '' quando lo stato U21 non è determinabile.
-                "u21": _stato_u21(g["data_nascita"], u21_threshold_year),
-            }
-            for g in cur.fetchall()
-        ]
+        dati = servizio_listone.dati_pagina(cur)
 
-    ruoli_disponibili = ruoli_base_presenti([g["ruolo"] for g in giocatori])
-
-    club_disponibili = sorted({g["club"] for g in giocatori if g["club"]})
-    squadre_disponibili = sorted({g["squadra_att"] for g in giocatori if g["squadra_att"]})
-    contratti_disponibili = sorted({g["tipo_contratto"] for g in giocatori if g["tipo_contratto"]})
-
-    return render_template("listone.html",
-                            giocatori=giocatori,
-                            ruoli_disponibili=ruoli_disponibili,
-                            club_disponibili=club_disponibili,
-                            squadre_disponibili=squadre_disponibili,
-                            contratti_disponibili=contratti_disponibili,
-                            u21_threshold_year=u21_threshold_year)
+    dati["versioni_loghi"] = _versioni_loghi(dati.pop("username_con_logo"))
+    return render_template("listone.html", **dati)
 
 
 @pubblico_bp.route("/listone/export")
