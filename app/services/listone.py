@@ -1,15 +1,15 @@
 """
 Composizione del listone.
 
-La pagina elenca oltre cinquecento giocatori, e ogni riga portava con se' un
-attributo JSON con i tredici campi che servono alla scheda di dettaglio, aperta
-solo quando si clicca la riga. I dati viaggiavano quindi cinquecento volte, e
-con essi i nomi dei campi ripetuti ogni volta: circa cento kilobyte di sole
-chiavi.
+La pagina elenca oltre cinquecento giocatori, e il server ne mandava l'HTML
+completo: cinquecento righe di tabella, ognuna con un attributo JSON che
+ripeteva i nomi dei tredici campi della scheda di dettaglio. Il browser doveva
+costruirle tutte prima di mostrare qualcosa, anche se ne restano visibili
+venticinque.
 
-Qui gli stessi dati diventano una tabella compatta - i nomi dichiarati una
-volta, poi una riga di valori per giocatore - che viaggia in un blocco unico in
-fondo alla pagina.
+Qui il server manda solo i dati, in forma compatta: i nomi dei campi dichiarati
+una volta, poi una riga di valori per giocatore. Le righe della tabella le
+disegna il browser, una pagina alla volta (vedi static/js/listone.js).
 """
 
 from app.core.formato import formatta_valore_mercato_mln
@@ -22,18 +22,15 @@ from app.repositories import giocatori as giocatori_repo
 NON_SINCRONIZZATA = "Non sincronizzata"
 NON_SINCRONIZZATO = "Non sincronizzato"
 
-# I campi che la scheda di dettaglio mostra, nell'ordine in cui viaggiano.
-# Il template li rilegge da qui: aggiungerne uno basta a farlo arrivare.
-CAMPI_SCHEDA = (
+# I campi di ogni giocatore, nell'ordine in cui viaggiano verso il browser.
+# Servono sia alla riga della tabella sia alla scheda di dettaglio: viaggiano
+# una volta sola e il JavaScript pesca da qui quelli che gli servono.
+CAMPI = (
     "nome", "ruolo", "club", "squadra_att", "squadra_username",
     "detentore", "detentore_username", "tipo_contratto",
     "quotazione", "costo", "data_nascita", "scadenza_contratto_reale",
-    "valore_mercato",
+    "valore_mercato", "u21",
 )
-
-# Nella scheda il detentore del cartellino si chiama solo "detentore": e'
-# l'unico nome che cambia fra riga e scheda, e la corrispondenza sta qui.
-NOMI_DIVERSI_NELLA_SCHEDA = {"detentore": "detentore_cartellino"}
 
 
 def stato_u21(data_nascita, soglia_u21) -> str:
@@ -55,7 +52,7 @@ def _riga(g: dict, soglia_u21) -> dict:
         "club": g["club"],
         "squadra_att": g["squadra_att"],
         "squadra_username": g["squadra_username"],
-        "detentore_cartellino": g["detentore_cartellino"],
+        "detentore": g["detentore_cartellino"],
         "detentore_username": g["detentore_username"],
         "tipo_contratto": g["tipo_contratto"],
         "quotazione": g["quot_att_mantra"],
@@ -67,15 +64,26 @@ def _riga(g: dict, soglia_u21) -> dict:
     }
 
 
-def _dati_scheda(giocatori: list[dict]) -> dict:
-    """I valori per la scheda di dettaglio, senza ripetere i nomi dei campi."""
-    def valore(g, campo):
-        return g[NOMI_DIVERSI_NELLA_SCHEDA.get(campo, campo)]
-
+def _tabella(giocatori: list[dict]) -> dict:
+    """I giocatori senza ripetere i nomi dei campi a ogni riga."""
     return {
-        "campi": list(CAMPI_SCHEDA),
-        "righe": [[valore(g, c) for c in CAMPI_SCHEDA] for g in giocatori],
+        "campi": list(CAMPI),
+        "righe": [[g[campo] for campo in CAMPI] for g in giocatori],
     }
+
+
+def _username_con_logo(giocatori: list[dict]) -> list[str]:
+    """Le squadre di cui la pagina mostra il logo, fra righe e schede.
+
+    Il blueprint ne ricava la versione dei file: i loghi non passano piu' da
+    `url_for` in un template, quindi il `?v=` deve viaggiare con i dati.
+    """
+    return sorted({
+        g[campo]
+        for g in giocatori
+        for campo in ("squadra_username", "detentore_username")
+        if g[campo]
+    })
 
 
 def dati_pagina(cur) -> dict:
@@ -83,8 +91,9 @@ def dati_pagina(cur) -> dict:
     giocatori = [_riga(g, soglia_u21) for g in giocatori_repo.listone(cur)]
 
     return {
-        "giocatori": giocatori,
-        "dati_scheda": _dati_scheda(giocatori),
+        "totale_giocatori": len(giocatori),
+        "dati_giocatori": _tabella(giocatori),
+        "username_con_logo": _username_con_logo(giocatori),
         "ruoli_disponibili": ruoli_base_presenti([g["ruolo"] for g in giocatori]),
         "club_disponibili": sorted({g["club"] for g in giocatori if g["club"]}),
         "squadre_disponibili": sorted({g["squadra_att"] for g in giocatori if g["squadra_att"]}),

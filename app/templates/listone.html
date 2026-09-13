@@ -81,8 +81,9 @@
 </div>
 
 <div class="rounded-2xl border border-line bg-panel p-4">
-    <div class="mb-2 text-xs text-muted"><span id="risultati-count">{{ giocatori|length }}</span> giocatori</div>
-    <table class="w-full table-fixed text-sm sortable-table" id="listoneTable" data-loghi-base="{{ url_for('static', filename='loghi/') }}">
+    <div class="mb-2 text-xs text-muted"><span id="risultati-count">{{ totale_giocatori }}</span> giocatori</div>
+    <table class="w-full table-fixed text-sm sortable-table" id="listoneTable" data-loghi-base="{{ url_for('static', filename='loghi/') }}"
+           data-loghi-versioni='{{ versioni_loghi | tojson }}'>
         <colgroup>
             <col style="width:34%"><col style="width:14%"><col style="width:13%">
             <col style="width:13%"><col style="width:13%"><col style="width:13%">
@@ -97,37 +98,24 @@
                 <th class="pb-2 text-right font-semibold desc">QA</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-line" id="listoneBody">
-            {% for g in giocatori %}
-            <tr class="cursor-pointer hover:bg-panel-2" data-nome="{{ g.nome.lower() }}" data-ruolo="{{ g.ruolo }}" data-club="{{ g.club }}"
-                data-squadra="{{ g.squadra_att }}" data-contratto="{{ g.tipo_contratto }}" data-u21="{{ g.u21 }}"
-                data-idx="{{ loop.index0 }}">
-                <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-1 font-medium">{{ g.nome }}</td>
-                <td class="overflow-hidden py-2 pr-1">{{ m.ruolo_colorato(g.ruolo) }}</td>
-                <td class="overflow-hidden py-2 text-center text-muted">{{ m.club_abbr(g.club) }}</td>
-                <td class="py-2 text-muted">
-                    {% if g.squadra_username %}
-                    <img src="{{ url_for('static', filename='loghi/' ~ g.squadra_username ~ '.png') }}?v={{ asset_v('loghi/' ~ g.squadra_username ~ '.png') }}"
-                         alt="{{ g.squadra_att }}" data-sortkey="{{ g.squadra_att }}"
-                         class="mx-auto h-6 w-6 object-contain">
-                    {% else %}
-                    <img src="{{ url_for('static', filename='loghi/svincolato.png') }}?v={{ asset_v('loghi/svincolato.png') }}"
-                         alt="Svincolato" data-sortkey="Svincolato"
-                         class="mx-auto h-6 w-6 object-contain">
-                    {% endif %}
-                </td>
-                <td class="py-2 text-center">{{ m.contratto_icona(g.tipo_contratto, mostra_tip=false) }}</td>
-                <td class="py-2 text-right tabular-nums">{{ g.quotazione }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
+        <tbody class="divide-y divide-line" id="listoneBody"></tbody>
     </table>
-
-{# Dati della scheda giocatore: i nomi dei campi viaggiano una volta sola,
-   poi una riga di valori per giocatore. Vedi app/services/listone.py. #}
-<script type="application/json" id="datiGiocatori">{{ dati_scheda | tojson }}</script>
     <p class="hidden py-4 text-center text-sm text-muted" id="noResults">Nessun giocatore trovato con i filtri selezionati.</p>
+
+    <div class="mt-4 flex items-center justify-center gap-1" id="paginazione">
+        <button type="button" id="paginaPrecedente" class="freccia-pagina" aria-label="Pagina precedente">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+        <div class="flex flex-wrap items-center justify-center gap-1" id="numeriPagina"></div>
+        <button type="button" id="paginaSuccessiva" class="freccia-pagina" aria-label="Pagina successiva">
+            <i class="bi bi-chevron-right"></i>
+        </button>
+    </div>
 </div>
+
+{# I giocatori in forma compatta: i nomi dei campi una volta, poi i valori.
+   Da qui il JavaScript disegna sia le righe sia la scheda di dettaglio. #}
+<script type="application/json" id="datiGiocatori">{{ dati_giocatori | tojson }}</script>
 
 <div id="overlayGiocatore" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
     <div class="w-full max-w-sm rounded-2xl border border-line bg-panel p-4">
@@ -204,6 +192,43 @@
     content: ' \2193';
     color: var(--accent);
 }
+/* Paginazione: niente bordi, solo la pagina corrente e' piena. Il testo sul
+   pieno usa il colore di sfondo della pagina, che resta leggibile sull'accento
+   sia nel tema chiaro sia in quello scuro. */
+.numero-pagina,
+.freccia-pagina {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    border-radius: 0.625rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.12s ease, background-color 0.12s ease;
+}
+.numero-pagina:hover,
+.freccia-pagina:not(:disabled):hover {
+    color: var(--text);
+    background: var(--panel-2);
+}
+.numero-pagina.attivo,
+.numero-pagina.attivo:hover {
+    color: var(--bg);
+    background: var(--accent);
+    cursor: default;
+}
+.freccia-pagina:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+.puntini-pagina {
+    padding: 0 0.125rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
 .chip-ruolo.attivo {
     border-color: var(--accent);
     color: var(--accent);
@@ -236,186 +261,8 @@
 }
 </style>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const filtroNome = document.getElementById('filtro-nome');
-    const filtroContratto = document.getElementById('filtro-contratto');
-    const filtroClub = document.getElementById('filtro-club');
-    const filtroSquadraAtt = document.getElementById('filtro-squadra-att');
-    const checkU21 = document.querySelectorAll('.filtro-u21-check');
-    const chipRuolo = document.querySelectorAll('.chip-ruolo');
-    const tbody = document.getElementById('listoneBody');
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    const noResults = document.getElementById('noResults');
-    const risultatiCount = document.getElementById('risultati-count');
+{% endblock %}
 
-    function ruoliSelezionati() {
-        return Array.from(chipRuolo).filter(c => c.classList.contains('attivo')).map(c => c.dataset.ruolo);
-    }
-
-    function applicaFiltri() {
-        const nome = filtroNome.value.trim().toLowerCase();
-        const contratto = filtroContratto.value;
-        const club = filtroClub.value;
-        const squadraAtt = filtroSquadraAtt.value;
-        const u21Selezionati = Array.from(checkU21).filter(c => c.checked).map(c => c.dataset.u21);
-        const ruoli = ruoliSelezionati();
-        let visibiliCount = 0;
-
-        rows.forEach(function (row) {
-            const matchNome = !nome || row.dataset.nome.includes(nome);
-            const matchContratto = !contratto || row.dataset.contratto === contratto;
-            const matchClub = !club || row.dataset.club === club;
-            const matchSquadraAtt = !squadraAtt || row.dataset.squadra === squadraAtt;
-            const matchU21 = u21Selezionati.length === 0 || u21Selezionati.indexOf(row.dataset.u21) !== -1;
-            const ruoliGiocatore = row.dataset.ruolo.split(',').map(r => r.trim());
-            const matchRuolo = ruoli.length === 0 || ruoliGiocatore.some(r => ruoli.indexOf(r) !== -1);
-
-            const visibile = matchNome && matchContratto && matchClub && matchSquadraAtt && matchU21 && matchRuolo;
-            row.classList.toggle('hidden', !visibile);
-            if (visibile) visibiliCount++;
-        });
-
-        risultatiCount.textContent = visibiliCount;
-        noResults.classList.toggle('hidden', visibiliCount > 0);
-    }
-
-    filtroNome.addEventListener('keyup', applicaFiltri);
-    filtroContratto.addEventListener('change', applicaFiltri);
-    filtroClub.addEventListener('change', applicaFiltri);
-    filtroSquadraAtt.addEventListener('change', applicaFiltri);
-    checkU21.forEach(c => c.addEventListener('change', applicaFiltri));
-    chipRuolo.forEach(function (chip) {
-        chip.addEventListener('click', function () {
-            chip.classList.toggle('attivo');
-            applicaFiltri();
-        });
-    });
-
-    // Ordinamento colonne (click sull'intestazione)
-    const table = document.getElementById('listoneTable');
-    const headers = table.querySelectorAll('thead th');
-    const extractNumber = (value) => {
-        const match = value.replace(',', '.').match(/-?\d+(\.\d+)?/);
-        return match ? parseFloat(match[0]) : NaN;
-    };
-    // Le celle con solo icona/immagine (contratto, squadra) non hanno testo:
-    // usa il data-sortkey dell'eventuale elemento interno come chiave di ordinamento.
-    const cellSortValue = (cell) => {
-        const text = cell.textContent.trim();
-        if (text) return text;
-        const withKey = cell.querySelector('[data-sortkey]');
-        return withKey ? withKey.dataset.sortkey : '';
-    };
-    headers.forEach(function (header, index) {
-        if (header.classList.contains('no-sort')) return;
-        header.addEventListener('click', function () {
-            const isAsc = !this.classList.contains('asc');
-            headers.forEach(h => h.classList.remove('asc', 'desc'));
-            this.classList.add(isAsc ? 'asc' : 'desc');
-
-            const sortedRows = Array.from(tbody.querySelectorAll('tr'));
-            sortedRows.sort(function (a, b) {
-                const aValue = cellSortValue(a.children[index]);
-                const bValue = cellSortValue(b.children[index]);
-                const aNum = extractNumber(aValue);
-                const bNum = extractNumber(bValue);
-                if (!isNaN(aNum) && !isNaN(bNum)) {
-                    return isAsc ? aNum - bNum : bNum - aNum;
-                }
-                return isAsc
-                    ? aValue.localeCompare(bValue, 'it')
-                    : bValue.localeCompare(aValue, 'it');
-            });
-            sortedRows.forEach(row => tbody.appendChild(row));
-        });
-    });
-
-    // Card dettaglio giocatore (click su una riga)
-    const loghiBase = table.dataset.loghiBase;
-    const overlayGiocatore = document.getElementById('overlayGiocatore');
-    const btnChiudiGiocatore = document.getElementById('btnChiudiGiocatore');
-    const modalNome = document.getElementById('modalNome');
-    const modalRuolo = document.getElementById('modalRuolo');
-    const modalClub = document.getElementById('modalClub');
-    const modalSquadra = document.getElementById('modalSquadra');
-    const modalDetentoreRow = document.getElementById('modalDetentoreRow');
-    const modalDetentore = document.getElementById('modalDetentore');
-    const modalContratto = document.getElementById('modalContratto');
-    const modalDataNascita = document.getElementById('modalDataNascita');
-    const modalScadenzaContratto = document.getElementById('modalScadenzaContratto');
-    const modalValoreMercato = document.getElementById('modalValoreMercato');
-    const modalQuotazione = document.getElementById('modalQuotazione');
-    const modalCosto = document.getElementById('modalCosto');
-
-    // Placeholder per i dati non ancora sincronizzati da Transfermarkt: testo
-    // attenuato e corsivo per distinguerli a colpo d'occhio da un valore reale.
-    const impostaCampoTransfermarkt = (elemento, valore) => {
-        const nonSincronizzato = String(valore).startsWith('Non sincronizzat');
-        elemento.textContent = valore;
-        elemento.classList.toggle('text-muted', nonSincronizzato);
-        elemento.classList.toggle('italic', nonSincronizzato);
-        elemento.classList.toggle('font-medium', !nonSincronizzato);
-    };
-
-    const logoUrl = (username) => loghiBase + (username || 'svincolato') + '.png';
-
-    const squadraHtml = (nome, username) =>
-        '<img src="' + logoUrl(username) + '" alt="" class="h-5 w-5 object-contain">' +
-        '<span>' + (nome || 'Svincolato') + '</span>';
-
-    // Il blocco JSON viene letto e convertito una volta sola, al primo clic.
-    let datiListone = null;
-    const datiGiocatore = (indice) => {
-        if (datiListone === null) {
-            datiListone = JSON.parse(document.getElementById('datiGiocatori').textContent);
-        }
-        const valori = datiListone.righe[indice];
-        return Object.fromEntries(datiListone.campi.map((campo, i) => [campo, valori[i]]));
-    };
-
-    const apriCardGiocatore = (info) => {
-        modalNome.textContent = info.nome;
-        modalRuolo.textContent = info.ruolo.split(',').map(r => r.trim()).join(', ');
-        modalClub.textContent = info.club;
-        modalSquadra.innerHTML = squadraHtml(info.squadra_att, info.squadra_username);
-        if (info.detentore && info.detentore !== info.squadra_att) {
-            modalDetentore.innerHTML = squadraHtml(info.detentore, info.detentore_username);
-            modalDetentoreRow.classList.remove('hidden');
-            modalDetentoreRow.classList.add('flex');
-        } else {
-            modalDetentoreRow.classList.add('hidden');
-            modalDetentoreRow.classList.remove('flex');
-        }
-        modalContratto.textContent = info.tipo_contratto || '-';
-        impostaCampoTransfermarkt(modalDataNascita, info.data_nascita);
-        impostaCampoTransfermarkt(modalScadenzaContratto, info.scadenza_contratto_reale);
-        impostaCampoTransfermarkt(modalValoreMercato, info.valore_mercato);
-        modalQuotazione.textContent = info.quotazione;
-        modalCosto.textContent = info.costo;
-
-        overlayGiocatore.classList.remove('hidden');
-        overlayGiocatore.classList.add('flex');
-    };
-
-    const chiudiCardGiocatore = () => {
-        overlayGiocatore.classList.add('hidden');
-        overlayGiocatore.classList.remove('flex');
-    };
-
-    tbody.addEventListener('click', function (e) {
-        const row = e.target.closest('tr');
-        if (!row || row.dataset.idx === undefined) return;
-        apriCardGiocatore(datiGiocatore(row.dataset.idx));
-    });
-
-    btnChiudiGiocatore.addEventListener('click', chiudiCardGiocatore);
-    overlayGiocatore.addEventListener('click', function (e) {
-        if (e.target === overlayGiocatore) chiudiCardGiocatore();
-    });
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') chiudiCardGiocatore();
-    });
-});
-</script>
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/listone.js') }}?v={{ asset_v('js/listone.js') }}"></script>
 {% endblock %}

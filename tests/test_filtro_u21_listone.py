@@ -4,10 +4,14 @@ Filtro U21 nella pagina "listone".
 Il listone mostra tutti i giocatori di prima fascia; il filtro Draft (lato
 client) ha due checkbox indipendenti, "Draft (U21)" e "Non-draft". Sono U21 i
 giocatori nati nell'anno di soglia (general_config.u21_threshold_year) o dopo,
-stessa regola delle aste. Qui verifichiamo che il server marchi correttamente le
-righe con `data-u21` e mostri il filtro solo quando la soglia e' configurata.
+stessa regola delle aste. Qui verifichiamo che il server marchi correttamente
+ogni giocatore e mostri il filtro solo quando la soglia e' configurata.
+
+Lo stato viaggia nel blocco di dati in fondo alla pagina, non piu' in un
+attributo della riga: le righe le disegna il browser (static/js/listone.js).
 """
 
+import json
 import re
 
 import pytest
@@ -29,15 +33,16 @@ def _crea_giocatore(cur, nome, anno_nascita, ruolo="PlaceHolderRole"):
     return cur.fetchone()["id"]
 
 
-def _u21_della_riga(risposta, nome):
-    """Valore dell'attributo data-u21 della riga del giocatore indicato."""
+def _u21_di(risposta, nome):
+    """Stato U21 del giocatore indicato, letto dal blocco dati della pagina."""
     corpo = risposta.get_data(as_text=True)
-    match = re.search(
-        r'data-nome="' + re.escape(nome.lower()) + r'"[^>]*?data-u21="([^"]*)"',
-        corpo,
-    )
-    assert match, f"Riga di {nome} non trovata nel listone"
-    return match.group(1)
+    dati = json.loads(re.search(r'id="datiGiocatori">(.*?)</script>', corpo, re.S).group(1))
+
+    posizione = {campo: i for i, campo in enumerate(dati["campi"])}
+    for riga in dati["righe"]:
+        if riga[posizione["nome"]] == nome:
+            return riga[posizione["u21"]]
+    raise AssertionError(f"{nome} non trovato nel listone")
 
 
 class TestFiltroU21Listone:
@@ -49,8 +54,8 @@ class TestFiltroU21Listone:
 
         risposta = app.test_client().get("/listone")
 
-        assert _u21_della_riga(risposta, "Listone U21 Under") == "si"
-        assert _u21_della_riga(risposta, "Listone U21 Over") == "no"
+        assert _u21_di(risposta, "Listone U21 Under") == "si"
+        assert _u21_di(risposta, "Listone U21 Over") == "no"
 
     def test_soglia_inclusiva(self, app, cur, db_isolato):
         cur.execute("UPDATE general_config SET u21_threshold_year = 2003 WHERE id = 1;")
@@ -59,7 +64,7 @@ class TestFiltroU21Listone:
 
         risposta = app.test_client().get("/listone")
 
-        assert _u21_della_riga(risposta, "Listone U21 Soglia") == "si"
+        assert _u21_di(risposta, "Listone U21 Soglia") == "si"
 
     def test_giocatore_senza_data_nascita_non_e_ne_u21_ne_non_u21(self, app, cur, db_isolato):
         cur.execute("UPDATE general_config SET u21_threshold_year = 2003 WHERE id = 1;")
@@ -68,7 +73,7 @@ class TestFiltroU21Listone:
 
         risposta = app.test_client().get("/listone")
 
-        assert _u21_della_riga(risposta, "Listone U21 SenzaData") == ""
+        assert _u21_di(risposta, "Listone U21 SenzaData") == ""
 
     def test_filtro_mostrato_solo_con_soglia_configurata(self, app, cur, db_isolato):
         cur.execute("UPDATE general_config SET u21_threshold_year = 2003 WHERE id = 1;")

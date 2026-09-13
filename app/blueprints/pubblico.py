@@ -7,11 +7,12 @@ solo il decoratore (da @app.route a @pubblico_bp.route) e i nomi degli endpoint
 nelle url_for, ora prefissati dal blueprint.
 """
 
-from flask import (Blueprint, flash, jsonify, redirect, render_template,
-                   send_file, send_from_directory, url_for)
+from flask import (Blueprint, current_app, flash, jsonify, redirect,
+                   render_template, send_file, send_from_directory, url_for)
 
 from app import telegram_utils
 from app.blueprints.user import format_partecipanti
+from app.core.asset import versione as versione_asset
 from app.core.db import connessione
 
 from app.core.logging import get_logger
@@ -194,11 +195,25 @@ def albo_oro():
     return render_template("albo_oro.html", righe=righe)
 
 
+def _versioni_loghi(username: list[str]) -> dict:
+    """Il `?v=` di ogni logo mostrato dal listone, per nome utente della squadra.
+
+    Le righe del listone le disegna il browser, quindi l'URL dei loghi non passa
+    piu' da `url_for` in un template e la versione dei file deve viaggiare con i
+    dati: senza, un logo cambiato resterebbe quello vecchio nella cache.
+    """
+    statici = current_app.static_folder
+    versioni = {u: versione_asset(statici, f"loghi/{u}.png") for u in username}
+    versioni["svincolato"] = versione_asset(statici, "loghi/svincolato.png")
+    return versioni
+
+
 @pubblico_bp.route("/listone")
 def listone():
     with connessione() as (conn, cur):
         dati = servizio_listone.dati_pagina(cur)
 
+    dati["versioni_loghi"] = _versioni_loghi(dati.pop("username_con_logo"))
     return render_template("listone.html", **dati)
 
 
