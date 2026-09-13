@@ -1,7 +1,6 @@
 import requests
 import os
 import time
-import textwrap
 import queue
 import threading
 from datetime import datetime
@@ -113,6 +112,49 @@ def _elenca_nomi(id_giocatori, nomi):
     return ", ".join(nomi.get(i, f"ID {i} (non trovato)") for i in id_giocatori)
 
 
+def _blocco_lato_scambio(titolo, voci_text, crediti, etichetta_crediti):
+    """Blocco 'Offerta:'/'Richiesta:' di uno scambio, omettendo le voci vuote.
+
+    Non stampa la riga crediti se crediti e' 0/None e non stampa il blocco
+    (titolo compreso) se non c'e' proprio nulla da mostrare su quel lato.
+    """
+    righe = []
+    if voci_text:
+        righe.append(voci_text)
+    if crediti:
+        righe.append(f"{etichetta_crediti} {crediti}")
+    if not righe:
+        return None
+    return f"{titolo}\n" + "\n".join(righe)
+
+
+def _blocco_ricevuto_scambio(voci_text, crediti):
+    """Blocco 'cosa riceve' per l'annuncio ufficiale di scambio concluso."""
+    righe = []
+    if voci_text:
+        righe.append(voci_text)
+    if crediti:
+        righe.append(f"Crediti: {crediti}")
+    if not righe:
+        return None
+    return "\n".join(righe)
+
+
+def _righe_dettagli_prestito(costo_prestito, crediti_riscatto, note):
+    """Righe 'Costo prestito/Riscatto/Note' di un messaggio di prestito.
+
+    Il riscatto compare solo se effettivamente previsto (i prestiti Secco lo
+    forzano a 0, quindi 0 significa 'non applicabile'), le note solo se
+    qualcuno le ha scritte.
+    """
+    righe = [f"Costo prestito: {costo_prestito}"]
+    if crediti_riscatto:
+        righe.append(f"Riscatto: {crediti_riscatto}")
+    if note and note.strip():
+        righe.append(f"📝 Note: {note.strip()}")
+    return righe
+
+
 def formatta_tipo_prestito(tipo_prestito):
     """Converte il tipo di prestito (es. 'diritto_di_riscatto') in una forma leggibile (es. 'DDR')"""
     tipo_map = {'secco': 'Secco', 'diritto_di_riscatto': 'DDR', 'obbligo_di_riscatto': 'ODR'}
@@ -149,11 +191,11 @@ def nuova_asta(conn, id_asta):
         tempo_fine_mostra_interesse = formatta_data(info_asta['tempo_fine_mostra_interesse'])
 
 
-        text_to_send = textwrap.dedent(f'''
-                🏷️ ASTA: {giocatore}
-                La squadra {squadra_vincente} ha iniziato un'asta!
-                📆 Hai tempo per iscriverti fino a: {tempo_fine_mostra_interesse}.
-        ''')
+        text_to_send = "\n".join([
+            f"🏷️ ASTA: {giocatore}",
+            f"La squadra {squadra_vincente} ha iniziato un'asta.",
+            f"Iscrizioni aperte fino a: {tempo_fine_mostra_interesse}",
+        ])
 
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
                      squadre_evento=[squadra_vincente])
@@ -184,10 +226,7 @@ def asta_iniziata(conn, id_asta):
         nome_giocatore = info_asta['nome']
         partecipanti = info_asta['partecipanti']
 
-        text_to_send = textwrap.dedent(f'''
-                🏷️ ASTA: {nome_giocatore}
-                L'asta è iniziata!
-        ''')
+        text_to_send = f"🏷️ ASTA: {nome_giocatore}\nL'asta è iniziata."
 
         for partecipante in partecipanti:
             send_message(nome_squadra=partecipante, text_to_send=text_to_send)
@@ -223,11 +262,11 @@ def asta_rilanciata(conn, id_asta):
         squadra_che_ha_rilanciato = info_asta['squadra_vincente']
         ultima_offerta = info_asta['ultima_offerta']
 
-        text_to_send = textwrap.dedent(f'''
-                🏷️ ASTA: {giocatore}
-                La squadra {squadra_che_ha_rilanciato} ha rilanciato l'offerta!
-                💰 Offerta attuale: {ultima_offerta} crediti.
-        ''')
+        text_to_send = "\n".join([
+            f"🏷️ ASTA: {giocatore}",
+            f"La squadra {squadra_che_ha_rilanciato} ha rilanciato l'offerta.",
+            f"Offerta attuale: {ultima_offerta} crediti",
+        ])
 
         for partecipante in info_asta['partecipanti']:
             send_message(nome_squadra=partecipante, text_to_send=text_to_send)
@@ -262,17 +301,17 @@ def asta_conclusa(conn, id_asta):
         squadra_vincente = info_asta['squadra_vincente']
         ultima_offerta = info_asta['ultima_offerta']
 
-        text_to_send = textwrap.dedent(f'''
-            📢 COMUNICAZIONE UFFICIALE: 
-            La squadra {squadra_vincente} acquista il giocatore {giocatore} per {ultima_offerta} crediti.
-        ''')
+        text_to_send = (
+            f"📢 COMUNICAZIONE UFFICIALE\n"
+            f"La squadra {squadra_vincente} acquista il giocatore {giocatore} per {ultima_offerta} crediti."
+        )
 
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
                      squadre_evento=[squadra_vincente])
 
     except Exception:
         logger.exception("Errore")
-    
+
     finally:
         cur.close()
 
@@ -351,19 +390,20 @@ def nuovo_scambio(conn, id_scambio):
             pick_richiesta_formatted = [f"• {p}" for p in format_pick(pick_richiesta_ids, conn).split(",") if p.strip()]
             richiesta_text += "\n" + "\n".join(pick_richiesta_formatted)
 
-        text_to_send = f'''🟢 NUOVA PROPOSTA DI SCAMBIO
-La squadra {squadra_proponente} ti ha inviato una proposta di scambio
+        sezioni = [
+            "🟢 NUOVA PROPOSTA DI SCAMBIO\n"
+            f"La squadra {squadra_proponente} ti ha inviato una proposta di scambio."
+        ]
+        blocco_offerta = _blocco_lato_scambio("Offerta:", offerta_text, crediti_offerti, "Crediti offerti:")
+        if blocco_offerta:
+            sezioni.append(blocco_offerta)
+        blocco_richiesta = _blocco_lato_scambio("Richiesta:", richiesta_text, crediti_richiesti, "Crediti richiesti:")
+        if blocco_richiesta:
+            sezioni.append(blocco_richiesta)
+        if messaggio and messaggio.strip():
+            sezioni.append(f"📝 Messaggio: {messaggio.strip()}")
 
-Offerta:
-{offerta_text}
-💰 Crediti offerti: {crediti_offerti}
-
-Richiesta:
-{richiesta_text}
-💰 Crediti richiesti: {crediti_richiesti}
-
-✉️ Messaggio: {messaggio}
-'''
+        text_to_send = "\n\n".join(sezioni)
 
         send_message(nome_squadra=squadra_destinataria, text_to_send=text_to_send)
 
@@ -408,7 +448,7 @@ def scambio_risposta(conn, id_scambio, risposta):
         giocatori_richiesti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_richiesti_raw.split(',') if g.strip()]
         crediti_offerti = info_scambio['crediti_offerti'] or 0
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
-        messaggio = info_scambio['messaggio'] or "Nessuna Condizione."
+        messaggio = info_scambio['messaggio']
         pick_offerta_ids = info_scambio['pick_offerta'] or []
         pick_richiesta_ids = info_scambio['pick_richiesta'] or []
         prestito_associato_ids = info_scambio['prestito_associato']
@@ -453,50 +493,48 @@ def scambio_risposta(conn, id_scambio, risposta):
             richiesta_text += "\n" + "\n".join(pick_richiesta_formatted)
 
         if risposta == "Accettato":
-            text_to_send = f'''SCAMBIO ACCETTATO
-La squadra {squadra_destinataria} ha accettato la tua offerta di scambio.
-
-Offerta:
-{offerta_text}
-💰 Crediti offerti: {crediti_offerti}
-
-Richiesta:
-{richiesta_text}
-💰 Crediti richiesti: {crediti_richiesti}
-'''
+            sezioni = [
+                "✅ SCAMBIO ACCETTATO\n"
+                f"La squadra {squadra_destinataria} ha accettato la tua offerta di scambio."
+            ]
+            blocco_offerta = _blocco_lato_scambio("Offerta:", offerta_text, crediti_offerti, "Crediti offerti:")
+            if blocco_offerta:
+                sezioni.append(blocco_offerta)
+            blocco_richiesta = _blocco_lato_scambio("Richiesta:", richiesta_text, crediti_richiesti, "Crediti richiesti:")
+            if blocco_richiesta:
+                sezioni.append(blocco_richiesta)
+            text_to_send = "\n\n".join(sezioni)
             send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
             # invia notifica a tutte le squadre
-            text_to_send = f'''📢 SCAMBIO UFFICIALE: 🔥
-Le squadre {squadra_proponente} e {squadra_destinataria} hanno concluso un scambio:
-
-✅ {squadra_proponente} riceve:
-⚽
-{richiesta_text}
-🪙 {crediti_richiesti} crediti
-
-✅ {squadra_destinataria} riceve:
-⚽
-{offerta_text}
-🪙 {crediti_offerti} crediti
-
-📝 Condizioni/Bonus: {messaggio}
-'''
+            sezioni = [
+                "📢 SCAMBIO UFFICIALE\n"
+                f"Le squadre {squadra_proponente} e {squadra_destinataria} hanno concluso uno scambio."
+            ]
+            blocco_proponente_riceve = _blocco_ricevuto_scambio(richiesta_text, crediti_richiesti)
+            if blocco_proponente_riceve:
+                sezioni.append(f"{squadra_proponente} riceve:\n{blocco_proponente_riceve}")
+            blocco_destinataria_riceve = _blocco_ricevuto_scambio(offerta_text, crediti_offerti)
+            if blocco_destinataria_riceve:
+                sezioni.append(f"{squadra_destinataria} riceve:\n{blocco_destinataria_riceve}")
+            if messaggio and messaggio.strip():
+                sezioni.append(f"📝 Condizioni/Bonus: {messaggio.strip()}")
+            text_to_send = "\n\n".join(sezioni)
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
                          squadre_evento=[squadra_proponente, squadra_destinataria])
 
         else:
-            text_to_send = f'''SCAMBIO RIFIUTATO
-La squadra {squadra_destinataria} ha rifiutato la tua offerta di scambio.
-
-Offerta:
-{offerta_text}
-💰 Crediti offerti: {crediti_offerti}
-
-Richiesta:
-{richiesta_text}
-💰 Crediti richiesti: {crediti_richiesti}
-'''
+            sezioni = [
+                "❌ SCAMBIO RIFIUTATO\n"
+                f"La squadra {squadra_destinataria} ha rifiutato la tua offerta di scambio."
+            ]
+            blocco_offerta = _blocco_lato_scambio("Offerta:", offerta_text, crediti_offerti, "Crediti offerti:")
+            if blocco_offerta:
+                sezioni.append(blocco_offerta)
+            blocco_richiesta = _blocco_lato_scambio("Richiesta:", richiesta_text, crediti_richiesti, "Crediti richiesti:")
+            if blocco_richiesta:
+                sezioni.append(blocco_richiesta)
+            text_to_send = "\n\n".join(sezioni)
             send_message(nome_squadra=squadra_proponente, text_to_send=text_to_send)
 
     except Exception:
@@ -533,16 +571,15 @@ def nuovo_prestito(conn, id_prestito):
         crediti_riscatto = info_prestito.get('crediti_riscatto') or 0
         note = info_prestito.get('note') or ''
 
-        text_to_send = textwrap.dedent(f'''
-                🟢 NUOVA PROPOSTA DI PRESTITO
-                La squadra {squadra_ricevente} ti ha inviato una proposta di prestito:
-                ⚽ Giocatore: {giocatore}
-                📆 Fino a: {data_fine}
-                🧾 Tipo: {tipo_prestito}
-                💸 Costo prestito: {costo_prestito}
-                🪙 Riscatto: {crediti_riscatto}
-                📝 Note: {note}
-        ''')
+        righe = [
+            "🟢 NUOVA PROPOSTA DI PRESTITO",
+            f"La squadra {squadra_ricevente} ti ha inviato una proposta di prestito:",
+            f"👤 Giocatore: {giocatore}",
+            f"📅 Fino a: {data_fine}",
+            f"🧾 Tipo: {tipo_prestito}",
+        ]
+        righe.extend(_righe_dettagli_prestito(costo_prestito, crediti_riscatto, note))
+        text_to_send = "\n".join(righe)
 
         send_message(nome_squadra=squadra_prestante, text_to_send=text_to_send)
 
@@ -582,46 +619,40 @@ def prestito_risposta(conn, id_prestito, risposta):
         tipo_prestito = formatta_tipo_prestito(info_prestito.get('tipo_prestito')) or '-'
         costo_prestito = info_prestito.get('costo_prestito') or 0
         crediti_riscatto = info_prestito.get('crediti_riscatto') or 0
-        note = info_prestito.get('note') or 'Nessuna nota.'
+        note = info_prestito.get('note') or ''
 
         if risposta == "Accettato":
-            text_to_send = textwrap.dedent(f'''\
-                    PRESTITO ACCETTATO
-                    La squadra {squadra_prestante} ha accettato la tua richiesta di prestito:
-                    ⚽ Giocatore: {giocatore}
-                    📆 Fino a: {data_fine}
-                    🧾 Tipo: {tipo_prestito}
-                    💸 Costo prestito: {costo_prestito}
-                    🪙 Riscatto: {crediti_riscatto}
-                    📝 Note: {note}
-            ''')
+            righe = [
+                "✅ PRESTITO ACCETTATO",
+                f"La squadra {squadra_prestante} ha accettato la tua richiesta di prestito:",
+                f"👤 Giocatore: {giocatore}",
+                f"📅 Fino a: {data_fine}",
+                f"🧾 Tipo: {tipo_prestito}",
+            ]
+            righe.extend(_righe_dettagli_prestito(costo_prestito, crediti_riscatto, note))
+            text_to_send = "\n".join(righe)
             send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
 
-
-            text_to_send = textwrap.dedent(f'''
-                    📢 PRESTITO UFFICIALE:
-                                           
-                    👤 {giocatore}
-
-                    🔴 Da: {squadra_prestante}
-                    🟢 A: {squadra_ricevente}
-                    📅 Scadenza: {data_fine}
-                    🧾 Tipo: {tipo_prestito}
-                    💸 Costo prestito: {costo_prestito}
-                    🪙 Riscatto: {crediti_riscatto}
-                    📝 Note: {note}
-            ''')
+            righe = [
+                "📢 PRESTITO UFFICIALE",
+                f"👤 Giocatore: {giocatore}",
+                f"Da: {squadra_prestante}",
+                f"A: {squadra_ricevente}",
+                f"📅 Scadenza: {data_fine}",
+                f"🧾 Tipo: {tipo_prestito}",
+            ]
+            righe.extend(_righe_dettagli_prestito(costo_prestito, crediti_riscatto, note))
+            text_to_send = "\n".join(righe)
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
                          squadre_evento=[squadra_prestante, squadra_ricevente])
-        
 
         else:
-            text_to_send = textwrap.dedent(f'''
-                    PRESTITO RIFIUTATO
-                    La squadra {squadra_prestante} ha rifiutato la tua richiesta di prestito:
-                    ⚽ Giocatore: {giocatore}
-                    📆 Fino a: {data_fine}
-            ''')
+            text_to_send = "\n".join([
+                "❌ PRESTITO RIFIUTATO",
+                f"La squadra {squadra_prestante} ha rifiutato la tua richiesta di prestito:",
+                f"👤 Giocatore: {giocatore}",
+                f"📅 Fino a: {data_fine}",
+            ])
             send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
 
     except Exception:
@@ -654,24 +685,24 @@ def riscatto_giocatore(conn, id_prestito):
         crediti_riscatto = info_prestito.get('crediti_riscatto') or 0
 
         # Notifica al proprietario originale (squadra_prestante)
-        text_to_send = textwrap.dedent(f'''\
-                GIOCATORE RISCATTATO
-                La squadra {squadra_ricevente} ha riscattato il giocatore {giocatore} per {crediti_riscatto} crediti.
-        ''')
+        text_to_send = (
+            f"GIOCATORE RISCATTATO\n"
+            f"La squadra {squadra_ricevente} ha riscattato il giocatore {giocatore} per {crediti_riscatto} crediti."
+        )
         send_message(nome_squadra=squadra_prestante, text_to_send=text_to_send)
 
         # Notifica alla squadra ricevente (che fa il riscatto)
-        text_to_send = textwrap.dedent(f'''\
-                GIOCATORE RISCATTATO CON SUCCESSO
-                Hai riscattato {giocatore} per {crediti_riscatto} crediti.
-        ''')
+        text_to_send = (
+            f"✅ RISCATTO COMPLETATO\n"
+            f"Hai riscattato {giocatore} per {crediti_riscatto} crediti."
+        )
         send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
-        
+
         # Notifica al gruppo comunicazioni
-        text_to_send = textwrap.dedent(f'''\
-                📢 COMUNICAZIONE UFFICIALE:
-                La squadra {squadra_ricevente} ha riscattato {giocatore} dalla squadra {squadra_prestante} per {crediti_riscatto} crediti.
-        ''')
+        text_to_send = (
+            f"📢 COMUNICAZIONE UFFICIALE\n"
+            f"La squadra {squadra_ricevente} ha riscattato {giocatore} dalla squadra {squadra_prestante} per {crediti_riscatto} crediti."
+        )
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
                      squadre_evento=[squadra_prestante, squadra_ricevente])
 
@@ -704,13 +735,13 @@ def richiesta_terminazione_prestito(conn, id_prestito):
         richiedente_terminazione = info_prestito['richiedente_terminazione']
 
        
-        text_to_send = textwrap.dedent(f'''
-                🛑 RICHIESTA DI TERMINAZIONE PRESTITO ANTICIPATA            
-                La squadra {richiedente_terminazione} ha proposto di terminare in anticipo il seguente prestito:
-                ⚽ Giocatore: {giocatore}
-                📆 Fino a: {data_fine}
-        ''')
-        
+        text_to_send = "\n".join([
+            "🛑 RICHIESTA DI TERMINAZIONE PRESTITO ANTICIPATA",
+            f"La squadra {richiedente_terminazione} ha proposto di terminare in anticipo il seguente prestito:",
+            f"👤 Giocatore: {giocatore}",
+            f"📅 Fino a: {data_fine}",
+        ])
+
         if richiedente_terminazione == squadra_prestante:
             send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
         else:
@@ -749,26 +780,25 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
         squadra_ricevente = info_prestito['squadra_ricevente']
         
         if risposta == "Accettato":
-            text_to_send = textwrap.dedent(f'''
-                    RICHIESTA DI TERMINAZIONE PRESTITO ANTICIPATA ACCETTATA
-                    La tua richiesta di terminare in anticipo il prestito del giocatore: {giocatore} è stata accettata.
-            ''')
+            text_to_send = (
+                f"✅ TERMINAZIONE PRESTITO ACCETTATA\n"
+                f"La tua richiesta di terminare in anticipo il prestito del giocatore {giocatore} è stata accettata."
+            )
             send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
-            
-            text_to_send = textwrap.dedent(f'''
-                    📢 COMUNICAZIONE UFFICIALE: 
-                    Le squadre {squadra_prestante} e {squadra_ricevente} si sono accordate per terminare anticipatamente il prestito del giocatore: {giocatore}.
-            ''')
+
+            text_to_send = (
+                f"📢 COMUNICAZIONE UFFICIALE\n"
+                f"Le squadre {squadra_prestante} e {squadra_ricevente} si sono accordate per terminare anticipatamente il prestito del giocatore {giocatore}."
+            )
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
                          squadre_evento=[squadra_prestante, squadra_ricevente])
 
-
         else:
-            text_to_send = textwrap.dedent(f'''
-                    RICHIESTA DI TERMINAZIONE PRESTITO ANTICIPATA RIFIUTATA
-                    La tua richiesta di terminare in anticipo il prestito del giocatore: {giocatore} è stata rifiutata.
-            ''')
-        send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
+            text_to_send = (
+                f"❌ TERMINAZIONE PRESTITO RIFIUTATA\n"
+                f"La tua richiesta di terminare in anticipo il prestito del giocatore {giocatore} è stata rifiutata."
+            )
+            send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
 
     except Exception:
         logger.exception("Errore")
@@ -789,10 +819,10 @@ def taglio_giocatore(conn, nome_squadra, giocatore, costo_taglio):
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        text_to_send = textwrap.dedent(f'''
-                ✂️ COMUNICAZIONE UFFICIALE: 
-                La squadra {nome_squadra} svincola il giocatore {giocatore} pagando {costo_taglio} crediti.
-        ''')
+        text_to_send = (
+            f"✂️ COMUNICAZIONE UFFICIALE\n"
+            f"La squadra {nome_squadra} svincola il giocatore {giocatore} pagando {costo_taglio} crediti."
+        )
 
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
                      squadre_evento=[nome_squadra])
@@ -816,10 +846,10 @@ def promozione_giocatore_primavera(conn, nome_squadra, giocatore):
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        text_to_send = textwrap.dedent(f'''
-                🆙 COMUNICAZIONE UFFICIALE: 
-                La squadra {nome_squadra} promuove in prima squadra il giocatore {giocatore}
-        ''')
+        text_to_send = (
+            f"🆙 COMUNICAZIONE UFFICIALE\n"
+            f"La squadra {nome_squadra} promuove in prima squadra il giocatore {giocatore}."
+        )
 
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
                      squadre_evento=[nome_squadra])
@@ -847,11 +877,13 @@ def richiesta_modifica_contratto(conn, squadra_richiedente, id_giocatore, messag
         giocatore_raw = cur.fetchone()
         giocatore = giocatore_raw['nome']
 
-        text_to_send = textwrap.dedent(f'''
-                📝 Notifica ADMIN
-                La squadra {squadra_richiedente} ha richiesto la modifica del contratto del giocatore {giocatore}.
-                Messaggio allegato: {messaggio}
-        ''')
+        righe = [
+            "📝 Notifica ADMIN",
+            f"La squadra {squadra_richiedente} ha richiesto la modifica del contratto del giocatore {giocatore}.",
+        ]
+        if messaggio and messaggio.strip():
+            righe.append(f"Messaggio allegato: {messaggio.strip()}")
+        text_to_send = "\n".join(righe)
 
         cur.execute('''
                     SELECT id_telegram
@@ -893,50 +925,42 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         giocatore = info_richiesta['nome']
         tipo_contratto = info_richiesta['tipo_contratto']
         squadra_richiedente = info_richiesta['squadra_richiedente']
+        crediti_richiesti = info_richiesta['crediti_richiesti'] or 0
+        # "e recupera N crediti" ha senso solo se e' stato davvero richiesto un recupero.
+        recupero_crediti = f" e recupera {crediti_richiesti} crediti" if crediti_richiesti else ""
 
 
         if risposta == "Accettato":
-            text_to_send = textwrap.dedent(f'''
-                    📝 Modifica del contratto ACCETTATA
-                    L'admin di Lega ha accettato la tua richiesta di modifica del contratto del giocatore: {giocatore}.
-                    Nuovo contratto: {tipo_contratto}.
-            ''')
+            text_to_send = (
+                f"✅ MODIFICA CONTRATTO ACCETTATA\n"
+                f"L'admin di Lega ha accettato la tua richiesta di modifica del contratto del giocatore {giocatore}.\n"
+                f"Nuovo contratto: {tipo_contratto}."
+            )
 
         else:
-            text_to_send = textwrap.dedent(f'''
-                    📝 Modifica del contratto RIFIUTATA
-                    L'admin di Lega ha rifiutato la tua richiesta di modifica del contratto del giocatore: {giocatore}.
-            ''')
+            text_to_send = (
+                f"❌ MODIFICA CONTRATTO RIFIUTATA\n"
+                f"L'admin di Lega ha rifiutato la tua richiesta di modifica del contratto del giocatore {giocatore}."
+            )
 
-        
         send_message(nome_squadra=squadra_richiedente, text_to_send=text_to_send)
-        
+
         # invia notifica a tutte le squadre
         if risposta == "Accettato":
 
             if tipo_contratto == "Svincolato":
-                text_to_send = textwrap.dedent(f'''
-                        📢 COMUNICAZIONE UFFICIALE: 
-                        📝La squadra {squadra_richiedente} svincola {giocatore} a causa del suo trasferimento/svincolo e recupera {info_richiesta['crediti_richiesti']} crediti. 
-                ''')
+                dettaglio = f"La squadra {squadra_richiedente} svincola {giocatore} a causa del suo trasferimento/svincolo{recupero_crediti}."
 
             elif tipo_contratto == "Prestito Reale":
-                text_to_send = textwrap.dedent(f'''
-                        📢 COMUNICAZIONE UFFICIALE:
-                        📝La squadra {squadra_richiedente} libera lo slot di {giocatore} a causa del suo trasferimento in prestito e recupera {info_richiesta['crediti_richiesti']} crediti. 
-                ''')
+                dettaglio = f"La squadra {squadra_richiedente} libera lo slot di {giocatore} a causa del suo trasferimento in prestito{recupero_crediti}."
 
             elif tipo_contratto == "Hold":
-                text_to_send = textwrap.dedent(f'''
-                        📢 COMUNICAZIONE UFFICIALE: 
-                        📝La squadra {squadra_richiedente} esercita il diritto di HOLD sul giocatore {giocatore}. 
-                ''')
+                dettaglio = f"La squadra {squadra_richiedente} esercita il diritto di HOLD sul giocatore {giocatore}."
 
             else:
-                text_to_send = textwrap.dedent(f'''
-                        📢 COMUNICAZIONE UFFICIALE: 
-                        📝La squadra {squadra_richiedente} modifica il contratto di {giocatore} a {tipo_contratto}. 
-                ''')
+                dettaglio = f"La squadra {squadra_richiedente} modifica il contratto di {giocatore} a {tipo_contratto}."
+
+            text_to_send = f"📢 COMUNICAZIONE UFFICIALE\n{dettaglio}"
 
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
                          squadre_evento=[squadra_richiedente])

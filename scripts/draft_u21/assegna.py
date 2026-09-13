@@ -201,15 +201,14 @@ def testo_comunicazione(scelte, anno):
     for s in scelte:
         per_squadra.setdefault(s["squadra"], []).append(s["giocatore"]["nome"])
 
-    righe = [textwrap.dedent(f'''
-        📢 COMUNICAZIONE UFFICIALE:
-        Si è concluso il draft U21 {anno}.''').strip()]
+    righe_squadre = []
     for squadra, giocatori in per_squadra.items():
         elenco = ", ".join(giocatori[:-1]) + " e " + giocatori[-1] \
             if len(giocatori) > 1 else giocatori[0]
-        # "Varela G." finisce già col punto: il punto fermo ne farebbe due
-        righe.append(f"La squadra {squadra} sceglie {elenco}" + ("" if elenco.endswith(".") else "."))
-    return "\n".join(righe)
+        righe_squadre.append(f"• {squadra}: {elenco}")
+
+    intestazione = f"📢 COMUNICAZIONE UFFICIALE\nSi è concluso il draft U21 {anno}."
+    return intestazione + "\n\n" + "\n".join(righe_squadre)
 
 
 def annuncia(scelte, anno):
