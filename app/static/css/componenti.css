@@ -1,0 +1,60 @@
+/*
+ * Stili dei componenti condivisi fra piu' pagine.
+ *
+ * Stanno qui e non fra le utility di Tailwind perche' `tailwind.css` e'
+ * committato gia' compilato e nel progetto non c'e' una build che lo rigeneri:
+ * una utility non presente in quel file non fa nulla, e non fa nulla in
+ * silenzio. Quello che serve e non c'e' si scrive a mano, una volta sola.
+ */
+
+/* --- Paginazione (static/js/paginazione.js) ------------------------------- */
+
+/* Niente bordi: solo la pagina corrente e' piena. Il testo sul pieno usa il
+   colore di sfondo della pagina, leggibile sull'accento in entrambi i temi. */
+.numero-pagina,
+.freccia-pagina {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    border-radius: 0.625rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: color 0.12s ease, background-color 0.12s ease;
+}
+
+.numero-pagina:hover,
+.freccia-pagina:not(:disabled):hover {
+    color: var(--text);
+    background: var(--panel-2);
+}
+
+.numero-pagina.attivo,
+.numero-pagina.attivo:hover {
+    color: var(--bg);
+    background: var(--accent);
+    cursor: default;
+}
+
+.freccia-pagina:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.puntini-pagina {
+    padding: 0 0.125rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+/* --- Utility mancanti da tailwind.css ------------------------------------- */
+
+/* Usata dal listone e dalla dashboard per attenuare i valori non ancora
+   sincronizzati da Transfermarkt, ma assente dal foglio compilato: finora il
+   corsivo non si vedeva da nessuna parte. */
+.italic {
+    font-style: italic;
+}

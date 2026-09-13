@@ -109,3 +109,22 @@ def giocatore_dell_asta(cur, asta_id) -> int | None:
     cur.execute("SELECT giocatore FROM asta WHERE id = %s;", (asta_id,))
     riga = cur.fetchone()
     return riga["giocatore"] if riga else None
+
+
+def impegni_per_squadra(cur) -> dict[str, dict]:
+    """{squadra: {"slot": n, "offerta": n}} per tutte le squadre.
+
+    Gli slot impegnati contano le aste non concluse a cui la squadra partecipa;
+    l'offerta totale somma i crediti gia' vincolati nelle aste in corso in cui
+    e' in testa. Erano due scansioni della stessa tabella: una sola le fa
+    entrambe, percorrendo i partecipanti con UNNEST.
+    """
+    cur.execute(
+        """SELECT s.squadra,
+                  COUNT(*) FILTER (WHERE a.stato <> 'conclusa') AS slot,
+                  COALESCE(SUM(a.ultima_offerta) FILTER (
+                      WHERE a.stato = 'in_corso' AND a.squadra_vincente = s.squadra), 0) AS offerta
+           FROM asta a, UNNEST(a.partecipanti) AS s(squadra)
+           GROUP BY s.squadra;""")
+    return {r["squadra"]: {"slot": r["slot"], "offerta": int(r["offerta"] or 0)}
+            for r in cur.fetchall()}

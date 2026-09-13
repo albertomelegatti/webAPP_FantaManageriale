@@ -16,9 +16,29 @@ import pytest
 pytestmark = pytest.mark.db
 
 
+def riscalda(client, url):
+    """Una richiesta a vuoto prima di misurare.
+
+    La prima richiesta di una sessione paga inizializzazioni che non riguardano
+    la pagina - compilazione del template, stato delle fixture - e falserebbe il
+    conteggio. Misurare a freddo darebbe numeri instabili.
+    """
+    client.get(url)
+
+
 @contextlib.contextmanager
-def conta_query(monkeypatch):
-    """Conta le esecuzioni di query e i prelievi di connessioni dal pool."""
+def conta_query(monkeypatch=None):
+    """Conta le esecuzioni di query e i prelievi di connessioni dal pool.
+
+    Il conteggio si ferma all'uscita dal blocco, non a fine test: con
+    monkeypatch la sostituzione sarebbe rimasta attiva, e un contatore aperto
+    avrebbe continuato a registrare anche le scritture di preparazione fatte
+    dopo. E' un errore facile da non vedere, perche' il test fallisce con
+    numeri plausibili invece che con un'eccezione.
+
+    Il parametro monkeypatch resta accettato per compatibilita' con le chiamate
+    esistenti, ma non viene usato.
+    """
     import psycopg2.extras
 
     from app.core import db
@@ -35,9 +55,13 @@ def conta_query(monkeypatch):
         conteggi["checkout"] += 1
         return preleva_originale()
 
-    monkeypatch.setattr(psycopg2.extras.RealDictCursor, "execute", esegui)
-    monkeypatch.setattr(db, "get_connection", preleva)
-    yield conteggi
+    psycopg2.extras.RealDictCursor.execute = esegui
+    db.get_connection = preleva
+    try:
+        yield conteggi
+    finally:
+        psycopg2.extras.RealDictCursor.execute = esegui_originale
+        db.get_connection = preleva_originale
 
 
 def _crea_scambi(cur, proponente, destinataria, quanti):
@@ -189,3 +213,69 @@ class TestDashboardSquadra:
 
         assert dopo["query"] == iniziali, \
             f"20 giocatori in piu' hanno aggiunto {dopo['query'] - iniziali} query"
+
+
+class TestPagineAlleggerite:
+    """Tetti espliciti sulle due pagine piu' pesanti.
+
+    Su questo database il tempo di una pagina e' quasi interamente il numero di
+    viaggi di rete: una query in piu' sono cinquanta millisecondi in piu'.
+    """
+
+    def test_nuovo_scambio_non_supera_cinque_query(
+        self, app, monkeypatch, gate_aperto, nome_squadra
+    ):
+        """Erano otto: quattro aggregazioni piu' una lettura a parte per la
+        squadra loggata, che le aggregazioni contenevano gia'."""
+        client = app.test_client()
+        with client.session_transaction() as s:
+            s.update(logged_in=True, is_admin=False, nome_squadra=nome_squadra, username="test")
+
+        url = f"/mercato/nuovo_scambio/{nome_squadra}"
+        riscalda(client, url)
+        with conta_query(monkeypatch) as conteggi:
+            risposta = client.get(url)
+
+        assert risposta.status_code == 200
+        assert conteggi["query"] <= 5, f"{conteggi['query']} query per nuovo scambio"
+
+    def test_le_query_di_nuovo_scambio_non_crescono_col_numero_di_squadre(
+        self, app, cur, db_isolato, monkeypatch, gate_aperto, nome_squadra
+    ):
+        """I conteggi arrivano da aggregazioni su tutte le squadre insieme: il
+        costo non deve dipendere da quante sono.
+
+        Prima della modifica la pagina faceva comunque un numero fisso di query,
+        quindi questo test non distingue le due versioni: serve a impedire che
+        qualcuno reintroduca un conteggio dentro il ciclo sulle squadre, che e'
+        la forma in cui il problema tornerebbe.
+        """
+        client = app.test_client()
+        with client.session_transaction() as s:
+            s.update(logged_in=True, is_admin=False, nome_squadra=nome_squadra, username="test")
+
+        url = f"/mercato/nuovo_scambio/{nome_squadra}"
+        riscalda(client, url)
+        with conta_query(monkeypatch) as base:
+            client.get(url)
+
+        for n in range(6):
+            cur.execute(
+                """INSERT INTO squadra (nome, crediti, username, hash_password)
+                   VALUES (%s, 100, %s, 'x');""",
+                (f"Squadra Prova {n}", f"prova{n}"))
+        db_isolato.commit()
+
+        with conta_query(monkeypatch) as dopo:
+            risposta = client.get(url)
+
+        assert risposta.status_code == 200
+        assert dopo["query"] == base["query"], (
+            f"sei squadre in piu' hanno aggiunto {dopo['query'] - base['query']} query")
+
+    def test_il_listone_resta_a_due_query(self, app, monkeypatch, client):
+        riscalda(client, "/listone")
+        with conta_query(monkeypatch) as conteggi:
+            risposta = client.get("/listone")
+        assert risposta.status_code == 200
+        assert conteggi["query"] <= 2, f"{conteggi['query']} query per il listone"

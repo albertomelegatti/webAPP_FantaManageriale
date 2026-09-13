@@ -8,40 +8,16 @@ effetto collaterale di un import.
 """
 
 import os
-import time
 
 from dotenv import load_dotenv
 from flask import Flask, flash, redirect, render_template, request, url_for
 from flask_compress import Compress
 
+from app.core.asset import versione as versione_asset
 from app.core.errori import ErroreDominio
 from app.core.logging import configura_logging, get_logger
 
 logger = get_logger(__name__)
-
-_ASSET_V_TTL = 5  # secondi: evita uno stat() del file a ogni singola riga/richiesta
-_asset_v_cache = {}
-
-
-def _asset_v(static_folder, rel_path):
-    """Timestamp di modifica di un file statico, da usare come ?v= per invalidare la cache del browser quando il file cambia.
-
-    Il risultato viene tenuto in cache per qualche secondo: senza, una pagina con
-    molte righe (es. la Rosa con 25-30 giocatori) farebbe uno stat() del
-    filesystem per ogni riga a ogni caricamento.
-    """
-    now = time.monotonic()
-    cached = _asset_v_cache.get(rel_path)
-    if cached and now - cached[1] < _ASSET_V_TTL:
-        return cached[0]
-
-    try:
-        value = int(os.path.getmtime(os.path.join(static_folder, rel_path)))
-    except OSError:
-        value = 0
-
-    _asset_v_cache[rel_path] = (value, now)
-    return value
 
 
 def _registra_blueprint(app):
@@ -97,7 +73,7 @@ def create_app():
     app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 60 * 60 * 24 * 1  # 1 giorno di cache su immagini statiche
     Compress(app)
 
-    app.jinja_env.globals['asset_v'] = lambda rel_path: _asset_v(app.static_folder, rel_path)
+    app.jinja_env.globals['asset_v'] = lambda rel_path: versione_asset(app.static_folder, rel_path)
 
     # Inizializza il dizionario telegram al lancio dell'app
     app.config['SQUADRE_TELEGRAM_IDS'] = get_all_telegram_ids()

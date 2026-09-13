@@ -124,6 +124,27 @@ def assegna_in_prestito(cur, id_giocatore, squadra_ricevente: str) -> None:
            WHERE id = %s;""", (squadra_ricevente, id_giocatore))
 
 
+def listone(cur) -> list[dict]:
+    """Le righe del listone per la pagina: prima fascia, dal piu' quotato.
+
+    Differisce da per_export_listone() perche' la pagina mostra anche gli
+    username delle squadre, che servono a comporre i loghi: l'export, che e' un
+    foglio di calcolo, non ne ha bisogno. Filtro e ordinamento sono gli stessi,
+    cosi' export e pagina restano allineati.
+    """
+    cur.execute(
+        """SELECT g.nome, g.ruolo, g.club, g.squadra_att, g.tipo_contratto,
+                  g.quot_att_mantra, g.costo, g.detentore_cartellino,
+                  s.username AS squadra_username, d.username AS detentore_username,
+                  g.data_nascita, g.scadenza_contratto, g.valore_mercato
+           FROM giocatore g
+           LEFT JOIN squadra s ON s.nome = g.squadra_att AND g.squadra_att <> 'Svincolato'
+           LEFT JOIN squadra d ON d.nome = g.detentore_cartellino AND g.detentore_cartellino <> 'Svincolato'
+           WHERE g.priorita = 1
+           ORDER BY g.quot_att_mantra DESC;""")
+    return cur.fetchall()
+
+
 def per_export_listone(cur) -> list[dict]:
     """Le righe del listone da esportare in Excel, valori grezzi.
 
@@ -164,3 +185,19 @@ def collegati_alla_squadra(cur, nome_squadra: str) -> list[dict]:
            WHERE g.squadra_att = %s OR g.detentore_cartellino = %s;""",
         (nome_squadra, nome_squadra))
     return cur.fetchall()
+
+
+def slot_per_squadra(cur) -> dict[str, dict]:
+    """{squadra: {"giocatori": n, "prestiti": n}} per tutte le squadre.
+
+    I due conteggi erano due scansioni della stessa tabella raggruppate sulla
+    stessa colonna, con soli filtri di contratto diversi: un'aggregazione
+    condizionale li fa insieme, in un viaggio di rete invece di due.
+    """
+    cur.execute(
+        """SELECT squadra_att,
+                  COUNT(*) FILTER (WHERE tipo_contratto IN ('Hold', 'Indeterminato')) AS giocatori,
+                  COUNT(*) FILTER (WHERE tipo_contratto = 'Fanta-Prestito') AS prestiti
+           FROM giocatore GROUP BY squadra_att;""")
+    return {r["squadra_att"]: {"giocatori": r["giocatori"], "prestiti": r["prestiti"]}
+            for r in cur.fetchall()}
