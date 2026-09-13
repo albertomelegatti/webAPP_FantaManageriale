@@ -4,9 +4,112 @@
 CONTRATTI_CHE_OCCUPANO_SLOT = ('Hold', 'Indeterminato')
 
 
+def scambiabili(cur) -> list[dict]:
+    """Giocatori proponibili in uno scambio: assegnati a una squadra, non in
+    prestito ne' in hold."""
+    cur.execute(
+        """SELECT id, nome, squadra_att, tipo_contratto, ruolo, club
+           FROM giocatore
+           WHERE squadra_att IS NOT NULL
+             AND squadra_att != 'Svincolati'
+             AND tipo_contratto NOT IN ('Fanta-Prestito', 'Hold')
+           ORDER BY squadra_att, nome;""")
+    return cur.fetchall()
+
+
+def trasferisci_cartellino(cur, id_giocatore: int, nuova_squadra: str) -> None:
+    """Un giocatore scambiato: cartellino e squadra attuale vanno entrambi
+    alla squadra che lo riceve. Valido solo per giocatori non in prestito ne'
+    in hold, che non possono essere proposti in uno scambio."""
+    cur.execute(
+        "UPDATE giocatore SET detentore_cartellino = %s, squadra_att = %s WHERE id = %s;",
+        (nuova_squadra, nuova_squadra, id_giocatore))
+
+
+def svincola(cur, id_giocatore: int, nuovo_contratto: str) -> None:
+    """Contratto 'Svincolato': squadra attuale e detentore cartellino tornano
+    entrambi a 'Svincolato'."""
+    cur.execute(
+        """UPDATE giocatore SET tipo_contratto = %s, squadra_att = 'Svincolato',
+               detentore_cartellino = 'Svincolato' WHERE id = %s;""",
+        (nuovo_contratto, id_giocatore))
+
+
+def manda_in_prestito_reale(cur, id_giocatore: int, nuovo_contratto: str) -> None:
+    """Contratto 'Prestito Reale': solo la squadra attuale torna a 'Svincolato',
+    il detentore del cartellino resta invariato."""
+    cur.execute(
+        "UPDATE giocatore SET tipo_contratto = %s, squadra_att = 'Svincolato' WHERE id = %s;",
+        (nuovo_contratto, id_giocatore))
+
+
+def assegna_a_squadra(cur, id_giocatore: int, nuovo_contratto: str, squadra_att: str) -> None:
+    """Contratto 'Indeterminato': la squadra attuale torna al detentore del
+    cartellino, che ha fatto la richiesta."""
+    cur.execute(
+        "UPDATE giocatore SET tipo_contratto = %s, squadra_att = %s WHERE id = %s;",
+        (nuovo_contratto, squadra_att, id_giocatore))
+
+
+def cambia_tipo_contratto(cur, id_giocatore: int, nuovo_contratto: str) -> None:
+    """Ogni altro tipo di contratto: cambia solo l'etichetta, nessun altro campo."""
+    cur.execute("UPDATE giocatore SET tipo_contratto = %s WHERE id = %s;", (nuovo_contratto, id_giocatore))
+
+
 def nome(cur, id_giocatore: int) -> str:
     cur.execute("SELECT nome FROM giocatore WHERE id = %s;", (id_giocatore,))
     return cur.fetchone()["nome"]
+
+
+def tipo_contratto(cur, id_giocatore: int) -> str:
+    cur.execute("SELECT tipo_contratto FROM giocatore WHERE id = %s;", (id_giocatore,))
+    return cur.fetchone()["tipo_contratto"]
+
+
+def dettaglio(cur, id_giocatore: int) -> dict | None:
+    cur.execute(
+        "SELECT nome, tipo_contratto, ruolo, club FROM giocatore WHERE id = %s;",
+        (id_giocatore,))
+    return cur.fetchone()
+
+
+def id_e_nome_con_cartellino(cur, nome_squadra: str) -> list[dict]:
+    """Id e nome dei giocatori il cui cartellino appartiene alla squadra, per
+    validare le righe inviate dalla pagina vetrina."""
+    cur.execute("SELECT id, nome FROM giocatore WHERE detentore_cartellino = %s;", (nome_squadra,))
+    return cur.fetchall()
+
+
+def con_stato_vetrina(cur, nome_squadra: str) -> list[dict]:
+    """Giocatori il cui cartellino appartiene alla squadra, con lo stato
+    vetrina se presente. A differenza di con_cartellino() qui la Primavera non
+    e' esclusa: la pagina vetrina la mostra insieme al resto della rosa."""
+    cur.execute(
+        """SELECT g.id, g.nome, g.ruolo, g.club, g.quot_att_mantra, g.tipo_contratto,
+                  v.stato AS stato_vetrina, v.note AS note
+           FROM giocatore g
+           LEFT JOIN vetrina v ON v.id_giocatore = g.id
+           WHERE g.detentore_cartellino = %s
+           ORDER BY g.nome;""",
+        (nome_squadra,))
+    return cur.fetchall()
+
+
+def trasferisci_dopo_riscatto(cur, id_giocatore: int, nome_squadra: str) -> None:
+    """Il giocatore riscattato diventa di proprieta' della squadra che paga:
+    squadra attuale e detentore del cartellino coincidono."""
+    cur.execute(
+        """UPDATE giocatore SET squadra_att = %s, detentore_cartellino = %s,
+               tipo_contratto = 'Indeterminato' WHERE id = %s;""",
+        (nome_squadra, nome_squadra, id_giocatore))
+
+
+def trasferisci_da_prestito(cur, id_giocatore: int, nome_squadra: str) -> None:
+    """Fine di un prestito: il giocatore torna alla squadra prestante, che ne
+    era gia' il detentore del cartellino."""
+    cur.execute(
+        "UPDATE giocatore SET squadra_att = %s, tipo_contratto = 'Indeterminato' WHERE id = %s;",
+        (nome_squadra, id_giocatore))
 
 
 def quotazione(cur, id_giocatore: int) -> int:
@@ -30,6 +133,24 @@ def slot_prestiti_in(cur, nome_squadra: str) -> int:
         (nome_squadra,),
     )
     return cur.fetchone()["n"]
+
+
+def crea_placeholder(cur, nome: str, club: str) -> int:
+    """Crea un giocatore segnaposto, non ancora sincronizzato con Transfermarkt.
+
+    Ruolo, quotazione e contratto sono valori fittizi in attesa
+    dell'aggiornamento: e' il percorso usato quando si vuole mettere in asta
+    un giocatore non ancora presente nel database.
+    """
+    cur.execute(
+        """INSERT INTO giocatore (
+               nome, ruolo, tipo_contratto, squadra_att, detentore_cartellino,
+               quot_att_mantra, costo, priorita, club
+           )
+           VALUES (%s, ARRAY['PlaceHolderRole']::ruolo_mantra[], 'Svincolato', 'Svincolato', 'Svincolato', 666, 0, 1, %s)
+           RETURNING id;""",
+        (nome, club))
+    return cur.fetchone()["id"]
 
 
 def nomi_per_id(cur, id_giocatori) -> dict[int, str]:
@@ -185,6 +306,34 @@ def collegati_alla_squadra(cur, nome_squadra: str) -> list[dict]:
            WHERE g.squadra_att = %s OR g.detentore_cartellino = %s;""",
         (nome_squadra, nome_squadra))
     return cur.fetchall()
+
+
+def occupazione_slot(cur) -> list[dict]:
+    """Slot occupati (Hold/Indeterminato) e slot in prestito, per squadra.
+
+    Include solo le squadre con almeno un giocatore Hold/Indeterminato: e' lo
+    stesso filtro che il template applica per decidere se mostrare la cella, e
+    va preservato esattamente. Diversa da slot_per_squadra() qui sotto, che
+    include tutte le squadre e serve al servizio mercato: unificarle
+    cambierebbe quali squadre compaiono nella pagina crediti/stadi/slot.
+    """
+    cur.execute("""SELECT squadra_att, COUNT(id) AS slot_occupati
+                   FROM giocatore
+                   WHERE tipo_contratto IN ('Hold', 'Indeterminato')
+                   GROUP BY squadra_att;""")
+    slot_raw = cur.fetchall()
+
+    cur.execute("""SELECT squadra_att, COUNT(id) AS slot_in_prestito
+                   FROM giocatore
+                   WHERE tipo_contratto = 'Fanta-Prestito'
+                   GROUP BY squadra_att;""")
+    prestiti = {r["squadra_att"]: r["slot_in_prestito"] for r in cur.fetchall()}
+
+    return [
+        {"squadra_att": r["squadra_att"], "slot_occupati": r["slot_occupati"],
+         "slot_in_prestito": prestiti.get(r["squadra_att"], 0)}
+        for r in slot_raw
+    ]
 
 
 def slot_per_squadra(cur) -> dict[str, dict]:

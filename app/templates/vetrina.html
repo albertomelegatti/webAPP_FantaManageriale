@@ -14,8 +14,8 @@
             <label class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Squadra</label>
             <select id="filtro-squadra" class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
                 <option value="">Tutte</option>
-                {% for squadra in squadre %}
-                <option value="{{ squadra.nome }}">{{ squadra.nome }}</option>
+                {% for nome_squadra in squadre %}
+                <option value="{{ nome_squadra }}">{{ nome_squadra }}</option>
                 {% endfor %}
             </select>
         </div>

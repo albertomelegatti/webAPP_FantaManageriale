@@ -5,11 +5,16 @@ from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione
 from app.domini.matching_transfermarkt import candidati_fuzzy
+from app.domini.movimenti import squadre_citate
 
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data
 from app.domini.ruoli import pulisci_ruolo
 from app.repositories import configurazione as configurazione_repo
+from app.repositories import giocatori as giocatori_repo
+from app.repositories import richieste as richieste_repo
+from app.repositories import squadre as squadre_repo
+from app.repositories import transfermarkt as transfermarkt_repo
 from app.repositories import vetrina as vetrina_repo
 
 logger = get_logger(__name__)
@@ -35,11 +40,7 @@ def admin_crediti():
                 if nome and nuovo_credito:
                     try:
                         nuovo_credito = int(nuovo_credito)
-                        cur.execute('''
-                                    UPDATE squadra
-                                    SET crediti = %s
-                                    WHERE nome = %s;
-                        ''', (nuovo_credito, nome))
+                        squadre_repo.imposta_crediti(cur, nome, nuovo_credito)
                     except ValueError:
                         logger.warning("Valore crediti non valido per la squadra %s", nome)
                 i += 1
@@ -48,13 +49,7 @@ def admin_crediti():
             return redirect(url_for("admin.admin_crediti"))
 
 
-        cur.execute('''
-                    SELECT nome, crediti
-                    FROM squadra
-                    WHERE nome <> 'Svincolato'
-                    ORDER BY nome ASC;''')
-        squadre_raw = cur.fetchall()
-        squadre = [{"nome": s["nome"], "crediti": s["crediti"]} for s in squadre_raw]
+        squadre = squadre_repo.nomi_e_crediti(cur)
 
     return render_template("admin_crediti.html", squadre=squadre)
 
@@ -87,13 +82,7 @@ def admin_chiusura_mercato_aste():
                 flash("❌ Anno soglia U21 non valido.", "danger")
                 return redirect(url_for("admin.admin_chiusura_mercato_aste"))
 
-            cur.execute('''
-                        UPDATE general_config
-                        SET mercato_chiusura = %s,
-                            aste_chiusura = %s,
-                            u21_threshold_year = %s
-                        WHERE id = 1;
-            ''', (mercato_chiusura, aste_chiusura, u21_threshold_year))
+            configurazione_repo.aggiorna_chiusure(cur, mercato_chiusura, aste_chiusura, u21_threshold_year)
             conn.commit()
             flash("✅ Impostazioni di chiusura aggiornate con successo.", "success")
             return redirect(url_for("admin.admin_chiusura_mercato_aste"))
@@ -114,7 +103,13 @@ def invia_comunicazione():
             if not text_to_send:
                 flash("❌ Il messaggio non può essere vuoto.", "warning")
                 return redirect(url_for("admin.invia_comunicazione"))
-            telegram_utils.send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+            # Testo libero digitato dall'admin: nessuna squadra strutturata a
+            # monte, quindi si cercano i nomi citati - la stessa euristica per
+            # sottostringa che prima leggeva il legame movimento-squadra a ogni
+            # lettura, applicata qui una volta sola in scrittura.
+            squadre_citate_nel_messaggio = squadre_citate(text_to_send, squadre_repo.nomi(cur))
+            telegram_utils.send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
+                                        squadre_evento=squadre_citate_nel_messaggio)
         
             flash(f"✅ Messaggi inviati a {len(squadre)} squadre.", "success")
 
@@ -133,11 +128,7 @@ def richiesta_modifica_contratto():
                 id_richiesta = request.form.get("id_richiesta")
 
                 # Aggiornamento stato richiesta
-                cur.execute('''
-                            UPDATE richiesta_modifica_contratto
-                            SET stato = 'rifiutata'
-                            WHERE id = %s;
-                ''', (id_richiesta,))
+                richieste_repo.rifiuta(cur, id_richiesta)
                 conn.commit()
                 flash("✅ Richiesta di modifica contratto rifiutata con successo.", "success")
                 telegram_utils.richiesta_modifica_contratto_risposta(conn, id_richiesta, "Rifiutato")
@@ -148,19 +139,10 @@ def richiesta_modifica_contratto():
                 id_richiesta = request.form.get("id_richiesta")
 
                 # Aggiornamento stato richiesta
-                cur.execute('''
-                            UPDATE richiesta_modifica_contratto
-                            SET stato = 'accettata'
-                            WHERE id = %s;
-                ''', (id_richiesta,))
+                richieste_repo.accetta(cur, id_richiesta)
 
                 # Recupero informazioni sulla richiesta
-                cur.execute('''
-                            SELECT giocatore, contratto_richiesto, crediti_richiesti, squadra_richiedente
-                            FROM richiesta_modifica_contratto
-                            WHERE id = %s;
-                ''', (id_richiesta,))
-                row = cur.fetchone()
+                row = richieste_repo.dettaglio(cur, id_richiesta)
                 id_giocatore = row['giocatore']
                 nuovo_contratto = row['contratto_richiesto']
                 crediti_richiesti = row['crediti_richiesti']
@@ -168,51 +150,24 @@ def richiesta_modifica_contratto():
 
                 # Logica per aggiornare squadra_attuale e detentore_cartellino
                 if nuovo_contratto == 'Svincolato':
-                    # Se il contratto è "Svincolato",
-                    # squadra attuale e detentore cartellino vanno a "Svincolato"
-                    cur.execute('''
-                                UPDATE giocatore
-                                SET tipo_contratto = %s,
-                                    squadra_att = %s,
-                                    detentore_cartellino = %s
-                                WHERE id = %s;
-                    ''', (nuovo_contratto, 'Svincolato', 'Svincolato', id_giocatore))
+                    # Squadra attuale e detentore cartellino vanno a "Svincolato"
+                    giocatori_repo.svincola(cur, id_giocatore, nuovo_contratto)
                     vetrina_repo.decadi(cur, id_giocatore)
                 elif nuovo_contratto == 'Prestito Reale':
-                    # Se il contratto è "Prestito Reale",
-                    # squadra attuale va a "Svincolato"
-                    cur.execute('''
-                                UPDATE giocatore
-                                SET tipo_contratto = %s,
-                                    squadra_att = %s
-                                WHERE id = %s;
-                    ''', (nuovo_contratto, 'Svincolato', id_giocatore))
+                    # Solo la squadra attuale va a "Svincolato"
+                    giocatori_repo.manda_in_prestito_reale(cur, id_giocatore, nuovo_contratto)
                     vetrina_repo.decadi(cur, id_giocatore)
                 elif nuovo_contratto == 'Indeterminato':
-                    # Se il contratto è "Indeterminato", 
-                    # squadra attuale va a tonra a  detentore cartellino
-                    cur.execute('''
-                                UPDATE giocatore
-                                SET tipo_contratto = %s,
-                                    squadra_att = %s
-                                WHERE id = %s;
-                    ''', (nuovo_contratto, squadra_richiedente, id_giocatore))
+                    # La squadra attuale torna al detentore cartellino
+                    giocatori_repo.assegna_a_squadra(cur, id_giocatore, nuovo_contratto, squadra_richiedente)
                 else:
                     # Per altri tipi di contratto, aggiorna solo il tipo di contratto
-                    cur.execute('''
-                                UPDATE giocatore
-                                SET tipo_contratto = %s
-                                WHERE id = %s;
-                    ''', (nuovo_contratto, id_giocatore))
+                    giocatori_repo.cambia_tipo_contratto(cur, id_giocatore, nuovo_contratto)
                 # "Indeterminato" e "Hold" non fanno decadere la vetrina: il giocatore
                 # resta alla squadra richiedente, non è un vero movimento di mercato.
 
                 # Aggiornamento crediti squadra: la modifica contratto assegna i crediti richiesti
-                cur.execute('''
-                            UPDATE squadra
-                            SET crediti = crediti + %s
-                            WHERE nome = %s;
-                ''', (crediti_richiesti, squadra_richiedente))
+                squadre_repo.aggiungi_crediti(cur, squadra_richiedente, crediti_richiesti)
 
 
                 conn.commit()
@@ -221,17 +176,8 @@ def richiesta_modifica_contratto():
                 return redirect(url_for("admin.richiesta_modifica_contratto"))
 
 
-        cur.execute('''
-                    SELECT r.id, g.nome, g.tipo_contratto, g.ruolo, g.club, r.giocatore, r.contratto_richiesto, r.squadra_richiedente, r.crediti_richiesti, r.messaggio, r.data, r.stato
-                    FROM richiesta_modifica_contratto AS r
-                    JOIN giocatore AS g
-                    ON r.giocatore = g.id
-                    ORDER BY data DESC;
-        ''')
-        richieste_raw = cur.fetchall()
         richieste = []
-
-        for r in richieste_raw:
+        for r in richieste_repo.elenco(cur):
             richieste.append({
                 "id": r["id"],
                 "nome_giocatore": r["nome"],
@@ -263,21 +209,10 @@ def admin_verifica_corrispondenze():
                 flash("❌ Dati inviati non validi, ricarica la pagina e riprova.", "danger")
                 return redirect(url_for("admin.admin_verifica_corrispondenze"))
 
-            cur.execute("SELECT DISTINCT id_giocatore FROM transfermarkt_giocatori WHERE id_giocatore IS NOT NULL;")
-            id_giocatori_in_coda = {r["id_giocatore"] for r in cur.fetchall()}
+            id_giocatori_in_coda = transfermarkt_repo.id_giocatori_in_coda(cur)
 
             def rimuovi_dalla_coda(id_giocatore):
-                # La riga sintetica "non trovato" (id_transfermarkt NULL) non serve più
-                # a nulla una volta risolto il caso; le righe di candidati reali restano
-                # come cache, tornano solo a non essere più marcate per questo giocatore.
-                cur.execute(
-                    "DELETE FROM transfermarkt_giocatori WHERE id_giocatore = %s AND id_transfermarkt IS NULL;",
-                    (id_giocatore,),
-                )
-                cur.execute(
-                    "UPDATE transfermarkt_giocatori SET id_giocatore = NULL WHERE id_giocatore = %s;",
-                    (id_giocatore,),
-                )
+                transfermarkt_repo.rimuovi_dalla_coda(cur, id_giocatore)
 
             n_selezioni_non_valide = 0
 
@@ -305,33 +240,10 @@ def admin_verifica_corrispondenze():
                     # nella cache solo ora che l'admin lo conferma.
                     id_tm_fuzzy_raw = valore_scelto.split(":", 1)[1]
                     if id_tm_fuzzy_raw.isdigit():
-                        cur.execute(
-                            '''
-                            SELECT id_transfermarkt, data_nascita, scadenza_contratto, valore_mercato
-                            FROM transfermarkt_giocatori
-                            WHERE id_transfermarkt = %s;
-                            ''',
-                            (id_tm_fuzzy_raw,),
-                        )
-                        row = cur.fetchone()
-                        if row:
-                            candidato = {
-                                "id_transfermarkt": row["id_transfermarkt"],
-                                "data_nascita": row["data_nascita"],
-                                "scadenza_contratto": row["scadenza_contratto"],
-                                "valore_mercato": row["valore_mercato"],
-                            }
+                        candidato = transfermarkt_repo.candidato_per_id_transfermarkt(cur, id_tm_fuzzy_raw)
 
                 elif valore_scelto.isdigit():
-                    cur.execute(
-                        '''
-                        SELECT id_transfermarkt, data_nascita, scadenza_contratto, valore_mercato
-                        FROM transfermarkt_giocatori
-                        WHERE id_giocatore = %s AND id_transfermarkt = %s;
-                        ''',
-                        (id_giocatore, valore_scelto),
-                    )
-                    candidato = cur.fetchone()
+                    candidato = transfermarkt_repo.candidato_per_giocatore(cur, id_giocatore, valore_scelto)
 
                 if not candidato:
                     # La selezione non è (più) valida, es. la cache è stata rigenerata da
@@ -340,18 +252,7 @@ def admin_verifica_corrispondenze():
                     n_selezioni_non_valide += 1
                     continue
 
-                cur.execute(
-                    '''
-                    UPDATE giocatore
-                    SET id_transfermarkt = %s,
-                        data_nascita = %s,
-                        scadenza_contratto = %s,
-                        valore_mercato = %s
-                    WHERE id = %s;
-                    ''',
-                    (candidato["id_transfermarkt"], candidato["data_nascita"],
-                     candidato["scadenza_contratto"], candidato["valore_mercato"], id_giocatore),
-                )
+                transfermarkt_repo.conferma_abbinamento(cur, id_giocatore, candidato)
                 rimuovi_dalla_coda(id_giocatore)
 
             conn.commit()
@@ -364,24 +265,7 @@ def admin_verifica_corrispondenze():
             flash("✅ Corrispondenze aggiornate con successo.", "success")
             return redirect(url_for("admin.admin_verifica_corrispondenze"))
 
-        cur.execute('''
-                    SELECT
-                        c.id_giocatore,
-                        g.nome,
-                        g.club,
-                        g.ruolo,
-                        c.id_transfermarkt,
-                        c.nome AS nome_tm,
-                        c.cognome AS cognome_tm,
-                        c.club_tm,
-                        c.data_nascita,
-                        c.scadenza_contratto
-                    FROM transfermarkt_giocatori c
-                    JOIN giocatore g ON g.id = c.id_giocatore
-                    WHERE c.id_giocatore IS NOT NULL
-                    ORDER BY g.nome, c.cognome;
-        ''')
-        righe = cur.fetchall()
+        righe = transfermarkt_repo.da_rivedere(cur)
 
         per_giocatore = {}
         for r in righe:
@@ -407,22 +291,13 @@ def admin_verifica_corrispondenze():
         # compaiono solo in questa pagina finché l'admin non ne conferma uno.
         non_trovati = [g for g in per_giocatore.values() if not g["candidati"]]
         if non_trovati:
-            cur.execute("SELECT club, nome_transfermarkt FROM transfermarkt_mappa_club;")
-            mappa_club = {r["club"]: r["nome_transfermarkt"] for r in cur.fetchall()}
+            mappa_club = transfermarkt_repo.mappa_club(cur)
 
             for g in non_trovati:
                 club_tm = mappa_club.get(g["club"])
                 if not club_tm:
                     continue
-                cur.execute(
-                    '''
-                    SELECT id_transfermarkt, nome, cognome, data_nascita, scadenza_contratto
-                    FROM transfermarkt_giocatori
-                    WHERE club_tm = %s;
-                    ''',
-                    (club_tm,),
-                )
-                rosa_tm = cur.fetchall()
+                rosa_tm = transfermarkt_repo.rosa_per_club_tm(cur, club_tm)
                 for c in candidati_fuzzy(g["nome"], rosa_tm):
                     g["suggerimenti"].append({
                         "id_transfermarkt": c["id_transfermarkt"],

@@ -26,8 +26,7 @@ def redirect_gate_chiuso():
 def squadra_login(nome_squadra):
 
     with connessione() as (conn, cur):
-        cur.execute("SELECT username FROM squadra WHERE nome = %s;", (nome_squadra,))
-        username = cur.fetchone()["username"]
+        username = squadre_repo.username(cur, nome_squadra)
 
         slot_giocatori = giocatori_repo.slot_occupati_da_giocatori(cur, nome_squadra)
         slot_aste = aste_repo.slot_impegnati(cur, nome_squadra)

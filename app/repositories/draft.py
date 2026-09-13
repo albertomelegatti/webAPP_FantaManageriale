@@ -26,6 +26,20 @@ def descrizioni_per_id(cur, pick_ids) -> dict[int, str]:
     return {r["id"]: f"{_anno(r['anno'])} - Giro: {r['giro']}°" for r in cur.fetchall()}
 
 
+def disponibili(cur) -> list[dict]:
+    """Le pick non ancora usate per scegliere un giocatore, per la pagina di
+    nuovo scambio."""
+    cur.execute(
+        """SELECT id, anno, giro, numero, detentore_att, detentore_originale
+           FROM draft WHERE id_giocatore_scelto IS NULL
+           ORDER BY anno, giro, numero;""")
+    return cur.fetchall()
+
+
+def trasferisci(cur, id_pick, nuovo_detentore: str) -> None:
+    cur.execute("UPDATE draft SET detentore_att = %s WHERE id = %s;", (nuovo_detentore, id_pick))
+
+
 def esistono_tutte(cur, pick_ids) -> bool:
     """Verifica che ogni id corrisponda a una pick reale, prima di accettarla
     in una proposta di scambio."""

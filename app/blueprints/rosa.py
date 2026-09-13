@@ -1,3 +1,4 @@
+import json
 import math
 import pytz
 from app import telegram_utils
@@ -11,6 +12,7 @@ from app.domini.ruoli import pulisci_ruolo, ruolo_sort_key
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data
 from app.repositories import aste as aste_repo
+from app.repositories import prestiti as prestiti_repo
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import richieste as richieste_repo
 from app.services import rosa as servizio_rosa
@@ -32,11 +34,7 @@ def user_primavera(nome_squadra):
             # Promuovi un giocatore in prima squadra
             id_giocatore_da_promuovere = request.form.get("id_giocatore_da_promuovere")
             if id_giocatore_da_promuovere:
-                cur.execute('''
-                            UPDATE giocatore
-                            SET tipo_contratto = 'Indeterminato'
-                            WHERE id = %s;
-                ''', (id_giocatore_da_promuovere,))
+                giocatori_repo.cambia_tipo_contratto(cur, id_giocatore_da_promuovere, 'Indeterminato')
                 conn.commit()
 
                 nome_giocatore = giocatori_repo.nome(cur, id_giocatore_da_promuovere)
@@ -46,13 +44,7 @@ def user_primavera(nome_squadra):
             # Taglia un giocatore dalla primavera
             id_giocatore_da_tagliare = request.form.get("id_giocatore_da_tagliare")
             if id_giocatore_da_tagliare:
-                cur.execute('''
-                            UPDATE giocatore
-                            SET squadra_att = 'Svincolato',
-                                detentore_cartellino = 'Svincolato',
-                                tipo_contratto = 'Svincolato'
-                            WHERE id = %s;
-                ''', (id_giocatore_da_tagliare,))
+                giocatori_repo.svincola(cur, id_giocatore_da_tagliare, 'Svincolato')
                 vetrina_repo.decadi(cur, id_giocatore_da_tagliare)
 
                 nome_giocatore = giocatori_repo.nome(cur, id_giocatore_da_tagliare)
@@ -67,8 +59,6 @@ def user_primavera(nome_squadra):
 
     return render_template("user_primavera.html", nome_squadra=nome_squadra, primavera=primavera)
 
-
-import json
 
 @rosa_bp.route("/user_vetrina/<nome_squadra>", methods=["GET", "POST"])
 def user_vetrina(nome_squadra):
@@ -86,8 +76,8 @@ def user_vetrina(nome_squadra):
                 return redirect(url_for("rosa.user_vetrina", nome_squadra=nome_squadra))
 
             # Recupero i giocatori validi per questa squadra (id -> nome)
-            cur.execute('SELECT id, nome FROM giocatore WHERE detentore_cartellino = %s;', (nome_squadra,))
-            giocatori_validi = {str(r['id']): r['nome'] for r in cur.fetchall()}
+            giocatori_validi = {str(r['id']): r['nome']
+                                for r in giocatori_repo.id_e_nome_con_cartellino(cur, nome_squadra)}
 
             # Validazione: nota inserita senza uno stato selezionato,
             # e scarto qualunque id non appartenente a questa squadra
@@ -121,45 +111,17 @@ def user_vetrina(nome_squadra):
                 if stato_vetrina == "rimuovi":
                     stato_vetrina = ""
 
-                cur.execute(
-                    '''
-                    SELECT 1
-                    FROM vetrina
-                    WHERE id_giocatore = %s;
-                    ''',
-                    (id_giocatore,)
-                )
-                vetrina_esiste = cur.fetchone() is not None
+                vetrina_esiste = vetrina_repo.esiste(cur, id_giocatore)
 
                 if not stato_vetrina:
                     if vetrina_esiste:
-                        cur.execute(
-                            '''
-                            DELETE FROM vetrina
-                            WHERE id_giocatore = %s;
-                            ''',
-                            (id_giocatore,)
-                        )
+                        vetrina_repo.rimuovi(cur, id_giocatore)
                     continue
 
                 if vetrina_esiste:
-                    cur.execute(
-                        '''
-                        UPDATE vetrina
-                        SET stato = %s,
-                            note = %s
-                        WHERE id_giocatore = %s;
-                        ''',
-                        (stato_vetrina, nota_pulita or None, id_giocatore)
-                    )
+                    vetrina_repo.aggiorna(cur, id_giocatore, stato_vetrina, nota_pulita or None)
                 else:
-                    cur.execute(
-                        '''
-                        INSERT INTO vetrina (id_giocatore, stato, note, data_inserimento)
-                        VALUES (%s, %s, %s, NOW() AT TIME ZONE 'Europe/Rome');
-                        ''',
-                        (id_giocatore, stato_vetrina, nota_pulita or None)
-                    )
+                    vetrina_repo.crea(cur, id_giocatore, stato_vetrina, nota_pulita or None)
 
             conn.commit()
             flash("✅ Vetrina aggiornata con successo.", "success")
@@ -168,25 +130,7 @@ def user_vetrina(nome_squadra):
 
         # Sezione GET
 
-        cur.execute('''
-                    SELECT
-                        g.id,
-                        g.nome,
-                        g.ruolo,
-                        g.club,
-                        g.quot_att_mantra,
-                        g.tipo_contratto,
-                        v.stato AS stato_vetrina,
-                        v.note AS note
-                    FROM giocatore g
-                    LEFT JOIN vetrina v
-                        ON v.id_giocatore = g.id
-                    WHERE g.detentore_cartellino = %s
-                    ORDER BY g.nome;
-        ''', (nome_squadra,))
-        rosa_raw = cur.fetchall()
-
-        for giocatore in rosa_raw:
+        for giocatore in giocatori_repo.con_stato_vetrina(cur, nome_squadra):
             ruolo = pulisci_ruolo(giocatore['ruolo'])
             rosa.append({
                 "id": giocatore["id"],
@@ -228,21 +172,11 @@ def user_tagli(nome_squadra):
                     return redirect(url_for("rosa.user_tagli", nome_squadra=nome_squadra))
 
                 # Aggiorna il giocatore a svincolato
-                cur.execute('''
-                            UPDATE giocatore
-                            SET squadra_att = 'Svincolato',
-                                detentore_cartellino = 'Svincolato',
-                                tipo_contratto = 'Svincolato'
-                            WHERE id = %s;
-                ''', (id_giocatore_da_tagliare,))
+                giocatori_repo.svincola(cur, id_giocatore_da_tagliare, 'Svincolato')
                 vetrina_repo.decadi(cur, id_giocatore_da_tagliare)
 
                 # Aggiorna i crediti della squadra
-                cur.execute('''
-                            UPDATE squadra
-                            SET crediti = crediti - %s
-                            WHERE nome = %s;
-                ''', (costo_taglio, nome_squadra))
+                squadre_repo.aggiungi_crediti(cur, nome_squadra, -costo_taglio)
 
             
                 nome_giocatore = giocatori_repo.nome(cur, id_giocatore_da_tagliare)
@@ -283,8 +217,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
                 else:
                     crediti_richiesti = int(request.form.get("crediti_richiesti") or 0)
 
-                cur.execute("SELECT tipo_contratto FROM giocatore WHERE id = %s", (id_giocatore,))
-                tipo_contratto_attuale = cur.fetchone()['tipo_contratto']
+                tipo_contratto_attuale = giocatori_repo.tipo_contratto(cur, id_giocatore)
 
                 def inserisci_richiesta(cursore):
                     richieste_repo.crea(cursore, id_giocatore, nuovo_tipo_contratto,
@@ -308,12 +241,7 @@ def richiesta_modifica_contratto(nome_squadra, id_giocatore):
                     return redirect(url_for("rosa.user_primavera", nome_squadra=nome_squadra))
                 return redirect(url_for("rosa.user_tagli", nome_squadra=nome_squadra))
 
-            cur.execute('''
-                        SELECT nome, tipo_contratto, ruolo, club
-                        FROM giocatore
-                        WHERE id = %s;
-            ''', (id_giocatore,))
-            giocatore_raw = cur.fetchone()
+            giocatore_raw = giocatori_repo.dettaglio(cur, id_giocatore)
 
             if not giocatore_raw:
                 flash(f"❌ Giocatore con id {id_giocatore} non trovato.", "danger")
@@ -369,26 +297,8 @@ def user_gestione_prestiti(nome_squadra):
 
 
         # Ottengo i dati sui giocatori in prestito IN
-        cur.execute('''
-                    SELECT 
-                        p.id AS id_prestito,
-                        g.id AS id_giocatore,
-                        p.note,
-                        p.costo_prestito,
-                        p.tipo_prestito,
-                        p.crediti_riscatto,
-                        *
-                    FROM prestito p
-                    JOIN giocatore g
-                    ON p.giocatore = g.id
-                    WHERE p.squadra_ricevente = %s
-                        AND p.stato IN ('in_corso', 'richiesta_di_terminazione');
-        ''', (nome_squadra,))
-        prestiti_in_raw = cur.fetchall()
-    
         prestiti_in = []
-
-        for p in prestiti_in_raw:
+        for p in prestiti_repo.in_corso_verso(cur, nome_squadra):
             prestiti_in.append({
                 "id_prestito": p['id_prestito'],
                 "giocatori": p['nome'],
@@ -409,26 +319,8 @@ def user_gestione_prestiti(nome_squadra):
 
 
         # Ottengo i dati sui giocatori in prestito OUT
-        cur.execute('''
-                    SELECT 
-                        p.id AS id_prestito,
-                        g.id AS id_giocatore,
-                        p.note,
-                        p.costo_prestito,
-                        p.tipo_prestito,
-                        p.crediti_riscatto,
-                        *
-                    FROM prestito p
-                    JOIN giocatore g
-                    ON p.giocatore = g.id
-                    WHERE p.squadra_prestante = %s
-                        AND stato IN ('in_corso', 'richiesta_di_terminazione');
-        ''', (nome_squadra,))
-        prestiti_out_raw = cur.fetchall()
-
         prestiti_out = []
-
-        for p in prestiti_out_raw:
+        for p in prestiti_repo.in_corso_da(cur, nome_squadra):
             prestiti_out.append({
                 "id_prestito": p['id_prestito'],
                 "giocatori": p['nome'],
@@ -462,12 +354,7 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Recupero informazioni sul prestito
-        cur.execute('''
-                    SELECT *
-                    FROM prestito
-                    WHERE id = %s;
-        ''', (id_prestito,))
-        prestito = cur.fetchone()
+        prestito = prestiti_repo.per_id(cur, id_prestito)
 
         if not prestito:
             flash("❌ Prestito non trovato.", "danger")
@@ -484,18 +371,12 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
             return
 
         # Controlla i crediti della squadra
-        cur.execute('''
-                    SELECT crediti
-                    FROM squadra
-                    WHERE nome = %s;
-        ''', (nome_squadra,))
-        squadra_row = cur.fetchone()
+        crediti_squadra = squadre_repo.crediti_se_esiste(cur, nome_squadra)
 
-        if not squadra_row:
+        if crediti_squadra is None:
             flash("❌ Squadra non trovata.", "danger")
             return
 
-        crediti_squadra = squadra_row['crediti']
         costo_riscatto = prestito['crediti_riscatto']
 
         if crediti_squadra < costo_riscatto:
@@ -508,22 +389,10 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
         squadre_repo.sposta_crediti(cur, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['crediti_riscatto'])
         
         # 2. Aggiornare il prestito come "riscattato"
-        cur.execute('''
-                    UPDATE prestito
-                    SET stato = 'terminato',
-                        data_fine = (NOW() AT TIME ZONE 'Europe/Rome'),
-                        richiedente_terminazione = NULL
-                    WHERE id = %s;
-        ''', (id_prestito,))
+        prestiti_repo.termina(cur, id_prestito)
 
         # 3. Aggiornare il giocatore: squadra_att e detentore_cartellino diventano la squadra attuale
-        cur.execute('''
-                    UPDATE giocatore
-                    SET squadra_att = %s,
-                        detentore_cartellino = %s,
-                        tipo_contratto = 'Indeterminato'
-                    WHERE id = %s;
-        ''', (nome_squadra, nome_squadra, prestito['giocatore']))
+        giocatori_repo.trasferisci_dopo_riscatto(cur, prestito['giocatore'], nome_squadra)
         vetrina_repo.decadi(cur, prestito['giocatore'])
 
         conn.commit()
@@ -545,24 +414,14 @@ def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Prima controllo che l'altra squadra non abbia già effettuato una richiesta di terminazione
-        cur.execute('''
-                    SELECT stato
-                    FROM prestito
-                    WHERE id = %s;
-        ''', (id_prestito,))
-        stato_prestito = cur.fetchone()
+        stato_prestito = prestiti_repo.stato(cur, id_prestito)
 
-        if stato_prestito and stato_prestito['stato'] == 'richiesta_di_terminazione':
+        if stato_prestito == 'richiesta_di_terminazione':
             flash("❌ L'altra squadra ha già richiesto una terminazione anticipata per questo giocatore. Aggiornare la pagina", "danger")
             return              # Il finally viene eseguito comunque
 
         # Se lo stato è 'in_corso' allora cambialo in 'richiesta_di_terminazione'
-        cur.execute('''
-                    UPDATE prestito
-                    SET stato = 'richiesta_di_terminazione',
-                        richiedente_terminazione = %s
-                    WHERE id = %s;
-        ''', (nome_squadra, id_prestito))
+        prestiti_repo.richiedi_terminazione(cur, id_prestito, nome_squadra)
         conn.commit()
         flash("✅ Richiesta di terminazione anticipata inviata con successo.", "success")
         telegram_utils.richiesta_terminazione_prestito(conn, id_prestito)
@@ -585,12 +444,7 @@ def accetta_terminazione(conn, id_prestito):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Controllo che il prestito non sia terminato mentre la pagina era aperta
-        cur.execute('''
-                    SELECT data_fine
-                    FROM prestito
-                    WHERE id = %s;
-        ''', (id_prestito,))
-        row = cur.fetchone()
+        row = prestiti_repo.data_fine(cur, id_prestito)
 
         if row is None:
             flash("❌ Prestito non trovato.", "danger")
@@ -605,29 +459,13 @@ def accetta_terminazione(conn, id_prestito):
             return
 
         # Modifico lo stato del prestito e imposto la data di fine prestito
-        cur.execute('''
-                    UPDATE prestito
-                    SET stato = 'terminato',
-                        richiedente_terminazione = NULL,
-                        data_fine = (NOW() AT TIME ZONE 'Europe/Rome')
-                    WHERE id = %s;
-        ''', (id_prestito,))
+        prestiti_repo.termina(cur, id_prestito)
 
         # Prima di modificare le imformazioni sul giocatore coinvolto, recupero le info sulle squadre coinvolte nel prestito
-        cur.execute('''
-                    SELECT giocatore, squadra_prestante
-                    FROM prestito
-                    WHERE id = %s; 
-        ''', (id_prestito,))
-        row = cur.fetchone()
-        
+        row = prestiti_repo.giocatore_e_prestante(cur, id_prestito)
+
         # Modifico le info sul giocatore
-        cur.execute('''
-                    UPDATE giocatore
-                    SET squadra_att = %s,
-                        tipo_contratto = 'Indeterminato'
-                    WHERE id = %s;
-        ''', (row['squadra_prestante'], row['giocatore']))
+        giocatori_repo.trasferisci_da_prestito(cur, row['giocatore'], row['squadra_prestante'])
         vetrina_repo.decadi(cur, row['giocatore'])
 
         conn.commit()
@@ -651,12 +489,7 @@ def rifiuta_terminazione(conn, id_prestito):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Controllo che il prestito non sia terminato mentre la pagina era aperta
-        cur.execute('''
-                    SELECT data_fine
-                    FROM prestito
-                    WHERE id = %s;
-        ''', (id_prestito,))
-        row = cur.fetchone()
+        row = prestiti_repo.data_fine(cur, id_prestito)
 
         if row is None:
             flash("❌ Prestito non trovato.", "danger")
@@ -669,15 +502,9 @@ def rifiuta_terminazione(conn, id_prestito):
         if data_fine and data_fine < now:
             flash("Il prestito è già terminato.", "warning")
             return
-        
 
         # Rimetto il prestito nel suo stato 'in_corso'
-        cur.execute('''
-                    UPDATE prestito
-                    SET stato = 'in_corso',
-                        richiedente_terminazione = NULL
-                    WHERE id = %s;
-        ''', (id_prestito,))
+        prestiti_repo.annulla_richiesta_terminazione(cur, id_prestito)
         conn.commit()
 
         flash("✅ Richiesta di terminazione anticipata rifiutata con successo.", "success")
@@ -690,6 +517,3 @@ def rifiuta_terminazione(conn, id_prestito):
 
     finally:
         cur.close()
-
-
-#Funzione che verifica se esiste già una richiesta in fase di elaborazione per un giocatore

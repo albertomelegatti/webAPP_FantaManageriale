@@ -170,38 +170,9 @@ def nuova_asta(nome_squadra):
                     flash("❌ Un giocatore con questo nome esiste già.", "danger")
                     return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
             
-                # Crea il nuovo giocatore nel database
-                # - Ruolo: PlaceHolderRole (sarà aggiornato successivamente)
-                # - Quotazione: 666 (default)
-                # - Tipo contratto: Svincolato
-                sql_giocatore = '''
-                    INSERT INTO giocatore (
-                        nome, ruolo, tipo_contratto, squadra_att, detentore_cartellino,
-                        quot_att_mantra, costo, priorita, club
-                    )
-                    VALUES (%s, ARRAY['PlaceHolderRole']::ruolo_mantra[], 'Svincolato', 'Svincolato', 'Svincolato', 666, 0, 1, %s)
-                    RETURNING id;
-                '''
-                giocatore_params = (nome_nuovo, club_nuovo or "N/A")
-
-                # Crea automaticamente l'asta per il giocatore appena creato
-                # - Stato: mostra_interesse
-                # - Durata: 1 giorno
-                # - Partecipante iniziale: squadra corrente
-                sql_asta = '''
-                    INSERT INTO asta (
-                        giocatore, squadra_vincente, ultima_offerta,
-                        tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti, gia_elaborata
-                    )
-                    VALUES (%s, %s, NULL, NULL, (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day', 'mostra_interesse', %s, FALSE)
-                    RETURNING id;
-                '''
-
                 try:
-                    cur.execute(sql_giocatore, giocatore_params)
-                    nuovo_giocatore_id = cur.fetchone()["id"]
-                    cur.execute(sql_asta, (nuovo_giocatore_id, nome_squadra, [nome_squadra]))
-                    asta_id = cur.fetchone()["id"]
+                    nuovo_giocatore_id = giocatori_repo.crea_placeholder(cur, nome_nuovo, club_nuovo or "N/A")
+                    asta_id = aste_repo.crea_mostra_interesse(cur, nuovo_giocatore_id, nome_squadra)
                 except psycopg2.errors.UniqueViolation:
                     # La sequence di giocatore o asta è rimasta indietro rispetto ai dati
                     # (es. import/restore manuale sul DB). Il rollback annulla anche
@@ -212,10 +183,8 @@ def nuova_asta(nome_squadra):
                     resync_sequence(conn, 'giocatore')
                     resync_sequence(conn, 'asta')
                     cur = conn.cursor(cursor_factory=RealDictCursor)
-                    cur.execute(sql_giocatore, giocatore_params)
-                    nuovo_giocatore_id = cur.fetchone()["id"]
-                    cur.execute(sql_asta, (nuovo_giocatore_id, nome_squadra, [nome_squadra]))
-                    asta_id = cur.fetchone()["id"]
+                    nuovo_giocatore_id = giocatori_repo.crea_placeholder(cur, nome_nuovo, club_nuovo or "N/A")
+                    asta_id = aste_repo.crea_mostra_interesse(cur, nuovo_giocatore_id, nome_squadra)
 
                 conn.commit()
                 flash(f"✅ Giocatore {nome_nuovo} creato e asta avviata con successo!", "success")
@@ -239,17 +208,8 @@ def nuova_asta(nome_squadra):
                         return redirect(url_for("aste.nuova_asta", nome_squadra=nome_squadra))
 
                     # Inserisci l'asta
-                    sql_asta = '''
-                        INSERT INTO asta (
-                            giocatore, squadra_vincente, ultima_offerta,
-                            tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti, gia_elaborata
-                        )
-                        VALUES (%s, %s, NULL, NULL, (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day', 'mostra_interesse', %s, FALSE)
-                        RETURNING id;
-                    '''
-                    asta_params = (giocatore_id, nome_squadra, [nome_squadra])
                     try:
-                        cur.execute(sql_asta, asta_params)
+                        asta_id = aste_repo.crea_mostra_interesse(cur, giocatore_id, nome_squadra)
                     except psycopg2.errors.UniqueViolation:
                         # La sequence di asta è rimasta indietro rispetto ai dati
                         # (es. import/restore manuale sul DB). Riallineiamo e riproviamo,
@@ -257,8 +217,7 @@ def nuova_asta(nome_squadra):
                         conn.rollback()
                         resync_sequence(conn, 'asta')
                         cur = conn.cursor(cursor_factory=RealDictCursor)
-                        cur.execute(sql_asta, asta_params)
-                    asta_id = cur.fetchone()["id"]
+                        asta_id = aste_repo.crea_mostra_interesse(cur, giocatore_id, nome_squadra)
                     conn.commit()
 
                     flash(f"✅ Asta per {giocatore_scelto} creata con successo!", "success")

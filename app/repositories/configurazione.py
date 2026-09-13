@@ -15,6 +15,14 @@ def leggi(cur) -> dict | None:
     return cur.fetchone()
 
 
+def aggiorna_chiusure(cur, mercato_chiusura, aste_chiusura, u21_threshold_year) -> None:
+    cur.execute(
+        """UPDATE general_config
+           SET mercato_chiusura = %s, aste_chiusura = %s, u21_threshold_year = %s
+           WHERE id = 1;""",
+        (mercato_chiusura, aste_chiusura, u21_threshold_year))
+
+
 def _aperto(chiusura) -> bool:
     """Nessuna data impostata significa sempre aperto. Altrimenti la sezione
     chiude a partire dalla mezzanotte del giorno indicato."""

@@ -12,6 +12,8 @@ from app.domini.ruoli import pulisci_ruolo
 from app.repositories import aste as aste_repo
 from app.repositories import configurazione as configurazione_repo
 from app.repositories import draft as draft_repo
+from app.repositories import prestiti as prestiti_repo
+from app.repositories import scambi as scambi_repo
 from app.schemas.scambio import PropostaScambio
 from app.services import mercato as servizio_mercato
 from app.repositories import giocatori as giocatori_repo
@@ -144,13 +146,7 @@ def nuovo_scambio(nome_squadra):
             # Sezione GET
 
             # Recupera tutte le squadre (tranne "Svincolato")
-            cur.execute('''
-                SELECT nome, crediti 
-                FROM squadra 
-                WHERE nome <> 'Svincolato'
-                ORDER BY nome;
-            ''')
-            squadre_raw = cur.fetchall()
+            squadre_raw = squadre_repo.nomi_e_crediti(cur)
 
             squadre = []
             crediti_effettivi = 0
@@ -193,15 +189,7 @@ def nuovo_scambio(nome_squadra):
             slot_prestiti_miei = int(slot_prestiti_map.get(nome_squadra, 0))
 
             # Recupera tutti i giocatori validi (non svincolati, non prestiti, non hold)
-            cur.execute('''
-                    SELECT id, nome, squadra_att, tipo_contratto, ruolo, club
-                    FROM giocatore
-                    WHERE squadra_att IS NOT NULL
-                        AND squadra_att != 'Svincolati'
-                        AND tipo_contratto NOT IN ('Fanta-Prestito', 'Hold')
-                    ORDER BY squadra_att, nome;
-            ''')
-            giocatori_raw = cur.fetchall()
+            giocatori_raw = giocatori_repo.scambiabili(cur)
 
             giocatori = [
                 {
@@ -217,13 +205,7 @@ def nuovo_scambio(nome_squadra):
             miei_giocatori = [g for g in giocatori if g["squadra_att"] == nome_squadra]
 
             # Recupera tutte le pick dal draft
-            cur.execute('''
-                SELECT id, anno, giro, numero, detentore_att, detentore_originale
-                    FROM draft
-                WHERE id_giocatore_scelto IS NULL
-                    ORDER BY anno, giro, numero;
-            ''')
-            pick_raw = cur.fetchall()
+            pick_raw = draft_repo.disponibili(cur)
 
             def normalize_team_name(value):
                 return (value or "").strip().casefold()
@@ -288,12 +270,7 @@ def controlla_scambio(id, conn):
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         # Recupero dati dello scambio
-        cur.execute('''
-                    SELECT *
-                    FROM scambio
-                    WHERE id = %s
-                    FOR UPDATE;''', (id,))
-        scambio = cur.fetchone()
+        scambio = scambi_repo.per_id_bloccando(cur, id)
 
         if scambio['stato'] != 'in_attesa':
             return False
@@ -309,25 +286,11 @@ def controlla_scambio(id, conn):
         pick_richiesta = scambio["pick_richiesta"] or []
 
         # Controllo che le squadre abbiano abbastanza crediti per effettuare lo scambio
-        cur.execute('''
-                    SELECT crediti 
-                    FROM squadra 
-                    WHERE nome = %s FOR UPDATE;
-        ''', (squadra_proponente,))
-
-        crediti_prop = cur.fetchone()["crediti"]
-        
+        crediti_prop = squadre_repo.crediti_bloccando(cur, squadra_proponente)
         offerta_tot_prop = aste_repo.offerta_totale(cur, squadra_proponente)
         crediti_disp_prop = crediti_prop - offerta_tot_prop
-        
 
-        cur.execute('''
-                    SELECT crediti 
-                    FROM squadra 
-                    WHERE nome = %s FOR UPDATE;
-        ''', (squadra_destinataria,))
-        crediti_dest = cur.fetchone()["crediti"]
-        
+        crediti_dest = squadre_repo.crediti_bloccando(cur, squadra_destinataria)
         offerta_tot_dest = aste_repo.offerta_totale(cur, squadra_destinataria)
         crediti_disp_dest = crediti_dest - offerta_tot_dest
 
@@ -374,14 +337,7 @@ def effettua_scambio(id, conn, nome_squadra):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         # Recupero dati dello scambio
-        cur.execute('''
-                    SELECT *
-                    FROM scambio
-                    WHERE id = %s
-                        AND stato = 'in_attesa'
-                    FOR UPDATE;''', (id,))
-        
-        scambio = cur.fetchone()
+        scambio = scambi_repo.in_attesa_bloccando(cur, id)
 
         if not scambio:
             raise ValueError(f"Nessuno scambio valido trovato con id: {id}")
@@ -405,124 +361,50 @@ def effettua_scambio(id, conn, nome_squadra):
         # Eseguo il trasferimento dei giocatori
         # Posso modificare sia squadra_att che detentore cartellino perchè non possono essere proposti scambi per giocatori in prestito o in hold.
         for giocatore_id in giocatori_offerti:
-            cur.execute('''
-                        UPDATE giocatore
-                        SET detentore_cartellino = %s,
-                            squadra_att = %s
-                        WHERE id = %s;
-            ''', (squadra_destinataria, squadra_destinataria, giocatore_id))
-
+            giocatori_repo.trasferisci_cartellino(cur, giocatore_id, squadra_destinataria)
             # Annullo gli altri scambi in cui il giocatore è coinvolto
-            cur.execute('''
-                        UPDATE scambio
-                        SET stato = 'annullato'
-                        WHERE (%s = ANY(giocatori_offerti) OR %s = ANY(giocatori_richiesti))
-                            AND stato = 'in_attesa'
-                            AND id <> %s;
-            ''', (giocatore_id, giocatore_id, id))
-            
+            scambi_repo.annulla_concorrenti_per_giocatore(cur, giocatore_id, id)
+
         for giocatore_id in giocatori_richiesti:
-            cur.execute('''
-                        UPDATE giocatore
-                        SET detentore_cartellino = %s,
-                            squadra_att = %s
-                        WHERE id = %s;
-            ''', (squadra_proponente, squadra_proponente, giocatore_id))
-
+            giocatori_repo.trasferisci_cartellino(cur, giocatore_id, squadra_proponente)
             # Annullo gli altri scambi in cui il giocatore è coinvolto
-            cur.execute('''
-                        UPDATE scambio
-                        SET stato = 'annullato'
-                        WHERE (%s = ANY(giocatori_offerti) OR %s = ANY(giocatori_richiesti))
-                            AND stato = 'in_attesa'
-                            AND id <> %s;
-            ''', (giocatore_id, giocatore_id, id))
+            scambi_repo.annulla_concorrenti_per_giocatore(cur, giocatore_id, id)
 
         # I giocatori scambiati decadono dalla vetrina, se presenti
         vetrina_repo.decadi(cur, giocatori_offerti + giocatori_richiesti)
 
         # Eseguo il trasferimento delle pick del draft
         for pick_id in pick_offerta:
-            cur.execute('''
-                        UPDATE draft
-                        SET detentore_att = %s
-                        WHERE id = %s;
-            ''', (squadra_destinataria, pick_id))
+            draft_repo.trasferisci(cur, pick_id, squadra_destinataria)
 
         for pick_id in pick_richiesta:
-            cur.execute('''
-                        UPDATE draft
-                        SET detentore_att = %s
-                        WHERE id = %s;
-            ''', (squadra_proponente, pick_id))
-        
+            draft_repo.trasferisci(cur, pick_id, squadra_proponente)
+
         # Aggiorno i crediti delle due squadre
-        cur.execute('''
-                    UPDATE squadra
-                    SET crediti = crediti - %s + %s
-                    WHERE nome = %s;
-        ''', (crediti_offerti, crediti_richiesti, squadra_proponente))
-        
-        cur.execute('''
-                    UPDATE squadra
-                    SET crediti = crediti - %s + %s
-                    WHERE nome = %s;
-        ''', (crediti_richiesti, crediti_offerti, squadra_destinataria))
-        
-        
+        squadre_repo.scambia_crediti(cur, squadra_proponente, crediti_offerti, crediti_richiesti)
+        squadre_repo.scambia_crediti(cur, squadra_destinataria, crediti_richiesti, crediti_offerti)
+
         # Aggiorno lo stato dello scambio
-        cur.execute('''
-                    UPDATE scambio
-                    SET stato = 'accettato',
-                    data_risposta = NOW() AT TIME ZONE 'Europe/Rome'
-                    WHERE id = %s;
-        ''', (id,))
-        
+        scambi_repo.accetta(cur, id)
+
         # Attiva eventuali prestiti collegati allo scambio
         prestiti_collegati = []
         if scambio and scambio['prestito_associato']:
-            cur.execute('''
-                        SELECT id, giocatore, squadra_ricevente, squadra_prestante
-                        FROM prestito
-                        WHERE id = ANY(%s) AND stato = 'in_attesa';
-            ''', (scambio['prestito_associato'],))
-            prestiti_collegati = cur.fetchall()
-        
+            prestiti_collegati = prestiti_repo.in_attesa_tra(cur, scambio['prestito_associato'])
+
         for prestito in prestiti_collegati:
             # Attiva il prestito (stato = 'in_corso' come in attiva_prestito)
-            cur.execute('''
-                        UPDATE prestito
-                        SET stato = 'in_corso'
-                        WHERE id = %s;
-            ''', (prestito['id'],))
-            
+            prestiti_repo.cambia_stato(cur, prestito['id'], 'in_corso')
+
             # Aggiorna il contratto del giocatore in prestito
-            cur.execute('''
-                        UPDATE giocatore
-                        SET tipo_contratto = 'Fanta-Prestito',
-                            squadra_att = %s
-                        WHERE id = %s;
-            ''', (prestito['squadra_ricevente'], prestito['giocatore']))
+            giocatori_repo.assegna_in_prestito(cur, prestito['giocatore'], prestito['squadra_ricevente'])
             vetrina_repo.decadi(cur, prestito['giocatore'])
 
             # Rifiuta altri prestiti in attesa per lo stesso giocatore dalla stessa squadra prestante
-            cur.execute('''
-                        UPDATE prestito
-                        SET stato = 'rifiutato'
-                        WHERE squadra_prestante = %s
-                            AND giocatore = %s
-                            AND stato = 'in_attesa'
-                            AND id <> %s;
-            ''', (prestito['squadra_prestante'], prestito['giocatore'], prestito['id']))
-            
+            prestiti_repo.rifiuta_concorrenti(cur, prestito['squadra_prestante'], prestito['giocatore'])
+
             # Annulla altri scambi che coinvolgono questo giocatore
-            cur.execute('''
-                        UPDATE scambio
-                        SET stato = 'annullato'
-                        WHERE (%s = ANY(giocatori_offerti) OR %s = ANY(giocatori_richiesti))
-                            AND stato = 'in_attesa'
-                            AND id <> %s;
-            ''', (prestito['giocatore'], prestito['giocatore'], id))
+            scambi_repo.annulla_concorrenti_per_giocatore(cur, prestito['giocatore'], id)
         
         conn.commit()
         flash(f"✅ Scambio completato con successo tra {squadra_proponente} e {squadra_destinataria}", "success")
@@ -549,33 +431,19 @@ def annulla_scambio(scambio_id, conn):
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
         # Recupera gli ID dei prestiti associati prima di annullare lo scambio
-        cur.execute('''
-                    SELECT prestito_associato, stato
-                    FROM scambio 
-                    WHERE id = %s
-                    FOR UPDATE;
-        ''', (scambio_id,))
-        scambio = cur.fetchone()
-        
+        scambio = scambi_repo.prestito_e_stato_bloccando(cur, scambio_id)
+
         # Controllo se lo scambio è ancora annullabile
         if not scambio or scambio['stato'] != 'in_attesa':
             conn.rollback()
             return
-        
+
         # Aggiorno lo stato
-        cur.execute('''
-                    UPDATE scambio 
-                    SET stato = 'annullato' 
-                    WHERE id = %s;
-        ''', (scambio_id,))
-        
+        scambi_repo.annulla(cur, scambio_id)
+
         # Annulla anche i prestiti collegati, se ce ne sono
         if scambio and scambio['prestito_associato']:
-            cur.execute('''
-                        UPDATE prestito
-                        SET stato = 'annullato'
-                        WHERE id = ANY(%s) AND stato = 'in_attesa';
-            ''', (scambio['prestito_associato'],))
+            prestiti_repo.annulla_associati(cur, scambio['prestito_associato'])
         
         conn.commit()
     
@@ -595,28 +463,14 @@ def rifiuta_scambio(scambio_id, conn):
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        cur.execute('''
-                    SELECT prestito_associato 
-                    FROM scambio 
-                    WHERE id = %s
-        ''', (scambio_id,))
-        scambio = cur.fetchone()
-        
+        scambio = scambi_repo.solo_prestito_associato(cur, scambio_id)
+
         # Aggiorno lo stato
-        cur.execute('''
-                    UPDATE scambio
-                    SET stato= 'rifiutato',
-                        data_risposta = NOW() AT TIME ZONE 'Europe/Rome'
-                    WHERE id = %s;
-        ''', (scambio_id,))
-        
+        scambi_repo.rifiuta(cur, scambio_id)
+
         # Rifiuta anche i prestiti collegati
         if scambio and scambio['prestito_associato']:
-            cur.execute('''
-                        UPDATE prestito
-                        SET stato = 'rifiutato'
-                        WHERE id = ANY(%s) AND stato = 'in_attesa';
-            ''', (scambio['prestito_associato'],))
+            prestiti_repo.rifiuta_associati(cur, scambio['prestito_associato'])
         conn.commit()
         telegram_utils.scambio_risposta(conn, scambio_id, "Rifiutato")
         

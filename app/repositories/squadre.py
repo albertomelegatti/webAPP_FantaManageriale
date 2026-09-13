@@ -6,6 +6,22 @@ def crediti(cur, nome_squadra: str) -> int:
     return cur.fetchone()["crediti"]
 
 
+def crediti_se_esiste(cur, nome_squadra: str) -> int | None:
+    """Come crediti(), ma None se la squadra non esiste invece di sollevare.
+
+    Serve nei punti che finora controllavano esplicitamente l'esistenza della
+    riga prima di leggerne i crediti.
+    """
+    cur.execute("SELECT crediti FROM squadra WHERE nome = %s;", (nome_squadra,))
+    riga = cur.fetchone()
+    return riga["crediti"] if riga else None
+
+
+def username(cur, nome_squadra: str) -> str:
+    cur.execute("SELECT username FROM squadra WHERE nome = %s;", (nome_squadra,))
+    return cur.fetchone()["username"]
+
+
 def crediti_e_offerta(cur, nome_squadra: str) -> tuple[int, int]:
     """Crediti della squadra e totale impegnato in aste attive, in un'unica query.
 
@@ -23,6 +39,31 @@ def crediti_e_offerta(cur, nome_squadra: str) -> tuple[int, int]:
     )
     riga = cur.fetchone()
     return riga["crediti"], riga["offerta_totale"]
+
+
+def crediti_bloccando(cur, nome_squadra: str) -> int:
+    """Come crediti(), ma blocca la riga: usata mentre si verifica se uno
+    scambio e' ancora eseguibile."""
+    cur.execute("SELECT crediti FROM squadra WHERE nome = %s FOR UPDATE;", (nome_squadra,))
+    return cur.fetchone()["crediti"]
+
+
+def scambia_crediti(cur, nome_squadra: str, crediti_in_uscita: int, crediti_in_entrata: int) -> None:
+    """Applica in un solo update sia i crediti ceduti sia quelli ricevuti in
+    uno scambio: una squadra puo' offrire e ricevere crediti nella stessa
+    transazione."""
+    cur.execute(
+        "UPDATE squadra SET crediti = crediti - %s + %s WHERE nome = %s;",
+        (crediti_in_uscita, crediti_in_entrata, nome_squadra))
+
+
+def imposta_crediti(cur, nome_squadra: str, nuovo_credito: int) -> None:
+    cur.execute("UPDATE squadra SET crediti = %s WHERE nome = %s;", (nuovo_credito, nome_squadra))
+
+
+def aggiungi_crediti(cur, nome_squadra: str, crediti: int) -> None:
+    """Aggiunge (o, se negativo, sottrae) crediti alla squadra indicata."""
+    cur.execute("UPDATE squadra SET crediti = crediti + %s WHERE nome = %s;", (crediti, nome_squadra))
 
 
 def sposta_crediti(cur, squadra_from: str, squadra_to: str, crediti_da_spostare: int) -> None:
@@ -47,6 +88,18 @@ def nomi(cur) -> list[str]:
     """
     cur.execute("SELECT nome FROM squadra WHERE nome <> 'Svincolato' ORDER BY nome;")
     return [riga["nome"] for riga in cur.fetchall()]
+
+
+def nomi_e_username(cur) -> list[dict]:
+    """Le squadre in gioco con il loro username, per la schermata di scelta."""
+    cur.execute("SELECT nome, username FROM squadra WHERE nome <> 'Svincolato' ORDER BY nome ASC;")
+    return cur.fetchall()
+
+
+def nomi_e_crediti(cur) -> list[dict]:
+    """Le squadre in gioco con i loro crediti, per la pagina crediti/stadi/slot."""
+    cur.execute("SELECT nome, crediti FROM squadra WHERE nome <> 'Svincolato' ORDER BY nome ASC;")
+    return cur.fetchall()
 
 
 def nomi_diversi_da(cur, nome_squadra: str) -> list[dict]:
