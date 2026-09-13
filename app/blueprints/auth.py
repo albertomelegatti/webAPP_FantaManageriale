@@ -30,7 +30,7 @@ def login():
             return redirect(url_for('admin.admin_home'))
         elif session.get("nome_squadra"):
             return redirect(url_for('user.squadra_login', nome_squadra=session["nome_squadra"]))
-        return redirect(url_for('pubblico.home'))
+        return redirect(url_for('public.home'))
 
     error = None
 

@@ -28,21 +28,21 @@ class TestErroreImprevisto:
     def test_una_query_fallita_produce_500_non_una_pagina_vuota(
         self, app_con_handler, monkeypatch, nome_squadra
     ):
-        from app.blueprints import pubblico
+        from app.blueprints import public
 
         def esplode(*args, **kwargs):
             raise RuntimeError("database irraggiungibile, simulato")
 
-        monkeypatch.setattr(pubblico, "connessione", esplode)
+        monkeypatch.setattr(public, "connessione", esplode)
 
         risposta = app_con_handler.test_client().get("/listone")
         assert risposta.status_code == 500, \
             "un guasto deve dare 500, non una pagina con l'elenco vuoto"
 
     def test_la_pagina_di_errore_e_esplicita(self, app_con_handler, monkeypatch):
-        from app.blueprints import pubblico
+        from app.blueprints import public
 
-        monkeypatch.setattr(pubblico, "connessione",
+        monkeypatch.setattr(public, "connessione",
                             lambda *a, **k: (_ for _ in ()).throw(RuntimeError("simulato")))
         risposta = app_con_handler.test_client().get("/listone")
         corpo = risposta.get_data(as_text=True)
@@ -51,9 +51,9 @@ class TestErroreImprevisto:
     def test_lo_stack_trace_finisce_nei_log(self, app_con_handler, monkeypatch, caplog):
         import logging
 
-        from app.blueprints import pubblico
+        from app.blueprints import public
 
-        monkeypatch.setattr(pubblico, "connessione",
+        monkeypatch.setattr(public, "connessione",
                             lambda *a, **k: (_ for _ in ()).throw(RuntimeError("dettaglio da conservare")))
         with caplog.at_level(logging.ERROR):
             app_con_handler.test_client().get("/listone")
@@ -63,10 +63,10 @@ class TestErroreImprevisto:
 
     def test_un_errore_di_dominio_resta_un_redirect(self, app_con_handler, monkeypatch):
         """Gli errori attesi non diventano 500: sono condizioni di gioco, non guasti."""
-        from app.blueprints import pubblico
+        from app.blueprints import public
         from app.core.errori import CreditiInsufficienti
 
-        monkeypatch.setattr(pubblico, "connessione",
+        monkeypatch.setattr(public, "connessione",
                             lambda *a, **k: (_ for _ in ()).throw(CreditiInsufficienti()))
         risposta = app_con_handler.test_client().get("/listone")
         assert risposta.status_code == 302

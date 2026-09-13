@@ -3,7 +3,7 @@ Pagine pubbliche: home, elenco squadre, dashboard di una squadra, listone,
 aste, movimenti di mercato, crediti/stadi/slot, regolamento e health check.
 
 Corpo delle funzioni spostato da main.py senza modifiche di logica: cambiano
-solo il decoratore (da @app.route a @pubblico_bp.route) e i nomi degli endpoint
+solo il decoratore (da @app.route a @public_bp.route) e i nomi degli endpoint
 nelle url_for, ora prefissati dal blueprint.
 """
 
@@ -31,17 +31,17 @@ from app.services import movimenti as servizio_movimenti
 
 logger = get_logger(__name__)
 
-pubblico_bp = Blueprint('pubblico', __name__)
+public_bp = Blueprint('public', __name__)
 
 
 # Pagina principale
-@pubblico_bp.route("/")
+@public_bp.route("/")
 def home():
     return render_template("index.html")
 
 
 # Health check endpoint per Render
-@pubblico_bp.route("/health")
+@public_bp.route("/health")
 def health_check():
     try:
         with connessione() as (conn, cur):
@@ -53,7 +53,7 @@ def health_check():
 
 
 # Schermata squadre con bottoni
-@pubblico_bp.route("/squadre")
+@public_bp.route("/squadre")
 def squadre():
     try:
         with connessione() as (conn, cur):
@@ -63,17 +63,17 @@ def squadre():
     except Exception:
         logger.exception("Errore squadre")
         flash("❌ Errore nel recupero squadre.", "danger")
-        return redirect(url_for('pubblico.home'))
+        return redirect(url_for('public.home'))
 
 
-@pubblico_bp.route("/squadra/<nome_squadra>")
+@public_bp.route("/squadra/<nome_squadra>")
 def dashboard_squadra(nome_squadra):
     with connessione() as (conn, cur):
         dati = servizio_dashboard.dati_squadra(cur, nome_squadra)
 
     if dati is None:
         flash("❌ Squadra non trovata.", "danger")
-        return redirect(url_for('pubblico.home'))
+        return redirect(url_for('public.home'))
 
     return render_template(
         "dashboard_squadra.html",
@@ -84,7 +84,7 @@ def dashboard_squadra(nome_squadra):
 
 
 # Visualizza tutti gli eventi di mercato con filtri per stagione ed evento
-@pubblico_bp.route("/movimenti_mercato")
+@public_bp.route("/movimenti_mercato")
 def movimenti_mercato():
     with connessione() as (conn, cur):
         dati = servizio_movimenti.dati_pagina(cur)
@@ -92,7 +92,7 @@ def movimenti_mercato():
     return render_template("movimenti_mercato.html", **dati)
 
 
-@pubblico_bp.route("/crediti_stadi_slot")
+@public_bp.route("/crediti_stadi_slot")
 def crediti_stadi_slot():
 
     try:
@@ -117,10 +117,10 @@ def crediti_stadi_slot():
     except Exception:
         logger.exception("Errore crediti stadi e slot")
         flash("❌ Errore nel caricamento dati stadi.", "danger")
-        return redirect(url_for('pubblico.home'))
+        return redirect(url_for('public.home'))
 
 
-@pubblico_bp.route("/albo_oro")
+@public_bp.route("/albo_oro")
 def albo_oro():
     with connessione() as (conn, cur):
         righe = albo_oro_repo.leggi(cur)
@@ -141,7 +141,7 @@ def _versioni_loghi(username: list[str]) -> dict:
     return versioni
 
 
-@pubblico_bp.route("/listone")
+@public_bp.route("/listone")
 def listone():
     with connessione() as (conn, cur):
         dati = servizio_listone.dati_pagina(cur)
@@ -150,7 +150,7 @@ def listone():
     return render_template("listone.html", **dati)
 
 
-@pubblico_bp.route("/listone/export")
+@public_bp.route("/listone/export")
 def listone_export():
     with connessione() as (conn, cur):
         giocatori = giocatori_repo.per_export_listone(cur)
@@ -163,7 +163,7 @@ def listone_export():
     )
 
 
-@pubblico_bp.route("/aste")
+@public_bp.route("/aste")
 def aste():
 
     aste = []
@@ -192,18 +192,18 @@ def aste():
     except Exception:
         logger.exception("Errore lista aste generale")
         flash("❌ Errore nella creazione lista aste.", "danger")
-        return redirect(url_for('pubblico.home'))
+        return redirect(url_for('public.home'))
 
 
     return render_template("aste.html", aste=aste)
 
 
-@pubblico_bp.route("/scarica_regolamento")
+@public_bp.route("/scarica_regolamento")
 def vedi_regolamento():
     return send_from_directory('static', 'regolamento.pdf', mimetype='application/pdf', as_attachment=False)
 
 
-@pubblico_bp.route("/keepalive", methods=["GET", "POST"])
+@public_bp.route("/keepalive", methods=["GET", "POST"])
 def keepalive():
         telegram_utils.send_message(903944311)
         return render_template("index.html")
