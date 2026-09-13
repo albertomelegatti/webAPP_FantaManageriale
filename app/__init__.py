@@ -30,13 +30,13 @@ def _registra_blueprint(app):
     from app.blueprints.jobs import jobs_bp
     from app.blueprints.mercato import mercato_bp
     from app.blueprints.prestiti import prestiti_bp
-    from app.blueprints.pubblico import pubblico_bp
+    from app.blueprints.public import public_bp
     from app.blueprints.rosa import rosa_bp
     from app.blueprints.user import user_bp
     from app.blueprints.vetrina import vetrina_bp
     from app.blueprints.webhook import webhook_bp
 
-    app.register_blueprint(pubblico_bp)
+    app.register_blueprint(public_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(chat_bp)
     app.register_blueprint(admin_bp)
@@ -86,7 +86,7 @@ def create_app():
         all'utente e si registrano a livello info, senza stack trace."""
         logger.info("errore di dominio su %s: %s", request.path, type(errore).__name__)
         flash(errore.messaggio_utente, "danger")
-        return redirect(request.referrer or url_for('pubblico.home'))
+        return redirect(request.referrer or url_for('public.home'))
 
     @app.errorhandler(Exception)
     def gestisci_errore_imprevisto(errore):

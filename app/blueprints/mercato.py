@@ -91,7 +91,7 @@ def visualizza_proposta(scambio_id):
 
     if not scambio:
         flash("❌ Proposta non trovata.", "danger")
-        return redirect(url_for("pubblico.home"))
+        return redirect(url_for("public.home"))
 
     return render_template("visualizza_proposta.html", scambio=scambio)
 

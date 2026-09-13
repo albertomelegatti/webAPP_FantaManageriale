@@ -130,7 +130,7 @@ def installa(monkeypatch, database_url):
     # I moduli hanno importato i nomi per valore: vanno sostituiti uno per uno.
     import importlib
     for nome in ("app.blueprints.rosa", "app.blueprints.mercato", "app.blueprints.prestiti",
-                 "app.blueprints.aste", "app.blueprints.user", "app.blueprints.pubblico",
+                 "app.blueprints.aste", "app.blueprints.user", "app.blueprints.public",
                  "app.blueprints.admin", "app.blueprints.vetrina", "app.telegram_utils"):
         modulo = importlib.import_module(nome)
         if hasattr(modulo, "get_connection"):
