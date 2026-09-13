@@ -5,6 +5,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione
 from app.domini.matching_transfermarkt import candidati_fuzzy
+from app.domini.movimenti import squadre_citate
 
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data
@@ -102,7 +103,13 @@ def invia_comunicazione():
             if not text_to_send:
                 flash("❌ Il messaggio non può essere vuoto.", "warning")
                 return redirect(url_for("admin.invia_comunicazione"))
-            telegram_utils.send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+            # Testo libero digitato dall'admin: nessuna squadra strutturata a
+            # monte, quindi si cercano i nomi citati - la stessa euristica per
+            # sottostringa che prima leggeva il legame movimento-squadra a ogni
+            # lettura, applicata qui una volta sola in scrittura.
+            squadre_citate_nel_messaggio = squadre_citate(text_to_send, squadre_repo.nomi(cur))
+            telegram_utils.send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
+                                        squadre_evento=squadre_citate_nel_messaggio)
         
             flash(f"✅ Messaggi inviati a {len(squadre)} squadre.", "success")
 

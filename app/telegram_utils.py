@@ -10,6 +10,7 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from app.core.db import get_connection, release_connection
 from app.repositories import giocatori as giocatori_repo
+from app.repositories import movimenti as movimenti_repo
 
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data
@@ -154,7 +155,8 @@ def nuova_asta(conn, id_asta):
                 📆 Hai tempo per iscriverti fino a: {tempo_fine_mostra_interesse}.
         ''')
 
-        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
+                     squadre_evento=[squadra_vincente])
         
     except Exception:
         logger.exception("Errore")
@@ -265,7 +267,8 @@ def asta_conclusa(conn, id_asta):
             La squadra {squadra_vincente} acquista il giocatore {giocatore} per {ultima_offerta} crediti.
         ''')
 
-        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
+                     squadre_evento=[squadra_vincente])
 
     except Exception:
         logger.exception("Errore")
@@ -479,7 +482,8 @@ Le squadre {squadra_proponente} e {squadra_destinataria} hanno concluso un scamb
 
 📝 Condizioni/Bonus: {messaggio}
 '''
-            send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+            send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
+                         squadre_evento=[squadra_proponente, squadra_destinataria])
 
         else:
             text_to_send = f'''SCAMBIO RIFIUTATO
@@ -607,7 +611,8 @@ def prestito_risposta(conn, id_prestito, risposta):
                     🪙 Riscatto: {crediti_riscatto}
                     📝 Note: {note}
             ''')
-            send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+            send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
+                         squadre_evento=[squadra_prestante, squadra_ricevente])
         
 
         else:
@@ -667,7 +672,8 @@ def riscatto_giocatore(conn, id_prestito):
                 📢 COMUNICAZIONE UFFICIALE:
                 La squadra {squadra_ricevente} ha riscattato {giocatore} dalla squadra {squadra_prestante} per {crediti_riscatto} crediti.
         ''')
-        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
+                     squadre_evento=[squadra_prestante, squadra_ricevente])
 
     except Exception:
         logger.exception("❌ Errore nel send_message riscatto_giocatore")
@@ -753,7 +759,8 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
                     📢 COMUNICAZIONE UFFICIALE: 
                     Le squadre {squadra_prestante} e {squadra_ricevente} si sono accordate per terminare anticipatamente il prestito del giocatore: {giocatore}.
             ''')
-            send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+            send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
+                         squadre_evento=[squadra_prestante, squadra_ricevente])
 
 
         else:
@@ -787,7 +794,8 @@ def taglio_giocatore(conn, nome_squadra, giocatore, costo_taglio):
                 La squadra {nome_squadra} svincola il giocatore {giocatore} pagando {costo_taglio} crediti.
         ''')
 
-        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
+                     squadre_evento=[nome_squadra])
         
     except Exception:
         logger.exception("Errore")
@@ -813,7 +821,8 @@ def promozione_giocatore_primavera(conn, nome_squadra, giocatore):
                 La squadra {nome_squadra} promuove in prima squadra il giocatore {giocatore}
         ''')
 
-        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+        send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
+                     squadre_evento=[nome_squadra])
         
     except Exception:
         logger.exception("Errore")
@@ -929,7 +938,8 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
                         📝La squadra {squadra_richiedente} modifica il contratto di {giocatore} a {tipo_contratto}. 
                 ''')
 
-            send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send)
+            send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
+                         squadre_evento=[squadra_richiedente])
             
     except Exception:
         logger.exception("Errore")
@@ -939,16 +949,20 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
 
 
 
-def salva_movimento(text_to_send):
-    # Salva il messaggio nella tabella movimenti_squadra
+def salva_movimento(text_to_send, squadre):
+    """Registra un movimento nel registro pubblico.
 
+    `squadre` sono i nomi dichiarati esplicitamente da chi chiama, non dedotti
+    dal testo: e' cio' che rende il movimento cercabile per squadra senza una
+    ricerca a sottostringa (vedi movimenti_repo.per_squadra).
+    """
     conn = None
     cur = None
-    
+
     try:
         conn = get_connection()
         cur = conn.cursor()
-        
+
         text_to_send = text_to_send.replace('\n', ' ').strip()
 
         cur.execute("SELECT MAX(id) FROM movimenti_squadra")
@@ -956,19 +970,16 @@ def salva_movimento(text_to_send):
         if max_id is not None:
             cur.execute("SELECT setval('movimenti_squadra_id_seq', %s, true)", (max_id,))
 
-        cur.execute('''
-                    INSERT INTO movimenti_squadra (evento, data, stagione)
-                    VALUES (%s, NOW(), %s)
-        ''', (text_to_send, get_stagione()))
-        
+        movimenti_repo.salva(cur, text_to_send, squadre, get_stagione())
+
         conn.commit()
         logger.info("✅ Movimento salvato nel database")
-        
+
     except Exception:
         logger.exception("❌ Errore nel salvataggio del movimento")
         if conn:
             conn.rollback()
-    
+
     finally:
         release_connection(conn, cur)
 
@@ -976,7 +987,13 @@ def salva_movimento(text_to_send):
 
 
 
-def send_message(id=None, nome_squadra=None, text_to_send=None):
+def send_message(id=None, nome_squadra=None, text_to_send=None, squadre_evento=None):
+    """Invia un messaggio Telegram.
+
+    `squadre_evento` serve solo quando `nome_squadra` e' 'gruppo_comunicazioni':
+    sono le squadre a cui il movimento si riferisce, da registrare nel
+    registro pubblico (vedi salva_movimento). Ignorato in ogni altro caso.
+    """
     
     if not text_to_send:
         logger.info("Errore, inserire il parametro text_to_send.")
@@ -1011,7 +1028,7 @@ def send_message(id=None, nome_squadra=None, text_to_send=None):
 
     # Salva il movimento se destinatario è il gruppo_comunicazioni
     if nome_squadra == 'gruppo_comunicazioni':
-        salva_movimento(text_to_send)
+        salva_movimento(text_to_send, squadre_evento or [])
 
     # Fase di invio dei messaggi
     for chat_id in CHAT_IDS:
