@@ -14,7 +14,7 @@
  * visibili: una ricerca li trova anche se stanno a pagina venti.
  */
 
-const MOVIMENTI_PER_PAGINA = 25;
+const MOVIMENTI_PER_PAGINA = 10;
 
 /** Espande la tabella compatta del server in un movimento per oggetto. */
 const espandiMovimenti = (compatti) =>

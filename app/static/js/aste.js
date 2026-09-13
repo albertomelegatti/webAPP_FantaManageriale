@@ -14,7 +14,7 @@
  * per natura, e nasconderne una parte sarebbe un danno, non un aiuto.
  */
 
-const ASTE_PER_PAGINA = 25;
+const ASTE_PER_PAGINA = 10;
 
 document.addEventListener('DOMContentLoaded', function () {
     const elenco = document.getElementById('asteConcluse');
