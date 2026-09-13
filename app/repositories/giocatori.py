@@ -166,6 +166,20 @@ def nomi_per_id(cur, id_giocatori) -> dict[int, str]:
     return {r["id"]: r["nome"] for r in cur.fetchall()}
 
 
+def dettagli_per_id(cur, id_giocatori) -> dict[int, dict]:
+    """{id: {nome, ruolo, data_nascita}} per un elenco di id, in una sola query.
+
+    Come nomi_per_id, ma con i dati che servono ai messaggi Telegram per
+    mostrare ruolo ed età accanto al nome.
+    """
+    id_giocatori = [int(g) for g in (id_giocatori or []) if g]
+    if not id_giocatori:
+        return {}
+    cur.execute("SELECT id, nome, ruolo, data_nascita FROM giocatore WHERE id = ANY(%s);", (id_giocatori,))
+    return {r["id"]: {"nome": r["nome"], "ruolo": r["ruolo"], "data_nascita": r["data_nascita"]}
+            for r in cur.fetchall()}
+
+
 def con_cartellino(cur, nome_squadra: str) -> list[dict]:
     """Giocatori di cui la squadra detiene il cartellino, primavera esclusa."""
     cur.execute(

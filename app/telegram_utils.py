@@ -12,7 +12,8 @@ from app.repositories import giocatori as giocatori_repo
 from app.repositories import movimenti as movimenti_repo
 
 from app.core.logging import get_logger
-from app.core.tempo import formatta_data
+from app.core.tempo import calcola_eta, formatta_data
+from app.domini.ruoli import pulisci_ruolo
 
 logger = get_logger(__name__)
 
@@ -101,15 +102,32 @@ def format_pick(pick_ids, conn):
         return ""
 
 
-def _elenca_nomi(id_giocatori, nomi):
-    """Nomi separati da virgola, nell'ordine dello scambio.
+def _tag_giocatore(ruolo, data_nascita):
+    """' (Dc, 24 anni)', accorciato se manca il ruolo o l'età, '' se mancano entrambi."""
+    pezzi = []
+    ruolo_pulito = pulisci_ruolo(ruolo)
+    if ruolo_pulito:
+        pezzi.append(ruolo_pulito)
+    eta = calcola_eta(data_nascita)
+    if eta is not None:
+        pezzi.append(f"{eta} anni")
+    return f" ({', '.join(pezzi)})" if pezzi else ""
 
-    Stessa semantica di format_giocatori, ma senza aprire una connessione: la
-    mappa dei nomi arriva gia' risolta dal chiamante.
+
+def _righe_giocatori(id_giocatori, dettagli):
+    """Una riga '• Nome (Ruolo, età anni) [Definitivo]' per giocatore, nell'ordine dello scambio.
+
+    Sostituisce format_giocatori: la mappa dei dettagli arriva gia' risolta
+    dal chiamante, senza aprire una seconda connessione.
     """
-    if not id_giocatori:
-        return ""
-    return ", ".join(nomi.get(i, f"ID {i} (non trovato)") for i in id_giocatori)
+    righe = []
+    for i in id_giocatori or []:
+        d = dettagli.get(i)
+        if d is None:
+            righe.append(f"• ID {i} (non trovato) [Definitivo]")
+            continue
+        righe.append(f"• {d['nome']}{_tag_giocatore(d['ruolo'], d['data_nascita'])} [Definitivo]")
+    return righe
 
 
 def _blocco_lato_scambio(titolo, voci_text, crediti, etichetta_crediti):
@@ -175,7 +193,7 @@ def nuova_asta(conn, id_asta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT g.nome, a.squadra_vincente, a.tempo_fine_mostra_interesse
+                    SELECT g.nome, g.ruolo, g.data_nascita, a.squadra_vincente, a.tempo_fine_mostra_interesse
                     FROM asta a
                         JOIN giocatore g ON a.giocatore = g.id
                     WHERE a.id = %s;
@@ -187,12 +205,12 @@ def nuova_asta(conn, id_asta):
             return
 
         giocatore = info_asta['nome']
+        tag_giocatore = _tag_giocatore(info_asta['ruolo'], info_asta['data_nascita'])
         squadra_vincente = info_asta['squadra_vincente']
         tempo_fine_mostra_interesse = formatta_data(info_asta['tempo_fine_mostra_interesse'])
 
-
         text_to_send = "\n".join([
-            f"🏷️ ASTA: {giocatore}",
+            f"🏷️ ASTA: {giocatore}{tag_giocatore}",
             f"La squadra {squadra_vincente} ha iniziato un'asta.",
             f"Iscrizioni aperte fino a: {tempo_fine_mostra_interesse}",
         ])
@@ -215,7 +233,7 @@ def asta_iniziata(conn, id_asta):
         # Recupero info per scrivere il messaggio
 
         cur.execute('''
-                    SELECT g.nome, a.partecipanti
+                    SELECT g.nome, g.ruolo, g.data_nascita, a.partecipanti
                     FROM asta AS a
                     JOIN giocatore AS g
                         ON a.giocatore = g.id
@@ -224,9 +242,10 @@ def asta_iniziata(conn, id_asta):
         info_asta = cur.fetchone()
 
         nome_giocatore = info_asta['nome']
+        tag_giocatore = _tag_giocatore(info_asta['ruolo'], info_asta['data_nascita'])
         partecipanti = info_asta['partecipanti']
 
-        text_to_send = f"🏷️ ASTA: {nome_giocatore}\nL'asta è iniziata."
+        text_to_send = f"🏷️ ASTA: {nome_giocatore}{tag_giocatore}\nL'asta è iniziata."
 
         for partecipante in partecipanti:
             send_message(nome_squadra=partecipante, text_to_send=text_to_send)
@@ -246,7 +265,7 @@ def asta_rilanciata(conn, id_asta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
         # Recupero info per scrivere il messaggio
         cur.execute('''
-                    SELECT g.nome, a.squadra_vincente, a.ultima_offerta, a.partecipanti
+                    SELECT g.nome, g.ruolo, g.data_nascita, a.squadra_vincente, a.ultima_offerta, a.partecipanti
                     FROM asta a
                     JOIN giocatore g
                         ON a.giocatore = g.id
@@ -259,11 +278,12 @@ def asta_rilanciata(conn, id_asta):
             return
 
         giocatore = info_asta['nome']
+        tag_giocatore = _tag_giocatore(info_asta['ruolo'], info_asta['data_nascita'])
         squadra_che_ha_rilanciato = info_asta['squadra_vincente']
         ultima_offerta = info_asta['ultima_offerta']
 
         text_to_send = "\n".join([
-            f"🏷️ ASTA: {giocatore}",
+            f"🏷️ ASTA: {giocatore}{tag_giocatore}",
             f"La squadra {squadra_che_ha_rilanciato} ha rilanciato l'offerta.",
             f"Offerta attuale: {ultima_offerta} crediti",
         ])
@@ -285,7 +305,7 @@ def asta_conclusa(conn, id_asta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
         # Recupero info per scrivere il messaggio
         cur.execute('''
-                    SELECT g.nome, a.squadra_vincente, a.ultima_offerta
+                    SELECT g.nome, g.ruolo, g.data_nascita, a.squadra_vincente, a.ultima_offerta
                     FROM asta a
                     JOIN giocatore g
                         ON a.giocatore = g.id
@@ -298,12 +318,13 @@ def asta_conclusa(conn, id_asta):
             return
 
         giocatore = info_asta['nome']
+        tag_giocatore = _tag_giocatore(info_asta['ruolo'], info_asta['data_nascita'])
         squadra_vincente = info_asta['squadra_vincente']
         ultima_offerta = info_asta['ultima_offerta']
 
         text_to_send = (
             f"📢 COMUNICAZIONE UFFICIALE\n"
-            f"La squadra {squadra_vincente} acquista il giocatore {giocatore} per {ultima_offerta} crediti."
+            f"La squadra {squadra_vincente} acquista il giocatore {giocatore}{tag_giocatore} per {ultima_offerta} crediti."
         )
 
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
@@ -335,20 +356,18 @@ def nuovo_scambio(conn, id_scambio):
 
         squadra_proponente = info_scambio['squadra_proponente']
         squadra_destinataria = info_scambio['squadra_destinataria']
-        # I nomi si risolvono con la connessione gia' in mano: format_giocatori
+        # I dettagli si risolvono con la connessione gia' in mano: format_giocatori
         # ne prelevava una seconda dal pool mentre questa era ancora occupata.
-        nomi = giocatori_repo.nomi_per_id(
+        dettagli = giocatori_repo.dettagli_per_id(
             cur, (info_scambio['giocatori_offerti'] or []) + (info_scambio['giocatori_richiesti'] or []))
-        giocatori_offerti_raw = _elenca_nomi(info_scambio['giocatori_offerti'], nomi)
-        giocatori_richiesti_raw = _elenca_nomi(info_scambio['giocatori_richiesti'], nomi)
-        giocatori_offerti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_offerti_raw.split(',') if g.strip()]
-        giocatori_richiesti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_richiesti_raw.split(',') if g.strip()]
+        giocatori_offerti_list = _righe_giocatori(info_scambio['giocatori_offerti'], dettagli)
+        giocatori_richiesti_list = _righe_giocatori(info_scambio['giocatori_richiesti'], dettagli)
         crediti_offerti = info_scambio['crediti_offerti'] or 0
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
         messaggio = info_scambio['messaggio'] or ""
         pick_offerta_ids = info_scambio['pick_offerta'] or []
         pick_richiesta_ids = info_scambio['pick_richiesta'] or []
-        
+
         prestito_associato_ids = info_scambio['prestito_associato']
         prestiti_offerti = []
         prestiti_richiesti = []
@@ -357,7 +376,7 @@ def nuovo_scambio(conn, id_scambio):
             # Recupera prestiti collegati allo scambio
             cur.execute('''
                 SELECT p.squadra_prestante, p.squadra_ricevente, p.tipo_prestito, p.crediti_riscatto,
-                       g.nome as nome_giocatore
+                       g.nome as nome_giocatore, g.ruolo, g.data_nascita
                 FROM prestito p
                 JOIN giocatore g ON p.giocatore = g.id
                 WHERE p.id = ANY(%s)
@@ -369,8 +388,9 @@ def nuovo_scambio(conn, id_scambio):
             for p in prestiti:
                 tipo_str = formatta_tipo_prestito(p['tipo_prestito'])
                 riscatto_str = f" (risc. {p['crediti_riscatto']})" if p['crediti_riscatto'] and p['crediti_riscatto'] > 0 else ""
-                prestito_str = f"• {p['nome_giocatore']} [Prestito {tipo_str}{riscatto_str}]"
-                
+                tag = _tag_giocatore(p['ruolo'], p['data_nascita'])
+                prestito_str = f"• {p['nome_giocatore']}{tag} [Prestito {tipo_str}{riscatto_str}]"
+
                 if p['squadra_prestante'] == squadra_proponente:
                     prestiti_offerti.append(prestito_str)
                 else:
@@ -438,14 +458,12 @@ def scambio_risposta(conn, id_scambio, risposta):
 
         squadra_proponente = info_scambio['squadra_proponente']
         squadra_destinataria = info_scambio['squadra_destinataria']
-        # I nomi si risolvono con la connessione gia' in mano: format_giocatori
+        # I dettagli si risolvono con la connessione gia' in mano: format_giocatori
         # ne prelevava una seconda dal pool mentre questa era ancora occupata.
-        nomi = giocatori_repo.nomi_per_id(
+        dettagli = giocatori_repo.dettagli_per_id(
             cur, (info_scambio['giocatori_offerti'] or []) + (info_scambio['giocatori_richiesti'] or []))
-        giocatori_offerti_raw = _elenca_nomi(info_scambio['giocatori_offerti'], nomi)
-        giocatori_richiesti_raw = _elenca_nomi(info_scambio['giocatori_richiesti'], nomi)
-        giocatori_offerti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_offerti_raw.split(',') if g.strip()]
-        giocatori_richiesti_list = [f"• {g.strip()} [Definitivo]" for g in giocatori_richiesti_raw.split(',') if g.strip()]
+        giocatori_offerti_list = _righe_giocatori(info_scambio['giocatori_offerti'], dettagli)
+        giocatori_richiesti_list = _righe_giocatori(info_scambio['giocatori_richiesti'], dettagli)
         crediti_offerti = info_scambio['crediti_offerti'] or 0
         crediti_richiesti = info_scambio['crediti_richiesti'] or 0
         messaggio = info_scambio['messaggio']
@@ -453,11 +471,10 @@ def scambio_risposta(conn, id_scambio, risposta):
         pick_richiesta_ids = info_scambio['pick_richiesta'] or []
         prestito_associato_ids = info_scambio['prestito_associato']
 
-
         # Recupera prestiti collegati allo scambio
         cur.execute('''
             SELECT p.squadra_prestante, p.squadra_ricevente, p.tipo_prestito, p.crediti_riscatto,
-                   g.nome as nome_giocatore
+                   g.nome as nome_giocatore, g.ruolo, g.data_nascita
             FROM prestito p
             JOIN giocatore g ON p.giocatore = g.id
             WHERE p.id = ANY(%s)
@@ -471,8 +488,9 @@ def scambio_risposta(conn, id_scambio, risposta):
         for p in prestiti:
             tipo_str = formatta_tipo_prestito(p['tipo_prestito'])
             riscatto_str = f" (risc. {p['crediti_riscatto']})" if p['crediti_riscatto'] > 0 else ""
-            prestito_str = f"• {p['nome_giocatore']} [Prestito {tipo_str}{riscatto_str}]"
-            
+            tag = _tag_giocatore(p['ruolo'], p['data_nascita'])
+            prestito_str = f"• {p['nome_giocatore']}{tag} [Prestito {tipo_str}{riscatto_str}]"
+
             if p['squadra_prestante'] == squadra_proponente:
                 prestiti_offerti.append(prestito_str)
             else:
@@ -553,7 +571,7 @@ def nuovo_prestito(conn, id_prestito):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine,
+                    SELECT g.nome, g.ruolo, g.data_nascita, p.squadra_prestante, p.squadra_ricevente, p.data_fine,
                            p.tipo_prestito, p.costo_prestito, p.crediti_riscatto, p.note
                     FROM prestito p
                     JOIN giocatore g
@@ -563,6 +581,7 @@ def nuovo_prestito(conn, id_prestito):
         info_prestito = cur.fetchone()
 
         giocatore = info_prestito['nome']
+        tag_giocatore = _tag_giocatore(info_prestito['ruolo'], info_prestito['data_nascita'])
         squadra_prestante = info_prestito['squadra_prestante']
         squadra_ricevente = info_prestito['squadra_ricevente']
         data_fine = formatta_data(info_prestito['data_fine'])
@@ -574,7 +593,7 @@ def nuovo_prestito(conn, id_prestito):
         righe = [
             "🟢 NUOVA PROPOSTA DI PRESTITO",
             f"La squadra {squadra_ricevente} ti ha inviato una proposta di prestito:",
-            f"👤 Giocatore: {giocatore}",
+            f"👤 Giocatore: {giocatore}{tag_giocatore}",
             f"📅 Fino a: {data_fine}",
             f"🧾 Tipo: {tipo_prestito}",
         ]
@@ -603,7 +622,7 @@ def prestito_risposta(conn, id_prestito, risposta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine,
+                SELECT g.nome, g.ruolo, g.data_nascita, p.squadra_prestante, p.squadra_ricevente, p.data_fine,
                    p.tipo_prestito, p.costo_prestito, p.crediti_riscatto, p.note
                     FROM prestito p
                     JOIN giocatore g
@@ -613,6 +632,7 @@ def prestito_risposta(conn, id_prestito, risposta):
         info_prestito = cur.fetchone()
 
         giocatore = info_prestito['nome']
+        tag_giocatore = _tag_giocatore(info_prestito['ruolo'], info_prestito['data_nascita'])
         squadra_prestante = info_prestito['squadra_prestante']
         squadra_ricevente = info_prestito['squadra_ricevente']
         data_fine = formatta_data(info_prestito['data_fine'])
@@ -625,7 +645,7 @@ def prestito_risposta(conn, id_prestito, risposta):
             righe = [
                 "✅ PRESTITO ACCETTATO",
                 f"La squadra {squadra_prestante} ha accettato la tua richiesta di prestito:",
-                f"👤 Giocatore: {giocatore}",
+                f"👤 Giocatore: {giocatore}{tag_giocatore}",
                 f"📅 Fino a: {data_fine}",
                 f"🧾 Tipo: {tipo_prestito}",
             ]
@@ -635,7 +655,7 @@ def prestito_risposta(conn, id_prestito, risposta):
 
             righe = [
                 "📢 PRESTITO UFFICIALE",
-                f"👤 Giocatore: {giocatore}",
+                f"👤 Giocatore: {giocatore}{tag_giocatore}",
                 f"Da: {squadra_prestante}",
                 f"A: {squadra_ricevente}",
                 f"📅 Scadenza: {data_fine}",
@@ -650,7 +670,7 @@ def prestito_risposta(conn, id_prestito, risposta):
             text_to_send = "\n".join([
                 "❌ PRESTITO RIFIUTATO",
                 f"La squadra {squadra_prestante} ha rifiutato la tua richiesta di prestito:",
-                f"👤 Giocatore: {giocatore}",
+                f"👤 Giocatore: {giocatore}{tag_giocatore}",
                 f"📅 Fino a: {data_fine}",
             ])
             send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
@@ -670,7 +690,7 @@ def riscatto_giocatore(conn, id_prestito):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine,
+                SELECT g.nome, g.ruolo, g.data_nascita, p.squadra_prestante, p.squadra_ricevente, p.data_fine,
                    p.tipo_prestito, p.crediti_riscatto, p.note
                     FROM prestito p
                     JOIN giocatore g
@@ -680,6 +700,7 @@ def riscatto_giocatore(conn, id_prestito):
         info_prestito = cur.fetchone()
 
         giocatore = info_prestito['nome']
+        tag_giocatore = _tag_giocatore(info_prestito['ruolo'], info_prestito['data_nascita'])
         squadra_prestante = info_prestito['squadra_prestante']
         squadra_ricevente = info_prestito['squadra_ricevente']
         crediti_riscatto = info_prestito.get('crediti_riscatto') or 0
@@ -687,21 +708,21 @@ def riscatto_giocatore(conn, id_prestito):
         # Notifica al proprietario originale (squadra_prestante)
         text_to_send = (
             f"GIOCATORE RISCATTATO\n"
-            f"La squadra {squadra_ricevente} ha riscattato il giocatore {giocatore} per {crediti_riscatto} crediti."
+            f"La squadra {squadra_ricevente} ha riscattato il giocatore {giocatore}{tag_giocatore} per {crediti_riscatto} crediti."
         )
         send_message(nome_squadra=squadra_prestante, text_to_send=text_to_send)
 
         # Notifica alla squadra ricevente (che fa il riscatto)
         text_to_send = (
             f"✅ RISCATTO COMPLETATO\n"
-            f"Hai riscattato {giocatore} per {crediti_riscatto} crediti."
+            f"Hai riscattato {giocatore}{tag_giocatore} per {crediti_riscatto} crediti."
         )
         send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
 
         # Notifica al gruppo comunicazioni
         text_to_send = (
             f"📢 COMUNICAZIONE UFFICIALE\n"
-            f"La squadra {squadra_ricevente} ha riscattato {giocatore} dalla squadra {squadra_prestante} per {crediti_riscatto} crediti."
+            f"La squadra {squadra_ricevente} ha riscattato {giocatore}{tag_giocatore} dalla squadra {squadra_prestante} per {crediti_riscatto} crediti."
         )
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
                      squadre_evento=[squadra_prestante, squadra_ricevente])
@@ -720,7 +741,8 @@ def richiesta_terminazione_prestito(conn, id_prestito):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT g.nome, p.squadra_prestante, p.squadra_ricevente, p.data_fine, p.richiedente_terminazione
+                    SELECT g.nome, g.ruolo, g.data_nascita, p.squadra_prestante, p.squadra_ricevente,
+                           p.data_fine, p.richiedente_terminazione
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -729,16 +751,16 @@ def richiesta_terminazione_prestito(conn, id_prestito):
         info_prestito = cur.fetchone()
 
         giocatore = info_prestito['nome']
+        tag_giocatore = _tag_giocatore(info_prestito['ruolo'], info_prestito['data_nascita'])
         squadra_prestante = info_prestito['squadra_prestante']
         squadra_ricevente = info_prestito['squadra_ricevente']
         data_fine = formatta_data(info_prestito['data_fine'])
         richiedente_terminazione = info_prestito['richiedente_terminazione']
 
-       
         text_to_send = "\n".join([
             "🛑 RICHIESTA DI TERMINAZIONE PRESTITO ANTICIPATA",
             f"La squadra {richiedente_terminazione} ha proposto di terminare in anticipo il seguente prestito:",
-            f"👤 Giocatore: {giocatore}",
+            f"👤 Giocatore: {giocatore}{tag_giocatore}",
             f"📅 Fino a: {data_fine}",
         ])
 
@@ -766,7 +788,8 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT g.nome, p.richiedente_terminazione, p.squadra_prestante, p.squadra_ricevente, p.data_fine
+                    SELECT g.nome, g.ruolo, g.data_nascita, p.richiedente_terminazione,
+                           p.squadra_prestante, p.squadra_ricevente, p.data_fine
                     FROM prestito p
                     JOIN giocatore g
                     ON p.giocatore = g.id
@@ -775,20 +798,21 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
         info_prestito = cur.fetchone()
 
         giocatore = info_prestito['nome']
+        tag_giocatore = _tag_giocatore(info_prestito['ruolo'], info_prestito['data_nascita'])
         richiedente_terminazione = info_prestito['richiedente_terminazione']
         squadra_prestante = info_prestito['squadra_prestante']
         squadra_ricevente = info_prestito['squadra_ricevente']
-        
+
         if risposta == "Accettato":
             text_to_send = (
                 f"✅ TERMINAZIONE PRESTITO ACCETTATA\n"
-                f"La tua richiesta di terminare in anticipo il prestito del giocatore {giocatore} è stata accettata."
+                f"La tua richiesta di terminare in anticipo il prestito del giocatore {giocatore}{tag_giocatore} è stata accettata."
             )
             send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
 
             text_to_send = (
                 f"📢 COMUNICAZIONE UFFICIALE\n"
-                f"Le squadre {squadra_prestante} e {squadra_ricevente} si sono accordate per terminare anticipatamente il prestito del giocatore {giocatore}."
+                f"Le squadre {squadra_prestante} e {squadra_ricevente} si sono accordate per terminare anticipatamente il prestito del giocatore {giocatore}{tag_giocatore}."
             )
             send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
                          squadre_evento=[squadra_prestante, squadra_ricevente])
@@ -796,7 +820,7 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
         else:
             text_to_send = (
                 f"❌ TERMINAZIONE PRESTITO RIFIUTATA\n"
-                f"La tua richiesta di terminare in anticipo il prestito del giocatore {giocatore} è stata rifiutata."
+                f"La tua richiesta di terminare in anticipo il prestito del giocatore {giocatore}{tag_giocatore} è stata rifiutata."
             )
             send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
 
@@ -870,16 +894,17 @@ def richiesta_modifica_contratto(conn, squadra_richiedente, id_giocatore, messag
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT nome
+                    SELECT nome, ruolo, data_nascita
                     FROM giocatore
                     WHERE id = %s;
         ''', (id_giocatore,))
         giocatore_raw = cur.fetchone()
         giocatore = giocatore_raw['nome']
+        tag_giocatore = _tag_giocatore(giocatore_raw['ruolo'], giocatore_raw['data_nascita'])
 
         righe = [
             "📝 Notifica ADMIN",
-            f"La squadra {squadra_richiedente} ha richiesto la modifica del contratto del giocatore {giocatore}.",
+            f"La squadra {squadra_richiedente} ha richiesto la modifica del contratto del giocatore {giocatore}{tag_giocatore}.",
         ]
         if messaggio and messaggio.strip():
             righe.append(f"Messaggio allegato: {messaggio.strip()}")
@@ -914,7 +939,7 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
         cur.execute('''
-                    SELECT r.squadra_richiedente, g.nome, g.tipo_contratto, r.crediti_richiesti
+                    SELECT r.squadra_richiedente, g.nome, g.ruolo, g.data_nascita, g.tipo_contratto, r.crediti_richiesti
                     FROM richiesta_modifica_contratto AS r
                         JOIN giocatore AS g
                             ON r.giocatore = g.id
@@ -923,24 +948,24 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         info_richiesta = cur.fetchone()
 
         giocatore = info_richiesta['nome']
+        tag_giocatore = _tag_giocatore(info_richiesta['ruolo'], info_richiesta['data_nascita'])
         tipo_contratto = info_richiesta['tipo_contratto']
         squadra_richiedente = info_richiesta['squadra_richiedente']
         crediti_richiesti = info_richiesta['crediti_richiesti'] or 0
         # "e recupera N crediti" ha senso solo se e' stato davvero richiesto un recupero.
         recupero_crediti = f" e recupera {crediti_richiesti} crediti" if crediti_richiesti else ""
 
-
         if risposta == "Accettato":
             text_to_send = (
                 f"✅ MODIFICA CONTRATTO ACCETTATA\n"
-                f"L'admin di Lega ha accettato la tua richiesta di modifica del contratto del giocatore {giocatore}.\n"
+                f"L'admin di Lega ha accettato la tua richiesta di modifica del contratto del giocatore {giocatore}{tag_giocatore}.\n"
                 f"Nuovo contratto: {tipo_contratto}."
             )
 
         else:
             text_to_send = (
                 f"❌ MODIFICA CONTRATTO RIFIUTATA\n"
-                f"L'admin di Lega ha rifiutato la tua richiesta di modifica del contratto del giocatore {giocatore}."
+                f"L'admin di Lega ha rifiutato la tua richiesta di modifica del contratto del giocatore {giocatore}{tag_giocatore}."
             )
 
         send_message(nome_squadra=squadra_richiedente, text_to_send=text_to_send)
@@ -949,16 +974,16 @@ def richiesta_modifica_contratto_risposta(conn, id_richiesta, risposta):
         if risposta == "Accettato":
 
             if tipo_contratto == "Svincolato":
-                dettaglio = f"La squadra {squadra_richiedente} svincola {giocatore} a causa del suo trasferimento/svincolo{recupero_crediti}."
+                dettaglio = f"La squadra {squadra_richiedente} svincola {giocatore}{tag_giocatore} a causa del suo trasferimento/svincolo{recupero_crediti}."
 
             elif tipo_contratto == "Prestito Reale":
-                dettaglio = f"La squadra {squadra_richiedente} libera lo slot di {giocatore} a causa del suo trasferimento in prestito{recupero_crediti}."
+                dettaglio = f"La squadra {squadra_richiedente} libera lo slot di {giocatore}{tag_giocatore} a causa del suo trasferimento in prestito{recupero_crediti}."
 
             elif tipo_contratto == "Hold":
-                dettaglio = f"La squadra {squadra_richiedente} esercita il diritto di HOLD sul giocatore {giocatore}."
+                dettaglio = f"La squadra {squadra_richiedente} esercita il diritto di HOLD sul giocatore {giocatore}{tag_giocatore}."
 
             else:
-                dettaglio = f"La squadra {squadra_richiedente} modifica il contratto di {giocatore} a {tipo_contratto}."
+                dettaglio = f"La squadra {squadra_richiedente} modifica il contratto di {giocatore}{tag_giocatore} a {tipo_contratto}."
 
             text_to_send = f"📢 COMUNICAZIONE UFFICIALE\n{dettaglio}"
 
