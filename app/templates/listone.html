@@ -101,21 +101,7 @@
             {% for g in giocatori %}
             <tr class="cursor-pointer hover:bg-panel-2" data-nome="{{ g.nome.lower() }}" data-ruolo="{{ g.ruolo }}" data-club="{{ g.club }}"
                 data-squadra="{{ g.squadra_att }}" data-contratto="{{ g.tipo_contratto }}" data-u21="{{ g.u21 }}"
-                data-info='{{ {
-                    "nome": g.nome,
-                    "ruolo": g.ruolo,
-                    "club": g.club,
-                    "squadra_att": g.squadra_att,
-                    "squadra_username": g.squadra_username,
-                    "detentore": g.detentore_cartellino,
-                    "detentore_username": g.detentore_username,
-                    "tipo_contratto": g.tipo_contratto,
-                    "quotazione": g.quotazione,
-                    "costo": g.costo,
-                    "data_nascita": g.data_nascita,
-                    "scadenza_contratto_reale": g.scadenza_contratto_reale,
-                    "valore_mercato": g.valore_mercato
-                } | tojson }}'>
+                data-idx="{{ loop.index0 }}">
                 <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-1 font-medium">{{ g.nome }}</td>
                 <td class="overflow-hidden py-2 pr-1">{{ m.ruolo_colorato(g.ruolo) }}</td>
                 <td class="overflow-hidden py-2 text-center text-muted">{{ m.club_abbr(g.club) }}</td>
@@ -136,6 +122,10 @@
             {% endfor %}
         </tbody>
     </table>
+
+{# Dati della scheda giocatore: i nomi dei campi viaggiano una volta sola,
+   poi una riga di valori per giocatore. Vedi app/services/listone.py. #}
+<script type="application/json" id="datiGiocatori">{{ dati_scheda | tojson }}</script>
     <p class="hidden py-4 text-center text-sm text-muted" id="noResults">Nessun giocatore trovato con i filtri selezionati.</p>
 </div>
 
@@ -374,6 +364,16 @@ document.addEventListener('DOMContentLoaded', function () {
         '<img src="' + logoUrl(username) + '" alt="" class="h-5 w-5 object-contain">' +
         '<span>' + (nome || 'Svincolato') + '</span>';
 
+    // Il blocco JSON viene letto e convertito una volta sola, al primo clic.
+    let datiListone = null;
+    const datiGiocatore = (indice) => {
+        if (datiListone === null) {
+            datiListone = JSON.parse(document.getElementById('datiGiocatori').textContent);
+        }
+        const valori = datiListone.righe[indice];
+        return Object.fromEntries(datiListone.campi.map((campo, i) => [campo, valori[i]]));
+    };
+
     const apriCardGiocatore = (info) => {
         modalNome.textContent = info.nome;
         modalRuolo.textContent = info.ruolo.split(',').map(r => r.trim()).join(', ');
@@ -405,8 +405,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     tbody.addEventListener('click', function (e) {
         const row = e.target.closest('tr');
-        if (!row || !row.dataset.info) return;
-        apriCardGiocatore(JSON.parse(row.dataset.info));
+        if (!row || row.dataset.idx === undefined) return;
+        apriCardGiocatore(datiGiocatore(row.dataset.idx));
     });
 
     btnChiudiGiocatore.addEventListener('click', chiudiCardGiocatore);

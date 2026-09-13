@@ -154,40 +154,19 @@ def nuovo_scambio(nome_squadra):
 
             squadre = []
             crediti_effettivi = 0
-            offerta_totale = aste_repo.offerta_totale(cur, nome_squadra)
 
-            # Conteggi per TUTTE le squadre in poche query aggregate, invece di 4 query per squadra nel ciclo
-            cur.execute('''
-                SELECT squadra_att, COUNT(id) AS slot_giocatori
-                FROM giocatore
-                WHERE tipo_contratto IN ('Hold', 'Indeterminato')
-                GROUP BY squadra_att;
-            ''')
-            slot_giocatori_map = {r["squadra_att"]: r["slot_giocatori"] for r in cur.fetchall()}
+            # Conteggi per TUTTE le squadre in due sole interrogazioni: una su
+            # giocatore e una su asta, ciascuna con aggregazione condizionale.
+            # Erano quattro, piu' una quinta per l'offerta della squadra loggata
+            # che questi risultati contengono gia'.
+            slot_map = giocatori_repo.slot_per_squadra(cur)
+            impegni_map = aste_repo.impegni_per_squadra(cur)
 
-            cur.execute('''
-                SELECT squadra, COUNT(*) AS slot_aste
-                FROM asta, UNNEST(partecipanti) AS squadra
-                WHERE stato <> 'conclusa'
-                GROUP BY squadra;
-            ''')
-            slot_aste_map = {r["squadra"]: r["slot_aste"] for r in cur.fetchall()}
-
-            cur.execute('''
-                SELECT squadra_att, COUNT(id) AS slot_prestiti
-                FROM giocatore
-                WHERE tipo_contratto = 'Fanta-Prestito'
-                GROUP BY squadra_att;
-            ''')
-            slot_prestiti_map = {r["squadra_att"]: r["slot_prestiti"] for r in cur.fetchall()}
-
-            cur.execute('''
-                SELECT squadra_vincente, SUM(ultima_offerta) AS offerta_totale
-                FROM asta
-                WHERE stato = 'in_corso'
-                GROUP BY squadra_vincente;
-            ''')
-            offerta_totale_map = {r["squadra_vincente"]: r["offerta_totale"] or 0 for r in cur.fetchall()}
+            slot_giocatori_map = {n: v["giocatori"] for n, v in slot_map.items()}
+            slot_prestiti_map = {n: v["prestiti"] for n, v in slot_map.items()}
+            slot_aste_map = {n: v["slot"] for n, v in impegni_map.items()}
+            offerta_totale_map = {n: v["offerta"] for n, v in impegni_map.items()}
+            offerta_totale = offerta_totale_map.get(nome_squadra, 0)
 
             def slot_occupati_squadra(nome):
                 return int(slot_giocatori_map.get(nome, 0)) + int(slot_aste_map.get(nome, 0))
