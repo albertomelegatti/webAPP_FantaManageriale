@@ -20,9 +20,10 @@ from app.core.logging import get_logger
 from app.core.tempo import formatta_data
 from app.domini.ruoli import pulisci_ruolo
 from app.repositories import albo_oro as albo_oro_repo
-
-
+from app.repositories import aste as aste_repo
 from app.repositories import giocatori as giocatori_repo
+from app.repositories import squadre as squadre_repo
+from app.repositories import stadio as stadio_repo
 from app.services import dashboard as servizio_dashboard
 from app.services import export_excel as export_excel_servizio
 from app.services import listone as servizio_listone
@@ -56,12 +57,7 @@ def health_check():
 def squadre():
     try:
         with connessione() as (conn, cur):
-            cur.execute('''
-                        SELECT nome, username
-                        FROM squadra
-                        WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
-            squadre = [{"nome": row["nome"], "username": row["username"]} for row in cur.fetchall()]
-
+            squadre = squadre_repo.nomi_e_username(cur)
             return render_template("squadre.html", squadre=squadre)
 
     except Exception:
@@ -101,21 +97,10 @@ def crediti_stadi_slot():
 
     try:
         with connessione() as (conn, cur):
-            # CREDITI
-            cur.execute('''
-                        SELECT nome, crediti
-                        FROM squadra
-                        WHERE nome <> 'Svincolato' ORDER BY nome ASC;''')
-            squadre_raw = cur.fetchall()
-            squadre = [{"nome": c['nome'], "crediti": c['crediti']} for c in squadre_raw]
+            squadre = squadre_repo.nomi_e_crediti(cur)
 
-            # STADIO
-            cur.execute('''
-                        SELECT nome, proprietario, livello
-                        FROM stadio ORDER BY proprietario ASC;''')
-            stadi_raw = cur.fetchall()
             stadi = []
-            for s in stadi_raw:
+            for s in stadio_repo.elenco(cur):
                 livello = s['livello']
                 bonus = [0,4,8,14,18,25,30,39,44][livello] if livello <= 8 else 0
                 stadi.append({
@@ -125,30 +110,7 @@ def crediti_stadi_slot():
                     "crediti_annuali": bonus
                 })
 
-            # CONTEGGIO SLOT OCCUPATI E IN PRESTITO
-            cur.execute('''
-                        SELECT squadra_att, COUNT(id) AS slot_occupati
-                        FROM giocatore
-                        WHERE tipo_contratto IN ('Hold', 'Indeterminato')
-                        GROUP BY squadra_att;''')
-            slot_raw = cur.fetchall()
-
-            cur.execute('''
-                        SELECT squadra_att, COUNT(id) AS slot_in_prestito
-                        FROM giocatore
-                        WHERE tipo_contratto = 'Fanta-Prestito'
-                        GROUP BY squadra_att;''')
-            slot_prestito_raw = cur.fetchall()
-            slot_prestito_dict = {s["squadra_att"]: s["slot_in_prestito"] for s in slot_prestito_raw}
-
-            slot = []
-            for s in slot_raw:
-                slot.append({
-                    "squadra_att": s["squadra_att"],
-                    "slot_occupati": s["slot_occupati"],
-                    "slot_in_prestito": slot_prestito_dict.get(s["squadra_att"], 0)
-                })
-
+            slot = giocatori_repo.occupazione_slot(cur)
 
             return render_template("crediti_stadi_slot.html", stadi=stadi, squadre=squadre, slot=slot)
 
@@ -207,14 +169,7 @@ def aste():
     aste = []
     try:
         with connessione() as (conn, cur):
-            cur.execute('''
-                        SELECT g.nome, g.ruolo, g.club, a.squadra_vincente, a.ultima_offerta, a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
-                        FROM asta a
-                        JOIN giocatore g ON a.giocatore = g.id
-                        ORDER BY a.tempo_fine_asta DESC;''')
-            aste_raw = cur.fetchall()
-
-            for a in aste_raw:
+            for a in aste_repo.elenco_completo(cur):
 
                 data_scadenza = formatta_data(a["tempo_fine_asta"])
                 tempo_fine_mostra_interesse = formatta_data(a["tempo_fine_mostra_interesse"])

@@ -13,6 +13,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from app.core.db import connessione
 
 from app.core.logging import get_logger
+from app.repositories import autenticazione as autenticazione_repo
 
 logger = get_logger(__name__)
 
@@ -45,14 +46,9 @@ def login():
             with connessione() as (conn, cur):
                 # Login admin
                 if username == "admin":
-                    cur.execute('''
-                                SELECT hash_password
-                                FROM admin
-                                WHERE username = %s;
-                    ''', (username,))
-                    row = cur.fetchone()
+                    hash_password = autenticazione_repo.hash_password_admin(cur, username)
 
-                    if row and check_password_hash(row["hash_password"], password):
+                    if hash_password and check_password_hash(hash_password, password):
                         session.clear()
                         session["logged_in"] = True
                         session["is_admin"] = True
@@ -65,12 +61,7 @@ def login():
 
                 # Login squadra
                 else:
-                    cur.execute('''
-                                SELECT hash_password, nome
-                                FROM squadra
-                                WHERE username = %s;
-                    ''', (username,))
-                    row = cur.fetchone()
+                    row = autenticazione_repo.credenziali_squadra(cur, username)
 
                     if row is not None:
                         hash_password = row["hash_password"]
@@ -120,30 +111,14 @@ def cambia_password():
 
         try:
             with connessione(isolamento=psycopg2.extensions.ISOLATION_LEVEL_REPEATABLE_READ) as (conn, cur):
-                cur.execute('''
-                            SELECT hash_password
-                            FROM squadra
-                            WHERE username = %s;
-                ''', (username,))
-                row = cur.fetchone()
+                hash_password = autenticazione_repo.hash_password_squadra(cur, username)
 
-                if row and check_password_hash(row["hash_password"], old_password):
+                if hash_password and check_password_hash(hash_password, old_password):
                     new_hashed_password = generate_password_hash(new_password)
-
-                    cur.execute('''
-                                UPDATE squadra
-                                SET hash_password = %s
-                                WHERE username = %s;
-                    ''', (new_hashed_password, username))
+                    autenticazione_repo.aggiorna_password(cur, username, new_hashed_password)
                     conn.commit()
 
-                    cur.execute('''
-                                SELECT nome
-                                FROM squadra
-                                WHERE username = %s;
-                    ''', (username,))
-                    nome_squadra = cur.fetchone()["nome"]
-
+                    nome_squadra = autenticazione_repo.nome_da_username(cur, username)
                     return redirect(url_for('user.squadra_login', nome_squadra=nome_squadra))
 
                 flash("❌ Errore nel cambio password.", "danger")

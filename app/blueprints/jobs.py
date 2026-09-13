@@ -31,6 +31,7 @@ from psycopg2.extras import RealDictCursor
 from app.core.db import get_connection, release_connection
 from app.core.transfermarkt_api import recupera_valori_mercato
 from app.domini.matching_transfermarkt import candidati_esatti, parse_data_tm
+from app.repositories import transfermarkt as transfermarkt_repo
 
 from app.core.logging import get_logger
 
@@ -61,14 +62,12 @@ def aggiorna_transfermarkt():
         conn = get_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
 
-        cur.execute("SELECT max(aggiornato_il) AS ultimo FROM transfermarkt_giocatori;")
-        ultimo = cur.fetchone()["ultimo"]
+        ultimo = transfermarkt_repo.ultimo_aggiornamento(cur)
         if ultimo and ultimo > datetime.now(timezone.utc) - timedelta(hours=ORE_MINIME_TRA_RUN):
             release_connection(conn, cur)
             return jsonify({"status": "skipped", "motivo": "già eseguito di recente"}), 200
 
-        cur.execute("SELECT pg_try_advisory_lock(%s) AS ottenuto;", (LOCK_KEY_TRANSFERMARKT,))
-        if not cur.fetchone()["ottenuto"]:
+        if not transfermarkt_repo.prova_lock(cur, LOCK_KEY_TRANSFERMARKT):
             release_connection(conn, cur)
             return jsonify({"status": "skipped", "motivo": "già in esecuzione"}), 200
 
@@ -96,7 +95,7 @@ def _esegui_job_in_background(conn, cur):
         logger.exception("❌ Job transfermarkt fallito")
     finally:
         try:
-            cur.execute("SELECT pg_advisory_unlock(%s);", (LOCK_KEY_TRANSFERMARKT,))
+            transfermarkt_repo.rilascia_lock(cur, LOCK_KEY_TRANSFERMARKT)
             conn.commit()
         except Exception:
             logger.exception("⚠️ Errore nel rilascio del lock")
@@ -206,33 +205,20 @@ def _esegui_matching(cur, percorso_input):
         for g in giocatori
     }
 
-    cur.execute("SELECT club, nome_transfermarkt FROM transfermarkt_mappa_club;")
-    mappa_club = {r["club"]: r["nome_transfermarkt"] for r in cur.fetchall()}
+    mappa_club = transfermarkt_repo.mappa_club(cur)
 
     club_mancanti = [nome for nome in mappa_club.values() if nome not in giocatori_tm_per_club_tm]
     if len(club_mancanti) > MASSIMO_CLUB_MANCANTI:
         raise DumpNonAffidabile(f"{len(club_mancanti)} club mancanti dal dump.")
 
-    cur.execute("TRUNCATE transfermarkt_giocatori;")
-    for club_tm, giocatori in giocatori_tm_per_club_tm.items():
+    transfermarkt_repo.svuota_cache(cur)
+    for giocatori in giocatori_tm_per_club_tm.values():
         for g in giocatori:
-            cur.execute(
-                """
-                INSERT INTO transfermarkt_giocatori
-                    (id_transfermarkt, club_tm, nome, cognome, data_nascita, scadenza_contratto, valore_mercato)
-                VALUES (%s, %s, %s, %s, %s, %s, %s);
-                """,
-                (g["id_transfermarkt"], club_tm, g["nome"], g["cognome"],
-                 g["data_nascita"], g["scadenza_contratto"], g["valore_mercato"]),
-            )
+            transfermarkt_repo.inserisci_in_cache(cur, g)
 
     # Refresh dei già mappati: id_transfermarkt non viene mai ricalcolato.
-    cur.execute(
-        "SELECT id, id_transfermarkt, data_nascita, scadenza_contratto, valore_mercato FROM giocatore "
-        "WHERE id_transfermarkt IS NOT NULL AND priorita = 1;"
-    )
     n_aggiornati = 0
-    for g in cur.fetchall():
+    for g in transfermarkt_repo.gia_mappati(cur):
         aggiornato = per_id_transfermarkt.get(g["id_transfermarkt"])
         if not aggiornato:
             continue
@@ -245,38 +231,24 @@ def _esegui_matching(cur, percorso_input):
                 and aggiornato["scadenza_contratto"] == g["scadenza_contratto"]
                 and valore_mercato == g["valore_mercato"]):
             continue
-        cur.execute(
-            "UPDATE giocatore SET data_nascita = %s, scadenza_contratto = %s, valore_mercato = %s WHERE id = %s;",
-            (aggiornato["data_nascita"], aggiornato["scadenza_contratto"],
-             valore_mercato, g["id"]),
-        )
+        transfermarkt_repo.aggiorna_dati_sincronizzati(
+            cur, g["id"], aggiornato["data_nascita"], aggiornato["scadenza_contratto"], valore_mercato)
         n_aggiornati += 1
 
-    cur.execute("SELECT id, nome, club FROM giocatore WHERE id_transfermarkt IS NULL AND priorita = 1;")
     n_auto = n_ambigui = n_non_trovati = 0
-    for giocatore in cur.fetchall():
+    for giocatore in transfermarkt_repo.non_ancora_mappati(cur):
         club_tm = mappa_club.get(giocatore["club"])
         candidati = candidati_esatti(giocatore["nome"], giocatori_tm_per_club_tm.get(club_tm, []))
 
         if len(candidati) == 1:
-            c = candidati[0]
-            cur.execute(
-                "UPDATE giocatore SET id_transfermarkt = %s, data_nascita = %s, scadenza_contratto = %s, valore_mercato = %s WHERE id = %s;",
-                (c["id_transfermarkt"], c["data_nascita"], c["scadenza_contratto"],
-                 c["valore_mercato"], giocatore["id"]),
-            )
+            transfermarkt_repo.assegna_abbinamento(cur, giocatore["id"], candidati[0])
             n_auto += 1
         elif len(candidati) >= 2:
-            cur.execute(
-                "UPDATE transfermarkt_giocatori SET id_giocatore = %s WHERE id_transfermarkt = ANY(%s);",
-                (giocatore["id"], [c["id_transfermarkt"] for c in candidati]),
-            )
+            transfermarkt_repo.segnala_candidati_ambigui(
+                cur, giocatore["id"], [c["id_transfermarkt"] for c in candidati])
             n_ambigui += 1
         else:
-            cur.execute(
-                "INSERT INTO transfermarkt_giocatori (id_giocatore, id_transfermarkt) VALUES (%s, NULL);",
-                (giocatore["id"],),
-            )
+            transfermarkt_repo.segnala_non_trovato(cur, giocatore["id"])
             n_non_trovati += 1
 
     logger.error(f"🔄 Aggiornati: {n_aggiornati} | ✅ Nuovi: {n_auto} | ⚠️ Ambigui: {n_ambigui} | ❌ Non trovati: {n_non_trovati}")

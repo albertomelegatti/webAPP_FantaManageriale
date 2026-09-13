@@ -1,5 +1,7 @@
 from flask import Blueprint, render_template
 from app.core.db import connessione
+from app.repositories import squadre as squadre_repo
+from app.repositories import vetrina as vetrina_repo
 
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data
@@ -16,20 +18,10 @@ def vetrina():
     squadre = []
 
     with connessione() as (conn, cur):
-        cur.execute('''
-            SELECT g.nome, g.ruolo, g.detentore_cartellino, g.quot_att_mantra, v.stato, v.note, v.data_inserimento
-            FROM giocatore g
-            JOIN vetrina v ON g.id = v.id_giocatore
-            WHERE g.squadra_att <> 'Svincolato' AND g.detentore_cartellino <> 'Svincolato'
-            ORDER BY g.nome;
-        ''')
-        giocatori_vetrina = cur.fetchall()
-
-        for giocatore in giocatori_vetrina:
-            ruolo = pulisci_ruolo(giocatore['ruolo'])
+        for giocatore in vetrina_repo.elenco(cur):
             giocatori.append({
                 'nome': giocatore['nome'],
-                'ruolo': ruolo,
+                'ruolo': pulisci_ruolo(giocatore['ruolo']),
                 'detentore_cartellino': giocatore['detentore_cartellino'],
                 'quot_att_mantra': giocatore['quot_att_mantra'],
                 'stato': giocatore['stato'],
@@ -37,14 +29,7 @@ def vetrina():
                 'data_inserimento': formatta_data(giocatore['data_inserimento'])
         })
 
-        # Recupero nomi delle squadre per visualizzarli nella vetrina
-        cur.execute('''
-            SELECT nome
-            FROM squadra
-            WHERE nome <> 'Svincolato'
-            ORDER BY nome;
-        ''')
-        squadre = cur.fetchall()
+        squadre = squadre_repo.nomi(cur)
 
     ruoli_disponibili = ruoli_base_presenti([g['ruolo'] for g in giocatori])
 
