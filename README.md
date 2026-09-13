@@ -104,7 +104,7 @@ def user_tagli(nome_squadra):
 
 Non tutte le route sono già arrivate a questa forma: alcune, soprattutto nel flusso di scambio e di gestione prestiti, contengono ancora logica di transizione di stato abbastanza corposa perché coinvolge più tabelle in sequenza dentro un'unica transazione. È debito riconosciuto, non un modello da imitare in codice nuovo: quando una route supera una manciata di righe di logica non banale, quella logica appartiene a un service.
 
-**Cosa non fa**: un blueprint non scrive SQL. `pubblico.py` conserva un'unica eccezione dichiarata (`SELECT 1;` sull'endpoint `/health`), e non è un'eccezione per pigrizia: è una sonda di connettività, categoria diversa da una query di dominio, e serve proprio perché la validazione delle connessioni nel pool è pigra e altrimenti quell'endpoint non proverebbe nulla.
+**Cosa non fa**: un blueprint non scrive SQL. `public.py` conserva un'unica eccezione dichiarata (`SELECT 1;` sull'endpoint `/health`), e non è un'eccezione per pigrizia: è una sonda di connettività, categoria diversa da una query di dominio, e serve proprio perché la validazione delle connessioni nel pool è pigra e altrimenti quell'endpoint non proverebbe nulla.
 
 **Sull'unica eccezione al nome in italiano**: il resto della codebase usa nomi di dominio in italiano (`squadra`, `giocatore`, `scambio`, `sposta_crediti`...). I nomi di blueprint che descrivono una *categoria architetturale* del modulo invece di un concetto di gioco restano in inglese — `admin.py`, `auth.py`, `public.py` — perché non sono vocabolario del fantacalcio, sono vocabolario dell'architettura web.
 
