@@ -20,6 +20,35 @@ def id_con_richiesta_in_elaborazione(cur, id_giocatori) -> set[int]:
     return {r["giocatore"] for r in cur.fetchall()}
 
 
+def rifiuta(cur, id_richiesta) -> None:
+    cur.execute("UPDATE richiesta_modifica_contratto SET stato = 'rifiutata' WHERE id = %s;", (id_richiesta,))
+
+
+def accetta(cur, id_richiesta) -> None:
+    cur.execute("UPDATE richiesta_modifica_contratto SET stato = 'accettata' WHERE id = %s;", (id_richiesta,))
+
+
+def dettaglio(cur, id_richiesta) -> dict | None:
+    cur.execute(
+        """SELECT giocatore, contratto_richiesto, crediti_richiesti, squadra_richiedente
+           FROM richiesta_modifica_contratto WHERE id = %s;""",
+        (id_richiesta,))
+    return cur.fetchone()
+
+
+def elenco(cur) -> list[dict]:
+    """Tutte le richieste, dalla piu' recente, con i dati del giocatore per la
+    pagina di amministrazione."""
+    cur.execute(
+        """SELECT r.id, g.nome, g.tipo_contratto, g.ruolo, g.club, r.giocatore,
+                  r.contratto_richiesto, r.squadra_richiedente, r.crediti_richiesti,
+                  r.messaggio, r.data, r.stato
+           FROM richiesta_modifica_contratto AS r
+           JOIN giocatore AS g ON r.giocatore = g.id
+           ORDER BY data DESC;""")
+    return cur.fetchall()
+
+
 def crea(cur, id_giocatore, contratto_richiesto, squadra_richiedente,
          crediti_richiesti, messaggio) -> int:
     cur.execute(

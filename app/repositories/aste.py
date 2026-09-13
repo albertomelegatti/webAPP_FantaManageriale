@@ -41,6 +41,21 @@ def slot_occupati_totali(cur, nome_squadra: str) -> int:
     return riga["slot_giocatori"] + riga["slot_aste"]
 
 
+def crea_mostra_interesse(cur, id_giocatore: int, nome_squadra: str) -> int:
+    """Apre un'asta in stato 'mostra_interesse' per il giocatore indicato, con
+    la squadra richiedente gia' iscritta e un giorno di tempo per le altre.
+    """
+    cur.execute(
+        """INSERT INTO asta (
+               giocatore, squadra_vincente, ultima_offerta,
+               tempo_fine_asta, tempo_fine_mostra_interesse, stato, partecipanti, gia_elaborata
+           )
+           VALUES (%s, %s, NULL, NULL, (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '1 day', 'mostra_interesse', %s, FALSE)
+           RETURNING id;""",
+        (id_giocatore, nome_squadra, [nome_squadra]))
+    return cur.fetchone()["id"]
+
+
 def stato(cur, asta_id) -> str | None:
     cur.execute("SELECT stato FROM asta WHERE id = %s;", (asta_id,))
     riga = cur.fetchone()
@@ -62,6 +77,18 @@ def iscrivi(cur, asta_id, nome_squadra: str) -> None:
 def rinuncia(cur, asta_id, nome_squadra: str) -> None:
     cur.execute("UPDATE asta SET partecipanti = array_remove(partecipanti, %s) WHERE id = %s;",
                 (nome_squadra, asta_id))
+
+
+def elenco_completo(cur) -> list[dict]:
+    """Tutte le aste con i dati del giocatore, per la pagina pubblica /aste."""
+    cur.execute("""
+        SELECT g.nome, g.ruolo, g.club, a.squadra_vincente, a.ultima_offerta,
+               a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
+        FROM asta a
+        JOIN giocatore g ON a.giocatore = g.id
+        ORDER BY a.tempo_fine_asta DESC;
+    """)
+    return cur.fetchall()
 
 
 def visibili_alla_squadra(cur, nome_squadra: str) -> list[dict]:
