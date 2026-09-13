@@ -108,23 +108,23 @@
             {% if prestiti_out %}
             <table class="w-full table-fixed text-sm">
                 <colgroup>
-                    <col style="width:32%"><col style="width:12%"><col style="width:10%"><col style="width:46%">
+                    <col style="width:32%"><col style="width:46%"><col style="width:12%"><col style="width:10%">
                 </colgroup>
                 <thead>
                     <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
                         <th class="pb-2 font-semibold"></th>
+                        <th class="pb-2 pr-2 font-semibold">Verso</th>
                         <th class="pb-2 text-center font-semibold">Ruolo</th>
                         <th class="pb-2 text-center font-semibold">QA</th>
-                        <th class="pb-2 pl-2 font-semibold">Verso</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-line">
                     {% for p in prestiti_out %}
                     <tr class="cursor-pointer hover:bg-panel-2" {{ m.info_giocatore(p) }}>
                         <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ p.nome }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 text-muted">{{ 'Prestito Reale' if p.squadra_att == 'Svincolato' else p.squadra_att }}</td>
                         <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(p.ruolo) }}</td>
                         <td class="py-2.5 text-center tabular-nums text-muted">{{ p.quot_att_mantra }}</td>
-                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pl-2 text-muted">{{ 'Prestito Reale' if p.squadra_att == 'Svincolato' else p.squadra_att }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -140,23 +140,23 @@
             {% if prestiti_in %}
             <table class="w-full table-fixed text-sm">
                 <colgroup>
-                    <col style="width:32%"><col style="width:12%"><col style="width:10%"><col style="width:46%">
+                    <col style="width:32%"><col style="width:46%"><col style="width:12%"><col style="width:10%">
                 </colgroup>
                 <thead>
                     <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
                         <th class="pb-2 font-semibold"></th>
+                        <th class="pb-2 pr-2 font-semibold">Da</th>
                         <th class="pb-2 text-center font-semibold">Ruolo</th>
                         <th class="pb-2 text-center font-semibold">QA</th>
-                        <th class="pb-2 pl-2 font-semibold">Da</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-line">
                     {% for g in prestiti_in %}
                     <tr class="cursor-pointer hover:bg-panel-2" {{ m.info_giocatore(g) }}>
                         <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 text-muted">{{ g.detentore_cartellino }}</td>
                         <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
                         <td class="py-2.5 text-center tabular-nums text-muted">{{ g.quot_att_mantra }}</td>
-                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pl-2 text-muted">{{ g.detentore_cartellino }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
