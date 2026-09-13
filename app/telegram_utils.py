@@ -798,7 +798,7 @@ def richiesta_terminazione_prestito_risposta(conn, id_prestito, risposta):
                 f"❌ TERMINAZIONE PRESTITO RIFIUTATA\n"
                 f"La tua richiesta di terminare in anticipo il prestito del giocatore {giocatore} è stata rifiutata."
             )
-        send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
+            send_message(nome_squadra=richiedente_terminazione, text_to_send=text_to_send)
 
     except Exception:
         logger.exception("Errore")
