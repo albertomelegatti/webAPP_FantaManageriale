@@ -45,11 +45,16 @@
 <div class="flex flex-col gap-4" id="gruppi-vetrina">
     {% for nome_squadra, giocatori_squadra in giocatori|sort(attribute='detentore_cartellino')|groupby('detentore_cartellino') %}
     <div class="rounded-2xl border border-line bg-panel p-4" data-squadra="{{ nome_squadra }}">
-        <h4 class="mb-2 flex items-center justify-between text-sm font-bold uppercase tracking-wide text-muted">
-            <span>{{ nome_squadra }}</span>
-            <span class="rounded-full bg-panel-2 px-2 py-0.5 text-[11px] font-bold text-text">{{ giocatori_squadra|length }}</span>
+        <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">
+            <button type="button" class="vetrina-squadra-toggle flex w-full items-center justify-between gap-2 text-left">
+                <span class="min-w-0 truncate">{{ nome_squadra }}</span>
+                <span class="flex shrink-0 items-center gap-1.5">
+                    <span class="rounded-full bg-panel-2 px-2 py-0.5 text-[11px] font-bold text-text">{{ giocatori_squadra|length }}</span>
+                    <i class="bi bi-chevron-down chevron-squadra shrink-0 rotate-180 transition-transform"></i>
+                </span>
+            </button>
         </h4>
-        <div class="flex flex-col gap-2">
+        <div class="vetrina-lista flex flex-col gap-2">
             {% for giocatore in giocatori_squadra %}
             <div class="vetrina-item rounded-xl bg-panel-2 px-3 py-2.5" data-stato="{{ giocatore.stato }}" data-ruolo="{{ giocatore.ruolo }}">
                 <div class="flex items-start justify-between gap-3">
@@ -88,6 +93,14 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.vetrina-squadra-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const gruppo = btn.closest('[data-squadra]');
+            gruppo.querySelector('.vetrina-lista').classList.toggle('hidden');
+            btn.querySelector('.chevron-squadra').classList.toggle('rotate-180');
+        });
+    });
+
     document.querySelectorAll('.vetrina-note-toggle').forEach(function (btn) {
         const testo = btn.querySelector('.nota-testo');
         const chevron = btn.querySelector('.chevron');
