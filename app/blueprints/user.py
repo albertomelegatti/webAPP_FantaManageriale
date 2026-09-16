@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, session, redirect, url_for
 from app.core.db import connessione
 
 from app.core.logging import get_logger
+from app.repositories import albo_oro as albo_oro_repo
 from app.repositories import aste as aste_repo
 from app.repositories import configurazione as configurazione_repo
 from app.repositories import giocatori as giocatori_repo
@@ -34,8 +35,9 @@ def squadra_login(nome_squadra):
         prestiti_in_num = giocatori_repo.slot_prestiti_in(cur, nome_squadra)
 
         crediti = squadre_repo.crediti(cur, nome_squadra)
+        palmares = albo_oro_repo.palmares(cur, nome_squadra)
 
-    return render_template("squadra_login.html", nome_squadra=nome_squadra, username=username, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num, crediti=crediti)
+    return render_template("squadra_login.html", nome_squadra=nome_squadra, username=username, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num, crediti=crediti, palmares=palmares)
 
 
 def _info_chiusura(chiusura, aperto, testo):
