@@ -4,7 +4,8 @@
 {% import '_macros.html' as m %}
 
 <div class="mb-6 flex flex-col items-center text-center">
-    <img src="{{ url_for('static', filename='images/logo-lgt.png') }}?v={{ asset_v('images/logo-lgt.png') }}" alt="Logo Lega Guru Tattici" class="h-40 w-40 object-contain">
+    <img src="{{ url_for('static', filename='images/logo-lgt-light.png') }}?v={{ asset_v('images/logo-lgt-light.png') }}" alt="Logo Lega Guru Tattici" class="h-40 w-40 object-contain dark:hidden">
+    <img src="{{ url_for('static', filename='images/logo-lgt-dark.png') }}?v={{ asset_v('images/logo-lgt-dark.png') }}" alt="Logo Lega Guru Tattici" class="hidden h-40 w-40 object-contain dark:block">
 </div>
 
 <div class="flex flex-col gap-2">
