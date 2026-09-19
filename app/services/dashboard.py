@@ -198,6 +198,7 @@ def dati_squadra(cur, nome_squadra: str) -> dict | None:
         "slot_occupati": slot_giocatori + slot_aste,
         "slot_giocatori": slot_giocatori,
         "prestiti_in_num": len(elenchi["prestiti_in"]),
+        "prestiti_out_num": len(elenchi["prestiti_out"]),
         "eta_media": _eta_media(giocatori, nome_squadra),
         "palmares": albo_oro_repo.palmares(cur, nome_squadra),
         "draft_pick": _pick(draft_repo.pick_della_squadra(cur, nome_squadra)),
