@@ -8,10 +8,12 @@
          alt="Logo {{ nome_squadra }}"
          class="h-28 w-28 object-contain">
     <h2 class="text-lg font-bold">Sezione riservata di {{ nome_squadra }}</h2>
-    <div class="flex flex-wrap items-center justify-center gap-2">
-        {{ m.palmares_badge('bi-shield-fill', 'text-crit', palmares.campionati, 'Campione Mu.Ve. League') }}
-        {{ m.palmares_badge('bi-trophy-fill', 'text-crit', palmares.coppe, 'Campione Mu.Ve. Cup') }}
+    {% if palmares.campionati or palmares.coppe %}
+    <div class="bacheca-trofei">
+        {{ m.scudetto_badge(palmares.campionati, 'Campione Mu.Ve. League') }}
+        {{ m.coppa_badge(palmares.coppe, 'Campione Mu.Ve. Cup') }}
     </div>
+    {% endif %}
 </div>
 
 <div class="mb-4 grid grid-cols-3 gap-2">
