@@ -58,3 +58,41 @@
 .italic {
     font-style: italic;
 }
+
+/* --- Palmares (dashboard squadra) ------------------------------------------ */
+
+/* Piccolo scudo tricolore per ogni campionato vinto: la forma a stemma e le
+   tre bande verde-bianco-rosso richiamano lo scudetto reale, al posto della
+   generica icona a scudo monocolore usata prima. */
+.badge-scudetto {
+    background: linear-gradient(90deg, #0d8a44 0 33.33%, #f5f5f0 33.33% 66.66%, #cc2b3d 66.66% 100%);
+    clip-path: polygon(50% 0%, 100% 18%, 100% 62%, 50% 100%, 0% 62%, 0% 18%);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* Trofeo dorato per ogni Coppa vinta, ispirato alla Coppa Italia: oro invece
+   del rosso generico usato prima anche per gli scudetti, con un lieve
+   bagliore che lo distingue a colpo d'occhio dallo scudetto accanto. */
+.badge-coppa {
+    color: #d4af37;
+    filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.6));
+}
+
+/* --- Tab squadra (static/js/dashboard_squadra.js) --------------------------
+   Stesso schema di .numero-pagina.attivo: pieno con il colore di sfondo della
+   pagina sopra l'accento, cosi' resta leggibile in entrambi i temi. */
+.tab-squadra {
+    color: var(--muted);
+    background: transparent;
+    transition: color 0.12s ease, background-color 0.12s ease;
+}
+
+.tab-squadra:hover {
+    color: var(--text);
+    background: var(--panel-2);
+}
+
+.tab-squadra[aria-selected="true"] {
+    color: var(--bg);
+    background: var(--accent);
+}

@@ -21,7 +21,7 @@ unirla senza le contorcere.
 """
 
 from app.core.formato import formatta_valore_mercato_mln
-from app.core.tempo import (formatta_data_nascita_con_eta,
+from app.core.tempo import (calcola_eta, formatta_data_nascita_con_eta,
                             formatta_scadenza_contratto)
 from app.domini.ruoli import pulisci_ruolo, ruolo_sort_key
 from app.repositories import albo_oro as albo_oro_repo
@@ -29,7 +29,6 @@ from app.repositories import aste as aste_repo
 from app.repositories import draft as draft_repo
 from app.repositories import giocatori as giocatori_repo
 from app.repositories.giocatori import CONTRATTI_CHE_OCCUPANO_SLOT
-from app.repositories import movimenti as movimenti_repo
 from app.repositories import squadre as squadre_repo
 
 # Contratti che rappresentano un giocatore prestato ad altri pur restando di
@@ -94,6 +93,22 @@ def _dividi_giocatori(giocatori: list[dict], nome_squadra: str) -> dict:
                                  if g["detentore_cartellino"] == nome_squadra
                                  and g["tipo_contratto"] in CONTRATTI_IN_USCITA]),
     }
+
+
+def _eta_media(giocatori: list[dict], nome_squadra: str) -> float | None:
+    """Età media della rosa titolare (esclude la Primavera, include i prestiti
+    in entrata), calcolata al giorno corrente.
+
+    None quando nessuno del gruppo ha una data di nascita sincronizzata da
+    Transfermarkt: una rosa senza dati non ha età zero.
+    """
+    in_rosa = [g for g in giocatori if g["squadra_att"] == nome_squadra]
+    eta = [calcola_eta(g["data_nascita"]) for g in in_rosa
+           if g["tipo_contratto"] != "Primavera"]
+    eta = [e for e in eta if e is not None]
+    if not eta:
+        return None
+    return round(sum(eta) / len(eta), 1)
 
 
 def _valore_di_mercato(giocatori) -> str | None:
@@ -183,9 +198,9 @@ def dati_squadra(cur, nome_squadra: str) -> dict | None:
         "slot_occupati": slot_giocatori + slot_aste,
         "slot_giocatori": slot_giocatori,
         "prestiti_in_num": len(elenchi["prestiti_in"]),
+        "eta_media": _eta_media(giocatori, nome_squadra),
         "palmares": albo_oro_repo.palmares(cur, nome_squadra),
         "draft_pick": _pick(draft_repo.pick_della_squadra(cur, nome_squadra)),
-        "mercato": movimenti_repo.per_squadra(cur, nome_squadra),
         **elenchi,
         **valori,
     }

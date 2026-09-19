@@ -4,7 +4,7 @@
 {% import '_macros.html' as m %}
 <div class="mb-2">{{ m.torna_indietro(url_for('public.squadre')) }}</div>
 
-<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-4" id="paginaSquadra" data-loghi-base="{{ url_for('static', filename='loghi/') }}">
 
     <!-- Testata squadra -->
     <div class="flex flex-col items-center gap-4 rounded-2xl border border-line bg-panel p-4 sm:flex-row sm:items-center">
@@ -15,12 +15,12 @@
         <div class="flex-1 text-center">
             <h2 class="text-xl font-bold">{{ nome_squadra }}</h2>
             <div class="mt-1 flex flex-wrap items-center justify-center gap-2">
-                {{ m.palmares_badge('bi-shield-fill', 'text-crit', palmares.campionati, 'Campione Mu.Ve. League') }}
-                {{ m.palmares_badge('bi-trophy-fill', 'text-crit', palmares.coppe, 'Campione Mu.Ve. Cup') }}
+                {{ m.scudetto_badge(palmares.campionati, 'Campione Mu.Ve. League') }}
+                {{ m.coppa_badge(palmares.coppe, 'Campione Mu.Ve. Cup') }}
             </div>
             <p class="text-sm text-muted">Stadio: {{ stadio.nome }} · Livello {{ stadio.livello }}</p>
         </div>
-        <div class="grid w-full grid-cols-2 gap-2 sm:w-auto sm:grid-cols-4">
+        <div class="grid w-full grid-cols-2 gap-2 sm:w-auto sm:grid-cols-3">
             <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
                 <div class="text-xs text-muted">Slot</div>
                 <div class="text-lg font-bold">{{ slot_giocatori }}/30</div>
@@ -37,43 +37,54 @@
                 <div class="text-xs text-muted">Valore rosa</div>
                 <div class="text-lg font-bold tabular-nums">{{ valore_rosa_totale or '—' }}</div>
             </div>
+            <div class="rounded-xl border border-line bg-panel-2 px-3 py-2 text-center">
+                <div class="text-xs text-muted">Età media</div>
+                <div class="text-lg font-bold tabular-nums">{{ eta_media or '—' }}</div>
+            </div>
         </div>
     </div>
 
-    <!-- Rosa -->
+    <!-- Menù sezioni -->
     <div class="rounded-2xl border border-line bg-panel p-4">
-        {{ m.titolo_riquadro('Rosa', valore_rosa) }}
-        <table class="w-full table-fixed text-sm">
-            <colgroup>
-                <col style="width:38%"><col style="width:14%"><col style="width:18%"><col style="width:14%"><col style="width:16%">
-            </colgroup>
-            <thead>
-                <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
-                    <th class="pb-2 font-semibold"></th>
-                    <th class="pb-2 text-center font-semibold">Club</th>
-                    <th class="pb-2 text-center font-semibold">Ruolo</th>
-                    <th class="pb-2 text-center font-semibold">Contr.</th>
-                    <th class="pb-2 text-center font-semibold">QA</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-line">
-                {% for g in rosa %}
-                <tr class="cursor-pointer hover:bg-panel-2" {{ m.info_giocatore(g) }}>
-                    <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
-                    <td class="py-2.5 text-center">{{ m.club_abbr(g.club) }}</td>
-                    <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
-                    <td class="py-2.5 text-center">{{ m.contratto_icona(g.tipo_contratto) }}</td>
-                    <td class="py-2.5 text-center tabular-nums text-muted">{{ g.quot_att_mantra }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+        <div class="mb-4 flex flex-wrap gap-2 border-b border-line pb-2" role="tablist">
+            <button type="button" class="tab-squadra rounded-full px-3 py-1.5 text-sm font-semibold" data-tab="rosa" aria-selected="true">Rosa</button>
+            <button type="button" class="tab-squadra rounded-full px-3 py-1.5 text-sm font-semibold" data-tab="primavera" aria-selected="false">Primavera</button>
+            <button type="button" class="tab-squadra rounded-full px-3 py-1.5 text-sm font-semibold" data-tab="draft" aria-selected="false">Draft</button>
+            <button type="button" class="tab-squadra rounded-full px-3 py-1.5 text-sm font-semibold" data-tab="prestiti" aria-selected="false">Prestiti</button>
+        </div>
 
-    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <!-- Rosa -->
+        <div class="pannello-squadra" data-panel="rosa">
+            {{ m.titolo_riquadro('Rosa', valore_rosa) }}
+            <table class="w-full table-fixed text-sm">
+                <colgroup>
+                    <col style="width:38%"><col style="width:14%"><col style="width:18%"><col style="width:14%"><col style="width:16%">
+                </colgroup>
+                <thead>
+                    <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                        <th class="pb-2 font-semibold"></th>
+                        <th class="pb-2 text-center font-semibold">Club</th>
+                        <th class="pb-2 text-center font-semibold">Ruolo</th>
+                        <th class="pb-2 text-center font-semibold">Contr.</th>
+                        <th class="pb-2 text-center font-semibold">QA</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-line">
+                    {% for g in rosa %}
+                    <tr class="cursor-pointer hover:bg-panel-2" {{ m.info_giocatore(g) }}>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
+                        <td class="py-2.5 text-center">{{ m.club_abbr(g.club) }}</td>
+                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
+                        <td class="py-2.5 text-center">{{ m.contratto_icona(g.tipo_contratto) }}</td>
+                        <td class="py-2.5 text-center tabular-nums text-muted">{{ g.quot_att_mantra }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <!-- Primavera -->
-        <div class="rounded-2xl border border-line bg-panel p-4">
+        <div class="pannello-squadra hidden" data-panel="primavera">
             {{ m.titolo_riquadro('Primavera', valore_primavera) }}
             {% if primavera %}
             <table class="w-full table-fixed text-sm">
@@ -102,72 +113,8 @@
             {% endif %}
         </div>
 
-        <!-- Prestiti OUT -->
-        <div class="rounded-2xl border border-line bg-panel p-4">
-            {{ m.titolo_riquadro('Prestiti OUT', valore_prestiti_out) }}
-            {% if prestiti_out %}
-            <table class="w-full table-fixed text-sm">
-                <colgroup>
-                    <col style="width:32%"><col style="width:46%"><col style="width:12%"><col style="width:10%">
-                </colgroup>
-                <thead>
-                    <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
-                        <th class="pb-2 font-semibold"></th>
-                        <th class="pb-2 pr-2 font-semibold">Verso</th>
-                        <th class="pb-2 text-center font-semibold">Ruolo</th>
-                        <th class="pb-2 text-center font-semibold">QA</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-line">
-                    {% for p in prestiti_out %}
-                    <tr class="cursor-pointer hover:bg-panel-2" {{ m.info_giocatore(p) }}>
-                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ p.nome }}</td>
-                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 text-muted">{{ 'Prestito Reale' if p.squadra_att == 'Svincolato' else p.squadra_att }}</td>
-                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(p.ruolo) }}</td>
-                        <td class="py-2.5 text-center tabular-nums text-muted">{{ p.quot_att_mantra }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p class="py-2 text-center text-sm text-muted">Nessun prestito in uscita</p>
-            {% endif %}
-        </div>
-
-        <!-- Prestiti IN -->
-        <div class="rounded-2xl border border-line bg-panel p-4">
-            {{ m.titolo_riquadro('Prestiti IN', valore_prestiti_in) }}
-            {% if prestiti_in %}
-            <table class="w-full table-fixed text-sm">
-                <colgroup>
-                    <col style="width:32%"><col style="width:46%"><col style="width:12%"><col style="width:10%">
-                </colgroup>
-                <thead>
-                    <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
-                        <th class="pb-2 font-semibold"></th>
-                        <th class="pb-2 pr-2 font-semibold">Da</th>
-                        <th class="pb-2 text-center font-semibold">Ruolo</th>
-                        <th class="pb-2 text-center font-semibold">QA</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-line">
-                    {% for g in prestiti_in %}
-                    <tr class="cursor-pointer hover:bg-panel-2" {{ m.info_giocatore(g) }}>
-                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
-                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 text-muted">{{ g.detentore_cartellino }}</td>
-                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
-                        <td class="py-2.5 text-center tabular-nums text-muted">{{ g.quot_att_mantra }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p class="py-2 text-center text-sm text-muted">Nessun prestito in entrata</p>
-            {% endif %}
-        </div>
-
         <!-- Draft -->
-        <div class="rounded-2xl border border-line bg-panel p-4">
+        <div class="pannello-squadra hidden" data-panel="draft">
             {{ m.titolo_riquadro('Draft') }}
             {% if draft_pick %}
             <div class="max-h-80 overflow-y-auto">
@@ -198,6 +145,71 @@
             {% else %}
             <p class="py-2 text-center text-sm text-muted">Nessuna pick disponibile</p>
             {% endif %}
+        </div>
+
+        <!-- Prestiti (IN sopra, OUT sotto) -->
+        <div class="pannello-squadra hidden flex flex-col gap-4" data-panel="prestiti">
+            <div>
+                {{ m.titolo_riquadro('Prestiti IN', valore_prestiti_in) }}
+                {% if prestiti_in %}
+                <table class="w-full table-fixed text-sm">
+                    <colgroup>
+                        <col style="width:32%"><col style="width:46%"><col style="width:12%"><col style="width:10%">
+                    </colgroup>
+                    <thead>
+                        <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                            <th class="pb-2 font-semibold"></th>
+                            <th class="pb-2 pr-2 font-semibold">Da</th>
+                            <th class="pb-2 text-center font-semibold">Ruolo</th>
+                            <th class="pb-2 text-center font-semibold">QA</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        {% for g in prestiti_in %}
+                        <tr class="cursor-pointer hover:bg-panel-2" {{ m.info_giocatore(g) }}>
+                            <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ g.nome }}</td>
+                            <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 text-muted">{{ g.detentore_cartellino }}</td>
+                            <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(g.ruolo) }}</td>
+                            <td class="py-2.5 text-center tabular-nums text-muted">{{ g.quot_att_mantra }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="py-2 text-center text-sm text-muted">Nessun prestito in entrata</p>
+                {% endif %}
+            </div>
+
+            <div>
+                {{ m.titolo_riquadro('Prestiti OUT', valore_prestiti_out) }}
+                {% if prestiti_out %}
+                <table class="w-full table-fixed text-sm">
+                    <colgroup>
+                        <col style="width:32%"><col style="width:46%"><col style="width:12%"><col style="width:10%">
+                    </colgroup>
+                    <thead>
+                        <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                            <th class="pb-2 font-semibold"></th>
+                            <th class="pb-2 pr-2 font-semibold">Verso</th>
+                            <th class="pb-2 text-center font-semibold">Ruolo</th>
+                            <th class="pb-2 text-center font-semibold">QA</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-line">
+                        {% for p in prestiti_out %}
+                        <tr class="cursor-pointer hover:bg-panel-2" {{ m.info_giocatore(p) }}>
+                            <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ p.nome }}</td>
+                            <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 text-muted">{{ 'Prestito Reale' if p.squadra_att == 'Svincolato' else p.squadra_att }}</td>
+                            <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 text-center">{{ m.ruolo_colorato(p.ruolo) }}</td>
+                            <td class="py-2.5 text-center tabular-nums text-muted">{{ p.quot_att_mantra }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="py-2 text-center text-sm text-muted">Nessun prestito in uscita</p>
+                {% endif %}
+            </div>
         </div>
     </div>
 
@@ -254,85 +266,6 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const loghiBase = "{{ url_for('static', filename='loghi/') }}";
-    const overlayGiocatore = document.getElementById('overlayGiocatore');
-    const btnChiudiGiocatore = document.getElementById('btnChiudiGiocatore');
-    const modalNome = document.getElementById('modalNome');
-    const modalRuolo = document.getElementById('modalRuolo');
-    const modalClub = document.getElementById('modalClub');
-    const modalSquadra = document.getElementById('modalSquadra');
-    const modalDetentoreRow = document.getElementById('modalDetentoreRow');
-    const modalDetentore = document.getElementById('modalDetentore');
-    const modalContratto = document.getElementById('modalContratto');
-    const modalDataNascita = document.getElementById('modalDataNascita');
-    const modalScadenzaContratto = document.getElementById('modalScadenzaContratto');
-    const modalValoreMercato = document.getElementById('modalValoreMercato');
-    const modalQuotazione = document.getElementById('modalQuotazione');
-    const modalCosto = document.getElementById('modalCosto');
-
-    // Placeholder per i dati non ancora sincronizzati da Transfermarkt: testo
-    // attenuato e corsivo per distinguerli a colpo d'occhio da un valore reale.
-    const impostaCampoTransfermarkt = (elemento, valore) => {
-        const nonSincronizzato = String(valore).startsWith('Non sincronizzat');
-        elemento.textContent = valore;
-        elemento.classList.toggle('text-muted', nonSincronizzato);
-        elemento.classList.toggle('italic', nonSincronizzato);
-        elemento.classList.toggle('font-medium', !nonSincronizzato);
-    };
-
-    const logoUrl = (username) => loghiBase + (username || 'svincolato') + '.png';
-
-    const squadraHtml = (nome, username) =>
-        '<img src="' + logoUrl(username) + '" alt="" class="h-5 w-5 object-contain">' +
-        '<span>' + (nome || 'Svincolato') + '</span>';
-
-    const apriCardGiocatore = (info) => {
-        modalNome.textContent = info.nome;
-        modalRuolo.textContent = info.ruolo.split(',').map(r => r.trim()).join(', ');
-        modalClub.textContent = info.club;
-        modalSquadra.innerHTML = squadraHtml(info.squadra_att, info.squadra_username);
-        if (info.detentore && info.detentore !== info.squadra_att) {
-            modalDetentore.innerHTML = squadraHtml(info.detentore, info.detentore_username);
-            modalDetentoreRow.classList.remove('hidden');
-            modalDetentoreRow.classList.add('flex');
-        } else {
-            modalDetentoreRow.classList.add('hidden');
-            modalDetentoreRow.classList.remove('flex');
-        }
-        modalContratto.textContent = info.tipo_contratto || '-';
-        impostaCampoTransfermarkt(modalDataNascita, info.data_nascita);
-        impostaCampoTransfermarkt(modalScadenzaContratto, info.scadenza_contratto_reale);
-        impostaCampoTransfermarkt(modalValoreMercato, info.valore_mercato);
-        modalQuotazione.textContent = info.quotazione;
-        modalCosto.textContent = info.costo;
-
-        overlayGiocatore.classList.remove('hidden');
-        overlayGiocatore.classList.add('flex');
-    };
-
-    const chiudiCardGiocatore = () => {
-        overlayGiocatore.classList.add('hidden');
-        overlayGiocatore.classList.remove('flex');
-    };
-
-    // Delega unica per tutte le tabelle della pagina (rosa, primavera, prestiti
-    // in entrata e in uscita, pick del draft gia' usate).
-    document.addEventListener('click', function (e) {
-        const row = e.target.closest('tr[data-info]');
-        if (!row) return;
-        apriCardGiocatore(JSON.parse(row.dataset.info));
-    });
-
-    btnChiudiGiocatore.addEventListener('click', chiudiCardGiocatore);
-    overlayGiocatore.addEventListener('click', function (e) {
-        if (e.target === overlayGiocatore) chiudiCardGiocatore();
-    });
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') chiudiCardGiocatore();
-    });
-});
-</script>
+<script src="{{ url_for('static', filename='js/dashboard_squadra.js') }}?v={{ asset_v('js/dashboard_squadra.js') }}"></script>
 
 {% endblock %}
