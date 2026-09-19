@@ -63,20 +63,8 @@
              nelle altre fasi (es. Final 4) sì. -->
         <div class="rounded-xl border border-line bg-panel-2 p-3">
             <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Coppa</h4>
-            {% for fase in fasi_coppa %}
-            {% if not (tabellone and 'final' in (fase or '') | lower) %}
-            {% set mostra_crediti = 'girone' not in (fase or '') | lower %}
-            <h5 class="mb-1.5 mt-3 text-xs font-semibold text-muted first:mt-0">{{ fase }}</h5>
-            <div class="flex flex-col gap-1.5">
-                {% for r in righe_stagione if r.competizione == 'Coppa' and r.fase == fase %}
-                {{ m.classifica_riga(r, mostra_crediti) }}
-                {% endfor %}
-            </div>
-            {% endif %}
-            {% endfor %}
-
             {% if tabellone %}
-            <h5 class="mb-2 mt-3 text-xs font-semibold text-muted">Fase finale</h5>
+            <h5 class="mb-2 text-xs font-semibold text-muted">Fase finale</h5>
             <div class="bracket-coppa">
                 <div class="bracket-lato">
                     <span class="tabellone-etichetta">Semifinale 1</span>
@@ -126,6 +114,18 @@
                 </div>
             </div>
             {% endif %}
+
+            {% for fase in fasi_coppa %}
+            {% if not (tabellone and 'final' in (fase or '') | lower) %}
+            {% set mostra_crediti = 'girone' not in (fase or '') | lower %}
+            <h5 class="mb-1.5 {{ 'mt-3' if tabellone else '' }} text-xs font-semibold text-muted first:mt-0">{{ fase }}</h5>
+            <div class="flex flex-col gap-1.5">
+                {% for r in righe_stagione if r.competizione == 'Coppa' and r.fase == fase %}
+                {{ m.classifica_riga(r, mostra_crediti) }}
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endfor %}
         </div>
     </div>
 </div>
