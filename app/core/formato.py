@@ -19,15 +19,15 @@ def formatta_valore_mercato_mln(valore_euro):
     return f"{testo.replace('.', ',')} Mln"
 
 
-# Cartelle nell'URL dei campioncini: non sono stagioni, sono edizioni grafiche
-# diverse. La 20 e' l'illustrazione a caricatura "classica" (un personaggio
-# disegnato a mano, es. Thuram); la 21 copre tutti i giocatori (la 20 ne manca
-# circa un terzo, soprattutto trasferimenti recenti non ancora illustrati a
-# mano) ma per chi manca dalla 20 mostra una card statistica generata al volo,
-# visivamente diversa dalla caricatura (es. Malen). La 20 e' quindi la fonte
-# preferita per uno stile coerente; ogni <img> che la usa ha un onerror lato
-# client che ripiega sulla 21 se la 20 non esiste per quel giocatore, invece
-# di lasciare un'immagine rotta (vedi es. app/templates/_macros.html).
+# Cartella nell'URL dei campioncini: non e' una stagione, e' un'edizione
+# grafica. La 20 e' l'illustrazione a caricatura "classica" (un personaggio
+# disegnato a mano, es. Thuram) - le altre edizioni (es. la 21) coprono anche
+# chi manca da questa (circa un terzo, soprattutto trasferimenti recenti non
+# ancora illustrati a mano) ma con stili incoerenti fra loro, da una card
+# statistica stile FUT a una sagoma anonima. Deliberatamente non c'e' un
+# fallback su quelle altre edizioni: se manca la caricatura non si mostra
+# nessuna foto (ogni <img> che la usa nasconde se' stessa via onerror, vedi
+# es. app/templates/_macros.html) invece di un'immagine fuori stile.
 _CAMPIONCINO_STAGIONE = "20"
 
 

@@ -35,12 +35,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const apriCardGiocatore = (info) => {
         modalNome.textContent = info.nome;
         if (info.campioncino) {
-            // La cartella /20/ (caricatura disegnata a mano) non copre tutti i
-            // giocatori: se manca si ripiega sulla /21/ (card statistica) invece
-            // di lasciare l'immagine rotta. Vedi app/core/formato.py.
+            // Non tutti i giocatori hanno la caricatura disegnata a mano (vedi
+            // app/core/formato.py): se l'immagine non carica si nasconde,
+            // niente ripiego su uno stile diverso (card statistica, sagoma
+            // anonima) che stonerebbe col resto della rosa.
             modalCampioncino.onerror = function () {
                 modalCampioncino.onerror = null;
-                modalCampioncino.src = modalCampioncino.src.replace('/campioncini/20/', '/campioncini/21/');
+                modalCampioncino.classList.add('hidden');
             };
             modalCampioncino.src = info.campioncino;
             modalCampioncino.classList.remove('hidden');
