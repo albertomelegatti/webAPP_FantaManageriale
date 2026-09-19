@@ -16,32 +16,26 @@
     </select>
 </form>
 
-<p class="mb-4 text-center text-xs text-muted">Ogni posizione accetta solo i ruoli compatibili; cambiare modulo azzera le scelte non ancora salvate.</p>
+<p class="mb-4 text-center text-xs text-muted">Tocca una posizione per scegliere titolare, riserva e seconda riserva; cambiare modulo azzera le scelte non ancora salvate.</p>
 
-<form method="post" action="{{ url_for('formazione.user_formazione', nome_squadra=nome_squadra) }}">
+<form method="post" action="{{ url_for('formazione.user_formazione', nome_squadra=nome_squadra) }}" id="formFormazione">
     <input type="hidden" name="modulo" value="{{ modulo }}">
-    <div class="campetto">
-        {% for riga in linee %}
-        <div class="campetto-riga">
-            {% for slot in riga %}
-            <div class="campetto-slot" data-tip="{{ slot.etichetta }}">
-                {% for posto in posti %}
-                <select name="slot_{{ slot.indice }}_{{ posto }}" class="campetto-select">
-                    <option value="">{{ nome_posto[posto] }}</option>
-                    {% for c in slot.candidati %}
-                    <option value="{{ c.id }}" {% if slot.selezionati[posto] == c.id %}selected{% endif %}>{{ c.nome }} ({{ c.ruolo }})</option>
-                    {% endfor %}
-                </select>
-                {% endfor %}
-            </div>
-            {% endfor %}
-        </div>
-        {% endfor %}
-    </div>
+    <div id="campoFormazione" class="campetto" data-linee='{{ linee | tojson }}'></div>
+    <div id="inputNascosti"></div>
     <div class="mt-4 flex justify-center">
         <button type="submit" class="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white hover:brightness-110">Salva formazione</button>
     </div>
 </form>
+
+<div id="overlayPosto" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-sm rounded-2xl border border-line bg-panel p-4">
+        <div class="mb-3 flex items-center justify-between">
+            <h5 id="pickerTitolo" class="text-base font-bold"></h5>
+            <button type="button" id="btnChiudiPicker" class="text-xl leading-none text-muted hover:text-accent">&times;</button>
+        </div>
+        <ul id="pickerLista" class="flex max-h-80 flex-col gap-1 overflow-y-auto text-sm"></ul>
+    </div>
+</div>
 
 <script src="{{ url_for('static', filename='js/user_formazione.js') }}?v={{ asset_v('js/user_formazione.js') }}"></script>
 {% endblock %}

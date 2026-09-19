@@ -68,13 +68,14 @@
                 {% for riga in formazione.linee %}
                 <div class="campetto-riga">
                     {% for slot in riga %}
-                    <div class="campetto-slot" data-tip="{{ slot.etichetta }}">
+                    <div class="campetto-slot">
+                        {{ m.badge_ruolo_slot(slot.etichetta) }}
                         {% set titolare = slot.giocatori.tit %}
-                        <div class="campetto-posto {{ 'vuoto' if not titolare }}">{{ titolare.nome if titolare else '—' }}</div>
+                        <div class="campetto-posto campetto-posto-tit {{ 'vuoto' if not titolare }}">{{ titolare.nome if titolare else '—' }}</div>
                         {% for posto in ['ris', 'ter'] %}
                         {% set riserva = slot.giocatori[posto] %}
                         {% if riserva %}
-                        <div class="campetto-posto campetto-posto-riserva">{{ riserva.nome }}</div>
+                        <div class="campetto-posto campetto-posto-{{ posto }}">{{ riserva.nome }}</div>
                         {% endif %}
                         {% endfor %}
                     </div>

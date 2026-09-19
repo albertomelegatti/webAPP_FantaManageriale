@@ -69,6 +69,22 @@ data-info='{{ {
 <span class="whitespace-nowrap font-semibold">{% for token in ruolo.split(',') %}<span style="color:{{ colori.get(token.strip().lower(), 'var(--muted)') }}">{{ token.strip() }}</span>{% if not loop.last %}<span class="text-muted">,</span>{% endif %}{% endfor %}</span>
 {%- endmacro %}
 
+{# Il badge colorato di una posizione del campetto (dashboard_squadra.html),
+   es. "W/A" colorato sul primo ruolo ammesso. Stessa palette di
+   ruolo_colorato e dello stesso dizionario in static/js/user_formazione.js -
+   una modifica qui va riportata in entrambi. #}
+{% macro badge_ruolo_slot(etichetta) %}
+{%- set colori = {
+    'por': '#e0951b',
+    'dd': '#22a558', 'ds': '#22a558', 'dc': '#22a558', 'b': '#22a558',
+    'e': '#3f7fff', 'm': '#3f7fff', 'c': '#3f7fff',
+    'w': '#a855f7', 't': '#a855f7',
+    'a': '#ef4444', 'pc': '#ef4444'
+} -%}
+{%- set primo = etichetta.split('/')[0].strip().lower() -%}
+<span class="campetto-badge" style="background:{{ colori.get(primo, '#5a6570') }}">{{ etichetta }}</span>
+{%- endmacro %}
+
 {% macro club_abbr(club) %}
 {%- if club -%}
 <span class="whitespace-nowrap font-semibold uppercase text-muted">{{ club[:3] }}</span>
