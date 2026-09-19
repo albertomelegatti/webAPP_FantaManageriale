@@ -77,6 +77,9 @@ def create_app():
 
     app.jinja_env.globals['asset_v'] = lambda rel_path: versione_asset(app.static_folder, rel_path)
 
+    from app.domini.tabellone_coppa import calcola as tabellone_coppa
+    app.jinja_env.globals['tabellone_coppa'] = tabellone_coppa
+
     # Inizializza il dizionario telegram al lancio dell'app
     app.config['SQUADRE_TELEGRAM_IDS'] = get_all_telegram_ids()
 

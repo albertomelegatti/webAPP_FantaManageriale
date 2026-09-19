@@ -404,3 +404,99 @@
     font-weight: 700;
     color: var(--accent);
 }
+
+/* --- Tabellone Coppa (albo_oro.html) ---------------------------------------
+   Semifinali e finale ricostruite dai piazzamenti di gironi e fase finale
+   (vedi app/domini/tabellone_coppa.py), disegnate come un vero tabellone a
+   eliminazione - due scontri a sinistra, linee a parentesi, finale a destra -
+   invece della vecchia tabella piatta a due righe. Solo i loghi (il nome sta
+   nel tooltip data-tip): deve stare tutto in una schermata, senza scroll. */
+.bracket-coppa {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.bracket-round {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.bracket-round-finale {
+    justify-content: center;
+}
+
+.bracket-blocco {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.bracket-linee {
+    width: 1.5rem;
+    flex-shrink: 0;
+    stroke: var(--line);
+    stroke-width: 2;
+}
+
+.tabellone-etichetta {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    text-align: center;
+}
+
+.bracket-match {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--line);
+    border-radius: 0.625rem;
+    overflow: hidden;
+    background: var(--panel);
+}
+
+.bracket-final {
+    border-color: #ffb020;
+}
+
+.tabellone-squadra {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem;
+}
+
+.tabellone-squadra:first-child {
+    border-bottom: 1px solid var(--line);
+}
+
+.tabellone-logo {
+    height: 2rem;
+    width: 2rem;
+    border-radius: 999px;
+    object-fit: contain;
+    background: var(--panel-2);
+    opacity: 0.5;
+}
+
+.tabellone-squadra.vincitrice .tabellone-logo {
+    opacity: 1;
+    box-shadow: 0 0 0 2px var(--accent);
+}
+
+.bracket-final .tabellone-squadra.vincitrice .tabellone-logo {
+    box-shadow: 0 0 0 2px #ffb020;
+}
+
+.tabellone-squadra .bi-trophy-fill {
+    margin-left: 0.3rem;
+    color: #ffb020;
+}

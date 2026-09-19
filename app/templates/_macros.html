@@ -166,3 +166,15 @@ data-info='{{ {
 </span>
 {%- endfor -%}
 {% endmacro %}
+
+{# Una squadra dentro uno scontro del tabellone Coppa (albo_oro.html): solo il
+   logo (il nome sta nel tooltip, il tabellone deve stare compatto), con un
+   anello se ha vinto quello scontro. In finale anche un trofeo sulla
+   campione. #}
+{% macro tabellone_squadra(r, vincitrice, campione=False) %}
+<div class="tabellone-squadra {{ 'vincitrice' if vincitrice }}" data-tip="{{ r.squadra }}">
+    <img src="{{ url_for('static', filename='loghi/' ~ (r.username or 'svincolato') ~ '.png') }}?v={{ asset_v('loghi/' ~ (r.username or 'svincolato') ~ '.png') }}"
+         alt="{{ r.squadra }}" class="tabellone-logo">
+    {% if vincitrice and campione %}<i class="bi bi-trophy-fill text-crit"></i>{% endif %}
+</div>
+{% endmacro %}
