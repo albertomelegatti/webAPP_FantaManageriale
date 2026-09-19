@@ -47,13 +47,7 @@
             {% if resto %}
             <div class="flex flex-col gap-1.5">
                 {% for r in resto %}
-                <div class="flex items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2">
-                    <span class="w-5 shrink-0 text-center text-xs font-bold text-muted">{{ r.posizione }}</span>
-                    <img src="{{ url_for('static', filename='loghi/' ~ (r.username or 'svincolato') ~ '.png') }}?v={{ asset_v('loghi/' ~ (r.username or 'svincolato') ~ '.png') }}"
-                         alt="" class="h-6 w-6 shrink-0 rounded-full bg-panel-2 object-contain">
-                    <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium">{{ r.squadra }}</span>
-                    <span class="shrink-0 text-xs font-semibold tabular-nums text-accent">{{ r.crediti_generati }}</span>
-                </div>
+                {{ m.classifica_riga(r) }}
                 {% endfor %}
             </div>
             {% endif %}
@@ -62,45 +56,22 @@
             {% endif %}
         </div>
 
-        <!-- Coppa: una tabella per ogni fase presente in questa stagione. Nei
-             gironi i crediti non sono significativi (0/1, solo per l'accesso
-             alla fase successiva) e non vengono mostrati; nelle altre fasi
-             (es. Final 4) sì. -->
+        <!-- Coppa: una card per squadra per ogni fase presente in questa
+             stagione, stesso stile del Campionato (badge posizione, logo,
+             nome). Nei gironi i crediti non sono significativi (0/1, solo
+             per l'accesso alla fase successiva) e non vengono mostrati;
+             nelle altre fasi (es. Final 4) sì. -->
         <div class="rounded-xl border border-line bg-panel-2 p-3">
             <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Coppa</h4>
             {% for fase in fasi_coppa %}
             {% if not (tabellone and 'final' in (fase or '') | lower) %}
             {% set mostra_crediti = 'girone' not in (fase or '') | lower %}
-            <h5 class="mb-1 mt-3 text-xs font-semibold text-muted first:mt-0">{{ fase }}</h5>
-            <table class="w-full table-fixed text-sm sortable-table" id="coppa-{{ stagione }}-{{ loop.index }}">
-                <colgroup>
-                    {% if mostra_crediti %}
-                    <col style="width:16%"><col style="width:60%"><col style="width:24%">
-                    {% else %}
-                    <col style="width:20%"><col style="width:80%">
-                    {% endif %}
-                </colgroup>
-                <thead>
-                    <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
-                        <th class="pb-2 text-center font-semibold">Pos.</th>
-                        <th class="pb-2 font-semibold">Squadra</th>
-                        {% if mostra_crediti %}
-                        <th class="pb-2 text-center font-semibold">Crediti</th>
-                        {% endif %}
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-line">
-                    {% for r in righe_stagione if r.competizione == 'Coppa' and r.fase == fase %}
-                    <tr>
-                        <td class="py-2 text-center tabular-nums font-semibold">{{ r.posizione }}</td>
-                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-2 font-medium">{{ r.squadra }}</td>
-                        {% if mostra_crediti %}
-                        <td class="py-2 text-center tabular-nums text-accent font-semibold">{{ r.crediti_generati }}</td>
-                        {% endif %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <h5 class="mb-1.5 mt-3 text-xs font-semibold text-muted first:mt-0">{{ fase }}</h5>
+            <div class="flex flex-col gap-1.5">
+                {% for r in righe_stagione if r.competizione == 'Coppa' and r.fase == fase %}
+                {{ m.classifica_riga(r, mostra_crediti) }}
+                {% endfor %}
+            </div>
             {% endif %}
             {% endfor %}
 

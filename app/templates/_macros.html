@@ -179,3 +179,18 @@ data-info='{{ {
     {% if not solo_logo %}<span class="tabellone-nome">{{ r.squadra }}</span>{% endif %}
 </div>
 {% endmacro %}
+
+{# Una riga di classifica (albo_oro.html): posizione, logo, nome, crediti se
+   significativi (nei gironi Coppa non lo sono - 0/1, solo passaggio del
+   turno). Stessa card arrotondata sia per il Campionato dal 4° posto in giù
+   sia per i gironi Coppa, cosi' le due classifiche della stagione si leggono
+   come parti dello stesso stile invece di una tabella e un elenco diversi. #}
+{% macro classifica_riga(r, mostra_crediti=True) %}
+<div class="flex items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2">
+    <span class="w-5 shrink-0 text-center text-xs font-bold text-muted">{{ r.posizione }}</span>
+    <img src="{{ url_for('static', filename='loghi/' ~ (r.username or 'svincolato') ~ '.png') }}?v={{ asset_v('loghi/' ~ (r.username or 'svincolato') ~ '.png') }}"
+         alt="" class="h-6 w-6 shrink-0 rounded-full bg-panel-2 object-contain">
+    <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium">{{ r.squadra }}</span>
+    {% if mostra_crediti %}<span class="shrink-0 text-xs font-semibold tabular-nums text-accent">{{ r.crediti_generati }}</span>{% endif %}
+</div>
+{% endmacro %}
