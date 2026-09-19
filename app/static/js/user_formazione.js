@@ -28,7 +28,10 @@ document.addEventListener('DOMContentLoaded', function () {
         w: '#a855f7', t: '#a855f7',
         a: '#ef4444', pc: '#ef4444',
     };
-    const coloreEtichetta = (etichetta) => COLORE_RUOLO[etichetta.split('/')[0].toLowerCase()] || '#5a6570';
+    // etichetta e' "/"-separata per gli slot (slot_label in app/domini/moduli.py,
+    // es. "W/A") ma ","-separata per il ruolo di un giocatore (pulisci_ruolo,
+    // es. "Dd,Dc"): stessa funzione per entrambi, split su entrambi i separatori.
+    const coloreEtichetta = (etichetta) => COLORE_RUOLO[etichetta.split(/[,/]/)[0].trim().toLowerCase()] || '#5a6570';
 
     // Stato corrente lato client: slot.indice -> {tit, ris, ter} (id giocatore
     // o null). Parte dalle selezioni gia' salvate, renderizzate dal server.
