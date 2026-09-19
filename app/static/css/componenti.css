@@ -59,25 +59,14 @@
     font-style: italic;
 }
 
-/* --- Palmares (dashboard squadra): bacheca trofei --------------------------
-   Il ripiano che racchiude scudetti e coppe: leggermente incassato (ombra
-   interna) cosi' i trofei sembrano appoggiati su una mensola invece di
-   galleggiare nell'intestazione. */
+/* --- Palmares (dashboard squadra): bacheca trofei -------------------------- */
+
 .bacheca-trofei {
     display: inline-flex;
     flex-wrap: wrap;
     align-items: flex-end;
     justify-content: center;
     gap: 0.875rem;
-    padding: 0.75rem 1rem 0.625rem;
-    border-radius: 0.875rem;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.09));
-    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.15);
-}
-
-.dark .bacheca-trofei {
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.42));
-    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.55);
 }
 
 /* Ogni trofeo con la sua targhetta (la stagione), come su una mensola vera. */
