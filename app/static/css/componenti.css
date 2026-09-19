@@ -58,3 +58,254 @@
 .italic {
     font-style: italic;
 }
+
+/* --- Palmares (dashboard squadra): bacheca trofei -------------------------- */
+
+.bacheca-trofei {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 0.875rem;
+}
+
+/* Ogni trofeo con la sua targhetta (la stagione), come su una mensola vera. */
+.trofeo-voce {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.trofeo-anno {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+}
+
+/* Scudo tricolore, ingrandito rispetto alla vecchia iconcina: la forma a
+   stemma e le bande verde-bianco-rosso richiamano lo scudetto reale invece
+   di una generica icona monocolore. */
+.badge-scudetto {
+    width: 2rem;
+    height: 2.375rem;
+    background: linear-gradient(90deg, #0d8a44 0 33.33%, #f5f5f0 33.33% 66.66%, #cc2b3d 66.66% 100%);
+    clip-path: polygon(50% 0%, 88% 6%, 100% 18%, 100% 46%, 92% 67%, 74% 85%, 50% 100%, 26% 85%, 8% 67%, 0% 46%, 0% 18%, 12% 6%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* Coppa dorata disegnata a mano (non piu' l'icona generica bi-trophy-fill):
+   coppa con due manici, stelo e base a doppio gradino, ispirata alla Coppa
+   Italia reale. */
+.trofeo-coppa {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+/* --- Tab squadra (static/js/dashboard_squadra.js) --------------------------
+   Stesso schema di .numero-pagina.attivo: pieno con il colore di sfondo della
+   pagina sopra l'accento, cosi' resta leggibile in entrambi i temi. */
+.tab-squadra {
+    color: var(--muted);
+    background: transparent;
+    transition: color 0.12s ease, background-color 0.12s ease;
+}
+
+.tab-squadra:hover {
+    color: var(--text);
+    background: var(--panel-2);
+}
+
+.tab-squadra[aria-selected="true"] {
+    color: var(--bg);
+    background: var(--accent);
+}
+
+/* --- Campetto (formazione: user_formazione.html e dashboard_squadra.html) --
+   Un verde da erba tagliata indipendente dal tema chiaro/scuro del sito, come
+   una vera illustrazione di campo invece di un pannello dell'interfaccia:
+   niente variabili --bg/--panel qui, e' intenzionale. La segnatura (bordo,
+   linea di meta' campo, cerchio, aree di rigore) e' un unico SVG inline in
+   background, non elementi separati: stesso approccio del campetto di
+   riferimento (fanta-mantra/static/style.css, .campo). */
+.campetto {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.625rem;
+    padding: 1.25rem 0.75rem;
+    border: 2px solid #2f8a4d;
+    border-radius: 0.75rem;
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 150' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.32' stroke-width='0.7'%3E%3Crect x='2' y='2' width='96' height='146' rx='1'/%3E%3Cline x1='2' y1='75' x2='98' y2='75'/%3E%3Ccircle cx='50' cy='75' r='12'/%3E%3Crect x='24' y='2' width='52' height='24'/%3E%3Crect x='37' y='2' width='26' height='10'/%3E%3Crect x='24' y='124' width='52' height='24'/%3E%3Crect x='37' y='138' width='26' height='10'/%3E%3C/g%3E%3Ccircle cx='50' cy='75' r='1.1' fill='%23ffffff' fill-opacity='0.32'/%3E%3Ccircle cx='50' cy='19' r='1.1' fill='%23ffffff' fill-opacity='0.32'/%3E%3Ccircle cx='50' cy='131' r='1.1' fill='%23ffffff' fill-opacity='0.32'/%3E%3C/svg%3E")
+            center / 100% 100% no-repeat,
+        repeating-linear-gradient(180deg, #1e7340 0 2.4rem, #1a6739 2.4rem 4.8rem);
+    min-height: 26rem;
+}
+
+.campetto-riga {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: flex-start;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Ogni posizione e' una scheda: badge del ruolo in cima, poi titolare,
+   riserva e seconda riserva impilati. Sostituisce i vecchi &lt;select&gt; nativi
+   (bruttini e fuori posto su un'illustrazione di campo) con righe cliccabili
+   nell'editor e testo statico nella pagina pubblica - stessa classe in
+   entrambi i casi, e' il JS a decidere se sono interattive. */
+.campetto-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    min-width: 4.75rem;
+    max-width: 8.5rem;
+    flex: 1;
+    background: rgba(10, 20, 14, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 0.625rem;
+    padding: 0.35rem 0.3rem;
+}
+
+.campetto-badge {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: #fff;
+    padding: 0.06rem 0.5rem;
+    border-radius: 999px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.28);
+    margin-bottom: 0.15rem;
+}
+
+.campetto-posto {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    border-radius: 0.4rem;
+    color: #fff;
+    padding: 0.25rem 0.35rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.campetto-posto > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Il campioncino, solo per il titolare: riserva e seconda riserva restano
+   solo testo per non appesantire troppo la scheda. */
+.campetto-foto {
+    height: 1.6rem;
+    width: 1.15rem;
+    flex-shrink: 0;
+    border-radius: 0.25rem;
+    object-fit: contain;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Editor: le righe si possono cliccare per aprire il selettore. */
+.campetto-posto-editabile {
+    cursor: pointer;
+    transition: background-color 0.12s ease;
+}
+
+.campetto-posto-editabile:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.campetto-posto-ris,
+.campetto-posto-ter {
+    border-top: 1px dashed rgba(255, 255, 255, 0.18);
+    margin-top: 0.1rem;
+    padding-top: 0.3rem;
+    font-size: 0.68rem;
+    font-weight: 500;
+}
+
+/* Sotto i 480px (telefono in verticale) le 3-4 card di ogni riga si
+   accavallavano: card, testo e spaziature piu' piccoli solo qui, non e' un
+   ridimensionamento proporzionale del desktop. */
+@media (max-width: 480px) {
+    .campetto {
+        padding: 0.75rem 0.4rem;
+        gap: 0.4rem;
+    }
+
+    .campetto-riga {
+        gap: 0.3rem;
+    }
+
+    .campetto-slot {
+        min-width: 3.75rem;
+        max-width: 6rem;
+        gap: 0.12rem;
+        padding: 0.25rem 0.2rem;
+    }
+
+    .campetto-badge {
+        font-size: 0.55rem;
+        padding: 0.04rem 0.35rem;
+    }
+
+    .campetto-posto {
+        padding: 0.18rem 0.22rem;
+        font-size: 0.62rem;
+    }
+
+    .campetto-posto-ris,
+    .campetto-posto-ter {
+        font-size: 0.56rem;
+        padding-top: 0.2rem;
+    }
+}
+
+.campetto-posto-ris {
+    opacity: 0.75;
+}
+
+.campetto-posto-ter {
+    opacity: 0.55;
+}
+
+.campetto-posto.vuoto {
+    color: rgba(255, 255, 255, 0.55);
+    font-style: italic;
+    font-weight: 500;
+}
+
+/* Titolare mancante: si segnala, una riserva vuota e' normale. */
+.campetto-posto-tit.vuoto {
+    border: 1px dashed rgba(255, 130, 130, 0.55);
+    background: rgba(80, 12, 12, 0.32);
+}
+
+/* Elenco dei candidati nel picker (overlay #overlayPosto). */
+.campetto-candidato {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border-radius: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+}
+
+.campetto-candidato:hover {
+    background: var(--panel-2);
+}
+
+.campetto-candidato.occupato {
+    cursor: not-allowed;
+    opacity: 0.4;
+}

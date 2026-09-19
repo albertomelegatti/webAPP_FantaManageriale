@@ -1,0 +1,41 @@
+{% extends 'base_tailwind.html' %}
+
+{% block content %}
+{% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('user.squadra_login', nome_squadra=nome_squadra)) }}</div>
+<h2 class="mb-4 text-center text-lg font-bold">Formazione di {{ nome_squadra }}</h2>
+
+<form method="get" action="{{ url_for('formazione.user_formazione', nome_squadra=nome_squadra) }}"
+      id="formModulo" class="mb-4 flex items-center justify-center gap-2">
+    <label for="selectModulo" class="text-sm text-muted">Modulo</label>
+    <select name="modulo" id="selectModulo"
+            class="rounded-lg border border-line bg-panel-2 px-2 py-1.5 text-sm font-semibold">
+        {% for nome_modulo in moduli_disponibili %}
+        <option value="{{ nome_modulo }}" {% if nome_modulo == modulo %}selected{% endif %}>{{ nome_modulo }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<p class="mb-4 text-center text-xs text-muted">Tocca una posizione per scegliere titolare, riserva e seconda riserva; cambiare modulo azzera le scelte non ancora salvate.</p>
+
+<form method="post" action="{{ url_for('formazione.user_formazione', nome_squadra=nome_squadra) }}" id="formFormazione">
+    <input type="hidden" name="modulo" value="{{ modulo }}">
+    <div id="campoFormazione" class="campetto" data-linee='{{ linee | tojson }}'></div>
+    <div id="inputNascosti"></div>
+    <div class="mt-4 flex justify-center">
+        <button type="submit" class="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white hover:brightness-110">Salva formazione</button>
+    </div>
+</form>
+
+<div id="overlayPosto" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-sm rounded-2xl border border-line bg-panel p-4">
+        <div class="mb-3 flex items-center justify-between">
+            <h5 id="pickerTitolo" class="text-base font-bold"></h5>
+            <button type="button" id="btnChiudiPicker" class="text-xl leading-none text-muted hover:text-accent">&times;</button>
+        </div>
+        <ul id="pickerLista" class="flex max-h-80 flex-col gap-1 overflow-y-auto text-sm"></ul>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/user_formazione.js') }}?v={{ asset_v('js/user_formazione.js') }}"></script>
+{% endblock %}

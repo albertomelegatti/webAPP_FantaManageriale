@@ -17,20 +17,23 @@ Le dieci diventano cinque, senza cambiare nulla di cio' che la pagina mostra:
 
 Il palmares (titoli vinti) e' una sesta query, su una tabella diversa
 (albo_oro) senza alcun rapporto con le altre cinque: non c'era modo di
-unirla senza le contorcere.
+unirla senza le contorcere. La formazione (il campetto) e' una settima query
+per lo stesso motivo, ma non ne aggiunge altre per risolvere i giocatori
+schierati: riusa la rosa gia' letta (vedi app/services/formazione.py).
 """
 
-from app.core.formato import formatta_valore_mercato_mln
-from app.core.tempo import (formatta_data_nascita_con_eta,
+from app.core.formato import formatta_valore_mercato_mln, url_campioncino
+from app.core.tempo import (calcola_eta, formatta_data_nascita_con_eta,
                             formatta_scadenza_contratto)
 from app.domini.ruoli import pulisci_ruolo, ruolo_sort_key
 from app.repositories import albo_oro as albo_oro_repo
 from app.repositories import aste as aste_repo
 from app.repositories import draft as draft_repo
+from app.repositories import formazione as formazione_repo
 from app.repositories import giocatori as giocatori_repo
 from app.repositories.giocatori import CONTRATTI_CHE_OCCUPANO_SLOT
-from app.repositories import movimenti as movimenti_repo
 from app.repositories import squadre as squadre_repo
+from app.services import formazione as servizio_formazione
 
 # Contratti che rappresentano un giocatore prestato ad altri pur restando di
 # proprieta' della squadra.
@@ -58,6 +61,8 @@ def _ordina(giocatori: list[dict]) -> list[dict]:
 
 def _riga_rosa(g: dict) -> dict:
     return {
+        "id": g.get("id"),
+        "campioncino": url_campioncino(g.get("id_fantacalcio")),
         "nome": g["nome"],
         "tipo_contratto": g["tipo_contratto"],
         "ruolo": pulisci_ruolo(g["ruolo"]),
@@ -94,6 +99,22 @@ def _dividi_giocatori(giocatori: list[dict], nome_squadra: str) -> dict:
                                  if g["detentore_cartellino"] == nome_squadra
                                  and g["tipo_contratto"] in CONTRATTI_IN_USCITA]),
     }
+
+
+def _eta_media(giocatori: list[dict], nome_squadra: str) -> float | None:
+    """Età media della rosa titolare (esclude la Primavera, include i prestiti
+    in entrata), calcolata al giorno corrente.
+
+    None quando nessuno del gruppo ha una data di nascita sincronizzata da
+    Transfermarkt: una rosa senza dati non ha età zero.
+    """
+    in_rosa = [g for g in giocatori if g["squadra_att"] == nome_squadra]
+    eta = [calcola_eta(g["data_nascita"]) for g in in_rosa
+           if g["tipo_contratto"] != "Primavera"]
+    eta = [e for e in eta if e is not None]
+    if not eta:
+        return None
+    return round(sum(eta) / len(eta), 1)
 
 
 def _valore_di_mercato(giocatori) -> str | None:
@@ -162,6 +183,8 @@ def dati_squadra(cur, nome_squadra: str) -> dict | None:
     giocatori = giocatori_repo.collegati_alla_squadra(cur, nome_squadra)
     elenchi = _dividi_giocatori(giocatori, nome_squadra)
     valori = _valori_rosa(giocatori, nome_squadra)
+    formazione = servizio_formazione.dati_pubblici(
+        elenchi["rosa"], formazione_repo.leggi(cur, nome_squadra))
 
     # Gli slot occupati da giocatori sotto contratto si contano sulle righe che
     # abbiamo gia' in memoria: non serve chiederlo al database.
@@ -183,9 +206,11 @@ def dati_squadra(cur, nome_squadra: str) -> dict | None:
         "slot_occupati": slot_giocatori + slot_aste,
         "slot_giocatori": slot_giocatori,
         "prestiti_in_num": len(elenchi["prestiti_in"]),
+        "prestiti_out_num": len(elenchi["prestiti_out"]),
+        "eta_media": _eta_media(giocatori, nome_squadra),
         "palmares": albo_oro_repo.palmares(cur, nome_squadra),
         "draft_pick": _pick(draft_repo.pick_della_squadra(cur, nome_squadra)),
-        "mercato": movimenti_repo.per_squadra(cur, nome_squadra),
+        "formazione": formazione,
         **elenchi,
         **valori,
     }
