@@ -407,27 +407,17 @@
 
 /* --- Tabellone Coppa (albo_oro.html) ---------------------------------------
    Semifinali e finale ricostruite dai piazzamenti di gironi e fase finale
-   (vedi app/domini/tabellone_coppa.py), disegnate come un vero tabellone a
-   eliminazione - due scontri a sinistra, linee a parentesi, finale a destra -
-   invece della vecchia tabella piatta a due righe. Solo i loghi (il nome sta
-   nel tooltip data-tip): deve stare tutto in una schermata, senza scroll. */
+   (vedi app/domini/tabellone_coppa.py): finale al centro, una semifinale per
+   lato, collegate da una linea; il vincitore di ogni scontro ha un anello
+   attorno al logo. La campione sta a parte sotto il tabellone, non dentro lo
+   slot della finale (che con due squadre e un trofeo in più era illeggibile).
+   Solo i loghi (il nome sta nel tooltip data-tip): deve stare tutto in una
+   schermata, senza scroll. */
 .bracket-coppa {
     display: flex;
-    align-items: stretch;
-    justify-content: center;
-    gap: 0.75rem;
-}
-
-.bracket-round {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
     align-items: center;
-    gap: 1.25rem;
-}
-
-.bracket-round-finale {
     justify-content: center;
+    gap: 0;
 }
 
 .bracket-blocco {
@@ -436,11 +426,13 @@
     align-items: center;
 }
 
-.bracket-linee {
-    width: 1.5rem;
+.bracket-linea {
+    width: 1.25rem;
+    height: 2px;
     flex-shrink: 0;
-    stroke: var(--line);
-    stroke-width: 2;
+    background: var(--line);
+    align-self: center;
+    margin-top: 1.1rem;
 }
 
 .tabellone-etichetta {
@@ -496,7 +488,31 @@
     box-shadow: 0 0 0 2px #ffb020;
 }
 
-.tabellone-squadra .bi-trophy-fill {
-    margin-left: 0.3rem;
+/* La campione, fuori dal tabellone: logo più grande con anello dorato e
+   trofeo accanto, sotto la finale invece che stretta nel suo slot. */
+.bracket-campione {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+
+.bracket-campione-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.bracket-campione-logo img {
+    height: 2.75rem;
+    width: 2.75rem;
+    border-radius: 999px;
+    object-fit: contain;
+    background: var(--panel-2);
+    box-shadow: 0 0 0 3px #ffb020;
+}
+
+.bracket-campione-logo .bi-trophy-fill {
+    font-size: 1.25rem;
     color: #ffb020;
 }
