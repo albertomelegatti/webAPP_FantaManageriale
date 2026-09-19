@@ -61,7 +61,8 @@ data-info='{{ {
 {% macro nome_con_campioncino(g) %}
 <span class="flex items-center gap-1.5">
     {% if g.campioncino %}
-    <img src="{{ g.campioncino }}" alt="" class="h-8 w-6 shrink-0 rounded-lg bg-panel-2 object-contain" loading="lazy">
+    <img src="{{ g.campioncino }}" alt="" class="h-8 w-6 shrink-0 rounded-lg bg-panel-2 object-contain" loading="lazy"
+         onerror="this.onerror=null;this.src=this.src.replace('/campioncini/20/', '/campioncini/21/')">
     {% endif %}
     <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{{ g.nome }}</span>
 </span>

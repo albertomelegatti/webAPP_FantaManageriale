@@ -19,11 +19,16 @@ def formatta_valore_mercato_mln(valore_euro):
     return f"{testo.replace('.', ',')} Mln"
 
 
-# Cartella di stagione nell'URL dei campioncini: non è un anno, è cambiata
-# raramente rispetto alle stagioni osservate (vedi CronJob/fantacalcio_card_schema.sql).
-# Se in futuro fantacalcio.it la aggiorna le immagini vecchie smettono di
-# caricare tutte insieme: primo segnale per aggiornare questa costante.
-_CAMPIONCINO_STAGIONE = "21"
+# Cartelle nell'URL dei campioncini: non sono stagioni, sono edizioni grafiche
+# diverse. La 20 e' l'illustrazione a caricatura "classica" (un personaggio
+# disegnato a mano, es. Thuram); la 21 copre tutti i giocatori (la 20 ne manca
+# circa un terzo, soprattutto trasferimenti recenti non ancora illustrati a
+# mano) ma per chi manca dalla 20 mostra una card statistica generata al volo,
+# visivamente diversa dalla caricatura (es. Malen). La 20 e' quindi la fonte
+# preferita per uno stile coerente; ogni <img> che la usa ha un onerror lato
+# client che ripiega sulla 21 se la 20 non esiste per quel giocatore, invece
+# di lasciare un'immagine rotta (vedi es. app/templates/_macros.html).
+_CAMPIONCINO_STAGIONE = "20"
 
 
 def url_campioncino(id_fantacalcio):

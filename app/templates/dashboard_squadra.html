@@ -73,7 +73,8 @@
                         {% set titolare = slot.giocatori.tit %}
                         <div class="campetto-posto campetto-posto-tit {{ 'vuoto' if not titolare }}">
                             {% if titolare and titolare.campioncino %}
-                            <img src="{{ titolare.campioncino }}" alt="" class="campetto-foto" loading="lazy">
+                            <img src="{{ titolare.campioncino }}" alt="" class="campetto-foto" loading="lazy"
+                                 onerror="this.onerror=null;this.src=this.src.replace('/campioncini/20/', '/campioncini/21/')">
                             {% endif %}
                             <span>{{ titolare.nome if titolare else '—' }}</span>
                         </div>

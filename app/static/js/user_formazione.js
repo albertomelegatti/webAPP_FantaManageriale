@@ -132,6 +132,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         foto.className = 'campetto-foto';
                         foto.loading = 'lazy';
                         foto.alt = '';
+                        // La cartella /20/ (caricatura) non copre tutti i giocatori:
+                        // se manca si ripiega sulla /21/ (vedi app/core/formato.py).
+                        foto.onerror = function () {
+                            foto.onerror = null;
+                            foto.src = foto.src.replace('/campioncini/20/', '/campioncini/21/');
+                        };
                         foto.src = candidato.campioncino;
                         postoEl.appendChild(foto);
                     }
