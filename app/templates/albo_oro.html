@@ -26,28 +26,39 @@
     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <!-- Campionato -->
         <div class="rounded-xl border border-line bg-panel-2 p-3">
-            <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Campionato</h4>
-            <table class="w-full table-fixed text-sm sortable-table" id="campionato-{{ stagione }}">
-                <colgroup>
-                    <col style="width:16%"><col style="width:60%"><col style="width:24%">
-                </colgroup>
-                <thead>
-                    <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
-                        <th class="pb-2 text-center font-semibold">Pos.</th>
-                        <th class="pb-2 font-semibold">Squadra</th>
-                        <th class="pb-2 text-center font-semibold">Crediti</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-line">
-                    {% for r in righe_stagione if r.competizione == 'Campionato' %}
-                    <tr>
-                        <td class="py-2 text-center tabular-nums font-semibold">{{ r.posizione }}</td>
-                        <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-2 font-medium">{{ r.squadra }}</td>
-                        <td class="py-2 text-center tabular-nums text-accent font-semibold">{{ r.crediti_generati }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <h4 class="mb-3 text-sm font-bold uppercase tracking-wide text-muted">Campionato</h4>
+            {% set classifica = righe_stagione | selectattr('competizione', 'equalto', 'Campionato') | list %}
+            {% if classifica %}
+            {% set podio = classifica[:3] %}
+            {% set resto = classifica[3:] %}
+            <div class="podio-riga mb-4">
+                {% for r in podio %}
+                <div class="podio-card pos-{{ r.posizione }}">
+                    <span class="podio-medaglia">{{ r.posizione }}°</span>
+                    <img class="podio-logo"
+                         src="{{ url_for('static', filename='loghi/' ~ (r.username or 'svincolato') ~ '.png') }}?v={{ asset_v('loghi/' ~ (r.username or 'svincolato') ~ '.png') }}"
+                         alt="">
+                    <span class="podio-nome">{{ r.squadra }}</span>
+                    <span class="podio-crediti">{{ r.crediti_generati }} crediti</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% if resto %}
+            <div class="flex flex-col gap-1.5">
+                {% for r in resto %}
+                <div class="flex items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2">
+                    <span class="w-5 shrink-0 text-center text-xs font-bold text-muted">{{ r.posizione }}</span>
+                    <img src="{{ url_for('static', filename='loghi/' ~ (r.username or 'svincolato') ~ '.png') }}?v={{ asset_v('loghi/' ~ (r.username or 'svincolato') ~ '.png') }}"
+                         alt="" class="h-6 w-6 shrink-0 rounded-full bg-panel-2 object-contain">
+                    <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium">{{ r.squadra }}</span>
+                    <span class="shrink-0 text-xs font-semibold tabular-nums text-accent">{{ r.crediti_generati }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% else %}
+            <p class="py-2 text-center text-sm text-muted">Nessun dato.</p>
+            {% endif %}
         </div>
 
         <!-- Coppa: una tabella per ogni fase presente in questa stagione. Nei
