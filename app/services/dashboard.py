@@ -22,7 +22,7 @@ per lo stesso motivo, ma non ne aggiunge altre per risolvere i giocatori
 schierati: riusa la rosa gia' letta (vedi app/services/formazione.py).
 """
 
-from app.core.formato import formatta_valore_mercato_mln
+from app.core.formato import formatta_valore_mercato_mln, url_campioncino
 from app.core.tempo import (calcola_eta, formatta_data_nascita_con_eta,
                             formatta_scadenza_contratto)
 from app.domini.ruoli import pulisci_ruolo, ruolo_sort_key
@@ -62,6 +62,7 @@ def _ordina(giocatori: list[dict]) -> list[dict]:
 def _riga_rosa(g: dict) -> dict:
     return {
         "id": g.get("id"),
+        "campioncino": url_campioncino(g.get("id_fantacalcio")),
         "nome": g["nome"],
         "tipo_contratto": g["tipo_contratto"],
         "ruolo": pulisci_ruolo(g["ruolo"]),

@@ -50,9 +50,22 @@ data-info='{{ {
     "costo": g.costo,
     "data_nascita": g.data_nascita,
     "scadenza_contratto_reale": g.scadenza_contratto_reale,
-    "valore_mercato": g.valore_mercato
+    "valore_mercato": g.valore_mercato,
+    "campioncino": g.campioncino
 } | tojson }}'
 {%- endmacro %}
+
+{# Nome del giocatore con il suo campioncino (fantacalcio.it) a fianco, per le
+   celle delle tabelle rosa/primavera/prestiti; niente immagine finche' non e'
+   stato abbinato (vedi app/services/fantacalcio.py). #}
+{% macro nome_con_campioncino(g) %}
+<span class="flex items-center gap-1.5">
+    {% if g.campioncino %}
+    <img src="{{ g.campioncino }}" alt="" class="h-8 w-6 shrink-0 rounded-lg bg-panel-2 object-contain" loading="lazy">
+    {% endif %}
+    <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{{ g.nome }}</span>
+</span>
+{% endmacro %}
 
 {# I colori dei ruoli e le icone dei contratti sono ripetuti in
    static/js/listone.js, che disegna le righe del listone nel browser:

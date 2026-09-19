@@ -127,7 +127,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     const postoEl = document.createElement('div');
                     postoEl.className = 'campetto-posto campetto-posto-editabile campetto-posto-' + posto +
                         (candidato ? '' : ' vuoto');
-                    postoEl.textContent = candidato ? candidato.nome : (posto === 'tit' ? '—' : NOME_POSTO[posto]);
+                    if (posto === 'tit' && candidato && candidato.campioncino) {
+                        const foto = document.createElement('img');
+                        foto.className = 'campetto-foto';
+                        foto.loading = 'lazy';
+                        foto.alt = '';
+                        foto.src = candidato.campioncino;
+                        postoEl.appendChild(foto);
+                    }
+                    const nomeEl = document.createElement('span');
+                    nomeEl.textContent = candidato ? candidato.nome : (posto === 'tit' ? '—' : NOME_POSTO[posto]);
+                    postoEl.appendChild(nomeEl);
                     postoEl.addEventListener('click', function () { apriPicker(slot, posto); });
                     slotEl.appendChild(postoEl);
 

@@ -17,3 +17,19 @@ def formatta_valore_mercato_mln(valore_euro):
     milioni = valore_euro / 1_000_000
     testo = f"{milioni:.2f}".rstrip("0").rstrip(".") or "0"
     return f"{testo.replace('.', ',')} Mln"
+
+
+# Cartella di stagione nell'URL dei campioncini: non è un anno, è cambiata
+# raramente rispetto alle stagioni osservate (vedi CronJob/fantacalcio_card_schema.sql).
+# Se in futuro fantacalcio.it la aggiorna le immagini vecchie smettono di
+# caricare tutte insieme: primo segnale per aggiornare questa costante.
+_CAMPIONCINO_STAGIONE = "21"
+
+
+def url_campioncino(id_fantacalcio):
+    """URL del campioncino (la card ufficiale) di un giocatore su
+    fantacalcio.it, None se non ancora abbinato (vedi
+    app/services/fantacalcio.py)."""
+    if id_fantacalcio is None:
+        return None
+    return f"https://content.fantacalcio.it/web/campioncini/{_CAMPIONCINO_STAGIONE}/card/{id_fantacalcio}.png"

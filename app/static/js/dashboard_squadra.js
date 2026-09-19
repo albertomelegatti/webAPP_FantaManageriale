@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const overlayGiocatore = document.getElementById('overlayGiocatore');
     const btnChiudiGiocatore = document.getElementById('btnChiudiGiocatore');
     const modalNome = document.getElementById('modalNome');
+    const modalCampioncino = document.getElementById('modalCampioncino');
     const modalRuolo = document.getElementById('modalRuolo');
     const modalClub = document.getElementById('modalClub');
     const modalSquadra = document.getElementById('modalSquadra');
@@ -33,6 +34,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const apriCardGiocatore = (info) => {
         modalNome.textContent = info.nome;
+        if (info.campioncino) {
+            modalCampioncino.src = info.campioncino;
+            modalCampioncino.classList.remove('hidden');
+        } else {
+            modalCampioncino.removeAttribute('src');
+            modalCampioncino.classList.add('hidden');
+        }
         modalRuolo.textContent = info.ruolo.split(',').map(r => r.trim()).join(', ');
         modalClub.textContent = info.club;
         modalSquadra.innerHTML = squadraHtml(info.squadra_att, info.squadra_username);

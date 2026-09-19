@@ -312,7 +312,7 @@ def collegati_alla_squadra(cur, nome_squadra: str) -> list[dict]:
     cur.execute(
         """SELECT g.id, g.nome, g.tipo_contratto, g.ruolo, g.quot_att_mantra, g.costo, g.club,
                   g.squadra_att, g.detentore_cartellino, g.data_nascita, g.scadenza_contratto,
-                  g.valore_mercato,
+                  g.valore_mercato, g.id_fantacalcio,
                   s.username AS squadra_username, d.username AS detentore_username
            FROM giocatore g
            LEFT JOIN squadra s ON s.nome = g.squadra_att AND g.squadra_att <> 'Svincolato'

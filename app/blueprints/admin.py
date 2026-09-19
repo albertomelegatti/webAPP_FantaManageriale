@@ -11,11 +11,13 @@ from app.core.logging import get_logger
 from app.core.tempo import formatta_data
 from app.domini.ruoli import pulisci_ruolo
 from app.repositories import configurazione as configurazione_repo
+from app.repositories import fantacalcio as fantacalcio_repo
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import richieste as richieste_repo
 from app.repositories import squadre as squadre_repo
 from app.repositories import transfermarkt as transfermarkt_repo
 from app.repositories import vetrina as vetrina_repo
+from app.services import fantacalcio as servizio_fantacalcio
 
 logger = get_logger(__name__)
 
@@ -329,3 +331,76 @@ def admin_verifica_corrispondenze():
         }
 
     return render_template("admin_verifica_corrispondenze.html", giocatori=giocatori_da_rivedere, conteggi=conteggi)
+
+
+@admin_bp.route("/sincronizza_campioncini")
+def admin_sincronizza_campioncini():
+    with connessione() as (conn, cur):
+        riepilogo = servizio_fantacalcio.sincronizza(cur)
+        conn.commit()
+
+    flash(
+        f"✅ Sincronizzazione completata: {riepilogo['auto']} abbinati automaticamente, "
+        f"{riepilogo['ambigui']} ambigui e {riepilogo['non_trovati']} non trovati da rivedere.",
+        "success",
+    )
+    return redirect(url_for("admin.admin_verifica_campioncini"))
+
+
+@admin_bp.route("/verifica_campioncini", methods=["GET", "POST"])
+def admin_verifica_campioncini():
+    giocatori_da_rivedere = []
+
+    with connessione() as (conn, cur):
+        if request.method == "POST":
+            corrispondenze_data_raw = request.form.get("corrispondenze_data", "")
+
+            try:
+                risoluzioni = json.loads(corrispondenze_data_raw) if corrispondenze_data_raw else []
+            except (ValueError, TypeError):
+                flash("❌ Dati inviati non validi, ricarica la pagina e riprova.", "danger")
+                return redirect(url_for("admin.admin_verifica_campioncini"))
+
+            id_giocatori_in_coda = fantacalcio_repo.id_giocatori_in_coda(cur)
+            n_selezioni_non_valide = 0
+
+            for risoluzione in risoluzioni:
+                try:
+                    id_giocatore = int(risoluzione.get("id_giocatore"))
+                except (TypeError, ValueError):
+                    continue
+                if id_giocatore not in id_giocatori_in_coda:
+                    continue
+
+                valore_scelto = str(risoluzione.get("id_fantacalcio") or "").strip()
+                if not valore_scelto:
+                    continue
+
+                if valore_scelto == "nessuna":
+                    fantacalcio_repo.rimuovi_dalla_coda(cur, id_giocatore)
+                    continue
+
+                if not valore_scelto.isdigit() or not fantacalcio_repo.esiste_in_cache(cur, int(valore_scelto)):
+                    # Selezione non (più) valida, es. una sincronizzazione ha
+                    # rigenerato la cache mentre la pagina era aperta: non si
+                    # tocca la coda, resta li' per essere rivista con dati
+                    # aggiornati invece di scrivere un id inventato.
+                    n_selezioni_non_valide += 1
+                    continue
+
+                fantacalcio_repo.conferma_abbinamento(cur, id_giocatore, int(valore_scelto))
+                fantacalcio_repo.rimuovi_dalla_coda(cur, id_giocatore)
+
+            conn.commit()
+            if n_selezioni_non_valide:
+                flash(f"⚠️ {n_selezioni_non_valide} selezioni non erano valide e sono rimaste in coda.", "warning")
+            flash("✅ Corrispondenze aggiornate con successo.", "success")
+            return redirect(url_for("admin.admin_verifica_campioncini"))
+
+        giocatori_da_rivedere = servizio_fantacalcio.dati_revisione(cur)
+        conteggi = {
+            "ambiguo": sum(1 for g in giocatori_da_rivedere if g["categoria"] == "ambiguo"),
+            "non_trovato": sum(1 for g in giocatori_da_rivedere if g["categoria"] == "non_trovato"),
+        }
+
+    return render_template("admin_verifica_campioncini.html", giocatori=giocatori_da_rivedere, conteggi=conteggi)

@@ -185,16 +185,33 @@
 
 .campetto-posto {
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
     border-radius: 0.4rem;
     color: #fff;
-    text-align: center;
     padding: 0.25rem 0.35rem;
     font-size: 0.76rem;
     font-weight: 600;
     line-height: 1.25;
+}
+
+.campetto-posto > span {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Il campioncino, solo per il titolare: riserva e seconda riserva restano
+   solo testo per non appesantire troppo la scheda. */
+.campetto-foto {
+    height: 1.6rem;
+    width: 1.15rem;
+    flex-shrink: 0;
+    border-radius: 0.25rem;
+    object-fit: contain;
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* Editor: le righe si possono cliccare per aprire il selettore. */

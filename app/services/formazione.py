@@ -4,6 +4,7 @@ squadra proprietaria e la vista pubblica di sola lettura sulla pagina
 squadra.
 """
 
+from app.core.formato import url_campioncino
 from app.domini import moduli
 from app.domini.ruoli import pulisci_ruolo
 from app.repositories import formazione as formazione_repo
@@ -20,7 +21,13 @@ def _rosa_attiva(cur, nome_squadra: str) -> list[dict]:
     app/services/dashboard.py)."""
     giocatori = giocatori_repo.collegati_alla_squadra(cur, nome_squadra)
     return [
-        {"id": g["id"], "nome": g["nome"], "ruolo": pulisci_ruolo(g["ruolo"]), "club": g["club"]}
+        {
+            "id": g["id"],
+            "nome": g["nome"],
+            "ruolo": pulisci_ruolo(g["ruolo"]),
+            "club": g["club"],
+            "campioncino": url_campioncino(g.get("id_fantacalcio")),
+        }
         for g in giocatori
         if g["squadra_att"] == nome_squadra and g["tipo_contratto"] != "Primavera"
     ]
