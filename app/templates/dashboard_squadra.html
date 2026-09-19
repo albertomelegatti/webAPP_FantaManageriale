@@ -53,14 +53,42 @@
     <!-- Menù sezioni -->
     <div class="rounded-2xl border border-line bg-panel p-4">
         <div class="mb-4 flex flex-wrap gap-2 border-b border-line pb-2" role="tablist">
-            <button type="button" class="tab-squadra rounded-full px-3 py-1.5 text-sm font-semibold" data-tab="rosa" aria-selected="true">Rosa</button>
+            <button type="button" class="tab-squadra rounded-full px-3 py-1.5 text-sm font-semibold" data-tab="formazione" aria-selected="true">Formazione</button>
+            <button type="button" class="tab-squadra rounded-full px-3 py-1.5 text-sm font-semibold" data-tab="rosa" aria-selected="false">Rosa</button>
             <button type="button" class="tab-squadra rounded-full px-3 py-1.5 text-sm font-semibold" data-tab="primavera" aria-selected="false">Primavera</button>
             <button type="button" class="tab-squadra rounded-full px-3 py-1.5 text-sm font-semibold" data-tab="draft" aria-selected="false">Draft</button>
             <button type="button" class="tab-squadra rounded-full px-3 py-1.5 text-sm font-semibold" data-tab="prestiti" aria-selected="false">Prestiti</button>
         </div>
 
+        <!-- Formazione -->
+        <div class="pannello-squadra" data-panel="formazione">
+            {% if formazione %}
+            {{ m.titolo_riquadro('Formazione (' ~ formazione.modulo ~ ')') }}
+            <div class="campetto">
+                {% for riga in formazione.linee %}
+                <div class="campetto-riga">
+                    {% for slot in riga %}
+                    <div class="campetto-slot" data-tip="{{ slot.etichetta }}">
+                        {% set titolare = slot.giocatori.tit %}
+                        <div class="campetto-posto {{ 'vuoto' if not titolare }}">{{ titolare.nome if titolare else '—' }}</div>
+                        {% for posto in ['ris', 'ter'] %}
+                        {% set riserva = slot.giocatori[posto] %}
+                        {% if riserva %}
+                        <div class="campetto-posto campetto-posto-riserva">{{ riserva.nome }}</div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="py-6 text-center text-sm text-muted">Formazione non ancora impostata.</p>
+            {% endif %}
+        </div>
+
         <!-- Rosa -->
-        <div class="pannello-squadra" data-panel="rosa">
+        <div class="pannello-squadra hidden" data-panel="rosa">
             {{ m.titolo_riquadro('Rosa', valore_rosa) }}
             <table class="w-full table-fixed text-sm">
                 <colgroup>

@@ -120,3 +120,111 @@
     color: var(--bg);
     background: var(--accent);
 }
+
+/* --- Campetto (formazione: user_formazione.html e dashboard_squadra.html) --
+   Un verde da erba tagliata indipendente dal tema chiaro/scuro del sito,
+   come una vera illustrazione di campo invece di un pannello dell'interfaccia:
+   niente variabili --bg/--panel qui, e' intenzionale. */
+.campetto {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.625rem;
+    padding: 1.25rem 0.75rem;
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    border-radius: 0.75rem;
+    background: repeating-linear-gradient(180deg, #1e7340 0 2.4rem, #1a6739 2.4rem 4.8rem);
+    min-height: 26rem;
+    overflow: hidden;
+}
+
+.campetto::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.campetto::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 5rem;
+    height: 5rem;
+    margin: -2.5rem 0 0 -2.5rem;
+    border: 2px solid rgba(255, 255, 255, 0.55);
+    border-radius: 999px;
+}
+
+.campetto-riga {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: flex-start;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.campetto-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 4.5rem;
+    max-width: 8rem;
+    flex: 1;
+}
+
+/* Editor: un &lt;select&gt; per titolare/riserva/seconda riserva. */
+.campetto-select {
+    width: 100%;
+    border-radius: 0.5rem;
+    border: none;
+    background: rgba(10, 20, 14, 0.72);
+    color: #fff;
+    padding: 0.3rem 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.campetto-select:focus {
+    outline: 2px solid var(--accent);
+}
+
+.campetto-select option {
+    color: #111;
+}
+
+/* Pagina squadra: stesso posto, ma testo statico invece del &lt;select&gt;. */
+.campetto-posto {
+    width: 100%;
+    border-radius: 0.5rem;
+    background: rgba(10, 20, 14, 0.72);
+    color: #fff;
+    text-align: center;
+    padding: 0.3rem 0.4rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.campetto-posto.vuoto {
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+    font-weight: 500;
+}
+
+.campetto-posto-riserva {
+    font-size: 0.66rem;
+    font-weight: 500;
+    opacity: 0.85;
+}
