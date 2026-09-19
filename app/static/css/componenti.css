@@ -452,9 +452,26 @@
     gap: 0.35rem;
 }
 
-.bracket-linee-lato {
+/* height:100% sull'SVG dentro un div senza altezza propria e' circolare:
+   l'altezza del div dipende dal suo contenuto (l'SVG), quella dell'SVG da
+   quella del div. Il browser la spezza ignorando la percentuale e
+   ricalcolando l'altezza dal rapporto d'aspetto del viewBox (20:100)
+   applicato alla larghezza - molto più alta del necessario, e stirava
+   .bracket-affronto (e con lui .bracket-colonna) all'altezza dell'SVG
+   invece che il contrario, spostando in basso lo scontro più corto (la
+   finale, senza nomi) rispetto alle semifinali. Il posizionamento assoluto
+   toglie l'SVG dal calcolo dell'altezza del div - che quindi si stira
+   correttamente su misura di .bracket-colonna - e gli da' un contenitore
+   con un'altezza vera su cui risolvere il 100%. */
+.bracket-linee-wrap {
+    position: relative;
     width: 1.1rem;
     flex-shrink: 0;
+}
+
+.bracket-linee-lato {
+    position: absolute;
+    inset: 0;
     stroke: var(--line);
     stroke-width: 2;
 }

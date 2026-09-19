@@ -115,9 +115,11 @@
                             {{ m.tabellone_squadra(r, r.squadra == tabellone.semifinale_1.vincitore.squadra) }}
                             {% endfor %}
                         </div>
-                        <svg class="bracket-linee-lato" viewBox="0 0 20 100" preserveAspectRatio="none" aria-hidden="true">
-                            <path d="M0,25 H10 V75 M0,75 H10 M10,50 H20" fill="none"/>
-                        </svg>
+                        <div class="bracket-linee-wrap">
+                            <svg class="bracket-linee-lato" viewBox="0 0 20 100" preserveAspectRatio="none" aria-hidden="true">
+                                <path d="M0,25 H10 V75 M0,75 H10 M10,50 H20" fill="none"/>
+                            </svg>
+                        </div>
                     </div>
                 </div>
                 <div class="bracket-lato">
@@ -131,9 +133,11 @@
                 <div class="bracket-lato">
                     <span class="tabellone-etichetta">Semifinale 2</span>
                     <div class="bracket-affronto">
-                        <svg class="bracket-linee-lato bracket-linee-dx" viewBox="0 0 20 100" preserveAspectRatio="none" aria-hidden="true">
-                            <path d="M0,25 H10 V75 M0,75 H10 M10,50 H20" fill="none"/>
-                        </svg>
+                        <div class="bracket-linee-wrap bracket-linee-dx">
+                            <svg class="bracket-linee-lato" viewBox="0 0 20 100" preserveAspectRatio="none" aria-hidden="true">
+                                <path d="M0,25 H10 V75 M0,75 H10 M10,50 H20" fill="none"/>
+                            </svg>
+                        </div>
                         <div class="bracket-colonna">
                             {% for r in tabellone.semifinale_2.squadre %}
                             {{ m.tabellone_squadra(r, r.squadra == tabellone.semifinale_2.vincitore.squadra) }}
