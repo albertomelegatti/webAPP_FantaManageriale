@@ -167,13 +167,15 @@ data-info='{{ {
 {%- endfor -%}
 {% endmacro %}
 
-{# Una squadra dentro uno scontro del tabellone Coppa (albo_oro.html): solo il
-   logo (il nome sta nel tooltip, il tabellone deve stare compatto), con un
-   anello se ha vinto quello scontro. Il trofeo della campione sta a parte,
-   fuori dallo slot della finale (vedi .bracket-campione). #}
-{% macro tabellone_squadra(r, vincitrice) %}
+{# Una squadra dentro uno scontro del tabellone Coppa (albo_oro.html): logo e
+   nome, evidenziata con un anello se ha vinto quello scontro. Il trofeo della
+   campione sta a parte, fuori dallo slot della finale (vedi
+   .bracket-campione). Nello slot finale solo_logo=True: due nomi in più nella
+   scheda già ristretta al centro (fra le due linee) non ci stavano bene. #}
+{% macro tabellone_squadra(r, vincitrice, solo_logo=False) %}
 <div class="tabellone-squadra {{ 'vincitrice' if vincitrice }}" data-tip="{{ r.squadra }}">
     <img src="{{ url_for('static', filename='loghi/' ~ (r.username or 'svincolato') ~ '.png') }}?v={{ asset_v('loghi/' ~ (r.username or 'svincolato') ~ '.png') }}"
-         alt="{{ r.squadra }}" class="tabellone-logo">
+         alt="" class="tabellone-logo">
+    {% if not solo_logo %}<span class="tabellone-nome">{{ r.squadra }}</span>{% endif %}
 </div>
 {% endmacro %}

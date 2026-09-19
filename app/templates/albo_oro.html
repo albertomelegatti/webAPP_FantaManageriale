@@ -107,30 +107,38 @@
             {% if tabellone %}
             <h5 class="mb-2 mt-3 text-xs font-semibold text-muted">Fase finale</h5>
             <div class="bracket-coppa">
-                <div class="bracket-blocco">
+                <div class="bracket-lato">
                     <span class="tabellone-etichetta">Semifinale 1</span>
-                    <div class="bracket-match">
-                        {% for r in tabellone.semifinale_1.squadre %}
-                        {{ m.tabellone_squadra(r, r.squadra == tabellone.semifinale_1.vincitore.squadra) }}
-                        {% endfor %}
+                    <div class="bracket-affronto">
+                        <div class="bracket-colonna">
+                            {% for r in tabellone.semifinale_1.squadre %}
+                            {{ m.tabellone_squadra(r, r.squadra == tabellone.semifinale_1.vincitore.squadra) }}
+                            {% endfor %}
+                        </div>
+                        <svg class="bracket-linee-lato" viewBox="0 0 20 100" preserveAspectRatio="none" aria-hidden="true">
+                            <path d="M0,25 H10 V75 M0,75 H10 M10,50 H20" fill="none"/>
+                        </svg>
                     </div>
                 </div>
-                <span class="bracket-linea"></span>
-                <div class="bracket-blocco">
+                <div class="bracket-lato">
                     <span class="tabellone-etichetta">Finale</span>
                     <div class="bracket-match bracket-final">
                         {% for r in tabellone.finale.squadre %}
-                        {{ m.tabellone_squadra(r, r.squadra == tabellone.finale.vincitore.squadra) }}
+                        {{ m.tabellone_squadra(r, r.squadra == tabellone.finale.vincitore.squadra, solo_logo=True) }}
                         {% endfor %}
                     </div>
                 </div>
-                <span class="bracket-linea"></span>
-                <div class="bracket-blocco">
+                <div class="bracket-lato">
                     <span class="tabellone-etichetta">Semifinale 2</span>
-                    <div class="bracket-match">
-                        {% for r in tabellone.semifinale_2.squadre %}
-                        {{ m.tabellone_squadra(r, r.squadra == tabellone.semifinale_2.vincitore.squadra) }}
-                        {% endfor %}
+                    <div class="bracket-affronto">
+                        <svg class="bracket-linee-lato bracket-linee-dx" viewBox="0 0 20 100" preserveAspectRatio="none" aria-hidden="true">
+                            <path d="M0,25 H10 V75 M0,75 H10 M10,50 H20" fill="none"/>
+                        </svg>
+                        <div class="bracket-colonna">
+                            {% for r in tabellone.semifinale_2.squadre %}
+                            {{ m.tabellone_squadra(r, r.squadra == tabellone.semifinale_2.vincitore.squadra) }}
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
             </div>
