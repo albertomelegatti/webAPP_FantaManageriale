@@ -470,8 +470,15 @@
 }
 
 .bracket-linee-lato {
+    /* inset:0 da solo non basta: un SVG resta un elemento "replaced" con un
+       rapporto d'aspetto intrinseco (dal viewBox), e senza width/height
+       espliciti il browser lo usa comunque per calcolare l'altezza al posto
+       di top:0/bottom:0. width/height:100% qui sono espliciti apposta, per
+       non lasciare nulla al calcolo automatico. */
     position: absolute;
     inset: 0;
+    width: 100%;
+    height: 100%;
     stroke: var(--line);
     stroke-width: 2;
 }
