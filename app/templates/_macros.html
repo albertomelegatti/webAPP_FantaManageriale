@@ -55,29 +55,25 @@ data-info='{{ {
 } | tojson }}'
 {%- endmacro %}
 
-{# Nome del giocatore con il suo campioncino (fantacalcio.it) a fianco, per le
-   celle delle tabelle rosa/primavera/prestiti; niente immagine finche' non e'
-   stato abbinato (vedi app/services/fantacalcio.py) o se il caricamento
-   fallisce (stesso comportamento del sito sorgente). #}
-{% macro nome_con_campioncino(g) %}
-<span class="flex items-center gap-1.5">
-    {% if g.campioncino %}
-    <img src="{{ g.campioncino }}" alt="" class="h-8 w-6 shrink-0 rounded-lg bg-panel-2 object-contain" loading="lazy"
-         onerror="this.remove()">
-    {% endif %}
-    <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{{ g.nome }}</span>
-</span>
-{% endmacro %}
-
 {# Solo la miniatura del campioncino (fantacalcio.it), senza il nome: per le
    card/righe (aste, prestiti, vetrina, primavera, tagli) dove nome/ruolo/club
    hanno gia' un loro layout - nelle tabelle rosa c'e' invece
-   nome_con_campioncino, che include anche il nome. Niente immagine finche'
-   non e' stato abbinato o se il caricamento fallisce. #}
+   nome_con_campioncino, che include anche il nome (e riusa questa). Niente
+   immagine finche' non e' stato abbinato o se il caricamento fallisce
+   (stesso comportamento del sito sorgente). #}
 {% macro campioncino_mini(url) %}
 {%- if url -%}
 <img src="{{ url }}" alt="" class="h-8 w-6 shrink-0 rounded-lg bg-panel-2 object-contain" loading="lazy" onerror="this.remove()">
 {%- endif -%}
+{% endmacro %}
+
+{# Nome del giocatore con il suo campioncino a fianco, per le celle delle
+   tabelle rosa/primavera/prestiti. #}
+{% macro nome_con_campioncino(g) %}
+<span class="flex items-center gap-1.5">
+    {{ campioncino_mini(g.campioncino) }}
+    <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{{ g.nome }}</span>
+</span>
 {% endmacro %}
 
 {# I colori dei ruoli e le icone dei contratti sono ripetuti in

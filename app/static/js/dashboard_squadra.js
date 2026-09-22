@@ -34,17 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const apriCardGiocatore = (info) => {
         modalNome.textContent = info.nome;
-        if (info.campioncino) {
-            modalCampioncino.onerror = function () {
-                modalCampioncino.onerror = null;
-                modalCampioncino.classList.add('hidden');
-            };
-            modalCampioncino.src = info.campioncino;
-            modalCampioncino.classList.remove('hidden');
-        } else {
-            modalCampioncino.removeAttribute('src');
-            modalCampioncino.classList.add('hidden');
-        }
+        mostraCampioncinoModal(modalCampioncino, info.campioncino);
         modalRuolo.textContent = info.ruolo.split(',').map(r => r.trim()).join(', ');
         modalClub.textContent = info.club;
         modalSquadra.innerHTML = squadraHtml(info.squadra_att, info.squadra_username);

@@ -257,18 +257,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const apriScheda = (g) => {
         campo('modalNome').textContent = g.nome;
-        const modalCampioncino = campo('modalCampioncino');
-        if (g.campioncino) {
-            modalCampioncino.onerror = function () {
-                modalCampioncino.onerror = null;
-                modalCampioncino.classList.add('hidden');
-            };
-            modalCampioncino.src = g.campioncino;
-            modalCampioncino.classList.remove('hidden');
-        } else {
-            modalCampioncino.removeAttribute('src');
-            modalCampioncino.classList.add('hidden');
-        }
+        mostraCampioncinoModal(campo('modalCampioncino'), g.campioncino);
         campo('modalRuolo').textContent = g.ruoli.join(', ');
         campo('modalClub').textContent = g.club;
         mostraSquadra(campo('modalSquadra'), g.squadra_att, g.squadra_username);
