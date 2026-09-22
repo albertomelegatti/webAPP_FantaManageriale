@@ -115,6 +115,7 @@
             <h5 id="modalNome" class="text-base font-bold"></h5>
             <button type="button" id="btnChiudiGiocatore" class="text-xl leading-none text-muted hover:text-accent">&times;</button>
         </div>
+        <img id="modalCampioncino" class="mx-auto mb-3 hidden" style="max-height:10rem" alt="">
         <div class="flex flex-col gap-2 text-sm">
             <div class="flex items-center justify-between">
                 <span class="text-muted">Ruolo</span>
@@ -220,5 +221,6 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/paginazione.js') }}?v={{ asset_v('js/paginazione.js') }}"></script>
+<script src="{{ url_for('static', filename='js/campioncino.js') }}?v={{ asset_v('js/campioncino.js') }}"></script>
 <script src="{{ url_for('static', filename='js/listone.js') }}?v={{ asset_v('js/listone.js') }}"></script>
 {% endblock %}

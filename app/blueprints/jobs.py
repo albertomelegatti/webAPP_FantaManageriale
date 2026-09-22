@@ -1,19 +1,27 @@
 """
-Route HTTP per far girare il job di abbinamento Transfermarkt senza bisogno di un
-vero scheduler: pensata per essere "pingata" periodicamente da un servizio esterno
-di uptime-monitoring (es. UptimeRobot) al posto di un cron.
+Route HTTP per far girare senza un vero scheduler i job che sincronizzano dati
+da siti esterni (Transfermarkt, fantacalcio.it): pensate per essere "pingate"
+periodicamente da un servizio esterno di uptime-monitoring (es. UptimeRobot)
+al posto di un cron.
 
 GET /jobs/aggiorna_transfermarkt?token=...
+GET /jobs/aggiorna_campioncini?token=...
 
-- Autenticata con un token condiviso (env TRANSFERMARKT_JOB_TOKEN): a differenza
-  delle altre route di questa app, questa esegue scritture pesanti su richiesta e
-  non può restare aperta a chiunque scopra l'URL.
-- Non gira più di una volta ogni ~20 ore (controllo su transfermarkt_giocatori.aggiornato_il),
-  anche se il servizio di ping la chiama più spesso.
-- Non gira due volte in parallelo (pg_advisory_lock): un ping duplicato/ripetuto
-  durante un run in corso viene ignorato, non accodato.
-- Risponde subito e fa il lavoro vero (scraping ~2 minuti) in un thread in
-  background, per non far scadere il timeout del servizio di ping esterno.
+Stesso schema per entrambe, un token diverso per ciascuna (env
+TRANSFERMARKT_JOB_TOKEN / FANTACALCIO_JOB_TOKEN):
+- Autenticate con un token condiviso: a differenza delle altre route di questa
+  app, eseguono scritture pesanti su richiesta e non possono restare aperte a
+  chiunque scopra l'URL.
+- Non girano più di una volta ogni tot ore (controllo sulla cache locale di
+  ciascuna, transfermarkt_giocatori/fantacalcio_giocatori.aggiornato_il),
+  anche se il servizio di ping le chiama più spesso.
+- Non girano due volte in parallelo (pg_advisory_lock, una chiave diversa a
+  testa): un ping duplicato/ripetuto durante un run in corso viene ignorato,
+  non accodato.
+- Rispondono subito e fanno il lavoro vero in un thread in background, per non
+  far scadere il timeout del servizio di ping esterno - anche quando, come
+  per i campioncini, il lavoro vero e' un solo secondo: un futuro
+  rallentamento del sito sorgente non deve far apparire il job "giù".
 """
 
 import json
@@ -28,10 +36,12 @@ from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request
 from psycopg2.extras import RealDictCursor
 
-from app.core.db import get_connection, release_connection
+from app.core.db import get_connection, prova_lock, release_connection, rilascia_lock
 from app.core.transfermarkt_api import recupera_valori_mercato
 from app.domini.matching_transfermarkt import candidati_esatti, parse_data_tm
+from app.repositories import fantacalcio as fantacalcio_repo
 from app.repositories import transfermarkt as transfermarkt_repo
+from app.services import fantacalcio as servizio_fantacalcio
 
 from app.core.logging import get_logger
 
@@ -40,6 +50,7 @@ logger = get_logger(__name__)
 jobs_bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 LOCK_KEY_TRANSFERMARKT = 918273645
+LOCK_KEY_FANTACALCIO = 473829165
 ORE_MINIME_TRA_RUN = 20
 SOGLIA_MINIMA_GIOCATORI = 400
 MASSIMO_CLUB_MANCANTI = 2
@@ -67,7 +78,7 @@ def aggiorna_transfermarkt():
             release_connection(conn, cur)
             return jsonify({"status": "skipped", "motivo": "già eseguito di recente"}), 200
 
-        if not transfermarkt_repo.prova_lock(cur, LOCK_KEY_TRANSFERMARKT):
+        if not prova_lock(cur, LOCK_KEY_TRANSFERMARKT):
             release_connection(conn, cur)
             return jsonify({"status": "skipped", "motivo": "già in esecuzione"}), 200
 
@@ -95,7 +106,55 @@ def _esegui_job_in_background(conn, cur):
         logger.exception("❌ Job transfermarkt fallito")
     finally:
         try:
-            transfermarkt_repo.rilascia_lock(cur, LOCK_KEY_TRANSFERMARKT)
+            rilascia_lock(cur, LOCK_KEY_TRANSFERMARKT)
+            conn.commit()
+        except Exception:
+            logger.exception("⚠️ Errore nel rilascio del lock")
+        release_connection(conn, cur)
+
+
+@jobs_bp.route("/aggiorna_campioncini", methods=["GET"])
+def aggiorna_campioncini():
+    token_atteso = os.getenv("FANTACALCIO_JOB_TOKEN")
+    if not token_atteso or request.args.get("token") != token_atteso:
+        return jsonify({"status": "non autorizzato"}), 403
+
+    conn = None
+    cur = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+
+        ultimo = fantacalcio_repo.ultimo_aggiornamento(cur)
+        if ultimo and ultimo > datetime.now(timezone.utc) - timedelta(hours=ORE_MINIME_TRA_RUN):
+            release_connection(conn, cur)
+            return jsonify({"status": "skipped", "motivo": "già eseguito di recente"}), 200
+
+        if not prova_lock(cur, LOCK_KEY_FANTACALCIO):
+            release_connection(conn, cur)
+            return jsonify({"status": "skipped", "motivo": "già in esecuzione"}), 200
+
+    except Exception:
+        logger.exception("❌ Errore preliminare job campioncini")
+        release_connection(conn, cur)
+        return jsonify({"status": "errore"}), 500
+
+    thread = threading.Thread(target=_esegui_job_campioncini_in_background, args=(conn, cur), daemon=True)
+    thread.start()
+    return jsonify({"status": "avviato"}), 200
+
+
+def _esegui_job_campioncini_in_background(conn, cur):
+    try:
+        riepilogo = servizio_fantacalcio.sincronizza(cur)
+        conn.commit()
+        logger.info(f"✅ Job campioncini completato: {riepilogo}")
+    except Exception:
+        conn.rollback()
+        logger.exception("❌ Job campioncini fallito")
+    finally:
+        try:
+            rilascia_lock(cur, LOCK_KEY_FANTACALCIO)
             conn.commit()
         except Exception:
             logger.exception("⚠️ Errore nel rilascio del lock")

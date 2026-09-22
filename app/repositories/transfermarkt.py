@@ -8,16 +8,6 @@ def ultimo_aggiornamento(cur):
     return cur.fetchone()["ultimo"]
 
 
-def prova_lock(cur, chiave: int) -> bool:
-    """Tenta il lock esclusivo del job: True se ottenuto, False se gia' preso."""
-    cur.execute("SELECT pg_try_advisory_lock(%s) AS ottenuto;", (chiave,))
-    return cur.fetchone()["ottenuto"]
-
-
-def rilascia_lock(cur, chiave: int) -> None:
-    cur.execute("SELECT pg_advisory_unlock(%s);", (chiave,))
-
-
 def mappa_club(cur) -> dict[str, str]:
     """{club nel nostro database: nome del club su Transfermarkt}."""
     cur.execute("SELECT club, nome_transfermarkt FROM transfermarkt_mappa_club;")

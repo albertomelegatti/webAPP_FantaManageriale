@@ -10,6 +10,7 @@
 <div class="flex flex-col gap-2">
     {% for giocatore in primavera %}
     <div class="flex items-center gap-1.5 rounded-2xl border border-line bg-panel px-3 py-2.5">
+        {{ m.campioncino_mini(giocatore.campioncino) }}
         <div class="flex min-w-0 flex-1 flex-col">
             <span class="min-w-0 truncate font-medium">{{ giocatore.nome }}</span>
             <div class="flex items-center gap-1 text-xs">

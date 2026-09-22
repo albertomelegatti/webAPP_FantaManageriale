@@ -85,7 +85,7 @@ def con_stato_vetrina(cur, nome_squadra: str) -> list[dict]:
     vetrina se presente. A differenza di con_cartellino() qui la Primavera non
     e' esclusa: la pagina vetrina la mostra insieme al resto della rosa."""
     cur.execute(
-        """SELECT g.id, g.nome, g.ruolo, g.club, g.quot_att_mantra, g.tipo_contratto,
+        """SELECT g.id, g.nome, g.ruolo, g.club, g.quot_att_mantra, g.tipo_contratto, g.id_fantacalcio,
                   v.stato AS stato_vetrina, v.note AS note
            FROM giocatore g
            LEFT JOIN vetrina v ON v.id_giocatore = g.id
@@ -174,7 +174,7 @@ def dettagli_per_id(cur, id_giocatori) -> dict[int, dict]:
 def con_cartellino(cur, nome_squadra: str) -> list[dict]:
     """Giocatori di cui la squadra detiene il cartellino, primavera esclusa."""
     cur.execute(
-        """SELECT id, nome, ruolo, club, quot_att_mantra FROM giocatore
+        """SELECT id, nome, ruolo, club, quot_att_mantra, id_fantacalcio FROM giocatore
            WHERE detentore_cartellino = %s AND tipo_contratto <> 'Primavera'
            ORDER BY nome;""",
         (nome_squadra,),
@@ -184,7 +184,7 @@ def con_cartellino(cur, nome_squadra: str) -> list[dict]:
 
 def primavera(cur, nome_squadra: str) -> list[dict]:
     cur.execute(
-        """SELECT id, nome, ruolo, club, quot_att_mantra FROM giocatore
+        """SELECT id, nome, ruolo, club, quot_att_mantra, id_fantacalcio FROM giocatore
            WHERE squadra_att = %s AND tipo_contratto = 'Primavera';""",
         (nome_squadra,),
     )
@@ -262,7 +262,7 @@ def listone(cur) -> list[dict]:
         """SELECT g.nome, g.ruolo, g.club, g.squadra_att, g.tipo_contratto,
                   g.quot_att_mantra, g.costo, g.detentore_cartellino,
                   s.username AS squadra_username, d.username AS detentore_username,
-                  g.data_nascita, g.scadenza_contratto, g.valore_mercato
+                  g.data_nascita, g.scadenza_contratto, g.valore_mercato, g.id_fantacalcio
            FROM giocatore g
            LEFT JOIN squadra s ON s.nome = g.squadra_att AND g.squadra_att <> 'Svincolato'
            LEFT JOIN squadra d ON d.nome = g.detentore_cartellino AND g.detentore_cartellino <> 'Svincolato'
@@ -301,9 +301,9 @@ def collegati_alla_squadra(cur, nome_squadra: str) -> list[dict]:
     quattro gruppi avviene in memoria.
     """
     cur.execute(
-        """SELECT g.nome, g.tipo_contratto, g.ruolo, g.quot_att_mantra, g.costo, g.club,
+        """SELECT g.id, g.nome, g.tipo_contratto, g.ruolo, g.quot_att_mantra, g.costo, g.club,
                   g.squadra_att, g.detentore_cartellino, g.data_nascita, g.scadenza_contratto,
-                  g.valore_mercato,
+                  g.valore_mercato, g.id_fantacalcio,
                   s.username AS squadra_username, d.username AS detentore_username
            FROM giocatore g
            LEFT JOIN squadra s ON s.nome = g.squadra_att AND g.squadra_att <> 'Svincolato'

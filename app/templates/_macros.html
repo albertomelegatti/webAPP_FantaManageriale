@@ -50,9 +50,31 @@ data-info='{{ {
     "costo": g.costo,
     "data_nascita": g.data_nascita,
     "scadenza_contratto_reale": g.scadenza_contratto_reale,
-    "valore_mercato": g.valore_mercato
+    "valore_mercato": g.valore_mercato,
+    "campioncino": g.campioncino
 } | tojson }}'
 {%- endmacro %}
+
+{# Solo la miniatura del campioncino (fantacalcio.it), senza il nome: per le
+   card/righe (aste, prestiti, vetrina, primavera, tagli) dove nome/ruolo/club
+   hanno gia' un loro layout - nelle tabelle rosa c'e' invece
+   nome_con_campioncino, che include anche il nome (e riusa questa). Niente
+   immagine finche' non e' stato abbinato o se il caricamento fallisce
+   (stesso comportamento del sito sorgente). #}
+{% macro campioncino_mini(url) %}
+{%- if url -%}
+<img src="{{ url }}" alt="" class="h-8 w-6 shrink-0 rounded-lg bg-panel-2 object-contain" loading="lazy" onerror="this.remove()">
+{%- endif -%}
+{% endmacro %}
+
+{# Nome del giocatore con il suo campioncino a fianco, per le celle delle
+   tabelle rosa/primavera/prestiti. #}
+{% macro nome_con_campioncino(g) %}
+<span class="flex items-center gap-1.5">
+    {{ campioncino_mini(g.campioncino) }}
+    <span class="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{{ g.nome }}</span>
+</span>
+{% endmacro %}
 
 {# I colori dei ruoli e le icone dei contratti sono ripetuti in
    static/js/listone.js, che disegna le righe del listone nel browser:
@@ -67,6 +89,22 @@ data-info='{{ {
     'a': '#ef4444', 'pc': '#ef4444'
 } -%}
 <span class="whitespace-nowrap font-semibold">{% for token in ruolo.split(',') %}<span style="color:{{ colori.get(token.strip().lower(), 'var(--muted)') }}">{{ token.strip() }}</span>{% if not loop.last %}<span class="text-muted">,</span>{% endif %}{% endfor %}</span>
+{%- endmacro %}
+
+{# Il badge colorato di una posizione del campetto (dashboard_squadra.html),
+   es. "W/A" colorato sul primo ruolo ammesso. Stessa palette di
+   ruolo_colorato e dello stesso dizionario in static/js/user_formazione.js -
+   una modifica qui va riportata in entrambi. #}
+{% macro badge_ruolo_slot(etichetta) %}
+{%- set colori = {
+    'por': '#e0951b',
+    'dd': '#22a558', 'ds': '#22a558', 'dc': '#22a558', 'b': '#22a558',
+    'e': '#3f7fff', 'm': '#3f7fff', 'c': '#3f7fff',
+    'w': '#a855f7', 't': '#a855f7',
+    'a': '#ef4444', 'pc': '#ef4444'
+} -%}
+{%- set primo = etichetta.split('/')[0].strip().lower() -%}
+<span class="campetto-badge" style="background:{{ colori.get(primo, '#5a6570') }}">{{ etichetta }}</span>
 {%- endmacro %}
 
 {% macro club_abbr(club) %}
@@ -103,12 +141,64 @@ data-info='{{ {
 {%- endif -%}
 {% endmacro %}
 
-{# Un'iconcina per stagione vinta, in fila; nulla se la squadra non l'ha mai
-   vinto. Il tooltip riporta la stagione di quella vittoria, non il totale. #}
-{% macro palmares_badge(icona, colore, stagioni, etichetta) %}
+{# Uno scudetto tricolore per campionato vinto, con la stagione come targhetta
+   sotto l'icona; nulla se la squadra non l'ha mai vinto. Pensato per stare
+   dentro .bacheca-trofei, cosi' l'insieme legge come una vera bacheca e non
+   come icone sparse. #}
+{% macro scudetto_badge(stagioni, etichetta) %}
 {%- for stagione in stagioni %}
-<span class="inline-flex items-center {{ colore }}" data-tip="{{ etichetta }} {{ stagione }}">
-    <i class="bi {{ icona }}"></i>
+<span class="trofeo-voce" data-tip="{{ etichetta }} {{ stagione }}">
+    <span class="badge-scudetto shrink-0"></span>
+    <span class="trofeo-anno">{{ stagione }}</span>
 </span>
 {%- endfor -%}
+{% endmacro %}
+
+{# Una coppa dorata per Coppa vinta, stesso schema dello scudetto (icona +
+   targhetta con la stagione). La coppa e' disegnata a mano in SVG - manici,
+   stelo, base a doppio gradino - invece della generica icona a trofeo usata
+   prima, per un risultato piu' riconoscibile e piu' grande. #}
+{% macro coppa_badge(stagioni, etichetta) %}
+{%- for stagione in stagioni %}
+<span class="trofeo-voce" data-tip="{{ etichetta }} {{ stagione }}">
+    <svg class="trofeo-coppa shrink-0" width="32" height="38" viewBox="0 0 32 38" aria-hidden="true">
+        <path d="M6 5 C6 4.4 6.4 4 7 4 H25 C25.6 4 26 4.4 26 5 C26 16 20.5 20 16 20 C11.5 20 6 16 6 5 Z"
+              fill="#e3bd4d" stroke="#9c7a1e" stroke-width="0.6"/>
+        <path d="M6 6.5 C0.5 6.5 0.5 16 7 15" fill="none" stroke="#d4af37" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M26 6.5 C31.5 6.5 31.5 16 25 15" fill="none" stroke="#d4af37" stroke-width="2.4" stroke-linecap="round"/>
+        <rect x="14.5" y="20" width="3" height="6" fill="#d4af37"/>
+        <rect x="9.5" y="26" width="13" height="2.8" rx="1.1" fill="#d4af37"/>
+        <rect x="6.5" y="29.5" width="19" height="5" rx="1.5" fill="#c9a02e"/>
+    </svg>
+    <span class="trofeo-anno">{{ stagione }}</span>
+</span>
+{%- endfor -%}
+{% endmacro %}
+
+{# Una squadra dentro uno scontro del tabellone Coppa (albo_oro.html): logo e
+   nome, evidenziata con un anello se ha vinto quello scontro. Il trofeo della
+   campione sta a parte, fuori dallo slot della finale (vedi
+   .bracket-campione). Nello slot finale solo_logo=True: due nomi in più nella
+   scheda già ristretta al centro (fra le due linee) non ci stavano bene. #}
+{% macro tabellone_squadra(r, vincitrice, solo_logo=False) %}
+<div class="tabellone-squadra {{ 'vincitrice' if vincitrice }}" data-tip="{{ r.squadra }}">
+    <img src="{{ url_for('static', filename='loghi/' ~ (r.username or 'svincolato') ~ '.png') }}?v={{ asset_v('loghi/' ~ (r.username or 'svincolato') ~ '.png') }}"
+         alt="" class="tabellone-logo">
+    {% if not solo_logo %}<span class="tabellone-nome">{{ r.squadra }}</span>{% endif %}
+</div>
+{% endmacro %}
+
+{# Una riga di classifica (albo_oro.html): posizione, logo, nome, crediti se
+   significativi (nei gironi Coppa non lo sono - 0/1, solo passaggio del
+   turno). Stessa card arrotondata sia per il Campionato dal 4° posto in giù
+   sia per i gironi Coppa, cosi' le due classifiche della stagione si leggono
+   come parti dello stesso stile invece di una tabella e un elenco diversi. #}
+{% macro classifica_riga(r, mostra_crediti=True) %}
+<div class="flex items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2">
+    <span class="w-5 shrink-0 text-center text-xs font-bold text-muted">{{ r.posizione }}</span>
+    <img src="{{ url_for('static', filename='loghi/' ~ (r.username or 'svincolato') ~ '.png') }}?v={{ asset_v('loghi/' ~ (r.username or 'svincolato') ~ '.png') }}"
+         alt="" class="h-6 w-6 shrink-0 rounded-full bg-panel-2 object-contain">
+    <span class="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium">{{ r.squadra }}</span>
+    {% if mostra_crediti %}<span class="shrink-0 text-xs font-semibold tabular-nums text-accent">{{ r.crediti_generati }}</span>{% endif %}
+</div>
 {% endmacro %}

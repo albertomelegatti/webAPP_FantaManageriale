@@ -7,6 +7,7 @@ from psycopg2 import errors as pg_errors
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione, resync_sequence
+from app.core.formato import url_campioncino
 from app.domini.ruoli import pulisci_ruolo, ruolo_sort_key
 
 from app.core.logging import get_logger
@@ -137,6 +138,7 @@ def user_vetrina(nome_squadra):
                 "nome": giocatore["nome"],
                 "ruolo": ruolo,
                 "club": giocatore.get("club"),
+                "campioncino": url_campioncino(giocatore.get("id_fantacalcio")),
                 "quot_att_mantra": giocatore.get("quot_att_mantra"),
                 "tipo_contratto": giocatore.get("tipo_contratto"),
                 "stato_vetrina": giocatore.get("stato_vetrina"),

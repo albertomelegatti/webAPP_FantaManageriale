@@ -4,6 +4,7 @@ from app import telegram_utils
 from psycopg2.extras import RealDictCursor
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione, resync_sequence
+from app.core.formato import url_campioncino
 from app.blueprints.user import format_partecipanti, redirect_gate_chiuso
 from dotenv import load_dotenv
 
@@ -90,6 +91,7 @@ def user_aste(nome_squadra):
                     "giocatore": a["nome"],
                     "ruolo": pulisci_ruolo(a["ruolo"]),
                     "club": a["club"],
+                    "campioncino": url_campioncino(a.get("id_fantacalcio")),
                     "squadra_vincente": a["squadra_vincente"],
                     "ultima_offerta": a["ultima_offerta"],
                     "tempo_fine_mostra_interesse": tempo_fine_mostra_interesse,
@@ -339,6 +341,7 @@ def singola_asta_attiva(asta_id, nome_squadra):
                 "giocatore": asta_raw["nome"],
                 "ruolo": pulisci_ruolo(asta_raw["ruolo"]),
                 "club": asta_raw["club"],
+                "campioncino": url_campioncino(asta_raw.get("id_fantacalcio")),
                 # Un'asta non ancora avviata non ha offerte: il template la usa
                 # in operazioni aritmetiche, e None le faceva fallire.
                 "ultima_offerta": asta_raw["ultima_offerta"] or 0,
