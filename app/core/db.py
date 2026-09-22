@@ -378,3 +378,16 @@ def transazione(*, isolamento=None):
         except Exception:
             conn.rollback()
             raise
+
+
+def prova_lock(cur, chiave: int) -> bool:
+    """Tenta un lock esclusivo (es. per un job che non deve girare due volte
+    in parallelo, vedi app/blueprints/jobs.py): True se ottenuto, False se
+    gia' preso da un'altra connessione. Generico, non legato a nessuna
+    tabella: ogni chiamante sceglie una chiave propria e diversa dalle altre."""
+    cur.execute("SELECT pg_try_advisory_lock(%s) AS ottenuto;", (chiave,))
+    return cur.fetchone()["ottenuto"]
+
+
+def rilascia_lock(cur, chiave: int) -> None:
+    cur.execute("SELECT pg_advisory_unlock(%s);", (chiave,))
