@@ -53,6 +53,52 @@ class TestSchieraTitolari:
         assert righe[0]["tit"] == 1
         assert righe[1]["tit"] is None
 
+    def test_slot_e_va_al_piu_offensivo_anche_se_meno_quotato(self):
+        # Uno slot "E" puro puo' sembrare coperto sia da un Dd/E sia da un
+        # E/W, ma il ruolo-chiave di Dd/E e' Dd (il suo piu' difensivo), non
+        # E: non e' un candidato per questo slot, a prescindere da quanto
+        # sia piu' quotato dell'E/W (il cui ruolo-chiave e' invece proprio E).
+        modulo = [("E",)]
+        rosa = [_g(1, "Dd,E", quot=30), _g(2, "E,W", quot=10)]
+
+        righe = schiera(modulo, rosa)
+
+        assert righe[0]["tit"] == 2
+
+    def test_slot_ds_va_al_ds_puro_non_al_dc_ds(self):
+        # Dc e' piu' difensivo di Ds (un centrale prima di un terzino): il
+        # ruolo-chiave di un Dc/Ds e' Dc, non Ds, quindi non e' candidato per
+        # uno slot Ds puro nemmeno se piu' quotato del Ds puro.
+        modulo = [("Ds",)]
+        rosa = [_g(1, "Dc,Ds", quot=30), _g(2, "Ds", quot=10)]
+
+        righe = schiera(modulo, rosa)
+
+        assert righe[0]["tit"] == 2
+
+    def test_slot_m_va_al_m_puro_non_al_m_e(self):
+        # M e' piu' difensivo di E (un mediano prima di un esterno): il
+        # ruolo-chiave di un M/E e' M, quindi resta candidato per uno slot M
+        # puro (a differenza dei casi sopra, qui il combacio c'e' davvero).
+        modulo = [("M",)]
+        rosa = [_g(1, "M,E", quot=10), _g(2, "C", quot=30)]  # il secondo non c'entra nulla col ruolo
+
+        righe = schiera(modulo, rosa)
+
+        assert righe[0]["tit"] == 1
+
+    def test_t_e_w_sono_a_pari_rango(self):
+        # T e W sono allo stesso rango difensivo: un giocatore W/A (chiave W)
+        # e uno T/A (chiave T) sono entrambi candidati per uno slot T/W.
+        modulo = [("T", "W")]
+        rosa = [_g(1, "W,A", quot=10), _g(2, "T,A", quot=30)]
+
+        righe = schiera(modulo, rosa)
+
+        # il piu' quotato dei due prende il titolare, l'altro la riserva
+        assert righe[0]["tit"] == 2
+        assert righe[0]["ris"] == 1
+
 
 class TestSchieraPanchina:
     def test_terzo_giocatore_compatibile_va_in_riserva_poi_seconda_riserva(self):

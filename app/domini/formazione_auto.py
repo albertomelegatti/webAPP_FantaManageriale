@@ -3,14 +3,40 @@ Schieramento automatico: il bottone "Ottimizza" nell'editor formazione
 (user_formazione.html), che propone una formazione completa invece di
 lasciare all'utente il compito di scegliere tutti gli undici titolari a
 mano. Stesso algoritmo del simulatore di riferimento
-(fanta-mantra/index.html, funzioni autofillBoard/placeByDefPriority),
-riscritto sui ruoli e sull'ordinamento gia' in uso in questa app (vedi
-RUOLI_BASE_ORDINE in app/domini/ruoli.py) invece di introdurne uno parallelo.
+(fanta-mantra/index.html, funzioni autofillBoard/placeByDefPriority).
 
 Funzioni pure, nessun accesso a database.
 """
 
-from app.domini.ruoli import ruolo_base_sort_key
+# Quanto e' "difensivo" un ruolo, ai soli fini di questo algoritmo: rango
+# piu' basso = piu' difensivo. E' lo stesso identico ordine del simulatore di
+# riferimento (fanta-mantra/index.html, DEF_RANK), non RUOLI_BASE_ORDINE in
+# app/domini/ruoli.py - quello serve solo a elencare i ruoli in un ordine
+# leggibile (es. nelle tabelle rosa) e non e' calibrato per questo scopo: ci
+# mette Ds/Dd davanti a Dc/B (qui invece Dc e' piu' difensivo di Ds, un
+# centrale prima di un terzino) e M dopo E (qui invece prima, un mediano
+# prima di un esterno). I pareggi (Dc=B, Ds=Dd, T=W) conservano lo stesso
+# rango: vale l'uno o l'altro indifferentemente.
+_RANGO_DIFENSIVO = {
+    "Por": 0,
+    "Dc": 1, "B": 1,
+    "Ds": 2, "Dd": 2,
+    "M": 3,
+    "E": 4,
+    "C": 5,
+    "T": 6, "W": 6,
+    "A": 7,
+    "Pc": 8,
+}
+
+# Un ruolo non in tabella (non dovrebbe succedere con dati reali) vale come
+# un E: ne' fra i piu' difensivi ne' fra i piu' offensivi, stessa scelta del
+# riferimento (defRank, fallback a 4).
+_RANGO_SCONOSCIUTO = 4
+
+
+def _rango(ruolo: str) -> int:
+    return _RANGO_DIFENSIVO.get(ruolo, _RANGO_SCONOSCIUTO)
 
 
 def _ruoli(ruolo: str) -> list[str]:
@@ -18,20 +44,20 @@ def _ruoli(ruolo: str) -> list[str]:
 
 
 def _ruoli_chiave(ruoli_giocatore: list[str]) -> set[str]:
-    """Il ruolo piu' difensivo del giocatore (a parita' di ordinamento, tutti
+    """Il ruolo piu' difensivo del giocatore (a parita' di rango, tutti
     quelli a pari rango): e' l'unico che conta per l'assegnazione automatica,
     un giocatore Dd/E vale come un Dd, non come i due insieme - altrimenti un
     giocatore molto versatile finirebbe piazzato ovunque anche a scapito di
     chi ha davvero solo quel ruolo."""
-    rango_minimo = min(ruolo_base_sort_key(r) for r in ruoli_giocatore)
-    return {r for r in ruoli_giocatore if ruolo_base_sort_key(r) == rango_minimo}
+    rango_minimo = min(_rango(r) for r in ruoli_giocatore)
+    return {r for r in ruoli_giocatore if _rango(r) == rango_minimo}
 
 
 def _ruoli_effettivi_slot(ruoli_slot: tuple[str, ...]) -> set[str]:
     """Il ruolo piu' offensivo ammesso dallo slot: uno slot M/C conta come C,
     non come i due insieme (stessa logica di _ruoli_chiave, specchiata)."""
-    rango_massimo = max(ruolo_base_sort_key(r) for r in ruoli_slot)
-    return {r for r in ruoli_slot if ruolo_base_sort_key(r) == rango_massimo}
+    rango_massimo = max(_rango(r) for r in ruoli_slot)
+    return {r for r in ruoli_slot if _rango(r) == rango_massimo}
 
 
 def _combacia(ruoli_slot: tuple[str, ...], ruoli_giocatore: list[str]) -> bool:
