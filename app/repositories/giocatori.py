@@ -95,15 +95,6 @@ def con_stato_vetrina(cur, nome_squadra: str) -> list[dict]:
     return cur.fetchall()
 
 
-def trasferisci_dopo_riscatto(cur, id_giocatore: int, nome_squadra: str) -> None:
-    """Il giocatore riscattato diventa di proprieta' della squadra che paga:
-    squadra attuale e detentore del cartellino coincidono."""
-    cur.execute(
-        """UPDATE giocatore SET squadra_att = %s, detentore_cartellino = %s,
-               tipo_contratto = 'Indeterminato' WHERE id = %s;""",
-        (nome_squadra, nome_squadra, id_giocatore))
-
-
 def trasferisci_da_prestito(cur, id_giocatore: int, nome_squadra: str) -> None:
     """Fine di un prestito: il giocatore torna alla squadra prestante, che ne
     era gia' il detentore del cartellino."""

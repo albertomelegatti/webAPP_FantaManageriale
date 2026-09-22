@@ -71,7 +71,10 @@ class TestPrimavera:
 
 
 class TestRiscattoPrestito:
-    def test_il_riscatto_sposta_i_crediti_e_il_cartellino(self, app, cur, db_isolato):
+    """Il bottone registra il riscatto e basta: crediti e cartellino si muovono
+    solo a fine prestito (vedi test_cron_prestiti.py)."""
+
+    def _prestito_in_corso(self, cur, tipo):
         cur.execute("SELECT nome FROM squadra WHERE nome <> 'Svincolato' ORDER BY nome LIMIT 2;")
         righe = cur.fetchall()
         if len(righe) < 2:
@@ -98,10 +101,13 @@ class TestRiscattoPrestito:
                                      crediti_riscatto, note)
                VALUES (%s, %s, %s, 'in_corso', NOW() AT TIME ZONE 'Europe/Rome',
                        (NOW() AT TIME ZONE 'Europe/Rome') + INTERVAL '300 days',
-                       0, 'diritto_di_riscatto', 45, '')
+                       0, %s, 45, '')
                RETURNING id;""",
-            (giocatore, prestante, ricevente))
-        id_prestito = cur.fetchone()["id"]
+            (giocatore, prestante, ricevente, tipo))
+        return prestante, ricevente, giocatore, cur.fetchone()["id"]
+
+    def test_il_riscatto_viene_solo_registrato(self, app, cur, db_isolato):
+        prestante, ricevente, giocatore, id_prestito = self._prestito_in_corso(cur, "diritto_di_riscatto")
         db_isolato.commit()
 
         _client(app, ricevente).post(
@@ -109,19 +115,66 @@ class TestRiscattoPrestito:
             data={"riscatta_giocatore": id_prestito},
         )
 
+        cur.execute("SELECT stato FROM prestito WHERE id = %s;", (id_prestito,))
+        assert cur.fetchone()["stato"] == "riscattato"
+
         cur.execute(
             "SELECT squadra_att, detentore_cartellino, tipo_contratto FROM giocatore WHERE id = %s;",
             (giocatore,))
         dopo = cur.fetchone()
         assert dopo["squadra_att"] == ricevente
-        assert dopo["detentore_cartellino"] == ricevente, "il cartellino deve passare a chi riscatta"
-        assert dopo["tipo_contratto"] == "Indeterminato"
+        assert dopo["detentore_cartellino"] == prestante, "il cartellino passa solo a fine prestito"
+        assert dopo["tipo_contratto"] == "Fanta-Prestito"
 
-        assert _crediti(cur, ricevente) == 300 - 45
-        assert _crediti(cur, prestante) == 300 + 45
+        assert _crediti(cur, ricevente) == 300, "i crediti si muovono solo a fine prestito"
+        assert _crediti(cur, prestante) == 300
+
+    def test_l_obbligo_di_riscatto_non_si_riscatta_a_mano(self, app, cur, db_isolato):
+        _, ricevente, _, id_prestito = self._prestito_in_corso(cur, "obbligo_di_riscatto")
+        db_isolato.commit()
+
+        _client(app, ricevente).post(
+            f"/rosa/user_gestione_prestiti/{ricevente}",
+            data={"riscatta_giocatore": id_prestito},
+        )
 
         cur.execute("SELECT stato FROM prestito WHERE id = %s;", (id_prestito,))
-        assert cur.fetchone()["stato"] == "terminato"
+        assert cur.fetchone()["stato"] == "in_corso"
+
+    def test_solo_la_ricevente_puo_riscattare(self, app, cur, db_isolato):
+        prestante, _, _, id_prestito = self._prestito_in_corso(cur, "diritto_di_riscatto")
+        db_isolato.commit()
+
+        _client(app, prestante).post(
+            f"/rosa/user_gestione_prestiti/{prestante}",
+            data={"riscatta_giocatore": id_prestito},
+        )
+
+        cur.execute("SELECT stato FROM prestito WHERE id = %s;", (id_prestito,))
+        assert cur.fetchone()["stato"] == "in_corso"
+
+    def test_un_prestito_riscattato_non_si_termina_in_anticipo(self, app, cur, db_isolato):
+        prestante, ricevente, _, id_prestito = self._prestito_in_corso(cur, "diritto_di_riscatto")
+        cur.execute("UPDATE prestito SET stato = 'riscattato' WHERE id = %s;", (id_prestito,))
+        db_isolato.commit()
+
+        for squadra in (ricevente, prestante):
+            _client(app, squadra).post(
+                f"/rosa/user_gestione_prestiti/{squadra}",
+                data={"richiedi_terminazione": id_prestito},
+            )
+
+        cur.execute("SELECT stato FROM prestito WHERE id = %s;", (id_prestito,))
+        assert cur.fetchone()["stato"] == "riscattato"
+
+    def test_il_prestito_riscattato_resta_nella_gestione_prestiti(self, app, cur, db_isolato):
+        _, ricevente, _, id_prestito = self._prestito_in_corso(cur, "diritto_di_riscatto")
+        cur.execute("UPDATE prestito SET stato = 'riscattato' WHERE id = %s;", (id_prestito,))
+        db_isolato.commit()
+
+        from app.repositories import prestiti as prestiti_repo
+        ids = [p["id_prestito"] for p in prestiti_repo.in_corso_verso(cur, ricevente)]
+        assert id_prestito in ids
 
 
 class TestModificaContrattoAdmin:

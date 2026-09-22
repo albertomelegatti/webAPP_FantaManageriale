@@ -106,13 +106,17 @@ document.addEventListener('DOMContentLoaded', function () {
         const tipoMap = { 'secco': 'Secco', 'diritto_di_riscatto': 'Diritto di riscatto', 'obbligo_di_riscatto': 'Obbligo di riscatto' };
         const tipoStr = tipoMap[loan.tipo_prestito] || loan.tipo_prestito;
 
+        // 'dd/mm/YYYY HH:MM' -> 'dd/mm/YYYY'
+        const dataFine = (loan.data_fine || '').split(' ')[0];
+
         let buttonsHtml = '';
 
         if (loan.stato === 'in_corso') {
             if (isIncoming) {
-                if ((loan.tipo_prestito === 'diritto_di_riscatto' || loan.tipo_prestito === 'obbligo_di_riscatto') && loan.crediti_riscatto > 0) {
+                // L'obbligo di riscatto scatta da solo a fine prestito: niente bottone
+                if (loan.tipo_prestito === 'diritto_di_riscatto' && loan.crediti_riscatto > 0) {
                     buttonsHtml += `
-                        <form method="POST" action="${actionUrl}" onsubmit="return confirm('Vuoi riscattare ${escapeHtml(loan.giocatori)} pagando ${loan.crediti_riscatto} crediti?');">
+                        <form method="POST" action="${actionUrl}" onsubmit="return confirm('Vuoi riscattare ${escapeHtml(loan.giocatori)}? Il riscatto sarà effettivo a fine prestito (${dataFine}): allora ti verranno scalati ${loan.crediti_riscatto} crediti.');">
                             <input type="hidden" name="riscatta_giocatore" value="${loan.id_prestito}">
                             <button type="submit" class="w-full rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-white">Riscatta (${loan.crediti_riscatto} crediti)</button>
                         </form>`;
@@ -143,8 +147,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 </div>`;
         }
 
-        const statoLabel = loan.stato === 'in_corso' ? 'In corso' : loan.stato === 'richiesta_di_terminazione' ? 'Richiesta terminazione' : loan.stato;
-        const statoClass = loan.stato === 'in_corso' ? 'bg-ok/15 text-ok' : loan.stato === 'richiesta_di_terminazione' ? 'bg-crit/15 text-crit' : 'bg-panel text-muted';
+        const statoLabels = {
+            'in_corso': 'In corso',
+            'richiesta_di_terminazione': 'Richiesta terminazione',
+            'riscattato': `Riscattato, effettivo dal ${dataFine}`,
+        };
+        const statoClasses = {
+            'in_corso': 'bg-ok/15 text-ok',
+            'richiesta_di_terminazione': 'bg-crit/15 text-crit',
+            'riscattato': 'bg-accent/15 text-accent',
+        };
+        const statoLabel = statoLabels[loan.stato] || loan.stato;
+        const statoClass = statoClasses[loan.stato] || 'bg-panel text-muted';
 
         return `
             <div class="mt-2 flex flex-col gap-2 border-t border-line pt-2 text-xs">

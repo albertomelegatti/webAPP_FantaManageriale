@@ -704,25 +704,31 @@ def riscatto_giocatore(conn, id_prestito):
         squadra_prestante = info_prestito['squadra_prestante']
         squadra_ricevente = info_prestito['squadra_ricevente']
         crediti_riscatto = info_prestito.get('crediti_riscatto') or 0
+        # Il riscatto diventa effettivo a fine prestito: e' l'unico messaggio che
+        # parte, quindi deve dire da quando
+        effettivo_dal = f"{info_prestito['data_fine']:%d/%m/%Y}"
 
         # Notifica al proprietario originale (squadra_prestante)
         text_to_send = (
             f"GIOCATORE RISCATTATO\n"
-            f"La squadra {squadra_ricevente} ha riscattato il giocatore {giocatore}{tag_giocatore} per {crediti_riscatto} crediti."
+            f"La squadra {squadra_ricevente} ha riscattato il giocatore {giocatore}{tag_giocatore} per {crediti_riscatto} crediti.\n"
+            f"📅 Il riscatto sarà effettivo dal {effettivo_dal}: fino ad allora il giocatore resta in prestito e i crediti ti verranno accreditati in quella data."
         )
         send_message(nome_squadra=squadra_prestante, text_to_send=text_to_send)
 
         # Notifica alla squadra ricevente (che fa il riscatto)
         text_to_send = (
-            f"✅ RISCATTO COMPLETATO\n"
-            f"Hai riscattato {giocatore}{tag_giocatore} per {crediti_riscatto} crediti."
+            f"✅ RISCATTO REGISTRATO\n"
+            f"Hai riscattato {giocatore}{tag_giocatore} per {crediti_riscatto} crediti.\n"
+            f"📅 Il riscatto sarà effettivo dal {effettivo_dal}: fino ad allora il giocatore resta in prestito e i crediti ti verranno scalati in quella data."
         )
         send_message(nome_squadra=squadra_ricevente, text_to_send=text_to_send)
 
         # Notifica al gruppo comunicazioni
         text_to_send = (
             f"📢 COMUNICAZIONE UFFICIALE\n"
-            f"La squadra {squadra_ricevente} ha riscattato {giocatore}{tag_giocatore} dalla squadra {squadra_prestante} per {crediti_riscatto} crediti."
+            f"La squadra {squadra_ricevente} ha riscattato {giocatore}{tag_giocatore} dalla squadra {squadra_prestante} per {crediti_riscatto} crediti.\n"
+            f"📅 Riscatto effettivo dal {effettivo_dal}."
         )
         send_message(nome_squadra='gruppo_comunicazioni', text_to_send=text_to_send,
                      squadre_evento=[squadra_prestante, squadra_ricevente])

@@ -45,7 +45,7 @@ def in_corso_verso(cur, nome_squadra: str) -> list[dict]:
                   p.note, p.costo_prestito, p.tipo_prestito, p.crediti_riscatto, *
            FROM prestito p JOIN giocatore g ON p.giocatore = g.id
            WHERE p.squadra_ricevente = %s
-             AND p.stato IN ('in_corso', 'richiesta_di_terminazione');""",
+             AND p.stato IN ('in_corso', 'richiesta_di_terminazione', 'riscattato');""",
         (nome_squadra,))
     return cur.fetchall()
 
@@ -57,7 +57,7 @@ def in_corso_da(cur, nome_squadra: str) -> list[dict]:
                   p.note, p.costo_prestito, p.tipo_prestito, p.crediti_riscatto, *
            FROM prestito p JOIN giocatore g ON p.giocatore = g.id
            WHERE p.squadra_prestante = %s
-             AND stato IN ('in_corso', 'richiesta_di_terminazione');""",
+             AND stato IN ('in_corso', 'richiesta_di_terminazione', 'riscattato');""",
         (nome_squadra,))
     return cur.fetchall()
 
@@ -104,11 +104,19 @@ def giocatore_e_prestante(cur, id_prestito) -> dict | None:
 
 
 def termina(cur, id_prestito) -> None:
-    """Chiude il prestito: usata sia dal riscatto sia dall'accettazione di una
-    terminazione anticipata, che finiscono nello stesso stato."""
+    """Chiude il prestito subito, all'accettazione di una terminazione anticipata."""
     cur.execute(
         """UPDATE prestito SET stato = 'terminato', data_fine = (NOW() AT TIME ZONE 'Europe/Rome'),
                richiedente_terminazione = NULL WHERE id = %s;""",
+        (id_prestito,))
+
+
+def registra_riscatto(cur, id_prestito) -> None:
+    """Il riscatto diventa effettivo solo alla fine del prestito, con il job
+    processa_prestiti_conclusi: fino ad allora il prestito resta aperto in
+    stato 'riscattato' e il giocatore e' ancora un Fanta-Prestito."""
+    cur.execute(
+        "UPDATE prestito SET stato = 'riscattato' WHERE id = %s AND stato = 'in_corso';",
         (id_prestito,))
 
 
