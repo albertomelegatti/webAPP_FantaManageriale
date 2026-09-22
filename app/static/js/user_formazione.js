@@ -132,9 +132,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         foto.className = 'campetto-foto';
                         foto.loading = 'lazy';
                         foto.alt = '';
-                        // Non tutti i giocatori hanno la caricatura (vedi
-                        // app/core/formato.py): se manca si nasconde, niente
-                        // ripiego su uno stile diverso.
                         foto.onerror = function () { foto.remove(); };
                         foto.src = candidato.campioncino;
                         postoEl.appendChild(foto);

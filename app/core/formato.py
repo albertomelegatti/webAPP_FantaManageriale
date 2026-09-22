@@ -20,15 +20,16 @@ def formatta_valore_mercato_mln(valore_euro):
 
 
 # Cartella nell'URL dei campioncini: non e' una stagione, e' un'edizione
-# grafica. La 20 e' l'illustrazione a caricatura "classica" (un personaggio
-# disegnato a mano, es. Thuram) - le altre edizioni (es. la 21) coprono anche
-# chi manca da questa (circa un terzo, soprattutto trasferimenti recenti non
-# ancora illustrati a mano) ma con stili incoerenti fra loro, da una card
-# statistica stile FUT a una sagoma anonima. Deliberatamente non c'e' un
-# fallback su quelle altre edizioni: se manca la caricatura non si mostra
-# nessuna foto (ogni <img> che la usa nasconde se' stessa via onerror, vedi
-# es. app/templates/_macros.html) invece di un'immagine fuori stile.
-_CAMPIONCINO_STAGIONE = "20"
+# grafica. La 20 era l'illustrazione a caricatura "classica" (un personaggio
+# disegnato a mano, es. Thuram), ma e' un'edizione ormai superata lato
+# fantacalcio.it: oltre a mancare per una parte dei giocatori, per alcuni id
+# risponde 200 con un'immagine sbagliata invece di un errore (visto con
+# Cissè, id 6618: la 20 mostra un personaggio anonimo che non e' lui). La 21
+# e' quella che fantacalcio.it stesso usa oggi su ogni pagina profilo, per
+# ogni giocatore (verificato sulla pagina di Dybala, che pure ha la 20): e'
+# sempre in stile caricatura, personalizzata o un placeholder col colore del
+# club reale, ed e' l'unica fonte affidabile.
+_CAMPIONCINO_STAGIONE = "21"
 
 
 def url_campioncino(id_fantacalcio):

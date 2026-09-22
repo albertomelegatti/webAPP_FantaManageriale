@@ -35,10 +35,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const apriCardGiocatore = (info) => {
         modalNome.textContent = info.nome;
         if (info.campioncino) {
-            // Non tutti i giocatori hanno la caricatura disegnata a mano (vedi
-            // app/core/formato.py): se l'immagine non carica si nasconde,
-            // niente ripiego su uno stile diverso (card statistica, sagoma
-            // anonima) che stonerebbe col resto della rosa.
             modalCampioncino.onerror = function () {
                 modalCampioncino.onerror = null;
                 modalCampioncino.classList.add('hidden');
