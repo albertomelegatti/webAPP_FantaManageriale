@@ -18,6 +18,9 @@ ROUTE_ESCLUSE = {
     # Avvia lo scraping Transfermarkt (~2 minuti) e scrive sul DB.
     # Il caso senza token è comunque coperto da test_job_transfermarkt_richiede_token.
     "jobs.aggiorna_transfermarkt",
+    # Idem, sincronizzazione campioncini fantacalcio.it: scrive sul DB.
+    # Il caso senza token è comunque coperto da test_job_campioncini_richiede_token.
+    "jobs.aggiorna_campioncini",
     # Servita da Flask, non è codice di questo progetto.
     "static",
 }
@@ -121,6 +124,12 @@ def test_job_transfermarkt_richiede_token(client):
     """Senza token la route non deve avviare nulla."""
     assert client.get("/jobs/aggiorna_transfermarkt").status_code == 403
     assert client.get("/jobs/aggiorna_transfermarkt?token=sbagliato").status_code == 403
+
+
+def test_job_campioncini_richiede_token(client):
+    """Senza token la route non deve avviare nulla."""
+    assert client.get("/jobs/aggiorna_campioncini").status_code == 403
+    assert client.get("/jobs/aggiorna_campioncini?token=sbagliato").status_code == 403
 
 
 @pytest.mark.db

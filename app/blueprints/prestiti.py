@@ -3,6 +3,7 @@ from app import telegram_utils
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione, resync_sequence
+from app.core.formato import url_campioncino
 from app.blueprints.user import redirect_gate_chiuso
 
 from app.core.logging import get_logger
@@ -77,6 +78,7 @@ def user_prestiti(nome_squadra):
                     "giocatore": p["nome"],
                     "ruolo": pulisci_ruolo(p["ruolo"]),
                     "club": p["club"],
+                    "campioncino": url_campioncino(p.get("id_fantacalcio")),
                     "squadra_prestante": p["squadra_prestante"],
                     "squadra_ricevente": p["squadra_ricevente"],
                     "stato": p["stato"],

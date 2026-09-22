@@ -36,7 +36,7 @@
             {% for asta in aste if asta.stato == 'in_corso' %}
             <div class="rounded-xl bg-panel-2 px-3 py-2.5">
                 <div class="flex items-start justify-between gap-3">
-                    <span class="min-w-0 flex-1 font-medium">{{ asta.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(asta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(asta.club) }}</span>
+                    <span class="flex min-w-0 flex-1 items-center gap-1.5 font-medium">{{ m.campioncino_mini(asta.campioncino) }}<span class="min-w-0 truncate">{{ asta.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(asta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(asta.club) }}</span></span>
                     <span class="shrink-0 tabular-nums font-bold text-accent">{{ asta.ultima_offerta }} cr</span>
                 </div>
                 <div class="mt-1 text-xs text-muted"><span class="font-bold text-text">Vincente:</span> {{ asta.squadra_vincente or '—' }}</div>
@@ -63,7 +63,7 @@
         <div class="flex flex-col gap-2">
             {% for asta in aste if asta.stato == 'mostra_interesse' %}
             <div class="rounded-xl bg-panel-2 px-3 py-2.5">
-                <span class="font-medium">{{ asta.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(asta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(asta.club) }}</span>
+                <span class="flex items-center gap-1.5 font-medium">{{ m.campioncino_mini(asta.campioncino) }}<span>{{ asta.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(asta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(asta.club) }}</span></span>
                 <div class="mt-1 text-xs text-muted"><span class="font-bold text-text">Scade:</span> {{ asta.tempo_fine_mostra_interesse }}</div>
                 {% if asta.partecipanti %}
                 <div class="mt-0.5 text-xs text-muted"><span class="font-bold text-text">Iscritti:</span> {{ asta.partecipanti }}</div>
@@ -102,7 +102,7 @@
             {% for asta in aste if asta.stato == 'conclusa' %}
             <div class="rounded-xl bg-panel-2 px-3 py-2.5">
                 <div class="flex items-start justify-between gap-3">
-                    <span class="min-w-0 flex-1 font-medium">{{ asta.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(asta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(asta.club) }}</span>
+                    <span class="flex min-w-0 flex-1 items-center gap-1.5 font-medium">{{ m.campioncino_mini(asta.campioncino) }}<span class="min-w-0 truncate">{{ asta.giocatore }} <span class="ml-1">{{ m.ruolo_colorato(asta.ruolo) }}</span><span class="mx-1 text-muted">-</span>{{ m.club_abbr(asta.club) }}</span></span>
                     <span class="shrink-0 tabular-nums text-muted">{{ asta.ultima_offerta }} cr</span>
                 </div>
                 <div class="mt-1 text-xs text-muted"><span class="font-bold text-text">Vinta da:</span> {{ asta.squadra_vincente or '—' }}</div>

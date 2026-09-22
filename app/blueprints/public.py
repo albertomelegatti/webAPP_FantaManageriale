@@ -14,6 +14,7 @@ from app import telegram_utils
 from app.blueprints.user import format_partecipanti
 from app.core.asset import versione as versione_asset
 from app.core.db import connessione
+from app.core.formato import url_campioncino
 
 from app.core.logging import get_logger
 
@@ -180,6 +181,7 @@ def aste():
                     "giocatore": a["nome"],
                     "ruolo": pulisci_ruolo(a["ruolo"]),
                     "club": a["club"],
+                    "campioncino": url_campioncino(a.get("id_fantacalcio")),
                     "squadra_vincente": a["squadra_vincente"],
                     "ultima_offerta": a["ultima_offerta"],
                     "tempo_fine_mostra_interesse": tempo_fine_mostra_interesse,

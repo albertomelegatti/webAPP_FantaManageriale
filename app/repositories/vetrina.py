@@ -9,7 +9,7 @@ def elenco(cur) -> list[dict]:
     detentrice e' quello che la query ha sempre applicato: lo si mantiene.
     """
     cur.execute("""
-        SELECT g.nome, g.ruolo, g.detentore_cartellino, g.quot_att_mantra, v.stato, v.note, v.data_inserimento
+        SELECT g.nome, g.ruolo, g.id_fantacalcio, g.detentore_cartellino, g.quot_att_mantra, v.stato, v.note, v.data_inserimento
         FROM giocatore g
         JOIN vetrina v ON g.id = v.id_giocatore
         WHERE g.squadra_att <> 'Svincolato' AND g.detentore_cartellino <> 'Svincolato'

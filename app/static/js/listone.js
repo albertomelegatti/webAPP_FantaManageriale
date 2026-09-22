@@ -172,6 +172,24 @@ document.addEventListener('DOMContentLoaded', function () {
         return involucro;
     };
 
+    /** Nome del giocatore col suo campioncino a fianco, stesso pattern della
+     * macro nome_con_campioncino in templates/_macros.html. */
+    const nomeConCampioncino = (g) => {
+        const contenitore = document.createElement('span');
+        contenitore.className = 'flex items-center gap-1.5';
+        if (g.campioncino) {
+            const img = document.createElement('img');
+            img.src = g.campioncino;
+            img.alt = '';
+            img.loading = 'lazy';
+            img.className = 'h-8 w-6 shrink-0 rounded-lg bg-panel-2 object-contain';
+            img.onerror = function () { img.remove(); };
+            contenitore.appendChild(img);
+        }
+        contenitore.appendChild(testo('span', 'min-w-0 overflow-hidden text-ellipsis whitespace-nowrap', g.nome));
+        return contenitore;
+    };
+
     const logoSquadra = (g) => {
         const logo = document.createElement('img');
         logo.src = urlLogo(g.squadra_username);
@@ -185,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const riga = document.createElement('tr');
         riga.className = 'cursor-pointer hover:bg-panel-2';
         riga.appendChild(cella('overflow-hidden text-ellipsis whitespace-nowrap py-2 pr-1 font-medium',
-                               document.createTextNode(g.nome)));
+                               nomeConCampioncino(g)));
         riga.appendChild(cella('overflow-hidden py-2 pr-1', ruoloColorato(g.ruoli)));
         riga.appendChild(cella('overflow-hidden py-2 text-center text-muted',
                                g.club ? testo('span', 'whitespace-nowrap font-semibold uppercase text-muted',
@@ -239,6 +257,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const apriScheda = (g) => {
         campo('modalNome').textContent = g.nome;
+        mostraCampioncinoModal(campo('modalCampioncino'), g.campioncino);
         campo('modalRuolo').textContent = g.ruoli.join(', ');
         campo('modalClub').textContent = g.club;
         mostraSquadra(campo('modalSquadra'), g.squadra_att, g.squadra_username);

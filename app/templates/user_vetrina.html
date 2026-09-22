@@ -16,7 +16,8 @@
         {% for giocatore in rosa %}
         <div class="vetrina-row rounded-2xl border border-line bg-panel p-3" data-id="{{ giocatore.id }}" data-nome="{{ giocatore.nome }}">
             <div class="flex items-center gap-2">
-                <div class="flex min-w-0 flex-1 items-center">
+                <div class="flex min-w-0 flex-1 items-center gap-1.5">
+                    {{ m.campioncino_mini(giocatore.campioncino) }}
                     <span class="min-w-0 truncate font-medium">{{ giocatore.nome }}</span>
                     <span class="ml-1 shrink-0">{{ m.ruolo_colorato(giocatore.ruolo) }}</span>
                     <span class="mx-1 shrink-0 text-muted">-</span>

@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template
 from app.core.db import connessione
+from app.core.formato import url_campioncino
 from app.repositories import squadre as squadre_repo
 from app.repositories import vetrina as vetrina_repo
 
@@ -22,6 +23,7 @@ def vetrina():
             giocatori.append({
                 'nome': giocatore['nome'],
                 'ruolo': pulisci_ruolo(giocatore['ruolo']),
+                'campioncino': url_campioncino(giocatore.get('id_fantacalcio')),
                 'detentore_cartellino': giocatore['detentore_cartellino'],
                 'quot_att_mantra': giocatore['quot_att_mantra'],
                 'stato': giocatore['stato'],

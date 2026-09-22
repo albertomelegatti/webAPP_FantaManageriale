@@ -56,7 +56,7 @@ def pick_della_squadra(cur, nome_squadra: str) -> list[dict]:
                   g.nome AS giocatore_scelto, g.tipo_contratto, g.ruolo,
                   g.quot_att_mantra, g.costo, g.club, g.squadra_att,
                   g.detentore_cartellino, g.data_nascita, g.scadenza_contratto,
-                  g.valore_mercato,
+                  g.valore_mercato, g.id_fantacalcio,
                   s.username AS squadra_username, dc.username AS detentore_username
            FROM draft d
            LEFT JOIN giocatore g ON d.id_giocatore_scelto = g.id

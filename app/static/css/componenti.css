@@ -58,3 +58,559 @@
 .italic {
     font-style: italic;
 }
+
+/* --- Palmares (dashboard squadra): bacheca trofei -------------------------- */
+
+.bacheca-trofei {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 0.875rem;
+}
+
+/* Ogni trofeo con la sua targhetta (la stagione), come su una mensola vera. */
+.trofeo-voce {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.trofeo-anno {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+}
+
+/* Scudo tricolore, ingrandito rispetto alla vecchia iconcina: la forma a
+   stemma e le bande verde-bianco-rosso richiamano lo scudetto reale invece
+   di una generica icona monocolore. */
+.badge-scudetto {
+    width: 2rem;
+    height: 2.375rem;
+    background: linear-gradient(90deg, #0d8a44 0 33.33%, #f5f5f0 33.33% 66.66%, #cc2b3d 66.66% 100%);
+    clip-path: polygon(50% 0%, 88% 6%, 100% 18%, 100% 46%, 92% 67%, 74% 85%, 50% 100%, 26% 85%, 8% 67%, 0% 46%, 0% 18%, 12% 6%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* Coppa dorata disegnata a mano (non piu' l'icona generica bi-trophy-fill):
+   coppa con due manici, stelo e base a doppio gradino, ispirata alla Coppa
+   Italia reale. */
+.trofeo-coppa {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+/* --- Tab squadra (static/js/dashboard_squadra.js) --------------------------
+   Cinque voci non stanno sempre su una riga sola in mobile: invece di andare
+   a capo (schiaccia il resto della pagina su due righe strette) la barra
+   scorre in orizzontale, come una tab bar da app - la scrollbar nativa resta
+   nascosta perche' e' gia' ovvio che si scorre col dito, ma la barra e'
+   comunque utilizzabile a rotellina/trackpad su desktop. */
+.tabs-squadra {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.tabs-squadra::-webkit-scrollbar {
+    display: none;
+}
+
+/* Stesso schema di .numero-pagina.attivo: pieno con il colore di sfondo della
+   pagina sopra l'accento, cosi' resta leggibile in entrambi i temi. */
+.tab-squadra {
+    color: var(--muted);
+    background: transparent;
+    transition: color 0.12s ease, background-color 0.12s ease;
+}
+
+.tab-squadra:hover {
+    color: var(--text);
+    background: var(--panel-2);
+}
+
+.tab-squadra[aria-selected="true"] {
+    color: var(--bg);
+    background: var(--accent);
+}
+
+/* --- Campetto (formazione: user_formazione.html e dashboard_squadra.html) --
+   Un verde da erba tagliata indipendente dal tema chiaro/scuro del sito, come
+   una vera illustrazione di campo invece di un pannello dell'interfaccia:
+   niente variabili --bg/--panel qui, e' intenzionale. La segnatura (bordo,
+   linea di meta' campo, cerchio, aree di rigore) e' un unico SVG inline in
+   background, non elementi separati: stesso approccio del campetto di
+   riferimento (fanta-mantra/static/style.css, .campo). */
+.campetto {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.625rem;
+    padding: 1.25rem 0.75rem;
+    border: 2px solid #2f8a4d;
+    border-radius: 0.75rem;
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 150' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.32' stroke-width='0.7'%3E%3Crect x='2' y='2' width='96' height='146' rx='1'/%3E%3Cline x1='2' y1='75' x2='98' y2='75'/%3E%3Ccircle cx='50' cy='75' r='12'/%3E%3Crect x='24' y='2' width='52' height='24'/%3E%3Crect x='37' y='2' width='26' height='10'/%3E%3Crect x='24' y='124' width='52' height='24'/%3E%3Crect x='37' y='138' width='26' height='10'/%3E%3C/g%3E%3Ccircle cx='50' cy='75' r='1.1' fill='%23ffffff' fill-opacity='0.32'/%3E%3Ccircle cx='50' cy='19' r='1.1' fill='%23ffffff' fill-opacity='0.32'/%3E%3Ccircle cx='50' cy='131' r='1.1' fill='%23ffffff' fill-opacity='0.32'/%3E%3C/svg%3E")
+            top center / contain no-repeat,
+        repeating-linear-gradient(180deg, #1e7340 0 2.4rem, #1a6739 2.4rem 4.8rem);
+    /* La segnatura (viewBox 100x150, 2:3) va in "contain": si adatta sempre
+       alla sua proporzione reale invece di stirarsi per riempire il box,
+       qualunque forma finisca per avere il box - a differenza di un
+       aspect-ratio fisso sul contenitore, che va bene finche' il contenuto
+       (le righe di slot, specie con panchine piene su mobile stretto) ci
+       sta dentro, ma altrimenti lo fa traboccare fuori dal bordo arrotondato
+       invece di lasciarlo crescere. Il rigo d'erba sotto resta comunque a
+       riempire tutto il box, quindi l'eventuale margine senza segnatura non
+       si vede vuoto. */
+    max-width: 30rem;
+    margin-inline: auto;
+    min-height: 26rem;
+}
+
+.campetto-riga {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: flex-start;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Ogni posizione e' una scheda: badge del ruolo in cima, poi titolare,
+   riserva e seconda riserva impilati. Sostituisce i vecchi &lt;select&gt; nativi
+   (bruttini e fuori posto su un'illustrazione di campo) con righe cliccabili
+   nell'editor e testo statico nella pagina pubblica - stessa classe in
+   entrambi i casi, e' il JS a decidere se sono interattive. */
+.campetto-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    min-width: 4.75rem;
+    max-width: 8.5rem;
+    flex: 1;
+    background: rgba(10, 20, 14, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 0.625rem;
+    padding: 0.35rem 0.3rem;
+}
+
+.campetto-badge {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    color: #fff;
+    padding: 0.06rem 0.5rem;
+    border-radius: 999px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.28);
+    margin-bottom: 0.15rem;
+}
+
+.campetto-posto {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    border-radius: 0.4rem;
+    color: #fff;
+    padding: 0.25rem 0.35rem;
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.campetto-posto > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Il campioncino, solo per il titolare: riserva e seconda riserva restano
+   solo testo per non appesantire troppo la scheda. */
+.campetto-foto {
+    height: 1.6rem;
+    width: 1.15rem;
+    flex-shrink: 0;
+    border-radius: 0.25rem;
+    object-fit: contain;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Editor: le righe si possono cliccare per aprire il selettore. */
+.campetto-posto-editabile {
+    cursor: pointer;
+    transition: background-color 0.12s ease;
+}
+
+.campetto-posto-editabile:hover {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.campetto-posto-ris,
+.campetto-posto-ter {
+    border-top: 1px dashed rgba(255, 255, 255, 0.18);
+    margin-top: 0.1rem;
+    padding-top: 0.3rem;
+    font-size: 0.68rem;
+    font-weight: 500;
+}
+
+/* Sotto i 480px (telefono in verticale) le 3-4 card di ogni riga si
+   accavallavano: card, testo e spaziature piu' piccoli solo qui, non e' un
+   ridimensionamento proporzionale del desktop. */
+@media (max-width: 480px) {
+    .campetto {
+        padding: 0.75rem 0.4rem;
+        gap: 0.4rem;
+    }
+
+    .campetto-riga {
+        gap: 0.3rem;
+    }
+
+    .campetto-slot {
+        min-width: 3.75rem;
+        max-width: 6rem;
+        gap: 0.12rem;
+        padding: 0.25rem 0.2rem;
+    }
+
+    .campetto-badge {
+        font-size: 0.55rem;
+        padding: 0.04rem 0.35rem;
+    }
+
+    .campetto-posto {
+        padding: 0.18rem 0.22rem;
+        font-size: 0.62rem;
+    }
+
+    .campetto-posto-ris,
+    .campetto-posto-ter {
+        font-size: 0.56rem;
+        padding-top: 0.2rem;
+    }
+}
+
+.campetto-posto-ris {
+    opacity: 0.75;
+}
+
+.campetto-posto-ter {
+    opacity: 0.55;
+}
+
+.campetto-posto.vuoto {
+    color: rgba(255, 255, 255, 0.55);
+    font-style: italic;
+    font-weight: 500;
+}
+
+/* Titolare mancante: si segnala, una riserva vuota e' normale. */
+.campetto-posto-tit.vuoto {
+    border: 1px dashed rgba(255, 130, 130, 0.55);
+    background: rgba(80, 12, 12, 0.32);
+}
+
+/* Elenco dei candidati nel picker (overlay #overlayPosto). */
+.campetto-candidato {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border-radius: 0.625rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+}
+
+.campetto-candidato:hover {
+    background: var(--panel-2);
+}
+
+.campetto-candidato.occupato {
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+/* --- Podio classifica (albo_oro.html) --------------------------------------
+   Le prime tre posizioni come podio invece che come righe di tabella; dalla
+   quarta in poi restano un elenco semplice. L'ordine nel DOM e' 2°-1°-3° per
+   il logo/nome di ogni squadra, ma nei markup li rimettiamo visivamente al
+   centro con "order" cosi' il documento resta leggibile per uno screen reader
+   nell'ordine naturale posizione-per-posizione. */
+.podio-riga {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+}
+
+.podio-card {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.75rem 0.5rem;
+    border-radius: 0.75rem;
+    text-align: center;
+}
+
+.podio-card.pos-1 {
+    order: 2;
+}
+
+.podio-card.pos-2 {
+    order: 1;
+    margin-top: 1.25rem;
+}
+
+.podio-card.pos-3 {
+    order: 3;
+    margin-top: 1.25rem;
+}
+
+.podio-card.pos-1 {
+    background: linear-gradient(180deg, color-mix(in oklab, #ffb020 22%, transparent), transparent);
+}
+
+.podio-card.pos-2 {
+    background: linear-gradient(180deg, color-mix(in oklab, #94a3b8 22%, transparent), transparent);
+}
+
+.podio-card.pos-3 {
+    background: linear-gradient(180deg, color-mix(in oklab, #b87333 22%, transparent), transparent);
+}
+
+.podio-medaglia {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--muted);
+}
+
+.podio-logo {
+    height: 3.25rem;
+    width: 3.25rem;
+    border-radius: 999px;
+    object-fit: contain;
+    background: var(--panel);
+    border: 3px solid var(--line);
+    padding: 0.15rem;
+}
+
+.pos-1 .podio-logo {
+    height: 4.25rem;
+    width: 4.25rem;
+    border-color: #ffb020;
+}
+
+.pos-2 .podio-logo {
+    border-color: #94a3b8;
+}
+
+.pos-3 .podio-logo {
+    border-color: #b87333;
+}
+
+.podio-nome {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.podio-crediti {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+/* --- Tabellone Coppa (albo_oro.html) ---------------------------------------
+   Semifinali e finale ricostruite dai piazzamenti di gironi e fase finale
+   (vedi app/domini/tabellone_coppa.py): finale al centro, una semifinale per
+   lato. Ogni semifinale e' due schede separate (una per squadra) che una
+   linea a gomito unisce in un solo punto verso la finale - non una scheda
+   sola con due righe, per leggere a colpo d'occhio "questi due si
+   affrontano, il vincitore va in finale". La campione sta a parte sotto il
+   tabellone, non dentro lo slot della finale. */
+.bracket-coppa {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.bracket-lato {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.tabellone-etichetta {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    text-align: center;
+}
+
+/* La coppia squadra-vs-squadra di una semifinale: la colonna delle due
+   schede e la linea a gomito che le unisce, affiancate. Sul lato destro
+   l'ordine si inverte via flex-direction e la linea si specchia (vedi
+   .bracket-linee-dx) cosi' la parentesi si apre verso la finale al centro. */
+.bracket-affronto {
+    display: flex;
+    align-items: stretch;
+}
+
+.bracket-colonna {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+/* height:100% sull'SVG dentro un div senza altezza propria e' circolare:
+   l'altezza del div dipende dal suo contenuto (l'SVG), quella dell'SVG da
+   quella del div. Il browser la spezza ignorando la percentuale e
+   ricalcolando l'altezza dal rapporto d'aspetto del viewBox (20:100)
+   applicato alla larghezza - molto più alta del necessario, e stirava
+   .bracket-affronto (e con lui .bracket-colonna) all'altezza dell'SVG
+   invece che il contrario, spostando in basso lo scontro più corto (la
+   finale, senza nomi) rispetto alle semifinali. Il posizionamento assoluto
+   toglie l'SVG dal calcolo dell'altezza del div - che quindi si stira
+   correttamente su misura di .bracket-colonna - e gli da' un contenitore
+   con un'altezza vera su cui risolvere il 100%. */
+.bracket-linee-wrap {
+    position: relative;
+    width: 1.1rem;
+    flex-shrink: 0;
+}
+
+.bracket-linee-lato {
+    /* inset:0 da solo non basta: un SVG resta un elemento "replaced" con un
+       rapporto d'aspetto intrinseco (dal viewBox), e senza width/height
+       espliciti il browser lo usa comunque per calcolare l'altezza al posto
+       di top:0/bottom:0. width/height:100% qui sono espliciti apposta, per
+       non lasciare nulla al calcolo automatico. */
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    stroke: var(--line);
+    stroke-width: 2;
+}
+
+.bracket-linee-dx {
+    transform: scaleX(-1);
+}
+
+.bracket-match {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: var(--panel);
+}
+
+.bracket-final {
+    border-color: #ffb020;
+}
+
+.tabellone-squadra {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.4rem;
+}
+
+/* Dentro la finale le due squadre condividono una scheda con un divisorio;
+   nelle semifinali sono gia' schede separate, il bordo lo da' .bracket-colonna
+   qui sotto. */
+.bracket-match .tabellone-squadra:first-child {
+    border-bottom: 1px solid var(--line);
+}
+
+.bracket-colonna .tabellone-squadra {
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    background: var(--panel);
+}
+
+.tabellone-logo {
+    height: 1.3rem;
+    width: 1.3rem;
+    border-radius: 999px;
+    object-fit: contain;
+    background: var(--panel-2);
+    flex-shrink: 0;
+    opacity: 0.55;
+}
+
+.tabellone-nome {
+    /* Larghezza fissa, non massima: nomi corti e lunghi devono occupare la
+       stessa larghezza, altrimenti le due colonne semifinale hanno larghezze
+       diverse e la finale in mezzo non cade nel centro reale. */
+    min-width: 0;
+    width: 5rem;
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--muted);
+}
+
+.tabellone-squadra.vincitrice .tabellone-logo {
+    opacity: 1;
+    box-shadow: 0 0 0 2px var(--accent);
+}
+
+.tabellone-squadra.vincitrice .tabellone-nome {
+    color: var(--text);
+    font-weight: 700;
+}
+
+.bracket-final .tabellone-squadra.vincitrice .tabellone-logo {
+    box-shadow: 0 0 0 2px #ffb020;
+}
+
+/* La campione, fuori dal tabellone: logo più grande con anello dorato e
+   trofeo accanto, sotto la finale invece che stretta nel suo slot. */
+.bracket-campione {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+
+.bracket-campione-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.bracket-campione-logo img {
+    height: 2.75rem;
+    width: 2.75rem;
+    border-radius: 999px;
+    object-fit: contain;
+    background: var(--panel-2);
+    box-shadow: 0 0 0 3px #ffb020;
+}
+
+.bracket-campione-logo .bi-trophy-fill {
+    font-size: 1.25rem;
+    color: #ffb020;
+}

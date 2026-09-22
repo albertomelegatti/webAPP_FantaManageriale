@@ -8,10 +8,12 @@
          alt="Logo {{ nome_squadra }}"
          class="h-28 w-28 object-contain">
     <h2 class="text-lg font-bold">Sezione riservata di {{ nome_squadra }}</h2>
-    <div class="flex flex-wrap items-center justify-center gap-2">
-        {{ m.palmares_badge('bi-shield-fill', 'text-crit', palmares.campionati, 'Campione Mu.Ve. League') }}
-        {{ m.palmares_badge('bi-trophy-fill', 'text-crit', palmares.coppe, 'Campione Mu.Ve. Cup') }}
+    {% if palmares.campionati or palmares.coppe %}
+    <div class="bacheca-trofei">
+        {{ m.scudetto_badge(palmares.campionati, 'Campione Mu.Ve. League') }}
+        {{ m.coppa_badge(palmares.coppe, 'Campione Mu.Ve. Cup') }}
     </div>
+    {% endif %}
 </div>
 
 <div class="mb-4 grid grid-cols-3 gap-2">
@@ -32,6 +34,7 @@
 <div class="flex flex-col gap-2">
     {{ m.voce_menu(url_for('user.user_mercato_menu', nome_squadra=nome_squadra), 'bi-graph-up-arrow', 'Mercato') }}
     {{ m.voce_menu(url_for('user.user_rosa_menu', nome_squadra=nome_squadra), 'bi-people-fill', 'Gestione Rosa') }}
+    {{ m.voce_menu(url_for('formazione.user_formazione', nome_squadra=nome_squadra), 'bi-diagram-3-fill', 'Formazione') }}
     {{ m.voce_menu('/cambia_password', 'bi-lock-fill', 'Cambia Password') }}
     {{ m.voce_menu('/logout', 'bi-box-arrow-right', 'Logout') }}
 </div>

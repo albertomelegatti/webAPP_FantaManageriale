@@ -25,9 +25,11 @@ def leggi(cur) -> list[dict]:
     """
     cur.execute(
         """
-        SELECT id, stagione, competizione, fase, squadra, posizione, crediti_generati
-        FROM albo_oro
-        ORDER BY stagione DESC, competizione, (fase NOT ILIKE 'Final%%'), fase NULLS FIRST, posizione;
+        SELECT a.id, a.stagione, a.competizione, a.fase, a.squadra, a.posizione, a.crediti_generati,
+               s.username
+        FROM albo_oro a
+        LEFT JOIN squadra s ON s.nome = a.squadra
+        ORDER BY a.stagione DESC, a.competizione, (a.fase NOT ILIKE 'Final%%'), a.fase NULLS FIRST, a.posizione;
         """
     )
     return cur.fetchall()
