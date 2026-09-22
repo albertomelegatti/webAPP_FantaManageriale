@@ -347,9 +347,13 @@ def user_gestione_prestiti(nome_squadra):
 
 def riscatta_giocatore(conn, id_prestito, nome_squadra):
     """
-    Riscatta un giocatore in prestito con diritto di riscatto.
-    La squadra attuale (squadra_ricevente) paga i crediti del riscatto
-    e il giocatore diventa di proprietà della squadra attuale.
+    Esercita il diritto di riscatto su un giocatore in prestito.
+
+    Il riscatto viene solo registrato: diventa effettivo alla fine del prestito,
+    quando il job processa_prestiti_conclusi sposta i crediti dalla squadra
+    ricevente alla prestante e le passa il cartellino. Fino ad allora il
+    giocatore resta un Fanta-Prestito. L'obbligo di riscatto non passa da qui:
+    scatta da solo a fine prestito.
     """
     cur = None
     try:
@@ -367,8 +371,11 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
             flash("❌ Il prestito non è in corso.", "danger")
             return
 
-        # Verifica che il tipo sia "Con diritto di riscatto" o "Con obbligo di riscatto"
-        if prestito['tipo_prestito'] not in ('obbligo_di_riscatto', 'diritto_di_riscatto'):
+        if prestito['squadra_ricevente'] != nome_squadra:
+            flash("❌ Solo la squadra che ha il giocatore in prestito può riscattarlo.", "danger")
+            return
+
+        if prestito['tipo_prestito'] != 'diritto_di_riscatto':
             flash("❌ Questo prestito non ha diritto di riscatto.", "danger")
             return
 
@@ -385,20 +392,12 @@ def riscatta_giocatore(conn, id_prestito, nome_squadra):
             flash(f"❌ Non hai abbastanza crediti per riscattare questo giocatore. Hai {crediti_squadra} crediti, te ne servono {costo_riscatto}.", "danger")
             return
 
-        # RISCATTO EFFETTUATO:
-            
-        # 1. Sottrarre i crediti dalla squadra ricevente e aggiungerli alla squadra prestante
-        squadre_repo.sposta_crediti(cur, prestito['squadra_ricevente'], prestito['squadra_prestante'], prestito['crediti_riscatto'])
-        
-        # 2. Aggiornare il prestito come "riscattato"
-        prestiti_repo.termina(cur, id_prestito)
-
-        # 3. Aggiornare il giocatore: squadra_att e detentore_cartellino diventano la squadra attuale
-        giocatori_repo.trasferisci_dopo_riscatto(cur, prestito['giocatore'], nome_squadra)
-        vetrina_repo.decadi(cur, prestito['giocatore'])
+        # Crediti e cartellino si muovono solo a fine prestito (job processa_prestiti_conclusi)
+        prestiti_repo.registra_riscatto(cur, id_prestito)
 
         conn.commit()
-        flash(f"✅ Giocatore riscattato con successo! Pagati {costo_riscatto} crediti.", "success")
+        flash(f"✅ Riscatto registrato! Sarà effettivo a fine prestito ({prestito['data_fine']:%d/%m/%Y}): "
+              f"allora ti verranno scalati {costo_riscatto} crediti.", "success")
         telegram_utils.riscatto_giocatore(conn, id_prestito)
 
     except Exception:
@@ -421,6 +420,11 @@ def richiedi_terminazione_prestito(conn, id_prestito, nome_squadra):
         if stato_prestito == 'richiesta_di_terminazione':
             flash("❌ L'altra squadra ha già richiesto una terminazione anticipata per questo giocatore. Aggiornare la pagina", "danger")
             return              # Il finally viene eseguito comunque
+
+        # Un prestito riscattato arriva comunque a scadenza: il riscatto la presuppone
+        if stato_prestito != 'in_corso':
+            flash("❌ Non è possibile chiedere la terminazione anticipata di questo prestito.", "danger")
+            return
 
         # Se lo stato è 'in_corso' allora cambialo in 'richiesta_di_terminazione'
         prestiti_repo.richiedi_terminazione(cur, id_prestito, nome_squadra)
