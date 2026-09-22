@@ -117,11 +117,18 @@
 
             {% for fase in fasi_coppa %}
             {% if not (tabellone and 'final' in (fase or '') | lower) %}
-            {% set mostra_crediti = 'girone' not in (fase or '') | lower %}
+            {% set e_girone = 'girone' in (fase or '') | lower %}
+            {% if e_girone %}
+            <button type="button" class="girone-toggle mb-1.5 {{ 'mt-3' if tabellone else '' }} flex w-full items-center justify-between gap-2 text-left first:mt-0">
+                <span class="text-xs font-semibold text-muted">{{ fase }}</span>
+                <i class="bi bi-chevron-down chevron-girone shrink-0 rotate-180 text-muted transition-transform"></i>
+            </button>
+            {% else %}
             <h5 class="mb-1.5 {{ 'mt-3' if tabellone else '' }} text-xs font-semibold text-muted first:mt-0">{{ fase }}</h5>
-            <div class="flex flex-col gap-1.5">
+            {% endif %}
+            <div class="{{ 'girone-lista' if e_girone }} flex flex-col gap-1.5">
                 {% for r in righe_stagione if r.competizione == 'Coppa' and r.fase == fase %}
-                {{ m.classifica_riga(r, mostra_crediti) }}
+                {{ m.classifica_riga(r, not e_girone) }}
                 {% endfor %}
             </div>
             {% endif %}
@@ -218,6 +225,13 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     document.querySelectorAll('.sortable-table').forEach(attachSorting);
+
+    document.querySelectorAll('.girone-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            btn.nextElementSibling.classList.toggle('hidden');
+            btn.querySelector('.chevron-girone').classList.toggle('rotate-180');
+        });
+    });
 });
 </script>
 {% endblock %}
