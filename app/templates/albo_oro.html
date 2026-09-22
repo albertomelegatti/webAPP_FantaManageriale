@@ -65,6 +65,14 @@
             <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Coppa</h4>
             {% if tabellone %}
             <h5 class="mb-2 text-xs font-semibold text-muted">Fase finale</h5>
+            <div class="bracket-campione">
+                <span class="tabellone-etichetta">Campione</span>
+                <div class="bracket-campione-logo" data-tip="{{ tabellone.finale.vincitore.squadra }}">
+                    <img src="{{ url_for('static', filename='loghi/' ~ (tabellone.finale.vincitore.username or 'svincolato') ~ '.png') }}?v={{ asset_v('loghi/' ~ (tabellone.finale.vincitore.username or 'svincolato') ~ '.png') }}"
+                         alt="{{ tabellone.finale.vincitore.squadra }}">
+                    <i class="bi bi-trophy-fill"></i>
+                </div>
+            </div>
             <div class="bracket-coppa">
                 <div class="bracket-lato">
                     <span class="tabellone-etichetta">Semifinale 1</span>
@@ -103,14 +111,6 @@
                             {% endfor %}
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="bracket-campione">
-                <span class="tabellone-etichetta">Campione</span>
-                <div class="bracket-campione-logo" data-tip="{{ tabellone.finale.vincitore.squadra }}">
-                    <img src="{{ url_for('static', filename='loghi/' ~ (tabellone.finale.vincitore.username or 'svincolato') ~ '.png') }}?v={{ asset_v('loghi/' ~ (tabellone.finale.vincitore.username or 'svincolato') ~ '.png') }}"
-                         alt="{{ tabellone.finale.vincitore.squadra }}">
-                    <i class="bi bi-trophy-fill"></i>
                 </div>
             </div>
             {% endif %}
