@@ -114,7 +114,7 @@ Un caso a parte, non ancora scomposto nei layer sopra perché la sua natura è i
 
 ### `CronJob/` — logica che vive nel database
 
-Alcune transizioni di stato non hanno bisogno che l'applicazione sia in esecuzione per accadere: un'asta che chiude, un prestito che scade. Questi sono script SQL (`cron_job_aste.psql`, `cron_job_prestiti.sql`) pensati per girare come job schedulati direttamente su Postgres (`pg_cron`), indipendenti dal ciclo di vita di gunicorn. È un confine architetturale da tenere a mente: una parte, piccola ma reale, delle regole del gioco non passa mai da `app/`. Gli altri file in questa cartella sono migrazioni una tantum (nuove colonne, nuovi indici) da eseguire a mano, non job ricorrenti.
+Alcune transizioni di stato non hanno bisogno che l'applicazione sia in esecuzione per accadere: un'asta che chiude, un prestito che scade. Questi sono job schedulati direttamente su Postgres (`pg_cron`): `cron_jobs.sql` definisce tutti i job di prod, e le funzioni che richiamano stanno in `processa_aste_concluse.sql` e `cron_job_prestiti.sql`. Girano indipendenti dal ciclo di vita di gunicorn. È un confine architetturale da tenere a mente: una parte, piccola ma reale, delle regole del gioco non passa mai da `app/`. Gli altri file in questa cartella sono migrazioni una tantum (nuove colonne, nuovi indici) da eseguire a mano, non job ricorrenti.
 
 ### `templates/` e `static/`
 

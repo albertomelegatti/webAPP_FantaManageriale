@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Chiusura dei prestiti scaduti. Chiamata dal job pg_cron
--- "Elaborazione prestiti conclusi" (vedi cron_job_prestiti_schedule.sql).
+-- "Elaborazione prestiti conclusi" (vedi cron_jobs.sql).
 --
 -- Il job gira alle 23:59 ora italiana e chiude i prestiti che scadono in
 -- giornata. data_fine e' salvata come ora italiana "nominale" (il 01/07 alle
