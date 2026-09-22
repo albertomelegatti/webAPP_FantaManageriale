@@ -139,8 +139,19 @@
     border-radius: 0.75rem;
     background:
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 150' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.32' stroke-width='0.7'%3E%3Crect x='2' y='2' width='96' height='146' rx='1'/%3E%3Cline x1='2' y1='75' x2='98' y2='75'/%3E%3Ccircle cx='50' cy='75' r='12'/%3E%3Crect x='24' y='2' width='52' height='24'/%3E%3Crect x='37' y='2' width='26' height='10'/%3E%3Crect x='24' y='124' width='52' height='24'/%3E%3Crect x='37' y='138' width='26' height='10'/%3E%3C/g%3E%3Ccircle cx='50' cy='75' r='1.1' fill='%23ffffff' fill-opacity='0.32'/%3E%3Ccircle cx='50' cy='19' r='1.1' fill='%23ffffff' fill-opacity='0.32'/%3E%3Ccircle cx='50' cy='131' r='1.1' fill='%23ffffff' fill-opacity='0.32'/%3E%3C/svg%3E")
-            center / 100% 100% no-repeat,
+            top center / contain no-repeat,
         repeating-linear-gradient(180deg, #1e7340 0 2.4rem, #1a6739 2.4rem 4.8rem);
+    /* La segnatura (viewBox 100x150, 2:3) va in "contain": si adatta sempre
+       alla sua proporzione reale invece di stirarsi per riempire il box,
+       qualunque forma finisca per avere il box - a differenza di un
+       aspect-ratio fisso sul contenitore, che va bene finche' il contenuto
+       (le righe di slot, specie con panchine piene su mobile stretto) ci
+       sta dentro, ma altrimenti lo fa traboccare fuori dal bordo arrotondato
+       invece di lasciarlo crescere. Il rigo d'erba sotto resta comunque a
+       riempire tutto il box, quindi l'eventuale margine senza segnatura non
+       si vede vuoto. */
+    max-width: 30rem;
+    margin-inline: auto;
     min-height: 26rem;
 }
 
