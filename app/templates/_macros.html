@@ -69,6 +69,17 @@ data-info='{{ {
 </span>
 {% endmacro %}
 
+{# Solo la miniatura del campioncino (fantacalcio.it), senza il nome: per le
+   card/righe (aste, prestiti, vetrina, primavera, tagli) dove nome/ruolo/club
+   hanno gia' un loro layout - nelle tabelle rosa c'e' invece
+   nome_con_campioncino, che include anche il nome. Niente immagine finche'
+   non e' stato abbinato o se il caricamento fallisce. #}
+{% macro campioncino_mini(url) %}
+{%- if url -%}
+<img src="{{ url }}" alt="" class="h-8 w-6 shrink-0 rounded-lg bg-panel-2 object-contain" loading="lazy" onerror="this.remove()">
+{%- endif -%}
+{% endmacro %}
+
 {# I colori dei ruoli e le icone dei contratti sono ripetuti in
    static/js/listone.js, che disegna le righe del listone nel browser:
    una modifica qui va riportata anche la', o il listone diverge dal

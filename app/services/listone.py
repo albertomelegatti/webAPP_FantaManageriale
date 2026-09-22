@@ -12,7 +12,7 @@ una volta, poi una riga di valori per giocatore. Le righe della tabella le
 disegna il browser, una pagina alla volta (vedi static/js/listone.js).
 """
 
-from app.core.formato import formatta_valore_mercato_mln
+from app.core.formato import formatta_valore_mercato_mln, url_campioncino
 from app.core.tempo import (formatta_data_nascita_con_eta,
                             formatta_scadenza_contratto)
 from app.domini.ruoli import pulisci_ruolo, ruoli_base_presenti
@@ -29,7 +29,7 @@ CAMPI = (
     "nome", "ruolo", "club", "squadra_att", "squadra_username",
     "detentore", "detentore_username", "tipo_contratto",
     "quotazione", "costo", "data_nascita", "scadenza_contratto_reale",
-    "valore_mercato", "u21",
+    "valore_mercato", "u21", "campioncino",
 )
 
 
@@ -61,6 +61,7 @@ def _riga(g: dict, soglia_u21) -> dict:
         "scadenza_contratto_reale": formatta_scadenza_contratto(g["scadenza_contratto"]) or NON_SINCRONIZZATA,
         "valore_mercato": formatta_valore_mercato_mln(g["valore_mercato"]) or NON_SINCRONIZZATO,
         "u21": stato_u21(g["data_nascita"], soglia_u21),
+        "campioncino": url_campioncino(g.get("id_fantacalcio")),
     }
 
 

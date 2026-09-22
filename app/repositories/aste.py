@@ -82,7 +82,7 @@ def rinuncia(cur, asta_id, nome_squadra: str) -> None:
 def elenco_completo(cur) -> list[dict]:
     """Tutte le aste con i dati del giocatore, per la pagina pubblica /aste."""
     cur.execute("""
-        SELECT g.nome, g.ruolo, g.club, a.squadra_vincente, a.ultima_offerta,
+        SELECT g.nome, g.ruolo, g.club, g.id_fantacalcio, a.squadra_vincente, a.ultima_offerta,
                a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
         FROM asta a
         JOIN giocatore g ON a.giocatore = g.id
@@ -95,7 +95,7 @@ def visibili_alla_squadra(cur, nome_squadra: str) -> list[dict]:
     """Le aste che riguardano la squadra: quelle a cui partecipa, quelle ancora
     aperte alle iscrizioni, e quelle che ha vinto."""
     cur.execute(
-        """SELECT a.id, g.nome, g.ruolo, g.club, a.squadra_vincente, a.ultima_offerta,
+        """SELECT a.id, g.nome, g.ruolo, g.club, g.id_fantacalcio, a.squadra_vincente, a.ultima_offerta,
                   a.tempo_fine_asta, a.tempo_fine_mostra_interesse, a.stato, a.partecipanti
            FROM asta a JOIN giocatore g ON a.giocatore = g.id
            WHERE (a.stato = 'in_corso' AND %s = ANY(a.partecipanti))
@@ -108,7 +108,7 @@ def visibili_alla_squadra(cur, nome_squadra: str) -> list[dict]:
 
 def dettaglio(cur, asta_id) -> dict | None:
     cur.execute(
-        """SELECT g.nome, g.ruolo, g.club, a.ultima_offerta, a.squadra_vincente,
+        """SELECT g.nome, g.ruolo, g.club, g.id_fantacalcio, a.ultima_offerta, a.squadra_vincente,
                   a.tempo_fine_asta, a.partecipanti
            FROM asta a JOIN giocatore g ON a.giocatore = g.id
            WHERE a.id = %s;""", (asta_id,))

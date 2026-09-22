@@ -11,6 +11,7 @@ Qui gli identificativi vengono raccolti prima e la domanda si fa una volta sola,
 per tutti.
 """
 
+from app.core.formato import url_campioncino
 from app.domini.ruoli import pulisci_ruolo, ruolo_sort_key
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import richieste as richieste_repo
@@ -23,6 +24,7 @@ def _componi(riga, con_richiesta: set) -> dict:
         "ruolo": pulisci_ruolo(riga["ruolo"]),
         "club": riga["club"],
         "quot_att_mantra": riga["quot_att_mantra"],
+        "campioncino": url_campioncino(riga.get("id_fantacalcio")),
         "esiste_gia_una_richiesta": riga["id"] in con_richiesta,
     }
 
