@@ -58,7 +58,7 @@ CREATE INDEX IF NOT EXISTS idx_giocatore_id_transfermarkt
 CREATE INDEX IF NOT EXISTS idx_asta_partecipanti_gin
     ON asta USING GIN (partecipanti);
 
--- Copre il cron job che chiude le aste scadute (CronJob/cron_job_aste.psql).
+-- Copre il cron job che chiude le aste scadute (job "Aggiornamento aste" in CronJob/cron_jobs.sql).
 CREATE INDEX IF NOT EXISTS idx_asta_stato_tempo_fine_asta
     ON asta (stato, tempo_fine_asta);
 
