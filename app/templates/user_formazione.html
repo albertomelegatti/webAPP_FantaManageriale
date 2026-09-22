@@ -6,7 +6,7 @@
 <h2 class="mb-4 text-center text-lg font-bold">Formazione di {{ nome_squadra }}</h2>
 
 <form method="get" action="{{ url_for('formazione.user_formazione', nome_squadra=nome_squadra) }}"
-      id="formModulo" class="mb-4 flex items-center justify-center gap-2">
+      id="formModulo" class="mb-4 flex flex-wrap items-center justify-center gap-2">
     <label for="selectModulo" class="text-sm text-muted">Modulo</label>
     <select name="modulo" id="selectModulo"
             class="rounded-lg border border-line bg-panel-2 px-2 py-1.5 text-sm font-semibold">
@@ -14,9 +14,13 @@
         <option value="{{ nome_modulo }}" {% if nome_modulo == modulo %}selected{% endif %}>{{ nome_modulo }}</option>
         {% endfor %}
     </select>
+    <button type="submit" name="auto" value="1"
+            class="flex items-center gap-1 rounded-full border border-line bg-panel-2 px-3 py-1.5 text-sm font-semibold text-accent hover:border-accent">
+        <i class="bi bi-lightning-charge-fill"></i> Ottimizza
+    </button>
 </form>
 
-<p class="mb-4 text-center text-xs text-muted">Tocca una posizione per scegliere titolare, riserva e seconda riserva; cambiare modulo azzera le scelte non ancora salvate.</p>
+<p class="mb-4 text-center text-xs text-muted">Tocca una posizione per scegliere titolare, riserva e seconda riserva; cambiare modulo azzera le scelte non ancora salvate. "Ottimizza" propone una formazione a partire dai giocatori più quotati - resta comunque solo una proposta finché non premi "Salva formazione".</p>
 
 <form method="post" action="{{ url_for('formazione.user_formazione', nome_squadra=nome_squadra) }}" id="formFormazione">
     <input type="hidden" name="modulo" value="{{ modulo }}">

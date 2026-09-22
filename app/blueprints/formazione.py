@@ -42,6 +42,7 @@ def user_formazione(nome_squadra):
             return redirect(url_for("formazione.user_formazione", nome_squadra=nome_squadra))
 
         modulo_richiesto = request.args.get("modulo")
-        dati = servizio_formazione.dati_editor(cur, nome_squadra, modulo_richiesto)
+        auto = request.args.get("auto") == "1"
+        dati = servizio_formazione.dati_editor(cur, nome_squadra, modulo_richiesto, auto=auto)
 
     return render_template("user_formazione.html", nome_squadra=nome_squadra, **dati)

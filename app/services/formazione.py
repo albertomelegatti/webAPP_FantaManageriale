@@ -5,7 +5,7 @@ squadra.
 """
 
 from app.core.formato import url_campioncino
-from app.domini import moduli
+from app.domini import formazione_auto, moduli
 from app.domini.ruoli import pulisci_ruolo
 from app.repositories import formazione as formazione_repo
 from app.repositories import giocatori as giocatori_repo
@@ -27,6 +27,9 @@ def _rosa_attiva(cur, nome_squadra: str) -> list[dict]:
             "ruolo": pulisci_ruolo(g["ruolo"]),
             "club": g["club"],
             "campioncino": url_campioncino(g.get("id_fantacalcio")),
+            # Solo per ordinare la proposta di formazione_auto.schiera(): il
+            # picker manuale non la mostra, non serve altrove nell'editor.
+            "quot_att_mantra": g["quot_att_mantra"],
         }
         for g in giocatori
         if g["squadra_att"] == nome_squadra and g["tipo_contratto"] != "Primavera"
@@ -53,12 +56,17 @@ def _disponi_campo(modulo: str, righe_slot: list[dict]) -> list[list[dict]]:
     return gruppi
 
 
-def dati_editor(cur, nome_squadra: str, modulo_richiesto: str | None) -> dict:
+def dati_editor(cur, nome_squadra: str, modulo_richiesto: str | None, auto: bool = False) -> dict:
     """Tutto quello che serve alla pagina di modifica: rosa disponibile,
     modulo corrente e, per ogni slot, i candidati compatibili e la selezione
     attuale - quella salvata su database, o vuota se si sta provando un
     modulo diverso da quello salvato (cambiare modulo azzera la formazione
     non ancora salvata, stesso comportamento del simulatore di riferimento).
+
+    auto=True (il bottone "Ottimizza"): la selezione di partenza non e' ne'
+    quella salvata ne' vuota, ma la proposta di formazione_auto.schiera() -
+    resta comunque solo una proposta, va confermata con "Salva formazione"
+    come ogni altra modifica non ancora scritta su database.
     """
     rosa = _rosa_attiva(cur, nome_squadra)
     riga_salvata = formazione_repo.leggi(cur, nome_squadra)
@@ -72,6 +80,9 @@ def dati_editor(cur, nome_squadra: str, modulo_richiesto: str | None) -> dict:
     else:
         modulo = moduli.MODULO_DEFAULT
         slot_salvati = _slot_vuoti(modulo)
+
+    if auto:
+        slot_salvati = formazione_auto.schiera(moduli.MODULI[modulo], rosa)
 
     righe_slot = []
     for indice, ruoli_slot in enumerate(moduli.MODULI[modulo]):
