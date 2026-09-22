@@ -103,7 +103,23 @@
 }
 
 /* --- Tab squadra (static/js/dashboard_squadra.js) --------------------------
-   Stesso schema di .numero-pagina.attivo: pieno con il colore di sfondo della
+   Cinque voci non stanno sempre su una riga sola in mobile: invece di andare
+   a capo (schiaccia il resto della pagina su due righe strette) la barra
+   scorre in orizzontale, come una tab bar da app - la scrollbar nativa resta
+   nascosta perche' e' gia' ovvio che si scorre col dito, ma la barra e'
+   comunque utilizzabile a rotellina/trackpad su desktop. */
+.tabs-squadra {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.tabs-squadra::-webkit-scrollbar {
+    display: none;
+}
+
+/* Stesso schema di .numero-pagina.attivo: pieno con il colore di sfondo della
    pagina sopra l'accento, cosi' resta leggibile in entrambi i temi. */
 .tab-squadra {
     color: var(--muted);
