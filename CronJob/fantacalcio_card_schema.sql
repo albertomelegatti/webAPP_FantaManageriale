@@ -17,8 +17,9 @@
 -- id_fantacalcio: NULL = non ancora abbinato; -1 = verificato a mano che su
 -- fantacalcio.it non c'e' (scelta "Nessuna corrispondenza" in
 -- /admin/verifica_campioncini), cosi' non torna in coda a ogni
--- sincronizzazione. Vedi NESSUNA_CORRISPONDENZA in
--- app/domini/matching_fantacalcio.py.
+-- sincronizzazione; viene comunque abbinato se piu' avanti nel listone
+-- compare un unico giocatore con stesso nome e stesso club. Vedi
+-- NESSUNA_CORRISPONDENZA in app/domini/matching_fantacalcio.py.
 ALTER TABLE giocatore
     ADD COLUMN IF NOT EXISTS id_fantacalcio integer;
 

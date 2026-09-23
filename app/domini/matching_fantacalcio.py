@@ -14,8 +14,10 @@ import unicodedata
 # Valore di giocatore.id_fantacalcio per "l'admin ha verificato che su
 # fantacalcio.it non c'e'": distinto da NULL (mai cercato o ancora da
 # abbinare), cosi' la sincronizzazione non lo rimette in coda ogni giorno.
-# Un id vero e' sempre positivo; url_campioncino tratta questo valore come
-# "nessun campioncino".
+# Non e' definitivo: se piu' avanti nel listone compare un unico giocatore
+# con stesso nome e stesso club, viene abbinato lo stesso (vedi
+# app/services/fantacalcio.py). Un id vero e' sempre positivo;
+# url_campioncino tratta questo valore come "nessun campioncino".
 NESSUNA_CORRISPONDENZA = -1
 
 # Club il cui nome non comincia con la sigla a 3 lettere che usa

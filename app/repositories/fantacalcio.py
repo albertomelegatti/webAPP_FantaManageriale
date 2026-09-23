@@ -24,10 +24,14 @@ def inserisci_in_cache(cur, giocatore: dict) -> None:
 
 
 def non_ancora_mappati(cur) -> list[dict]:
-    """I giocatori senza un id fantacalcio, di ogni priorita': candidati al
-    primo abbinamento. Chi e' stato segnato "nessuna corrispondenza" ha un id
-    negativo, non NULL, e non compare qui."""
-    cur.execute("SELECT id, nome, club, priorita FROM giocatore WHERE id_fantacalcio IS NULL;")
+    """I giocatori senza un id fantacalcio vero, di ogni priorita': mai
+    abbinati (NULL) o segnati "nessuna corrispondenza" dall'admin, che
+    restano candidati a un abbinamento certo se nel frattempo compaiono nel
+    listone."""
+    cur.execute(
+        """SELECT id, nome, club, priorita, id_fantacalcio FROM giocatore
+           WHERE id_fantacalcio IS NULL OR id_fantacalcio = %s;""",
+        (NESSUNA_CORRISPONDENZA,))
     return cur.fetchall()
 
 

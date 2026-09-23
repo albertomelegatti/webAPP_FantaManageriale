@@ -342,6 +342,7 @@ def admin_sincronizza_campioncini():
     flash(
         f"✅ Sincronizzazione completata: {riepilogo['auto']} abbinati automaticamente, "
         f"{riepilogo['fuori_listone']} fuori listone (per nome e club), "
+        f"{riepilogo['recuperati']} prima segnati senza corrispondenza, "
         f"{riepilogo['id_aggiornati']} id corretti, "
         f"{riepilogo['ambigui']} ambigui e {riepilogo['non_trovati']} non trovati da rivedere.",
         "success",
