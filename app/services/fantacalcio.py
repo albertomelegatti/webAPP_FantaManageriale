@@ -9,7 +9,7 @@ app arriva già dal listone di fantacalcio.it.
 
 from app.core import fantacalcio_api
 from app.core.errori import ErroreDominio
-from app.domini.matching_fantacalcio import candidati_esatti
+from app.domini.matching_fantacalcio import candidati_esatti, candidati_stesso_club
 from app.domini.ruoli import pulisci_ruolo
 from app.repositories import fantacalcio as fantacalcio_repo
 
@@ -21,8 +21,19 @@ SOGLIA_MINIMA_GIOCATORI = 400
 
 def sincronizza(cur) -> dict:
     """Scarica il listone, aggiorna la cache e prova ad abbinare ogni
-    giocatore di prima fascia non ancora abbinato. Ritorna un riepilogo
-    {auto, ambigui, non_trovati}. Non committa: il chiamante decide quando.
+    giocatore non ancora abbinato. Ritorna un riepilogo
+    {auto, ambigui, non_trovati, fuori_listone, id_aggiornati}. Non committa:
+    il chiamante decide quando.
+
+    - Giocatori nel listone (priorita 1): match per nome esatto, i casi
+      ambigui o non trovati vanno in coda di revisione.
+    - Giocatori fuori dal listone (priorita 0): match solo con nome E club
+      uguali e un unico candidato, altrimenti niente - non vanno in coda,
+      che si riempirebbe di centinaia di giocatori che su fantacalcio.it non
+      ci sono davvero (usciti dalla Serie A, Primavera, ...).
+    - Giocatori nel listone gia' abbinati a un id che nel listone non c'e'
+      piu': se il nome ha un unico candidato l'id viene corretto, altrimenti
+      resta quello vecchio (la card si scarica per id, continua a funzionare).
     """
     giocatori_fc = fantacalcio_api.scarica_quotazioni()
     if len(giocatori_fc) < SOGLIA_MINIMA_GIOCATORI:
@@ -36,8 +47,15 @@ def sincronizza(cur) -> dict:
     for g in giocatori_fc:
         fantacalcio_repo.inserisci_in_cache(cur, g)
 
-    riepilogo = {"auto": 0, "ambigui": 0, "non_trovati": 0}
+    riepilogo = {"auto": 0, "ambigui": 0, "non_trovati": 0, "fuori_listone": 0, "id_aggiornati": 0}
     for giocatore in fantacalcio_repo.non_ancora_mappati(cur):
+        if giocatore["priorita"] != 1:
+            candidati = candidati_stesso_club(giocatore["nome"], giocatore["club"], giocatori_fc)
+            if len(candidati) == 1:
+                fantacalcio_repo.assegna_abbinamento(cur, giocatore["id"], candidati[0]["id_fantacalcio"])
+                riepilogo["fuori_listone"] += 1
+            continue
+
         candidati = candidati_esatti(giocatore["nome"], giocatori_fc)
         if len(candidati) == 1:
             fantacalcio_repo.assegna_abbinamento(cur, giocatore["id"], candidati[0]["id_fantacalcio"])
@@ -49,6 +67,15 @@ def sincronizza(cur) -> dict:
         else:
             fantacalcio_repo.segnala_non_trovato(cur, giocatore["id"])
             riepilogo["non_trovati"] += 1
+
+    id_nel_listone = {g["id_fantacalcio"] for g in giocatori_fc}
+    for giocatore in fantacalcio_repo.mappati_in_listone(cur):
+        if giocatore["id_fantacalcio"] in id_nel_listone:
+            continue
+        candidati = candidati_esatti(giocatore["nome"], giocatori_fc)
+        if len(candidati) == 1:
+            fantacalcio_repo.assegna_abbinamento(cur, giocatore["id"], candidati[0]["id_fantacalcio"])
+            riepilogo["id_aggiornati"] += 1
 
     return riepilogo
 

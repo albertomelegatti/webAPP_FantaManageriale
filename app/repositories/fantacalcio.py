@@ -1,5 +1,7 @@
 """Sincronizzazione con fantacalcio.it: cache locale e abbinamento ai giocatori."""
 
+from app.domini.matching_fantacalcio import NESSUNA_CORRISPONDENZA
+
 
 def ultimo_aggiornamento(cur):
     """Quando e' stata scritta per l'ultima volta la cache locale, o None se
@@ -22,9 +24,17 @@ def inserisci_in_cache(cur, giocatore: dict) -> None:
 
 
 def non_ancora_mappati(cur) -> list[dict]:
-    """I giocatori di prima fascia senza un id fantacalcio: candidati al primo
-    abbinamento."""
-    cur.execute("SELECT id, nome FROM giocatore WHERE id_fantacalcio IS NULL AND priorita = 1;")
+    """I giocatori senza un id fantacalcio, di ogni priorita': candidati al
+    primo abbinamento. Chi e' stato segnato "nessuna corrispondenza" ha un id
+    negativo, non NULL, e non compare qui."""
+    cur.execute("SELECT id, nome, club, priorita FROM giocatore WHERE id_fantacalcio IS NULL;")
+    return cur.fetchall()
+
+
+def mappati_in_listone(cur) -> list[dict]:
+    """I giocatori di prima fascia (nel listone) gia' abbinati a un id vero:
+    per ricontrollare che quell'id ci sia ancora nel listone scaricato."""
+    cur.execute("SELECT id, nome, id_fantacalcio FROM giocatore WHERE id_fantacalcio > 0 AND priorita = 1;")
     return cur.fetchall()
 
 
@@ -96,6 +106,12 @@ def tutti_in_cache(cur) -> list[dict]:
 
 def conferma_abbinamento(cur, id_giocatore: int, id_fantacalcio: int) -> None:
     cur.execute("UPDATE giocatore SET id_fantacalcio = %s WHERE id = %s;", (id_fantacalcio, id_giocatore))
+
+
+def segna_nessuna_corrispondenza(cur, id_giocatore: int) -> None:
+    """L'admin ha verificato che il giocatore non e' su fantacalcio.it: resta
+    senza campioncino e non torna in coda alla prossima sincronizzazione."""
+    cur.execute("UPDATE giocatore SET id_fantacalcio = %s WHERE id = %s;", (NESSUNA_CORRISPONDENZA, id_giocatore))
 
 
 def da_rivedere(cur) -> list[dict]:

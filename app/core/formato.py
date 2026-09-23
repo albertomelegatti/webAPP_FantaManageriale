@@ -34,8 +34,9 @@ _CAMPIONCINO_STAGIONE = "21"
 
 def url_campioncino(id_fantacalcio):
     """URL del campioncino (la card ufficiale) di un giocatore su
-    fantacalcio.it, None se non ancora abbinato (vedi
-    app/services/fantacalcio.py)."""
-    if id_fantacalcio is None:
+    fantacalcio.it, None se non ancora abbinato o se non c'e' (valore
+    negativo, vedi NESSUNA_CORRISPONDENZA in app/domini/matching_fantacalcio.py
+    e app/services/fantacalcio.py)."""
+    if id_fantacalcio is None or id_fantacalcio <= 0:
         return None
     return f"https://content.fantacalcio.it/web/campioncini/{_CAMPIONCINO_STAGIONE}/card/{id_fantacalcio}.png"
