@@ -49,10 +49,29 @@ MODULI: dict[str, list[tuple[str, ...]]] = {
 
 MODULO_DEFAULT = "4-4-2"
 
-# I tre "posti" di ogni slot: titolare, prima riserva, seconda riserva.
-POSTI = ("tit", "ris", "ter")
+# Quante riserve puo' avere ogni slot, in ordine di chiamata. Stesso limite
+# del Campetto Lega (github.com/andreamurari/fantamantra-campetti).
+MAX_RISERVE = 4
 
-NOME_POSTO = {"tit": "Titolare", "ris": "1ª riserva", "ter": "2ª riserva"}
+
+def slot_vuoto() -> dict:
+    return {"tit": None, "ris": []}
+
+
+def normalizza_slot(valori: dict | None) -> dict:
+    """Uno slot salvato nel formato corrente {"tit": id|None, "ris": [id, ...]}.
+
+    Le formazioni salvate prima delle 4 riserve hanno invece due posti fissi,
+    {"tit", "ris", "ter"} con un id (o None) ciascuno: si leggono come una
+    panchina di due, nello stesso ordine, senza bisogno di migrare il JSONB.
+    """
+    valori = valori or {}
+    ris = valori.get("ris")
+    if isinstance(ris, list):
+        riserve = [r for r in ris if r is not None]
+    else:
+        riserve = [r for r in (ris, valori.get("ter")) if r is not None]
+    return {"tit": valori.get("tit"), "ris": riserve[:MAX_RISERVE]}
 
 
 def linee_modulo(nome: str) -> list[int]:

@@ -18,13 +18,19 @@
             class="flex items-center gap-1 rounded-full border border-line bg-panel-2 px-3 py-1.5 text-sm font-semibold text-accent hover:border-accent">
         <i class="bi bi-lightning-charge-fill"></i> Ottimizza
     </button>
+    <button type="button" id="btnSvuota"
+            class="flex items-center gap-1 rounded-full border border-line bg-panel-2 px-3 py-1.5 text-sm font-semibold text-muted hover:border-accent hover:text-accent">
+        <i class="bi bi-eraser-fill"></i> Svuota
+    </button>
 </form>
 
-<p class="mb-4 text-center text-xs text-muted">Tocca una posizione per scegliere titolare, riserva e seconda riserva; cambiare modulo azzera le scelte non ancora salvate. "Ottimizza" propone una formazione a partire dai giocatori più quotati - resta comunque solo una proposta finché non premi "Salva formazione".</p>
+<p class="mb-4 text-center text-xs text-muted">Trascina i giocatori sul dischetto, sotto (riserve, max {{ max_riserve }}) o fra i panchinari; tocca un dischetto per l'elenco. Nulla è salvato finché non premi "Salva formazione".</p>
 
 <form method="post" action="{{ url_for('formazione.user_formazione', nome_squadra=nome_squadra) }}" id="formFormazione">
     <input type="hidden" name="modulo" value="{{ modulo }}">
-    <div id="campoFormazione" class="campetto" data-linee='{{ linee | tojson }}'></div>
+    <div id="campoFormazione" class="campetto" data-linee='{{ linee | tojson }}'
+         data-rosa='{{ rosa | tojson }}' data-max-riserve="{{ max_riserve }}"></div>
+    <div id="panchinari" class="campetto-panchinari" data-drop="fuori"></div>
     <div id="inputNascosti"></div>
     <div class="mt-4 flex justify-center">
         <button type="submit" class="rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white hover:brightness-110">Salva formazione</button>
@@ -40,6 +46,8 @@
         <ul id="pickerLista" class="flex max-h-80 flex-col gap-1 overflow-y-auto text-sm"></ul>
     </div>
 </div>
+
+<div id="avvisoTrascina" class="campetto-avviso" role="status" aria-live="polite"></div>
 
 <script src="{{ url_for('static', filename='js/user_formazione.js') }}?v={{ asset_v('js/user_formazione.js') }}"></script>
 {% endblock %}

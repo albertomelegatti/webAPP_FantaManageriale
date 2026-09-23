@@ -1,6 +1,7 @@
 """Test per app/domini/formazione_auto.py: funzioni pure, nessun database."""
 
 from app.domini.formazione_auto import schiera
+from app.domini.moduli import normalizza_slot
 
 
 def _g(id_, ruolo, quot=10):
@@ -15,9 +16,9 @@ class TestSchieraTitolari:
         righe = schiera(modulo, rosa)
 
         assert righe == [
-            {"tit": 1, "ris": None, "ter": None},
-            {"tit": 2, "ris": None, "ter": None},
-            {"tit": 3, "ris": None, "ter": None},
+            {"tit": 1, "ris": []},
+            {"tit": 2, "ris": []},
+            {"tit": 3, "ris": []},
         ]
 
     def test_a_parita_di_slot_vince_il_piu_quotato(self):
@@ -27,7 +28,7 @@ class TestSchieraTitolari:
         righe = schiera(modulo, rosa)
 
         assert righe[0]["tit"] == 2
-        assert righe[0]["ris"] == 1
+        assert righe[0]["ris"] == [1]
 
     def test_slot_piu_specifico_preferito_a_parita_di_combacio(self):
         # "C" e' il ruolo piu' offensivo sia dello slot singolo sia di M/C:
@@ -97,28 +98,27 @@ class TestSchieraTitolari:
 
         # il piu' quotato dei due prende il titolare, l'altro la riserva
         assert righe[0]["tit"] == 2
-        assert righe[0]["ris"] == 1
+        assert righe[0]["ris"] == [1]
 
 
 class TestSchieraPanchina:
-    def test_terzo_giocatore_compatibile_va_in_riserva_poi_seconda_riserva(self):
+    def test_panchina_in_ordine_di_quotazione(self):
         modulo = [("Dc",)]
         rosa = [_g(1, "Dc", quot=30), _g(2, "Dc", quot=20), _g(3, "Dc", quot=10)]
 
         righe = schiera(modulo, rosa)
 
-        assert righe[0] == {"tit": 1, "ris": 2, "ter": 3}
+        assert righe[0] == {"tit": 1, "ris": [2, 3]}
 
     def test_panchina_piena_lascia_il_giocatore_fuori(self):
         modulo = [("Dc",)]
-        rosa = [_g(i, "Dc", quot=40 - i) for i in range(4)]  # 4 giocatori, un solo slot
+        rosa = [_g(i, "Dc", quot=40 - i) for i in range(6)]  # 6 giocatori, un solo slot
 
         righe = schiera(modulo, rosa)
 
-        assert righe[0] == {"tit": 0, "ris": 1, "ter": 2}
-        # il 4o (id=3, il meno quotato) non compare da nessuna parte
-        assegnati = {righe[0]["tit"], righe[0]["ris"], righe[0]["ter"]}
-        assert 3 not in assegnati
+        assert righe[0] == {"tit": 0, "ris": [1, 2, 3, 4]}
+        # il 6o (id=5, il meno quotato) non compare da nessuna parte
+        assert 5 not in {righe[0]["tit"], *righe[0]["ris"]}
 
     def test_riserva_va_sotto_lo_slot_con_meno_riserve(self):
         modulo = [("Dc",), ("Dc",)]
@@ -130,9 +130,8 @@ class TestSchieraPanchina:
 
         righe = schiera(modulo, rosa)
 
-        riserve_per_slot = [{r["ris"], r["ter"]} - {None} for r in righe]
-        assert len(riserve_per_slot[0]) == 1
-        assert len(riserve_per_slot[1]) == 1
+        assert len(righe[0]["ris"]) == 1
+        assert len(righe[1]["ris"]) == 1
 
 
 class TestSchieraCasiLimite:
@@ -142,7 +141,7 @@ class TestSchieraCasiLimite:
 
         righe = schiera(modulo, rosa)
 
-        assert righe == [{"tit": None, "ris": None, "ter": None}]
+        assert righe == [{"tit": None, "ris": []}]
 
     def test_rosa_vuota(self):
         modulo = [("Por",), ("Dc",)]
@@ -150,8 +149,8 @@ class TestSchieraCasiLimite:
         righe = schiera(modulo, [])
 
         assert righe == [
-            {"tit": None, "ris": None, "ter": None},
-            {"tit": None, "ris": None, "ter": None},
+            {"tit": None, "ris": []},
+            {"tit": None, "ris": []},
         ]
 
     def test_quotazione_mancante_non_esplode_e_conta_come_zero(self):
@@ -161,7 +160,7 @@ class TestSchieraCasiLimite:
         righe = schiera(modulo, rosa)
 
         assert righe[0]["tit"] == 2
-        assert righe[0]["ris"] == 1
+        assert righe[0]["ris"] == [1]
 
     def test_ruolo_vuoto_non_esplode(self):
         modulo = [("Dc",)]
@@ -169,4 +168,18 @@ class TestSchieraCasiLimite:
 
         righe = schiera(modulo, rosa)
 
-        assert righe == [{"tit": None, "ris": None, "ter": None}]
+        assert righe == [{"tit": None, "ris": []}]
+
+
+class TestNormalizzaSlot:
+    def test_formato_vecchio_a_due_posti_diventa_lista(self):
+        assert normalizza_slot({"tit": 1, "ris": 2, "ter": 3}) == {"tit": 1, "ris": [2, 3]}
+
+    def test_formato_vecchio_con_buchi(self):
+        assert normalizza_slot({"tit": 1, "ris": None, "ter": 3}) == {"tit": 1, "ris": [3]}
+
+    def test_formato_nuovo_resta_uguale(self):
+        assert normalizza_slot({"tit": 1, "ris": [2, 3, 4, 5]}) == {"tit": 1, "ris": [2, 3, 4, 5]}
+
+    def test_slot_mancante(self):
+        assert normalizza_slot(None) == {"tit": None, "ris": []}

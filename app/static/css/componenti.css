@@ -138,183 +138,346 @@
 }
 
 /* --- Campetto (formazione: user_formazione.html e dashboard_squadra.html) --
-   Un verde da erba tagliata indipendente dal tema chiaro/scuro del sito, come
-   una vera illustrazione di campo invece di un pannello dell'interfaccia:
-   niente variabili --bg/--panel qui, e' intenzionale. La segnatura (bordo,
-   linea di meta' campo, cerchio, aree di rigore) e' un unico SVG inline in
-   background, non elementi separati: stesso approccio del campetto di
-   riferimento (fanta-mantra/static/style.css, .campo). */
+   Ispirato al Campetto Lega (github.com/andreamurari/fantamantra-campetti):
+   ogni posizione e' un dischetto sul prato con la sigla dello slot, colorato
+   col ruolo del titolare, e sotto il nome e le riserve fra parentesi. L'erba
+   e' indipendente dal tema chiaro/scuro del sito, come una vera illustrazione
+   di campo invece di un pannello dell'interfaccia: niente variabili
+   --bg/--panel qui, e' intenzionale.
+
+   La segnatura (bordo, meta' campo, cerchio, aree con lunetta) e' un unico
+   SVG in background stirato su tutto il box (preserveAspectRatio none, 100%
+   100%): l'aspect-ratio da campo vero e' solo un minimo, se le panchine piene
+   su un telefono stretto chiedono piu' altezza il box si allunga e la
+   segnatura lo segue invece di tagliare i nomi. Per questo niente
+   overflow:hidden, che disattiverebbe l'allungamento automatico. */
 .campetto {
     position: relative;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 0.625rem;
-    padding: 1.25rem 0.75rem;
-    border: 2px solid #2f8a4d;
-    border-radius: 0.75rem;
-    background:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 150' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.32' stroke-width='0.7'%3E%3Crect x='2' y='2' width='96' height='146' rx='1'/%3E%3Cline x1='2' y1='75' x2='98' y2='75'/%3E%3Ccircle cx='50' cy='75' r='12'/%3E%3Crect x='24' y='2' width='52' height='24'/%3E%3Crect x='37' y='2' width='26' height='10'/%3E%3Crect x='24' y='124' width='52' height='24'/%3E%3Crect x='37' y='138' width='26' height='10'/%3E%3C/g%3E%3Ccircle cx='50' cy='75' r='1.1' fill='%23ffffff' fill-opacity='0.32'/%3E%3Ccircle cx='50' cy='19' r='1.1' fill='%23ffffff' fill-opacity='0.32'/%3E%3Ccircle cx='50' cy='131' r='1.1' fill='%23ffffff' fill-opacity='0.32'/%3E%3C/svg%3E")
-            top center / contain no-repeat,
-        repeating-linear-gradient(180deg, #1e7340 0 2.4rem, #1a6739 2.4rem 4.8rem);
-    /* La segnatura (viewBox 100x150, 2:3) va in "contain": si adatta sempre
-       alla sua proporzione reale invece di stirarsi per riempire il box,
-       qualunque forma finisca per avere il box - a differenza di un
-       aspect-ratio fisso sul contenitore, che va bene finche' il contenuto
-       (le righe di slot, specie con panchine piene su mobile stretto) ci
-       sta dentro, ma altrimenti lo fa traboccare fuori dal bordo arrotondato
-       invece di lasciarlo crescere. Il rigo d'erba sotto resta comunque a
-       riempire tutto il box, quindi l'eventuale margine senza segnatura non
-       si vede vuoto. */
+    gap: 0.75rem;
+    aspect-ratio: 68 / 92;
     max-width: 30rem;
     margin-inline: auto;
-    min-height: 26rem;
+    padding: 1.6rem 0.25rem 1.1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 680 1000' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.6' stroke-width='3'%3E%3Crect x='12' y='12' width='656' height='976'/%3E%3Cline x1='12' y1='500' x2='668' y2='500'/%3E%3Ccircle cx='340' cy='500' r='92'/%3E%3Crect x='160' y='12' width='360' height='128'/%3E%3Crect x='262' y='12' width='156' height='46'/%3E%3Cpath d='M262 140 A 82 82 0 0 0 418 140'/%3E%3Crect x='160' y='860' width='360' height='128'/%3E%3Crect x='262' y='942' width='156' height='46'/%3E%3Cpath d='M262 860 A 82 82 0 0 1 418 860'/%3E%3C/g%3E%3Ccircle cx='340' cy='500' r='5' fill='%23ffffff' fill-opacity='0.6'/%3E%3C/svg%3E")
+            0 0 / 100% 100% no-repeat,
+        repeating-linear-gradient(180deg, #2f8551 0 9.0909%, #2b7b4a 9.0909% 18.1818%);
 }
 
 .campetto-riga {
     display: flex;
-    justify-content: space-evenly;
+    justify-content: space-around;
     align-items: flex-start;
-    gap: 0.5rem;
-    flex-wrap: wrap;
 }
 
-/* Ogni posizione e' una scheda: badge del ruolo in cima, poi titolare,
-   riserva e seconda riserva impilati. Sostituisce i vecchi &lt;select&gt; nativi
-   (bruttini e fuori posto su un'illustrazione di campo) con righe cliccabili
-   nell'editor e testo statico nella pagina pubblica - stessa classe in
-   entrambi i casi, e' il JS a decidere se sono interattive. */
+/* Una posizione: dischetto, nome del titolare, riserve. Nessuna scheda di
+   sfondo, il testo sta direttamente sull'erba con un'ombra per leggersi.
+   Le posizioni si dividono la riga, ma una da sola (il trequartista, la
+   punta) non prende tutta la larghezza: al massimo un terzo, abbastanza
+   per un cognome lungo. */
 .campetto-slot {
+    flex: 1 1 0;
+    max-width: 34%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.2rem;
-    min-width: 4.75rem;
-    max-width: 8.5rem;
-    flex: 1;
-    background: rgba(10, 20, 14, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 0.625rem;
-    padding: 0.35rem 0.3rem;
+    gap: 0.1rem;
+    text-align: center;
 }
 
-.campetto-badge {
-    font-size: 0.62rem;
-    font-weight: 800;
-    letter-spacing: 0.02em;
-    color: #fff;
-    padding: 0.06rem 0.5rem;
-    border-radius: 999px;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.28);
-    margin-bottom: 0.15rem;
-}
-
-.campetto-posto {
-    width: 100%;
+.campetto-disco {
+    position: relative;
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.3rem;
-    border-radius: 0.4rem;
     color: #fff;
-    padding: 0.25rem 0.35rem;
-    font-size: 0.76rem;
-    font-weight: 600;
-    line-height: 1.25;
+    font-size: 0.72rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    border: 2px dashed rgba(255, 255, 255, 0.55);
+    background: rgba(0, 0, 0, 0.26);
 }
 
-.campetto-posto > span {
+/* Sigle lunghe ("T/A/Pc") stanno nel disco solo piu' piccole. */
+.campetto-disco-sm { font-size: 0.6rem; }
+.campetto-disco-xs { font-size: 0.5rem; letter-spacing: -0.04em; }
+
+/* Colore del ruolo del titolare, passato inline come --ruolo (stessa
+   palette di ruolo_colorato in _macros.html). */
+.campetto-disco.pieno {
+    border: 2px solid rgba(255, 255, 255, 0.92);
+    background: var(--ruolo, #7c8a83);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* Col campioncino il "disco" smette di essere un tondo e diventa la card
+   intera: le card di fantacalcio.it hanno tutte la stessa sagoma a scudo
+   (linguetta in alto, punta in basso, 255x378), con la cornice gia'
+   disegnata, quindi ritagliarla in un cerchio tagliava solo la faccia.
+   Il colore del ruolo diventa un contorno che segue quella sagoma: quattro
+   drop-shadow senza sfocatura, spostati di 2px nelle quattro direzioni,
+   ricalcano il canale alfa dell'immagine meglio di qualunque bordo CSS.
+   La sigla scende in una pastiglia sulla punta. Se l'immagine non carica,
+   l'onerror toglie foto e classe e resta il disco colorato con la sigla. */
+.campetto-disco.con-foto {
+    width: 2.6rem;
+    height: auto;
+    aspect-ratio: 255 / 378;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.campetto-disco img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter:
+        drop-shadow(2px 0 0 var(--ruolo, #7c8a83))
+        drop-shadow(-2px 0 0 var(--ruolo, #7c8a83))
+        drop-shadow(0 2px 0 var(--ruolo, #7c8a83))
+        drop-shadow(0 -2px 0 var(--ruolo, #7c8a83))
+        drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+.campetto-disco.con-foto .campetto-sigla {
+    position: absolute;
+    left: 50%;
+    bottom: -0.45rem;
+    transform: translateX(-50%);
+    padding: 0.08rem 0.3rem;
+    border-radius: 999px;
+    font-size: 0.55rem;
+    background: var(--ruolo, #7c8a83);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9);
+}
+
+.campetto-nome,
+.campetto-riserva {
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 3px rgba(0, 0, 0, 0.6);
 }
 
-/* Il campioncino, solo per il titolare: riserva e seconda riserva restano
-   solo testo per non appesantire troppo la scheda. */
-.campetto-foto {
-    height: 1.6rem;
-    width: 1.15rem;
-    flex-shrink: 0;
-    border-radius: 0.25rem;
-    object-fit: contain;
-    background: rgba(255, 255, 255, 0.1);
+.campetto-nome {
+    margin-top: 0.3rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.1;
 }
 
-/* Editor: le righe si possono cliccare per aprire il selettore. */
-.campetto-posto-editabile {
-    cursor: pointer;
-    transition: background-color 0.12s ease;
-}
-
-.campetto-posto-editabile:hover {
-    background: rgba(255, 255, 255, 0.14);
-}
-
-.campetto-posto-ris,
-.campetto-posto-ter {
-    border-top: 1px dashed rgba(255, 255, 255, 0.18);
-    margin-top: 0.1rem;
-    padding-top: 0.3rem;
-    font-size: 0.68rem;
+.campetto-riserva {
+    font-size: 0.66rem;
     font-weight: 500;
+    line-height: 1.15;
+    color: rgba(255, 255, 255, 0.82);
 }
 
-/* Sotto i 480px (telefono in verticale) le 3-4 card di ogni riga si
-   accavallavano: card, testo e spaziature piu' piccoli solo qui, non e' un
-   ridimensionamento proporzionale del desktop. */
+/* Editor (user_formazione.js): dischi e righe sono bottoni. */
+.campetto-editabile {
+    cursor: pointer;
+}
+
+.campetto-disco.campetto-editabile {
+    transition: transform 0.12s ease;
+}
+
+.campetto-disco.campetto-editabile:hover {
+    transform: scale(1.09);
+}
+
+.campetto-nome.campetto-editabile:hover,
+.campetto-riserva.campetto-editabile:hover {
+    text-decoration: underline;
+}
+
+/* Il posto libero successivo nella panchina, per aggiungere una riserva. */
+.campetto-riserva.campetto-aggiungi {
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.55);
+}
+
+/* Sotto i 480px (telefono in verticale) cinque posizioni sulla stessa riga
+   non ci stanno a corpo pieno: dischi e testo piu' piccoli solo qui. */
 @media (max-width: 480px) {
     .campetto {
-        padding: 0.75rem 0.4rem;
-        gap: 0.4rem;
+        padding: 1.2rem 0.1rem 0.9rem;
+        gap: 0.5rem;
     }
 
-    .campetto-riga {
-        gap: 0.3rem;
-    }
-
-    .campetto-slot {
-        min-width: 3.75rem;
-        max-width: 6rem;
-        gap: 0.12rem;
-        padding: 0.25rem 0.2rem;
-    }
-
-    .campetto-badge {
-        font-size: 0.55rem;
-        padding: 0.04rem 0.35rem;
-    }
-
-    .campetto-posto {
-        padding: 0.18rem 0.22rem;
+    .campetto-disco {
+        width: 2.1rem;
+        height: 2.1rem;
         font-size: 0.62rem;
     }
 
-    .campetto-posto-ris,
-    .campetto-posto-ter {
-        font-size: 0.56rem;
-        padding-top: 0.2rem;
-    }
+    .campetto-disco.con-foto { width: 2.2rem; }
+
+    .campetto-disco-sm { font-size: 0.52rem; }
+    .campetto-disco-xs { font-size: 0.44rem; }
+
+    .campetto-nome { font-size: 0.68rem; }
+    .campetto-riserva { font-size: 0.58rem; }
 }
 
-.campetto-posto-ris {
-    opacity: 0.75;
+/* La panchina di uno slot nell'editor: tutta l'area sotto il nome e'
+   bersaglio per il trascinamento, anche quando le riserve sono poche. */
+.campetto-panca {
+    width: 100%;
+    min-height: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: 0.375rem;
 }
 
-.campetto-posto-ter {
-    opacity: 0.55;
+/* --- Trascinamento (user_formazione.js) ---------------------------------
+   touch-action:none sugli elementi trascinabili, altrimenti su telefono il
+   dito farebbe scorrere la pagina invece di spostare il giocatore. */
+.trascinabile {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: grab;
 }
 
-.campetto-posto.vuoto {
-    color: rgba(255, 255, 255, 0.55);
+body.trascinando,
+body.trascinando * {
+    cursor: grabbing !important;
+}
+
+/* Mentre si trascina si vede dove finisce la panchina di ogni slot. */
+body.trascinando .campetto-panca {
+    background: rgba(0, 0, 0, 0.22);
+}
+
+.campetto-fantasma {
+    position: fixed;
+    z-index: 200;
+    pointer-events: none;
+    transform: translate(-50%, -140%);
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--accent);
+    background: var(--panel);
+    color: var(--text);
+    font-size: 0.85rem;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+/* verde = il ruolo e' ammesso, rosso tratteggiato = la mossa verra' rifiutata */
+.drop-ok {
+    outline: 3px solid #37e07a;
+    outline-offset: 2px;
+}
+
+.drop-no {
+    outline: 3px dashed #ff6b6b;
+    outline-offset: 2px;
+}
+
+.campetto-avviso {
+    position: fixed;
+    left: 50%;
+    bottom: 1.5rem;
+    z-index: 210;
+    transform: translateX(-50%) translateY(0.5rem);
+    max-width: calc(100% - 2rem);
+    padding: 0.5rem 0.9rem;
+    border-radius: 0.6rem;
+    border: 1px solid var(--crit);
+    background: var(--panel);
+    color: var(--text);
+    font-size: 0.85rem;
+    font-weight: 600;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.campetto-avviso.visibile {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* --- Panchinari: la rosa fuori dal campo ----------------------------------
+   Sotto il campetto, nei colori del sito (non dell'erba). Verde chi il
+   modulo potrebbe schierare, ambra chi nel modulo scelto non ha nessuno
+   slot per il suo ruolo. Nell'editor e' anche il bersaglio per togliere un
+   giocatore dal campo. */
+.campetto-panchinari {
+    max-width: 30rem;
+    margin: 0.75rem auto 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.6rem;
+    border: 1px dashed var(--line);
+    border-radius: 0.6rem;
+}
+
+.campetto-panchinari-titolo {
+    width: 100%;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.campetto-panchinari-vuoto {
+    font-size: 0.75rem;
     font-style: italic;
-    font-weight: 500;
+    color: var(--muted);
 }
 
-/* Titolare mancante: si segnala, una riserva vuota e' normale. */
-.campetto-posto-tit.vuoto {
-    border: 1px dashed rgba(255, 130, 130, 0.55);
-    background: rgba(80, 12, 12, 0.32);
+.campetto-panchinaro {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 0.375rem;
+    border: 1px solid var(--crit);
+    background: color-mix(in oklab, var(--crit) 12%, transparent);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.campetto-panchinaro i {
+    font-style: normal;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--crit);
+}
+
+.campetto-panchinaro.schierabile {
+    border-color: var(--ok);
+    background: color-mix(in oklab, var(--ok) 12%, transparent);
+}
+
+.campetto-panchinaro.schierabile i {
+    color: var(--ok);
 }
 
 /* Elenco dei candidati nel picker (overlay #overlayPosto). */
@@ -332,9 +495,73 @@
     background: var(--panel-2);
 }
 
-.campetto-candidato.occupato {
-    cursor: not-allowed;
-    opacity: 0.4;
+/* Chi sta gia' nello slot: in cima, non cliccabile, con la sua ✕. */
+.campetto-candidato.attuale {
+    cursor: default;
+    font-weight: 600;
+}
+
+.campetto-candidato.attuale:hover {
+    background: none;
+}
+
+/* Titolare e riserve nel picker si riordinano trascinandoli (vedi
+   rendiOrdinabile in user_formazione.js). */
+.campetto-candidato.ordinabile {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: grab;
+}
+
+.campetto-maniglia {
+    flex-shrink: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+.campetto-candidato.in-spostamento {
+    position: relative;
+    z-index: 1;
+    cursor: grabbing;
+    background: var(--panel-2);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+/* dove finira' la riga trascinata */
+.campetto-candidato.inserisci-sopra {
+    box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.campetto-candidato.inserisci-sotto {
+    box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* Gia' schierato altrove: sceglierlo lo sposta qui. */
+.campetto-candidato.altrove {
+    color: var(--muted);
+}
+
+.campetto-azione {
+    flex-shrink: 0;
+    padding: 0.1rem 0.45rem;
+    border-radius: 0.375rem;
+    border: 1px solid var(--line);
+    background: var(--panel-2);
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.campetto-azione:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.campetto-picker-separatore {
+    margin: 0.25rem 0;
+    border-top: 1px solid var(--line);
 }
 
 /* --- Podio classifica (albo_oro.html) --------------------------------------
