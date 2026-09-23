@@ -91,11 +91,13 @@ data-info='{{ {
 <span class="whitespace-nowrap font-semibold">{% for token in ruolo.split(',') %}<span style="color:{{ colori.get(token.strip().lower(), 'var(--muted)') }}">{{ token.strip() }}</span>{% if not loop.last %}<span class="text-muted">,</span>{% endif %}{% endfor %}</span>
 {%- endmacro %}
 
-{# Il badge colorato di una posizione del campetto (dashboard_squadra.html),
-   es. "W/A" colorato sul primo ruolo ammesso. Stessa palette di
-   ruolo_colorato e dello stesso dizionario in static/js/user_formazione.js -
+{# Il dischetto di una posizione del campetto (dashboard_squadra.html): sigla
+   dello slot (es. "W/A"), colorato col primo ruolo del titolare e con il suo
+   campioncino se c'e'; tratteggiato e vuoto se manca il titolare. Stessa
+   palette di ruolo_colorato e dello stesso dizionario in
+   static/js/user_formazione.js (che disegna lo stesso disco nell'editor) -
    una modifica qui va riportata in entrambi. #}
-{% macro badge_ruolo_slot(etichetta) %}
+{% macro disco_campetto(etichetta, titolare) %}
 {%- set colori = {
     'por': '#e0951b',
     'dd': '#22a558', 'ds': '#22a558', 'dc': '#22a558', 'b': '#22a558',
@@ -103,8 +105,20 @@ data-info='{{ {
     'w': '#a855f7', 't': '#a855f7',
     'a': '#ef4444', 'pc': '#ef4444'
 } -%}
-{%- set primo = etichetta.split('/')[0].strip().lower() -%}
-<span class="campetto-badge" style="background:{{ colori.get(primo, '#5a6570') }}">{{ etichetta }}</span>
+{%- set taglia = ' campetto-disco-xs' if etichetta | length >= 6 else (' campetto-disco-sm' if etichetta | length >= 4 else '') -%}
+{%- if titolare -%}
+{%- set primo = titolare.ruolo.replace('/', ',').split(',')[0].strip().lower() -%}
+<div class="campetto-disco pieno{{ taglia }}{{ ' con-foto' if titolare.campioncino }}"
+     style="--ruolo:{{ colori.get(primo, '#5a6570') }}" title="{{ titolare.nome }} ({{ titolare.ruolo }})">
+    {%- if titolare.campioncino -%}
+    <img src="{{ titolare.campioncino }}" alt="" loading="lazy"
+         onerror="this.parentNode.classList.remove('con-foto');this.remove()">
+    {%- endif -%}
+    <span class="campetto-sigla">{{ etichetta }}</span>
+</div>
+{%- else -%}
+<div class="campetto-disco{{ taglia }}"><span class="campetto-sigla">{{ etichetta }}</span></div>
+{%- endif -%}
 {%- endmacro %}
 
 {% macro club_abbr(club) %}

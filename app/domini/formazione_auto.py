@@ -8,6 +8,8 @@ mano. Stesso algoritmo del simulatore di riferimento
 Funzioni pure, nessun accesso a database.
 """
 
+from app.domini.moduli import MAX_RISERVE, slot_vuoto
+
 # Quanto e' "difensivo" un ruolo, ai soli fini di questo algoritmo: rango
 # piu' basso = piu' difensivo. E' lo stesso identico ordine del simulatore di
 # riferimento (fanta-mantra/index.html, DEF_RANK), non RUOLI_BASE_ORDINE in
@@ -81,16 +83,15 @@ def schiera(modulo: list[tuple[str, ...]], rosa: list[dict]) -> list[dict]:
     il piu' specifico (meno ruoli ammessi), per non sprecare uno slot
     flessibile che potrebbe servire dopo a un giocatore meno versatile - poi,
     se non c'e' un titolare libero, riserva sotto lo slot compatibile con
-    meno riserve gia' assegnate. Un giocatore senza nessuno slot compatibile
+    meno riserve gia' assegnate (fino a moduli.MAX_RISERVE). Un giocatore senza nessuno slot compatibile
     nel modulo resta fuori, il chiamante lo trattera' come "fuori campo"
     (non e' un errore: succede con moduli che non prevedono il suo ruolo).
 
     rosa: [{"id", "ruolo" (stringa pulita "Dd,Ds"), "quot_att_mantra"}, ...].
     Ritorna una riga per slot dello stesso modulo, stesso formato di
-    _slot_vuoti in app/services/formazione.py:
-    [{"tit": id|None, "ris": id|None, "ter": id|None}, ...].
+    moduli.slot_vuoto: [{"tit": id|None, "ris": [id, ...]}, ...].
     """
-    righe = [{"tit": None, "ris": None, "ter": None} for _ in modulo]
+    righe = [slot_vuoto() for _ in modulo]
 
     ordinata = sorted(rosa, key=lambda g: g.get("quot_att_mantra") or 0, reverse=True)
 
@@ -110,14 +111,9 @@ def schiera(modulo: list[tuple[str, ...]], rosa: list[dict]) -> list[dict]:
             righe[liberi[0]]["tit"] = giocatore["id"]
             continue
 
-        occupati = [i for i in candidati if righe[i]["tit"] is not None]
-        occupati.sort(key=lambda i: (righe[i]["ris"] is not None) + (righe[i]["ter"] is not None))
-        for i in occupati:
-            if righe[i]["ris"] is None:
-                righe[i]["ris"] = giocatore["id"]
-                break
-            if righe[i]["ter"] is None:
-                righe[i]["ter"] = giocatore["id"]
-                break
+        occupati = [i for i in candidati if len(righe[i]["ris"]) < MAX_RISERVE]
+        if occupati:
+            occupati.sort(key=lambda i: len(righe[i]["ris"]))
+            righe[occupati[0]]["ris"].append(giocatore["id"])
 
     return righe

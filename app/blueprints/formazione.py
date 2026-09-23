@@ -25,8 +25,9 @@ def user_formazione(nome_squadra):
             selezioni = {}
             for indice in range(len(moduli.MODULI.get(modulo, []))):
                 selezioni[indice] = {
-                    posto: request.form.get(f"slot_{indice}_{posto}", "")
-                    for posto in moduli.POSTI
+                    "tit": request.form.get(f"slot_{indice}_tit", ""),
+                    # un input per riserva, nell'ordine di chiamata
+                    "ris": request.form.getlist(f"slot_{indice}_ris"),
                 }
 
             errori = servizio_formazione.salva(cur, nome_squadra, modulo, selezioni)

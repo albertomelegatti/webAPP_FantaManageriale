@@ -69,26 +69,27 @@
                 <div class="campetto-riga">
                     {% for slot in riga %}
                     <div class="campetto-slot">
-                        {{ m.badge_ruolo_slot(slot.etichetta) }}
-                        {% set titolare = slot.giocatori.tit %}
-                        <div class="campetto-posto campetto-posto-tit {{ 'vuoto' if not titolare }}">
-                            {% if titolare and titolare.campioncino %}
-                            <img src="{{ titolare.campioncino }}" alt="" class="campetto-foto" loading="lazy"
-                                 onerror="this.remove()">
-                            {% endif %}
-                            <span>{{ titolare.nome if titolare else '—' }}</span>
-                        </div>
-                        {% for posto in ['ris', 'ter'] %}
-                        {% set riserva = slot.giocatori[posto] %}
-                        {% if riserva %}
-                        <div class="campetto-posto campetto-posto-{{ posto }}"><span>{{ riserva.nome }}</span></div>
+                        {{ m.disco_campetto(slot.etichetta, slot.titolare) }}
+                        {% if slot.titolare %}
+                        <div class="campetto-nome">{{ slot.titolare.nome }}</div>
                         {% endif %}
+                        {% for riserva in slot.riserve %}
+                        <div class="campetto-riserva">({{ riserva.nome }})</div>
                         {% endfor %}
                     </div>
                     {% endfor %}
                 </div>
                 {% endfor %}
             </div>
+            {% if formazione.panchinari %}
+            <div class="campetto-panchinari">
+                <span class="campetto-panchinari-titolo">Panchinari</span>
+                {% for g in formazione.panchinari %}
+                <span class="campetto-panchinaro {{ 'schierabile' if g.schierabile }}"
+                      title="{{ g.nome }} ({{ g.ruolo }}){{ '' if g.schierabile else ' - nessuno slot per il suo ruolo in questo modulo' }}"><i>{{ g.ruolo }}</i> {{ g.nome }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
             {% else %}
             <p class="py-6 text-center text-sm text-muted">Formazione non ancora impostata.</p>
             {% endif %}
