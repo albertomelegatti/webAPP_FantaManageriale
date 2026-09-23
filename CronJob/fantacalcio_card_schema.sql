@@ -14,6 +14,12 @@
 -- app arriva già dal listone di fantacalcio.it, quindi il match è per nome
 -- esatto (normalizzato) senza bisogno di scoping per squadra.
 
+-- id_fantacalcio: NULL = non ancora abbinato; -1 = verificato a mano che su
+-- fantacalcio.it non c'e' (scelta "Nessuna corrispondenza" in
+-- /admin/verifica_campioncini), cosi' non torna in coda a ogni
+-- sincronizzazione; viene comunque abbinato se piu' avanti nel listone
+-- compare un unico giocatore con stesso nome e stesso club. Vedi
+-- NESSUNA_CORRISPONDENZA in app/domini/matching_fantacalcio.py.
 ALTER TABLE giocatore
     ADD COLUMN IF NOT EXISTS id_fantacalcio integer;
 

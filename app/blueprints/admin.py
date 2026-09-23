@@ -341,6 +341,9 @@ def admin_sincronizza_campioncini():
 
     flash(
         f"✅ Sincronizzazione completata: {riepilogo['auto']} abbinati automaticamente, "
+        f"{riepilogo['fuori_listone']} fuori listone (per nome e club), "
+        f"{riepilogo['recuperati']} prima segnati senza corrispondenza, "
+        f"{riepilogo['id_aggiornati']} id corretti, "
         f"{riepilogo['ambigui']} ambigui e {riepilogo['non_trovati']} non trovati da rivedere.",
         "success",
     )
@@ -377,6 +380,7 @@ def admin_verifica_campioncini():
                     continue
 
                 if valore_scelto == "nessuna":
+                    fantacalcio_repo.segna_nessuna_corrispondenza(cur, id_giocatore)
                     fantacalcio_repo.rimuovi_dalla_coda(cur, id_giocatore)
                     continue
 
