@@ -153,6 +153,15 @@ class TestPromozione:
 
         assert _storico(cur, giocatore) == prima
 
+    @pytest.mark.parametrize("contratto", ["Fanta-Prestito", "Prestito Reale"])
+    def test_primavera_in_prestito_non_e_una_promozione(self, cur, schema, nome_squadra, contratto):
+        giocatore = self._primavera(cur, nome_squadra)
+        prima = _storico(cur, giocatore)
+
+        cur.execute("UPDATE giocatore SET tipo_contratto = %s WHERE id = %s;", (contratto, giocatore))
+
+        assert _storico(cur, giocatore) == prima
+
 
 class TestPaginaAdmin:
     def _senza_data(self, cur, nome_squadra):
