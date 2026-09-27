@@ -1,20 +1,21 @@
 import json
 import psycopg2
 from app import telegram_utils
-from datetime import datetime
+from datetime import date, datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from app.core.db import connessione
 from app.domini.matching_transfermarkt import candidati_fuzzy
 from app.domini.movimenti import squadre_citate
 
 from app.core.logging import get_logger
-from app.core.tempo import formatta_data
+from app.core.tempo import formatta_data, oggi
 from app.domini.ruoli import pulisci_ruolo
 from app.repositories import configurazione as configurazione_repo
 from app.repositories import fantacalcio as fantacalcio_repo
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import richieste as richieste_repo
 from app.repositories import squadre as squadre_repo
+from app.repositories import storico_rosa as storico_rosa_repo
 from app.repositories import transfermarkt as transfermarkt_repo
 from app.repositories import vetrina as vetrina_repo
 from app.services import fantacalcio as servizio_fantacalcio
@@ -408,3 +409,45 @@ def admin_verifica_campioncini():
         }
 
     return render_template("admin_verifica_campioncini.html", giocatori=giocatori_da_rivedere, conteggi=conteggi)
+
+
+@admin_bp.route("/arrivi_in_rosa", methods=["GET", "POST"])
+def admin_arrivi_in_rosa():
+    """Date di arrivo in rosa che non si sono potute ricostruire dallo storico
+    di aste, scambi e riscatti: le completa l'admin, una riga alla volta o
+    tutte quelle visibili con la stessa data."""
+    with connessione() as (conn, cur):
+        if request.method == "POST":
+            n_salvate = 0
+            n_non_valide = 0
+            for chiave, valore in request.form.items():
+                if not chiave.startswith("dal_") or not valore.strip():
+                    continue
+                try:
+                    id_riga = int(chiave.removeprefix("dal_"))
+                    data_arrivo = date.fromisoformat(valore.strip())
+                except ValueError:
+                    n_non_valide += 1
+                    continue
+                if data_arrivo > oggi():
+                    n_non_valide += 1
+                    continue
+                if storico_rosa_repo.imposta_arrivo(cur, id_riga, data_arrivo):
+                    n_salvate += 1
+
+            conn.commit()
+            if n_non_valide:
+                flash(f"⚠️ {n_non_valide} date non valide (o nel futuro) non sono state salvate.", "warning")
+            flash(f"✅ {n_salvate} date di arrivo salvate.", "success")
+            return redirect(url_for("admin.admin_arrivi_in_rosa"))
+
+        righe = storico_rosa_repo.arrivi_da_completare(cur)
+
+    for riga in righe:
+        riga["ruolo"] = pulisci_ruolo(riga["ruolo"])
+        for s in riga["suggerimenti"]:
+            s["data_iso"] = s["data"]
+            s["data"] = date.fromisoformat(s["data"]).strftime("%d/%m/%Y")
+
+    squadre = sorted({r["squadra"] for r in righe})
+    return render_template("admin_arrivi_in_rosa.html", righe=righe, squadre=squadre, oggi=oggi().isoformat())

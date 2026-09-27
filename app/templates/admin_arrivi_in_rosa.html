@@ -1,0 +1,130 @@
+{% extends 'base_tailwind.html' %}
+
+{% block content %}
+{% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('admin.admin_home')) }}</div>
+<h2 class="mb-1 text-lg font-bold">Arrivi in Rosa</h2>
+<p class="mb-4 text-sm text-muted">
+    Giocatori di cui non si conosce la data di arrivo nella squadra che ne detiene il cartellino.
+    Inserisci la data o tocca un movimento suggerito per usarne la data: le righe lasciate vuote
+    restano qui per la prossima volta.
+</p>
+
+{% if righe %}
+<div class="mb-3 flex flex-wrap gap-1.5" id="filtro-squadra-chips">
+    <button type="button" data-squadra="" class="chip-squadra attivo rounded-full border border-line bg-panel-2 px-2.5 py-1 text-xs font-semibold text-muted">
+        Tutte <span class="text-muted/70">{{ righe|length }}</span>
+    </button>
+    {% for squadra in squadre %}
+    <button type="button" data-squadra="{{ squadra }}" class="chip-squadra rounded-full border border-line bg-panel-2 px-2.5 py-1 text-xs font-semibold text-muted">
+        {{ squadra }} <span class="text-muted/70">{{ righe|selectattr('squadra', 'equalto', squadra)|list|length }}</span>
+    </button>
+    {% endfor %}
+</div>
+
+<div class="mb-4 flex items-center gap-2 rounded-2xl border border-line bg-panel p-3">
+    <label for="data-per-tutti" class="text-xs font-semibold text-muted">Stessa data per le righe visibili ancora vuote</label>
+    <input type="date" id="data-per-tutti" max="{{ oggi }}"
+           class="ml-auto rounded-xl border border-line bg-panel-2 px-2 py-1.5 text-sm">
+    <button type="button" id="applica-a-tutti"
+            class="shrink-0 rounded-xl border border-line px-3 py-1.5 text-xs font-semibold text-muted hover:border-accent hover:text-accent">
+        Applica
+    </button>
+</div>
+
+<form method="POST" action="{{ url_for('admin.admin_arrivi_in_rosa') }}" novalidate>
+    <div class="flex flex-col gap-2">
+        {% for r in righe %}
+        <div class="arrivo-row rounded-2xl border border-line bg-panel p-3" data-squadra="{{ r.squadra }}">
+            <div class="flex items-center gap-2">
+                <div class="flex min-w-0 flex-1 items-center">
+                    <span class="min-w-0 truncate font-medium">{{ r.nome }}</span>
+                    <span class="ml-1 shrink-0">{{ m.ruolo_colorato(r.ruolo) }}</span>
+                    <span class="mx-1 shrink-0 text-muted">-</span>
+                    <span class="shrink-0">{{ m.club_abbr(r.club) }}</span>
+                </div>
+                <span class="shrink-0 truncate text-xs text-muted">{{ r.squadra }}</span>
+            </div>
+
+            <input type="date" name="dal_{{ r.id }}" max="{{ oggi }}"
+                   class="arrivo-data mt-2 w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+
+            {% if r.suggerimenti %}
+            <div class="mt-2 flex flex-col gap-1">
+                {% for s in r.suggerimenti %}
+                <button type="button" data-data="{{ s.data_iso }}"
+                        class="suggerimento flex min-w-0 items-center gap-2 rounded-lg border border-line px-2 py-1 text-left text-xs text-muted hover:border-accent hover:text-accent">
+                    <span class="shrink-0 font-semibold">{{ s.data }}</span>
+                    <span class="min-w-0 truncate">{{ s.evento }}</span>
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <p class="hidden py-4 text-center text-sm text-muted" id="arrivi-nessun-risultato">Nessuna riga per questa squadra.</p>
+
+    <div class="mt-4 flex justify-end gap-2">
+        <a href="{{ url_for('admin.admin_home') }}"
+           class="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-muted">
+            Annulla
+        </a>
+        <button type="submit" class="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white">
+            Salva
+        </button>
+    </div>
+</form>
+{% else %}
+<p class="py-4 text-center text-sm text-muted">Tutte le date di arrivo sono complete.</p>
+{% endif %}
+
+<style>
+.chip-squadra.attivo {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: color-mix(in oklab, var(--accent) 15%, transparent);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const chip = document.querySelectorAll('.chip-squadra');
+    const righe = Array.from(document.querySelectorAll('.arrivo-row'));
+    const nessunRisultato = document.getElementById('arrivi-nessun-risultato');
+
+    chip.forEach(function (c) {
+        c.addEventListener('click', function () {
+            chip.forEach(x => x.classList.remove('attivo'));
+            c.classList.add('attivo');
+            const squadra = c.dataset.squadra;
+            let visibili = 0;
+            righe.forEach(function (riga) {
+                const visibile = !squadra || riga.dataset.squadra === squadra;
+                riga.classList.toggle('hidden', !visibile);
+                if (visibile) visibili++;
+            });
+            nessunRisultato.classList.toggle('hidden', visibili > 0);
+        });
+    });
+
+    // Un suggerimento riempie solo la data: il salvataggio resta esplicito.
+    document.querySelectorAll('.suggerimento').forEach(function (s) {
+        s.addEventListener('click', function () {
+            s.closest('.arrivo-row').querySelector('.arrivo-data').value = s.dataset.data;
+        });
+    });
+
+    // Le righe gia' compilate a mano non vengono sovrascritte.
+    document.getElementById('applica-a-tutti')?.addEventListener('click', function () {
+        const valore = document.getElementById('data-per-tutti').value;
+        if (!valore) return;
+        righe.forEach(function (riga) {
+            const input = riga.querySelector('.arrivo-data');
+            if (!riga.classList.contains('hidden') && !input.value) input.value = valore;
+        });
+    });
+});
+</script>
+{% endblock %}
