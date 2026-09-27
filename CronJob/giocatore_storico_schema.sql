@@ -55,9 +55,11 @@ DECLARE
 BEGIN
     IF TG_OP = 'UPDATE' THEN
         IF NEW.detentore_cartellino IS NOT DISTINCT FROM OLD.detentore_cartellino THEN
-            -- Stessa squadra: conta solo la promozione dalla Primavera.
+            -- Stessa squadra: conta solo la promozione dalla Primavera, che
+            -- passa sempre a Indeterminato. Un Primavera mandato in prestito
+            -- (Fanta-Prestito) o in Prestito Reale non e' una promozione.
             IF OLD.tipo_contratto = 'Primavera'
-               AND NEW.tipo_contratto <> 'Primavera'
+               AND NEW.tipo_contratto = 'Indeterminato'
                AND NEW.detentore_cartellino IS NOT NULL
                AND NEW.detentore_cartellino <> 'Svincolato' THEN
                 UPDATE giocatore_storico SET al = v_ora WHERE giocatore = NEW.id AND al IS NULL;
