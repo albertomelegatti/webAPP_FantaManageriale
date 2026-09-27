@@ -2,10 +2,11 @@
 Storico delle rose (giocatore_storico): il trigger sul cambio di detentore del
 cartellino e la pagina admin che completa le date di arrivo mancanti.
 
-Se il DB di sviluppo non ha ancora lo schema, lo script
-CronJob/giocatore_storico_schema.sql viene eseguito dentro la transazione
-isolata del test: il DDL in PostgreSQL e' transazionale, quindi sparisce col
-rollback finale insieme a tutto il resto.
+Lo script CronJob/giocatore_storico_schema.sql viene eseguito dentro la
+transazione isolata di ogni test, cosi' si prova la versione del file anche se
+il DB di sviluppo ne ha una precedente: lo script e' idempotente, e il DDL in
+PostgreSQL e' transazionale, quindi sparisce col rollback finale insieme a
+tutto il resto.
 """
 
 import re
@@ -21,12 +22,10 @@ SCRIPT_SCHEMA = Path(__file__).resolve().parent.parent / "CronJob" / "giocatore_
 
 @pytest.fixture
 def schema(cur, db_isolato):
-    cur.execute("SELECT to_regclass('giocatore_storico') AS tabella;")
-    if cur.fetchone()["tabella"] is None:
-        # BEGIN/COMMIT dello script chiuderebbero la transazione del test.
-        sql = re.sub(r"^(BEGIN|COMMIT);$", "", SCRIPT_SCHEMA.read_text(encoding="utf-8"), flags=re.MULTILINE)
-        cur.execute(sql)
-        db_isolato.commit()
+    # BEGIN/COMMIT dello script chiuderebbero la transazione del test.
+    sql = re.sub(r"^(BEGIN|COMMIT);$", "", SCRIPT_SCHEMA.read_text(encoding="utf-8"), flags=re.MULTILINE)
+    cur.execute(sql)
+    db_isolato.commit()
 
 
 def _giocatore_in_rosa(cur, squadra):
@@ -116,6 +115,43 @@ class TestTrigger:
         assert len(aperte) == 1
         assert aperte[0]["squadra"] == nome_squadra + " Rinominata"
         assert aperte[0]["dal"].date() == date(2025, 1, 1)
+
+
+class TestPromozione:
+    def _primavera(self, cur, squadra):
+        cur.execute(
+            """SELECT id FROM giocatore
+               WHERE detentore_cartellino = %s AND tipo_contratto = 'Primavera' LIMIT 1;""",
+            (squadra,))
+        riga = cur.fetchone()
+        if not riga:
+            pytest.skip(f"Nessun giocatore in Primavera per {squadra}.")
+        return riga["id"]
+
+    def test_promozione_apre_una_permanenza_nuova(self, app, cur, db_isolato, schema, nome_squadra):
+        giocatore = self._primavera(cur, nome_squadra)
+        db_isolato.commit()
+
+        c = app.test_client()
+        with c.session_transaction() as s:
+            s.update(logged_in=True, is_admin=False, nome_squadra=nome_squadra, username="test")
+        c.post(f"/rosa/user_primavera/{nome_squadra}", data={"id_giocatore_da_promuovere": giocatore})
+
+        storico = _storico(cur, giocatore)
+        assert len([r for r in storico if r["al"] is not None and r["squadra"] == nome_squadra]) >= 1
+        aperte = _aperta(cur, giocatore)
+        assert len(aperte) == 1
+        assert aperte[0]["squadra"] == nome_squadra
+        assert aperte[0]["fonte"] == "promozione"
+        assert aperte[0]["dal"] is not None
+
+    def test_altri_cambi_di_contratto_non_toccano_lo_storico(self, cur, schema, nome_squadra):
+        giocatore = _giocatore_in_rosa(cur, nome_squadra)
+        prima = _storico(cur, giocatore)
+
+        cur.execute("UPDATE giocatore SET tipo_contratto = 'Hold' WHERE id = %s;", (giocatore,))
+
+        assert _storico(cur, giocatore) == prima
 
 
 class TestPaginaAdmin:
