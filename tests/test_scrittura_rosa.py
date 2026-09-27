@@ -31,6 +31,10 @@ def _giocatore_tagliabile(cur, nome_squadra):
     riga = cur.fetchone()
     if not riga:
         pytest.skip(f"Nessun giocatore tagliabile per {nome_squadra}.")
+    # In rosa da abbastanza per non incappare nel blocco dei 4 mesi, che ha i
+    # suoi test in test_blocco_tagli.py.
+    cur.execute("UPDATE giocatore_storico SET dal = '2020-01-01' WHERE giocatore = %s AND al IS NULL;",
+                (riga["id"],))
     return riga
 
 

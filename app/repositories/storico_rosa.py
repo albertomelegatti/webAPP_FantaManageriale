@@ -55,3 +55,16 @@ def imposta_arrivo(cur, id_riga: int, data_arrivo) -> bool:
            WHERE id = %s AND al IS NULL AND dal IS NULL;""",
         (data_arrivo, id_riga))
     return cur.rowcount == 1
+
+
+def arrivi(cur, id_giocatori) -> dict:
+    """{id_giocatore: dal} della permanenza in corso, in una sola query. Un
+    giocatore senza permanenza aperta non compare; `dal` puo' essere None se la
+    data non e' stata ancora completata da admin."""
+    id_giocatori = [int(g) for g in (id_giocatori or []) if g]
+    if not id_giocatori:
+        return {}
+    cur.execute(
+        "SELECT giocatore, dal FROM giocatore_storico WHERE giocatore = ANY(%s) AND al IS NULL;",
+        (id_giocatori,))
+    return {r["giocatore"]: r["dal"] for r in cur.fetchall()}

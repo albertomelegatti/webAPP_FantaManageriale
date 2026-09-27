@@ -5,6 +5,7 @@ Funzioni pure. Il fuso è quello di Roma perché tutte le scadenze del gioco
 (fine asta, fine prestito, chiusura mercato) sono espresse in ora italiana.
 """
 
+import calendar
 from datetime import datetime
 
 import pytz
@@ -16,6 +17,14 @@ def oggi():
     """Data odierna nel fuso di Roma. Unico punto in cui l'app legge "adesso",
     così i confronti fra date restano coerenti fra moduli."""
     return datetime.now(ROME_TZ).date()
+
+
+def aggiungi_mesi(data, mesi):
+    """Lo stesso giorno `mesi` mesi dopo. Se quel mese e' piu' corto, l'ultimo
+    giorno del mese: 31/10 + 4 mesi = 28/02 (29/02 negli anni bisestili)."""
+    indice = data.month - 1 + mesi
+    anno, mese = data.year + indice // 12, indice % 12 + 1
+    return data.replace(year=anno, month=mese, day=min(data.day, calendar.monthrange(anno, mese)[1]))
 
 
 def calcola_eta(data_nascita):
