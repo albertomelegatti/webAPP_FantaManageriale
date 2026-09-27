@@ -164,6 +164,14 @@ def user_tagli(nome_squadra):
             id_giocatore_da_tagliare = request.form.get("id_giocatore_da_tagliare")
             if id_giocatore_da_tagliare:
 
+                tagliabile_dal = servizio_rosa.taglio_bloccato_fino_a(cur, id_giocatore_da_tagliare)
+                if tagliabile_dal:
+                    nome_giocatore = giocatori_repo.nome(cur, id_giocatore_da_tagliare)
+                    flash(f"❌ {nome_giocatore} è in rosa da meno di {servizio_rosa.MESI_MINIMI_PRIMA_DEL_TAGLIO} mesi: "
+                          f"potrai tagliarlo dal {tagliabile_dal.strftime('%d/%m/%Y')}.", "danger")
+                    conn.rollback()
+                    return redirect(url_for("rosa.user_tagli", nome_squadra=nome_squadra))
+
                 # Ottieni la quotazione attuale del giocatore
                 quotazione_attuale = giocatori_repo.quotazione(cur, id_giocatore_da_tagliare)
                 costo_taglio = math.ceil(quotazione_attuale / 2)

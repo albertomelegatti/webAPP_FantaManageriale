@@ -5,6 +5,7 @@
 <div class="mb-2">{{ m.torna_indietro(url_for('user.user_rosa_menu', nome_squadra=nome_squadra)) }}</div>
 <h2 class="mb-2 text-lg font-bold">Svincoli &amp; Gestione Contratti - {{ nome_squadra }}</h2>
 <p class="mb-1 text-sm text-muted">✂️ Quando un giocatore viene svincolato, la squadra dovrà pagare metà della sua quotazione attuale arrotondata per eccesso.</p>
+<p class="mb-1 text-sm text-muted">🔒 Un giocatore si può tagliare solo dopo 4 mesi dal suo arrivo in rosa.</p>
 
 <div class="mb-4 rounded-2xl border border-line bg-panel p-4">
     <div class="grid grid-cols-2 gap-2 text-center">
@@ -36,6 +37,12 @@
             </div>
         </div>
 
+        {% if giocatore.tagliabile_dal %}
+        <button type="button" data-tip="In rosa da meno di 4 mesi: tagliabile dal {{ giocatore.tagliabile_dal.strftime('%d/%m/%Y') }}"
+                class="flex w-14 shrink-0 items-center justify-center gap-0.5 rounded-lg bg-muted px-1 py-1.5 text-[12px] font-bold text-white opacity-50" disabled>
+            <i class="bi bi-lock-fill"></i> {{ giocatore.tagliabile_dal.strftime('%d/%m') }}
+        </button>
+        {% else %}
         <form method="POST" action="{{ url_for('rosa.user_tagli', nome_squadra=nome_squadra) }}" class="shrink-0"
               onsubmit="return confirm('Vuoi davvero tagliare {{ giocatore.nome }}? Dovrai pagare metà della sua quotazione attuale.');">
             <input type="hidden" name="id_giocatore_da_tagliare" value="{{ giocatore.id }}">
@@ -46,6 +53,7 @@
                 <i class="bi bi-scissors"></i> {{ costo_taglio }} cr
             </button>
         </form>
+        {% endif %}
 
         {% if giocatore.esiste_gia_una_richiesta %}
         <button type="button" data-tip="Richiesta di modifica già in corso"
