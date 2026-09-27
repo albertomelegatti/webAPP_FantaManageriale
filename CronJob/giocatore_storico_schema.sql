@@ -7,7 +7,9 @@
 -- questo script va lanciato a mano o dall'assistente con conferma esplicita.
 --
 -- Si segue il detentore del cartellino, non squadra_att: un prestito non
--- sposta il giocatore da una rosa all'altra, un riscatto si'.
+-- sposta il giocatore da una rosa all'altra, un riscatto si'. La promozione
+-- dalla Primavera in prima squadra apre una permanenza nuova nella stessa
+-- squadra: il periodo in Primavera resta nello storico, chiuso.
 --
 -- Una riga per ogni permanenza: `al` NULL = ancora in rosa (una sola riga
 -- aperta per giocatore), `dal` NULL = data di arrivo non ricostruibile, da
@@ -28,8 +30,10 @@ CREATE TABLE IF NOT EXISTS giocatore_storico (
     squadra   varchar NOT NULL,
     dal       timestamptz,
     al        timestamptz,
-    -- 'automatico' (trigger), 'asta' / 'scambio' / 'riscatto' (ricostruita
-    -- dallo storico all'avvio), 'admin' (inserita a mano), NULL se ignota.
+    -- 'automatico' (trigger, cambio di detentore), 'promozione' (trigger,
+    -- dalla Primavera in prima squadra), 'asta' / 'scambio' / 'riscatto'
+    -- (ricostruita dallo storico all'avvio), 'admin' (inserita a mano),
+    -- NULL se ignota.
     fonte     varchar
 );
 
@@ -51,6 +55,15 @@ DECLARE
 BEGIN
     IF TG_OP = 'UPDATE' THEN
         IF NEW.detentore_cartellino IS NOT DISTINCT FROM OLD.detentore_cartellino THEN
+            -- Stessa squadra: conta solo la promozione dalla Primavera.
+            IF OLD.tipo_contratto = 'Primavera'
+               AND NEW.tipo_contratto <> 'Primavera'
+               AND NEW.detentore_cartellino IS NOT NULL
+               AND NEW.detentore_cartellino <> 'Svincolato' THEN
+                UPDATE giocatore_storico SET al = v_ora WHERE giocatore = NEW.id AND al IS NULL;
+                INSERT INTO giocatore_storico (giocatore, squadra, dal, fonte)
+                VALUES (NEW.id, NEW.detentore_cartellino, v_ora, 'promozione');
+            END IF;
             RETURN NULL;
         END IF;
 
@@ -80,7 +93,7 @@ $function$;
 
 DROP TRIGGER IF EXISTS trg_giocatore_storico ON giocatore;
 CREATE TRIGGER trg_giocatore_storico
-    AFTER INSERT OR UPDATE OF detentore_cartellino ON giocatore
+    AFTER INSERT OR UPDATE OF detentore_cartellino, tipo_contratto ON giocatore
     FOR EACH ROW EXECUTE FUNCTION public.registra_cambio_detentore();
 
 
