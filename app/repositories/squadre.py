@@ -111,6 +111,19 @@ def nomi_diversi_da(cur, nome_squadra: str) -> list[dict]:
     return cur.fetchall()
 
 
+def tutte_con_stadio(cur) -> list[dict]:
+    """Le squadre in gioco con username, crediti e stadio, per la pagina
+    crediti/stadi/slot: come con_stadio(), ma per tutte in una query sola."""
+    cur.execute(
+        """SELECT s.nome, s.username, s.crediti,
+                  st.nome AS stadio_nome, st.livello AS stadio_livello
+           FROM squadra s
+           LEFT JOIN stadio st ON st.proprietario = s.nome
+           WHERE s.nome <> 'Svincolato'
+           ORDER BY s.nome;""")
+    return cur.fetchall()
+
+
 def con_stadio(cur, nome_squadra: str) -> dict | None:
     """Dati della squadra e del suo stadio in una query sola.
 

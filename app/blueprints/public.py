@@ -24,7 +24,7 @@ from app.repositories import albo_oro as albo_oro_repo
 from app.repositories import aste as aste_repo
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import squadre as squadre_repo
-from app.repositories import stadio as stadio_repo
+from app.services import crediti_stadi_slot as servizio_crediti_stadi_slot
 from app.services import dashboard as servizio_dashboard
 from app.services import export_excel as export_excel_servizio
 from app.services import listone as servizio_listone
@@ -98,22 +98,8 @@ def crediti_stadi_slot():
 
     try:
         with connessione() as (conn, cur):
-            squadre = squadre_repo.nomi_e_crediti(cur)
-
-            stadi = []
-            for s in stadio_repo.elenco(cur):
-                livello = s['livello']
-                bonus = [0,4,8,14,18,25,30,39,44][livello] if livello <= 8 else 0
-                stadi.append({
-                    "proprietario": s['proprietario'],
-                    "nome": s['nome'],
-                    "livello": livello,
-                    "crediti_annuali": bonus
-                })
-
-            slot = giocatori_repo.occupazione_slot(cur)
-
-            return render_template("crediti_stadi_slot.html", stadi=stadi, squadre=squadre, slot=slot)
+            dati = servizio_crediti_stadi_slot.dati_pagina(cur)
+        return render_template("crediti_stadi_slot.html", **dati)
 
     except Exception:
         logger.exception("Errore crediti stadi e slot")

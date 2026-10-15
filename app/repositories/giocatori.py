@@ -328,36 +328,11 @@ def collegati_alla_squadra(cur, nome_squadra: str) -> list[dict]:
     return cur.fetchall()
 
 
-def occupazione_slot(cur) -> list[dict]:
-    """Slot occupati (Hold/Indeterminato) e slot in prestito, per squadra.
-
-    Include solo le squadre con almeno un giocatore Hold/Indeterminato: e' lo
-    stesso filtro che il template applica per decidere se mostrare la cella, e
-    va preservato esattamente. Diversa da slot_per_squadra() qui sotto, che
-    include tutte le squadre e serve al servizio mercato: unificarle
-    cambierebbe quali squadre compaiono nella pagina crediti/stadi/slot.
-    """
-    cur.execute("""SELECT squadra_att, COUNT(id) AS slot_occupati
-                   FROM giocatore
-                   WHERE tipo_contratto IN ('Hold', 'Indeterminato')
-                   GROUP BY squadra_att;""")
-    slot_raw = cur.fetchall()
-
-    cur.execute("""SELECT squadra_att, COUNT(id) AS slot_in_prestito
-                   FROM giocatore
-                   WHERE tipo_contratto = 'Fanta-Prestito'
-                   GROUP BY squadra_att;""")
-    prestiti = {r["squadra_att"]: r["slot_in_prestito"] for r in cur.fetchall()}
-
-    return [
-        {"squadra_att": r["squadra_att"], "slot_occupati": r["slot_occupati"],
-         "slot_in_prestito": prestiti.get(r["squadra_att"], 0)}
-        for r in slot_raw
-    ]
-
-
 def slot_per_squadra(cur) -> dict[str, dict]:
     """{squadra: {"giocatori": n, "prestiti": n}} per tutte le squadre.
+
+    Include anche le squadre senza giocatori: chi non compare ha zero in
+    entrambi i conteggi.
 
     I due conteggi erano due scansioni della stessa tabella raggruppate sulla
     stessa colonna, con soli filtri di contratto diversi: un'aggregazione
