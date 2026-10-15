@@ -1,628 +1,230 @@
 REGOLAMENTO FANTACALCIO MANAGERIALE
 
-=== INFORMAZIONI GENERALI ===
-Numero partecipanti: 10
-Modello di gioco: Mantra (segue Fantacalcio.it)
-Numero competizioni: 2 (Campionato + Coppa)
-Quota iscrizione: €20
-Premi totali: €200
-  1° classificato: €90
-  2° classificato: €40
-  3° classificato: €20
-  Vincitore coppa: €50
+=== 1. REGOLE GENERALI ===
 
-=== REGOLE GENERALI ===
+- Numero partecipanti: 10
+- Modello di gioco: Mantra
+- Ruoli Mantra: ogni anno cambiano come li cambia Fantacalcio.it
+- Numero competizioni: 2 (Campionato e Coppa)
+- Quota di iscrizione: €20
+- Premi in denaro:
+  - 1° classificato: €90
+  - 2° classificato: €40
+  - 3° classificato: €20
+  - Vincitore Coppa: €50
 
-FORMAZIONI
-- Scadenza: entro l'inizio della prima partita della giornata Serie A
-- Moduli consentiti: quelli proposti da Fantacalcio.it
-- Panchina: 12 giocatori
-- Sostituzioni: 5 sostituzioni modalità Master (cambio modulo prioritario, guidato dal primo calciatore a voto in panchina)
-- Switch Plus disponibile: consente di scambiare titolare con riserva di ruolo diverso
-- Penalità mancata formazione: 0 punti e sconfitta per la squadra, avversario vince con 66 punti (altrimenti 1 punto)
+--- 1.1 Formazioni ---
+La formazione va inserita dal sito entro l'inizio della prima partita della giornata di Serie A. I moduli consentiti sono quelli proposti da Fantacalcio.it.
+In panchina possono essere portati 12 giocatori.
+Se non si inserisce la formazione vengono assegnati zero punti e la sconfitta, mentre l'avversario deve arrivare a 66 punti per vincere la partita, altrimenti prende 1 punto.
+È presente l'opzione Switch Plus: consente di scambiare un calciatore titolare con la riserva indicata qualora non scenda in campo dal primo minuto. L'opzione PLUS consente di selezionare un sostituto di ruolo diverso, permettendo un eventuale cambio di modulo.
+Sono consentite 5 sostituzioni secondo la modalità Master: il cambio modulo diventa l'opzione prioritaria e il meccanismo delle sostituzioni è interamente guidato dall'ordine della panchina. Per ogni calciatore assente/senza voto entra il primo calciatore a voto in panchina che configura uno schema valido. Solo in via residuale, in assenza di altre soluzioni, si passa a sostituzioni adattate con malus.
 
-BONUS E MALUS
+--- 1.2 Bonus e malus ---
 - Gol segnato: +3
 - Gol subito: -1
 - Rigore segnato: +3
 - Rigore sbagliato: -3
 - Rigore parato: +3
-- Ammonizione: -0.5
+- Ammonizione: -0,5
 - Espulsione: -2
 - Assist: +1
 - Assist da fermo: +1
 - Autogol: -2
 - Porta imbattuta: +1
 
-PUNTEGGIO
-- Si calcola automaticamente dalla redazione Fantacalcio.it sommando voti titolari + bonus/malus
-- Primo goal a 66 punti, poi ogni 6 punti
-- Intorni: gol extra alla squadra con punteggio più alto se differenza ≥ 4 punti nella stessa fascia
-- Classifica: 3 punti vittoria, 1 pareggio, 0 sconfitta
-- Criteri di ordine di priorità in classifica: Punti, Somma Punti Totali, Goal Fatti, Goal Subiti, classifica avulsa, differenza reti
+--- 1.3 Punteggio ---
+Il punteggio si calcola in automatico sommando i voti dati dalla redazione di Fantacalcio.it ai giocatori titolari (o alle riserve entrate al loro posto) con gli eventuali bonus e malus.
+Il primo gol si raggiunge a 66 punti e viene segnato un nuovo gol ogni 6 punti.
+Si applicano gli "intorni": un gol extra alla squadra con il punteggio più alto se la differenza dei totali-squadra è maggiore o uguale a 4. Vale per totali-squadra che ricadono nella stessa fascia.
+In classifica una vittoria vale 3 punti, il pareggio 1, la sconfitta 0.
+Ordine di priorità per la posizione in classifica: punti in classifica, somma punti totali, gol fatti, gol subiti, classifica avulsa, differenza reti.
 
-MAGLIETTE E PREMI STORICI
-- Scudetto tricolore: squadra vincitrice campionato anno precedente
-- Scudetto tondo tricolore: squadra vincitrice coppa anno precedente
-- Stelline: 1, 2 o 3 in base ai campionati vinti negli anni precedenti
+--- 1.4 Magliette ---
+Ogni anno ciascuna squadra può creare a piacere le proprie divise, con alcune restrizioni:
+- Il vincitore del campionato dell'anno precedente può applicare lo scudetto col tricolore.
+- Il vincitore della coppa dell'anno precedente può applicare lo scudetto tondo col tricolore.
+- Chi ha vinto uno dei precedenti campionati può applicare una, due o tre stelline a seconda del numero di campionati vinti.
 
-REGOLA ANTI-TANKING
-- Gli amministratori possono penalizzare squadre che inseriscono formazioni volutamente non competitive per perdere e ottenere pick più alta al prossimo draft
-- La valutazione è soggettiva, così come le penalità inflitte
+--- 1.5 Regola anti-tanking ---
+Gli amministratori di lega si riservano il diritto di infliggere penalità alle squadre che inseriscono formazioni volutamente poco competitive al fine di perdere la partita per ottenere una pick più alta al draft dell'anno successivo.
+La valutazione è del tutto soggettiva, così come le pene inflitte.
 
-=== COMPETIZIONI ===
+=== 2. COMPETIZIONI E DISTRIBUZIONE PREMI ===
 
-CAMPIONATO
-- Girone unico all'italiana dalla 1ª alla 36ª giornata Serie A
-- Premi annuali decrescenti (es. 1° 2025: €95, 2026: €85, 2027: €75 ecc.)
+--- 2.1 Campionato ---
+Girone unico all'italiana. Si inizia alla prima giornata di Serie A e si termina alla 36esima.
+Premi in crediti (distribuzione dello sponsor e premi della stagione precedente):
 
-COPPA
-- Doppio girone da 5 squadre ciascuno, andata e ritorno (da 1ª giornata Serie A)
-- Fattore stadio regolamentare applicato
-- Prime 2 di ogni girone si qualificano
-- Criteri in caso di pari punti: punteggio totale, differenza reti, gol fatti/subiti
-- Fase ad eliminazione diretta: andata/ritorno con fattore stadio
-- Regola Uefa gol in trasferta se risultati uguali
-- Finale: partita secca in campo neutro
+Posizione | 2025 | 2026 | 2027
+1         |  95  |  85  |  75
+2         |  85  |  75  |  65
+3         |  75  |  65  |  60
+4         |  65  |  60  |  55
+5         |  60  |  55  |  50
+6         |  55  |  50  |  45
+7         |  50  |  45  |  40
+8         |  45  |  40  |  35
+9         |  35  |  35  |  30
+10        |  30  |  30  |  25
+Coppa 1°  |  45  |  40  |  35
+Coppa 2°  |  25  |  20  |  20
 
-=== COMPOSIZIONE SQUADRE ===
+--- 2.2 Coppa ---
+Doppio girone da 5 squadre ciascuno, andata e ritorno (dalla 1ª giornata di Serie A), con i classici fattori stadio da regolamento. Per ciascun girone si qualificano le prime due classificate. In caso di arrivo a pari punti si considerano, in ordine di importanza: punteggio totale maggiore, differenza reti, gol fatti e subiti.
+Terminati i gironi inizia la fase a eliminazione diretta, con andata e ritorno e classico fattore stadio. In caso di risultati uguali tra andata e ritorno si applica l'ex regola UEFA dei gol in trasferta.
+La finale è una partita secca giocata in campo neutro.
 
-DRAFT PRIMAVERA
-- 5 slot primavera esclusivamente per under21 acquistabili solo tramite draft (stile NBA)
-- Eccezione portieri: sempre acquistabili in asta
-- Primo anno: giocatori con quotazione >10 acquistabili solo in asta, non draftabili
-- Costo acquisto primavera: 0 crediti
-- Giocatori primavera non schierabili
-- Promozione in prima squadra possibile con slot disponibili
-- Permanenza primavera: fino a 22 anni (riferimento anno nascita: es. 2003 è U21, 2002 no) o fino a svincolo
-- Pick assegnate: 3 per anno, inversamente proporzionali al piazzamento campionato precedente (ultimo in classifica ha prima scelta)
-- Primo anno: lottery (sorteggio primo giro, inversione ordine resto)
-- Perdita pick: se slot primavera occupati al momento draft
-- Giocatore draftato uscito dal listone anno successivo: può essere tagliato (0 crediti) o mantenuto (occupa slot)
-- Primavera ceduto nel mercato reale: non genera introiti, promozione possibile se slot disponibile prima ufficialità
-- Pick scambiabili normalmente
-- Draft: giorno dopo chiusura mercato reale, via WhatsApp
-- Primavera promosso e poi tagliato: non più draftabile, acquistabile solo nel mercato ordinario
+=== 3. COMPOSIZIONE SQUADRE ===
 
-ASTA
-- Listone: Fantacalcio.it esclusi U21 (solo draft)
-- Modalità primo anno: asta random
-- Modalità successivi anni: asta a chiamata
-- Creazione squadre: asta in presenza (almeno 1 membro presente)
-- Crediti partenza: 500
-- Rosa: 25-30 giocatori (minimo 3 portieri, resto a piacimento)
-- Aggiuntivi: massimo 2 slot prestiti
-- Penalità: rose <25 giocatori = -5 crediti
+--- 3.1 Draft (Primavera) ---
+Ogni squadra ha 5 slot Primavera, occupabili solo da giocatori Under 21 acquisibili esclusivamente tramite draft (stile draft NBA). Fanno eccezione i portieri, che restano acquistabili anche in asta. Solo per il primo anno, i giocatori con quotazione maggiore di 10 non erano draftabili e venivano acquistati tramite asta.
+I giocatori in Primavera non sono schierabili e il loro acquisto costa 0. Un calciatore può essere promosso in prima squadra se ci sono slot disponibili.
+I giovani draftati restano in Primavera fino al compimento dei 22 anni (si guarda l'anno di nascita, non l'età effettiva: es. i nati nel 2003 sono Under 21, i nati nel 2002 no) o finché non vengono svincolati dall'allenatore (a prescindere dalla loro presenza o meno nel listone).
+Ogni squadra dispone di 3 pick all'anno, assegnate in modo inversamente proporzionale al piazzamento in campionato dell'anno precedente (l'ultimo classificato ha la prima scelta, il primo l'ultima). Solo il primo anno è stata fatta una lottery: sorteggio del primo giro e poi ordine invertito (es. a, b, c, c, b, a).
+Se al momento del draft una squadra ha gli slot Primavera occupati, perde le relative pick.
+Se un giocatore draftato esce dal listone al momento del draft dell'anno successivo, il club può scegliere se tagliarlo (a 0) o tenerlo (occupando comunque lo slot).
+Se un Primavera viene ceduto nel mercato reale non genera alcun introito (è possibile promuoverlo in prima squadra prima che il trasferimento sia ufficiale, se si dispone di slot).
+Le pick possono rientrare negli scambi.
+Il draft avviene il giorno dopo la chiusura del mercato reale, sul gruppo WhatsApp.
+Se un Primavera viene promosso in prima squadra durante l'anno e successivamente tagliato, non potrà più essere draftato (anche se ancora Under 21), ma potrà essere acquistato tramite il mercato ordinario.
 
-CAPITANO E VICE CAPITANO
-- Scelti ad inizio campionato, restano tali tutta la stagione
-- Bonus/Malus in base al voto:
-  Voto ≤4.5: -1.5
-  Voto 5: -1
-  Voto 5.5: -0.5
-  Voto 6: 0
-  Voto 6.5: +0.5
-  Voto 7: +1
-  Voto ≥7.5: +1.5
-- Se capitano/vice lascia squadra (trasferimento, svincolo, scambio): nomina nuovo, diventa vice
+--- 3.2 Asta ---
+Listone di riferimento: listone di Fantacalcio.it, esclusi gli Under 21 (acquistabili solo tramite draft).
+Creazione squadre: asta in presenza, con almeno un componente della squadra presente. Asta random su tutto il listone il primo anno, asta a chiamata su tutto il listone negli anni successivi.
+Crediti di partenza: 500.
+Squadre partecipanti: 10.
+Rosa: da 25 a 30 giocatori, di cui almeno 3 portieri, il resto a piacimento. Le rose sono quindi al massimo 30 giocatori + 2 negli slot prestiti.
+I club che terminano l'asta con meno di 25 giocatori sono penalizzati di 5 crediti.
 
-SLOT PRESTITI
-- 2 slot per giocatori presi in prestito da altri club
-- Non obbligatori da usare
-- Durata: 1 o 2 stagioni a scelta delle parti
-- Diritto/obbligo di riscatto: accordi tra squadre, comunicazione obbligatoria a direttore
-- Ufficializzazione: sul canale Fantacalcio WhatsApp e comunicazione a direttore
-- Validità: prestito non parte senza ufficializzazione
+--- 3.3 Capitano e vice capitano ---
+Ogni squadra sceglie a inizio campionato un capitano e un vice, che restano tali per tutta la stagione e danno bonus/malus in base alla prestazione:
 
-=== STADI DI PROPRIETÀ ===
+Voto capitano | Bonus/Malus
+≤ 4,5         | -1,5
+5             | -1
+5,5           | -0,5
+6             | 0
+6,5           | +0,5
+7             | +1
+≥ 7,5         | +1,5
 
-Ampliamenti stadio con costi e rendite annuali:
-Livello 0: Costo 0, Rendita 0
-Livello 1: Costo 10, Rendita 4
-Livello 2: Costo 20, Rendita 8
-Livello 3: Costo 30, Rendita 14
-Livello 4: Costo 40, Rendita 18
-Livello 5: Costo 50, Rendita 25
-Livello 6: Costo 60, Rendita 30
-Livello 7: Costo 70, Rendita 39
-Livello 8: Costo 80, Rendita 44
+Se il capitano e/o il vice non fanno più parte della squadra (trasferimento reale, svincolo, scambio, ecc.) se ne può nominare uno nuovo, che diventa vice.
 
-Regole ampliamenti:
-- Comunicazione capienza ufficiale obbligatoria sull'app
-- Effettuati e comunicati entro prima gara stagione
-- Dopo prima gara: non più ampliabili in stagione
-- Finestra disponibile solo pre-stagione
+--- 3.4 Slot prestiti ---
+Oltre alla rosa, ogni squadra ha 2 slot da usare solo per giocatori presi in prestito da altre squadre (non sono obbligatori). Il prestito può durare 1 o 2 stagioni, a seconda dell'accordo tra le parti.
+Sono possibili accordi di diritto e/o obbligo di riscatto, da comunicare al direttore di lega.
+I prestiti si scrivono sul canale del fantacalcio e valgono solo dopo l'ufficializzazione al direttore di lega e sul canale: un prestito non parte se non viene ufficializzato.
 
-=== MERCATO ===
+=== 4. STADI DI PROPRIETÀ ===
 
-INFORMAZIONI GENERALI
-- Segue il calendario reale (estivo e invernale)
-- Primo asta: 1 Agosto
-- Dopo asta: mercato scambi e prestiti attivo fino a chiusura mercato reale
-- Operazioni consentite: prestiti, scambi, parametro zero
+Ogni squadra deve scrivere la capienza ufficiale dopo il nome dello stadio sull'app.
 
-PRESTITI
-- Pagamento crediti obbligatorio
-- Clausole opzionali: diritto/obbligo di riscatto e/o controriscatto
-- Estinzione obbligo pre-stagione possibile se slot libero
+Livello | Costo | Rendita annuale
+0       | 0     | 0
+1       | 10    | 4
+2       | 20    | 8
+3       | 30    | 14
+4       | 40    | 18
+5       | 50    | 25
+6       | 60    | 30
+7       | 70    | 39
+8       | 80    | 44
 
-SCAMBI
-- Giocatori vs giocatori
-- Giocatori vs giocatori + crediti
-- Giocatori vs crediti
-- Pick scambiabili: massimo 5 per stagione, solo 3 anni successivi
+I lavori di ampliamento vanno effettuati e comunicati entro la prima gara della stagione e non sono ulteriormente possibili a stagione in corso: giocata la prima gara non si può più ampliare lo stadio. La finestra per gli ampliamenti è quindi solo prima dell'inizio della stagione.
 
-PARAMETRO ZERO
-- Requisiti: slot liberi e crediti disponibili
-- Procedura:
-  1. Richiesta privata a direttore di lega
-  2. Se no interessi entro 24h: ufficializzazione a 1 credito
-  3. Se altri interessi: asta tra club interessati, prezzo partenza scelto da primo interessato
-  4. Asta chiusa: 24h senza offerte o tutti dicono "no"
-- Mercato parametri 0 aperto tutto l'anno
-- Limite: max interessi pari a slot liberi disponibili (limite contemporaneo su aste)
-- Giocatori: solo da Serie A ufficiale (fonte Transfermarkt)
+=== 5. MERCATO ===
 
-PREVENZIONE PLUSVALENZE
-- Trasferimento reale entro 7 giorni da acquisto: rimborso crediti spesi
-- Acquisto giocatore in prestito con riscatto dopo 1° aprile: riscatto non sfruttabile per crediti
+--- 5.1 Informazioni generali ---
+Il mercato segue le date di apertura del mercato reale (sia estivo sia invernale). Dopo la prima asta (1 agosto 2024), il mercato di scambi e prestiti resta attivo fino alla chiusura del mercato reale.
+Operazioni possibili: prestiti, scambi e parametro zero.
 
-SVINCOLI
-- Costo: metà valore attuale su Fantacalcio (arrotondato per eccesso)
-- Vincoli: squadra non può ri-ingaggiare per sessione attuale e successiva
-- Divieto: non acquistare e svincolare stesso giocatore in stessa sessione
-- Primavera: svincoli gratuiti e illimitati
+A) Prestiti: solo con pagamento di crediti. Si può inserire una clausola di diritto/obbligo di riscatto e/o controriscatto, con la possibilità di estinguere l'obbligo prima della fine della stagione se c'è uno slot libero.
 
-=== FINE STAGIONE E MERCATO ===
+B) Scambi: giocatori per giocatori, giocatori per giocatori e crediti, giocatori per crediti. Si possono scambiare solo le pick dei 3 anni successivi, e mai più di 5 per stagione.
 
-TAGLI GRATUITI AL PRIMO GIORNO MERCATO
-- In base alla posizione precedente:
-  1°-3° posto: 0 tagli
-  4°-6° posto: 1 taglio
-  7°-9° posto: 2 tagli
-  10° posto: 3 tagli
-- Comunicazione: entro 7 giorni prima apertura mercato
-- Finestra: solo primo giorno apertura mercato reale
+C) Parametro zero: una squadra con slot liberi e crediti disponibili può acquistare un giocatore a parametro zero.
+  1. Il club fa richiesta PRIVATAMENTE al direttore di lega, esprimendo interesse a firmare il giocatore. L'interesse viene poi reso pubblico sul canale, dove tutti possono mostrare interesse.
+  2. Se entro 24 ore dalla richiesta il direttore di lega non registra altri interessi, il giocatore viene ufficializzato nel canale al prezzo di 1 credito.
+  3. Se invece il giocatore suscita altri interessi, si apre un'asta tra i club interessati, regolata dal direttore di lega. Il prezzo di partenza lo decide il club che ha mostrato interesse per primo.
+  4. L'asta è conclusa quando passano 24 ore dall'ultima offerta, oppure quando tutti gli altri partecipanti si dichiarano "non più interessati".
+  Il mercato dei parametri zero è aperto tutto l'anno e si può dichiarare interesse in ogni momento.
+  Ogni squadra può dichiarare interesse/partecipare a un numero di aste pari al numero dei suoi slot liberi (es. con 27 giocatori in rosa, un interesse in attesa delle 24 ore e due aste in corso, per un nuovo interesse bisogna abbandonare un'asta o ritirare l'interesse precedente).
+  Si può mostrare interesse solo per giocatori che fanno ufficialmente parte della Serie A (fonte Transfermarkt).
 
-GIOCATORI RETROCESSI
-- Retrocessi non più in Serie A: svincolati a 0 crediti
-- Opzione Hold: squadra può mettere in attesa su retrocessi
-  Scenario 1 (ritorno in prestito): conferma o libera 0 crediti
-  Scenario 2 (titolo definitivo): conferma o incassa trasferimento
-  Scenario 3 (rimane squadra originaria): libera 0 crediti
-  Scenario 4 (venduto estero): incassa trasferimento
-- Hold occupano spazio in rosa
-- Comunicazione Hold: primo giorno mercato insieme ai tagli, non removibile
+Prevenzione delle plusvalenze:
+- Se un giocatore viene trasferito nel mercato reale entro 7 giorni dal suo acquisto al fantacalcio, la squadra che lo ha acquistato riceve i crediti che ha speso (non il prezzo del trasferimento).
+- Se si acquista un giocatore in prestito in Serie A con obbligo o diritto di riscatto dopo il 1° aprile, non si può sfruttare il riscatto del giocatore per incassare crediti.
 
-GIOCATORI IN PRESTITO ESTERO ACQUISTATI
-- Possibile esercitare Hold a fine anno
-- Scenario 1 (ritorno prestito): conferma o libera 0 crediti
-- Scenario 2 (titolo definitivo): conferma o incassa trasferimento
-- Scenario 3 (venduto estero/rimane squadra): libera 0 crediti
+--- 5.2 Svincoli ---
+Si può rescindere il contratto di un giocatore pagando metà del suo VALORE ATTUALE (quotazione attuale su Fantacalcio, arrotondata per eccesso) al momento della rescissione.
+Una squadra che svincola un giocatore non può più ri-ingaggiarlo in nessun modo (aste e/o scambi) per tutta la sessione di mercato corrente e la successiva.
+Non è possibile acquistare e svincolare un giocatore nella stessa sessione di mercato.
+Gli svincoli dei giocatori Primavera sono gratuiti e illimitati.
 
-GIOCATORI CEDUTI ALL'ESTERO
-- Hold esercitabile su ceduti all'estero
-- Scenario 1 (ritorno prestito): conferma o libera 0 crediti
-- Scenario 2 (titolo definitivo): conferma o incassa trasferimento secondo
-- Scenario 3 (ceduto estero/resta): incassa trasferimento primo
-
-=== CESSIONI GIOCATORI ===
-
-CESSIONI VERSO ESTERO
-- Giocatori che lasciano Serie A: automaticamente rilasciati
-- Compenso: cifra trasferimento reale in crediti
-- Fonte: Transfermarkt.it per date e prezzi
-- Primavera non genera introiti
-
-TIPOLOGIE DI CESSIONE
-
-Trasferimento a titolo definitivo:
-- Crediti: importo Transfermarkt
-- Bonus su gol/presenze: non applicati, solo cifra globale
-- Arrotondamento: ≥0.5 per eccesso, <0.5 per difetto
-
-Parametro zero all'estero:
-- Crediti: 0
-- Giocatore perso senza conguaglio
-
-Prestito all'estero:
-- Giocatore rimane in rosa non utilizzabile
-- Non occupa slot
-- Se riscatto durante/dopo: crediti al momento pagamento reale, giocatore liberato
-- Se non riscattato al ritorno: decide se svincolare o dare spazio
-
-Acquisto estero con prestito in Italia:
-- Crediti: importo cessione reale
-- Giocatore usufruibile per stagione in corso
-
-Acquisto dal Genoa (o club estero):
-- Scelta: incassare importo e liberare giocatore OPPURE tenere senza crediti
-- Termine decisione: breve tempo, altrimenti rimane automaticamente in rosa
-
-NORME GENERALI CESSIONI
-- Tutti gli importi arrotondati (≥0.5 per eccesso, <0.5 per difetto)
-- Vale per prestiti con diritto/obbligo riscatto (estero e Serie A)
-- Penalità crediti negativi al 1° luglio: mercato bloccato in entrata fino positivo + penalità punti classifica pari crediti sforati
-
-=== SANZIONI E MULTE ===
-
-DIMENTICANZA FORMAZIONE
-- 1ª volta: bonus dimenticanza (chiudiamo occhio)
-- 2ª volta: -5 crediti sul prossimo bonus anno successivo + pena in euro
-- 3ª volta: -10 crediti sul prossimo bonus anno successivo + pena in euro
-
-INFRAZIONI GENERALI
-- Sanzione base: 5 crediti minimo
-- Aumento in base a gravità e recidiva
-- Valutazione: a discrezione del commissario
-1.1 Formazioni . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2
-1.2 Bonus e malus . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 2
-1.3 Punteggio . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3
-1.4 Magliette . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3
-1.5 Regola Anti-Tanking . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 3
-2 Competizioni e distribuzioni premi 5
-2.1 Campionato . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
-2.2 Coppa . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 5
-3 Composizione squadre 6
-3.1 Draft . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
-3.2 Asta . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
-3.3 Capitano e vice capitano . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
-3.4 Slot prestiti . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
-4 Stadi di propriet` a 8
-5 Mercato 8
-5.1 Informazioni generali . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
-5.2 Svincoli . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
-5.3 Cosa succede a fine stagione? . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
-5.4 Cessioni giocatori . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
-6 Multe 14
-1
-1 Regole generali
-•Numero partecipanti: 10
-•Modello di gioco: Mantra
-•Ruoli mantra: Ogni anno cambieranno come li cambier` a Fantacalcio.it
-•Numero competizioni: 2
-•Quota: €20
-•Premi in denaro
-–1°classificato: €90
-–2°classificato: €40
-–3°classificato: €20
-–Vincitore coppa: €50
-1.1 Formazioni
-La formazione va inserita dal sito entro l’inizio della prima partita della giornata
-di Serie A. I moduli consentiti sono quelli proposti da Fantacalcio.it (vedi foto nel
-gruppo).
-In panchina possono essere portati 12 giocatori. Nel caso non si inserisca la for-
-mazione, verranno assegnati zero punti e la sconfitta, mentre per l’ avversario sar` a
-necessario arrivare a 66 punti per vincere la partita, altrimenti prender` a 1 punto.
-Sar` a presente l’opzione Switch plus (Consente di scambiare un calciatore titolare
-con la riserva indicata qualora non scenda in campo dal primo minuto. L’opzione
-PLUS consente di selezionare un sostituto di diverso ruolo permettendo un even-
-tuale cambio di modulo).
-Saranno consentite 5 sostituzioni , secondo la modalit` a Master (il cambio mod-
-ulo diventa l’opzione prioritaria e il meccanismo delle sostituzioni viene intera-
-mente guidato dall’ordine panchina. Per ogni calciatore assente/senza voto, en-
-trer` a il primo calciatore a voto in panchina che configurer` a uno schema valido. Solo
-in via residuale, ed in assenza di altre soluzioni precedenti, si passer` a a sostituzioni
-adattate con malus).
-1.2 Bonus e malus
-•Gol segnato: +3
-•Gol subito: -1
-•Rigore segnato: +3
-2
-•Rigore sbagliato: -3
-•Rigore parato: +3
-•Ammonizione: -0,5
-•Espulsione: -2
-•Assist: +1
-•Assist da fermo: +1
-•Autogol: -2
-•Porta imbattuta: +1
-1.3 Punteggio
-Il punteggio si calcola in automatico sommando tutti i voti dati dalla redazione
-di Fantacalcio.it ai giocatori titolari (o alle riserve entrati a posto di essi) con gli
-eventuali bonus e malus.
-Il primo goal si raggiunge a 66 punti e verr` a segnato un nuovo goal ogni 6 punti
-(vengono applicati gli “intorni”: assegna un gol extra alla squadra con il punteggio
-pi` u alto se la differenza dei totali-squadra ` e maggiore o uguale a 4. Valido per
-totali-squadra che ricadono nella stessa fascia).
-In classifica una vittoria vale 3 punti, il pareggio 1 e la sconfitta 0.
-L’ordine di priorit` a per la posizione in classifica ` e la seguente: Punti in Classifica,
-Somma Punti Totali, Goal Fatti, Goal Subiti, classifica avulsa, differenza reti.
-1.4 Magliette
-Ogni anno ciascuna squadra potr` a creare a piacere le proprie divise con alcune
-piccole restrizioni:
-•Il vincitore del campionato dell’anno precedente potr` a applicare lo scudetto
-col tricolore
-•Il vincitore della coppa dell’anno precedente potr` a applicare lo scudetto tondo
-col tricolore
-•Chi ha vinto uno dei precedenti campionati potr` a applicare una, due o tre
-stelline a seconda del numero di campionati vinti.
-1.5 Regola Anti-Tanking
-Gli amministratori di lega si riservano il diritto di infliggere penalit` a alle squadre
-che inseriranno formazioni volutamente poco competitve al fine di perdere la par-
-tita per ottenere una pick pi` u alta al draft dell’anno successivo.
-3
-La valutazione sar` a del tutto soggettiva cosi come le pene inflitte (es. Marot-
-taLeague).
-4
-2 Competizioni e distribuzioni premi
-2.1 Campionato
-Girone unico all’italiana. Si inizia la prima giornata di Serie A e si termina alla
-36esima.
-Premi in palio:
-La distribuzione dello sponsor e i successivi premi della stagione precedente, saranno
-cos` ı ripartiti:
-Posizione 2025 2026 2027
-1 95 85 75
-2 85 75 65
-3 75 65 60
-4 65 60 55
-5 60 55 50
-6 55 50 45
-7 50 45 40
-8 45 40 35
-9 35 35 30
-10 30 30 25
-Coppa 1 45 40 35
-Coppa 2 25 20 20
-2.2 Coppa
-Doppio girone da 5 squadre ciascuno. Andata e ritorno (dalla 1a giornata di Serie
-A) con classici fattori stadio da regolamento. Per ciascun girone si qualificano
-le prime due squadre classificate. In caso di arrivo a pari punti si considerano,
-elencati per ordine di importanza, i seguenti criteri: punteggio maggiore totale,
-differenza reti, gol fatti e subiti.
-Una volta terminati i gironi inizier` a la fase ad eliminazione diretta con andata e
-ritorno con classico fattore stadio. In caso di risultati uguali tra andata e ritorno,
-si applica l’ex regola Uefa sui gol in trasferta.
-La finale sar` a una partita secca giocata in campo neutro.
-5
-3 Composizione squadre
-3.1 Draft
-Ogni squadra ha a disposizione 5 slot primavera occupabili solo da giocatori un-
-der21 acquisibili solo tramite draft attraverso scelte (stile draft NBA). Viene fatta
-eccezione per i portieri che restano acquistabili anche in asta e, solo per il primo anno ,
-non saranno draftabili i giocatori con quotazione maggiore di 10 ma verranno ac-
-quistati solo tramite asta. I giocatori che occupano questi slot non sono schierabili
-e il loro acquisto ha costo 0. Un calciatore pu` o essere promosso in prima squadra
-nel caso in cui ci siano slot disponibili.
-I giovani draftati rimarranno in primavera fino al compimento dei 22 anni (in rifer-
-imento all’anno di nascita e non agli anni effettivi, es. i 2003 sono under 21, i 2002
-no) o fino a quando non verrano svincolati dall’allenatore (a prescindere dalla loro
-presenza o meno sul listone).
-Ogni squadra dispone di 3 pick all’anno che saranno assegnate in maniera in-
-versamente proporzionale al piazzamento in campionato dell’anno precedente (es.
-l’ultimo classificato avr` a la prima scelta ed il primo l’ultima) ad eccezione del primo
-anno deve sar` a effettuata una lottery per assegnare le pick (viene sorteggiato solo
-il primo giro e poi si inverte l’ordine, es: a, b, c, c, b, a).
-Se una squadra al momento del draft ha slot primavera occupati perde le relative
-pick.
-Nel caso in cui un giocatore draftato esca dal listone al momento del draft dell’anno
-successivo, il club pu` o scegliere tra tagliarlo (a 0) o tenerlo (occupando comunque
-lo slot). Nel caso in cui un primavera venga ceduto nel mercato reale non generer` a
-alcun tipo di introito (` e possibile eventualmente promuoverlo in prima squadra,
-prima che il trasferimento sia ufficiale, se si dispone di slot). Le pick possono
-rientrare all’interno di scambi.
-Il draft avverr` a il giorno dopo la chiusura del mercato reale sul gruppo whatsapp.
-Nel caso in cui un primavera, durante l’anno venga promosso in prima squadra, e
-successivamente tagliato, tale giocatore anche se ancora under 21 non potr` a pi` u
-essere draftato ma potr` a essere acquistato tramite mercato ordinario.
-3.2 Asta
-Listone di riferimento: listone Fantacalcio.it esclusi gli U21 (acquistabili solo
-tramite draft).
-Modalit` a creazione squadre: asta in presenza - con almeno 1 componente della
-squadra presente. Asta a chiamata su tutto il listone per anni successivi al primo,
-6
-asta random su tutto il listone per il primo anno.
-Crediti partenza: 500
-Squadre partecipanti: 10
-Rosa: da 25 minimo a 30 massimo, di cui minimo 3 portieri, il restante a piaci-
-mento. Le rose saranno quindi massimo 30 scelti +2 giocatori slot prestiti.
-I club che terminano l’asta con meno di 25 giocatori saranno penalizzati con uno
-scalo di 5 crediti.
-3.3 Capitano e vice capitano
-Ogni squadra dovr` a scegliere ad inizio campionato un capitano e un vice che rester-
-anno tali per tutto l’arco della stagione e garantiranno bonus e/o malus in base
-alla prestazione (vedere tabella sotto).
-Voto Capitano Bonus/Malus
-≤4.5 -1.5
-5 -1
-5.5 -0.5
-6 0
-6.5 0.5
-7 1
-≥7.5 1.5
-Nel caso in cui il capitano e/o il vice non facciano pi` u parte della squadra (es.
-trasferimenti reali, svincolo, scambio, ecc. . . ) sar` a possibile nominarne uno nuovo
-che diventer` a vice.
-3.4 Slot prestiti
-Ogni squadra oltre alla rosa, ha 2 slot da utilizzare solo per giocatori presi in
-prestito da altri (non sono obbligatori da usare). Il prestito pu` o durare 1 o 2
-stagioni a seconda della decisione delle due parti.
-Sono previsti accordi tra le squadre di diritto e/o obbligo di riscatto ma vanno
-comunicati al direttore di lega.
-I prestiti vengono scritti sul canale di riferimento del fantacalcio (che verr` a cre-
-ato ad hoc) e la valenza del prestito ` e valida solo previa prima ufficializzazione al
-direttore di lega e sul canale. Un prestito non parte se non viene ufficializzato.
-7
-4 Stadi di propriet` a
-Ogni squadra dovr` a scrivere la capienza ufficiale dopo il nome dello stadio sull’app.
-Livello Costo Ritorno Annuale
-0 0 0
-1 10 4
-2 20 8
-3 30 14
-4 40 18
-5 50 25
-6 60 30
-7 70 39
-8 80 44
-I lavori di ampliamento dello stadio vanno effettuati e comunicati entro la prima
-gara della stagione, e non saranno ulteriormente implementabili a stagione in corso.
-Giocata la prima non sar` a pi` u possibile ampliare lo stadio. La finestra per gli am-
-pliamenti stadio sar` a quindi disponibile solo prima dell’inizio della stagione.
-5 Mercato
-5.1 Informazioni generali
-Il mercato seguir` a il reale corso a livello di date di apertura (sia estivo che invernale).
-Quindi, post 1 °asta che si terr` a l’1 Agosto 2024, il mercato scambi e prestiti con-
-tinuer` a ad essere attivo fino alla chiusura del mercato reale.
-Tipologia di operazioni possibili: prestiti, scambi e parametro zero.
-A) Prestiti: come spiegato sopra, solo con pagamento crediti. Vi ` e la possibilit` a
-di inserire una clausola di diritto/obbligo di riscatto e/o controriscatto con la
-possibilit` a di estinguere l’obbligo prima della fine della stagione se slot libero.
-B) Scambi: giocatori per giocatori, giocatori per giocatori e crediti, giocatori per
-crediti. Possono essere scambiate solo le pick dei 3 anni successivi e comunque
-mai pi` u di 5 per stagione.
-C) Parametro 0: Se una squadra ha slot liberi e crediti disponibili pu` o acquistare
-un giocatore a parametro 0, il club dovr` a fare richiesta PRIVATAMENTE al
-8
-direttore di lega esprimendo interesse nel firmare tale giocatore. Poi verr` a reso
-pubblico l’interesse sul canale dove tutti possono mostrare interesse.
-Se il direttore di lega non registra altri interessi entro 24h dalla richiesta, il
-giocatore verr` a ufficializzato nel canale al prezzo di 1.
-Qualora, viceversa, il giocatore suscitasse altri privati interessi, si aprir` a un’asta
-tra i club interessati regolamentata dal direttore di lega. Il prezzo di partenza
-dell’asta sar` a deciso dal giocatore che per primo ha mostrato interesse. L’asta
-si dichiara conclusa quando passano 24 ore dall’ultima offerta oppure quando
-tutti gli altri partecipanti si dichiarano “non pi` u interessati”.
-Il mercato parametri 0 sar` a aperto tutto l’anno, ed i giocatori po-
-tranno dichiarare interesse in ogni momento.
-Per prevenire plusvalenze:
-•In caso di trasferimento reale di un giocatore, se l’ufficialit` a arriva entro i
-7 giorni dall’acquisto del suddetto giocatore al fantacalcio, la squadra che
-lo ha acquistato ricever` a i crediti che ha speso per tagliarlo.
-•In caso di acquisto di un giocatore che si trova in prestito in Serie A (con
-obbligo o diritto di riscatto), se l’acquisto avviene dopo il 1 °aprile, non
-sar` a possibile sfruttare il riscatto del giocatore per tagliarlo e prendere
-crediti.
-Ogni squadra potr` a dichiarare interesse/partecipare ad un numero di aste pari
-al numero di slot liberi. (Esempio: se ho in rosa 27 giocatori e ho mostrato
-interesse per un giocatore e sto aspettando che passino le 24h per parteci-
-pare all’asta e sono all’interno di altre due aste, per esprimere un eventuale
-interesse per un altro giocatore devo abbandonare una delle due aste oppure
-rimuovere il precedente interesse per il giocatore).
-`E POSSIBILE MOSTRARE INTERESSE SOLO PER I GIOCATORI CHE
-FANNO UFFICIALMENTE PARTE DELLA SERIE A (FONTE TRANS-
-FERMARKET).
-5.2 Svincoli
-Possibilit` a di effettuare la rescissione contrattuale ad un giocatore pagando met` a
-del suo VALORE ATTUALE (arrotondato per eccesso) su Fantacalcio al mo-
-mento della rescissione. Una squadra che svincola un giocatore non potr` a pi` u
-ri-ingaggiarlo in nessun modo (aste e/o scambi) per tutta la corrente sessione di
-9
-mercato e la successiva. Inoltre non sar` a possibile acquistare e svincolare un gio-
-catore nella stessa sessione di mercato.
-Gli svincoli dei giocatori primavera sono gratuiti ed illimitati.
-5.3 Cosa succede a fine stagione?
+--- 5.3 Fine stagione ---
 Finita la stagione, il mercato riparte il primo giorno di mercato reale.
-Le squadre potranno rilasciare gratuitamente ad apertura mercato reale, un nu-
-mero di giocatori a parametro 0 (non prenderete crediti indietro, liberate solo slot)
-in base alla posizione in classifica:
-Posizione Numero di tagli gratuiti
-1 0
-2 0
-3 0
-4 1
-5 1
-6 1
-7 2
-8 2
-9 2
-10 3
-I tagli gratuiti potranno essere effettuati solo al primo giorno di apertura del mer-
-cato (i presidenti avranno tempo una settimana prima dell’apertura del mercato
-per comunicare gli svincoli).
-N.B. : I giocatori retrocessi che non saranno pi` u presenti in Serie A, verranno
-svincolati a costo 0 ( in quanto non pi` u usabili sull’app fantacalcio) .
-Ogni squadra, per` o, pu` o decidere ad inizio estate se rilasciare cos` ı i giocatori retro-
-cessi, o tenerli in “hold”, ovvero in attesa di sapere se torneranno in serie A. Pos-
-sono essere tenuti in hold anche i giocatori con contratto scaduto (es. Bonaventura
-estate 2024), i giocatori a fine prestito che tornano nella propria squadra estera
-(es. Lukaku post inter torna al Chelsea ma poi viene prestato alla roma) ed i
-giocatori venduti fuori dalla serie A (es. Iling Junior venduto all’Aston Villa viene
-poi venduto nella stessa estate al Bologna).
+All'apertura del mercato reale le squadre possono rilasciare gratuitamente un numero di giocatori a parametro zero (nessun credito indietro, si libera solo lo slot) in base alla posizione in classifica:
+
+Posizione | Tagli gratuiti
+1, 2, 3   | 0
+4, 5, 6   | 1
+7, 8, 9   | 2
+10        | 3
+
+I tagli gratuiti si possono fare solo il primo giorno di apertura del mercato; i presidenti hanno una settimana prima dell'apertura per comunicarli.
+
+Giocatori retrocessi: quelli che non sono più in Serie A vengono svincolati a costo 0 (non sono più usabili sull'app Fantacalcio).
+Ogni squadra può però decidere a inizio estate se rilasciarli o tenerli in "hold", cioè in attesa di sapere se torneranno in Serie A. Possono essere tenuti in hold anche i giocatori con contratto scaduto (es. Bonaventura, estate 2024), i giocatori a fine prestito che tornano alla propria squadra estera (es. Lukaku dopo l'Inter torna al Chelsea ma poi viene prestato alla Roma) e i giocatori venduti fuori dalla Serie A (es. Iling Junior venduto all'Aston Villa e poi, nella stessa estate, al Bologna).
 I giocatori in hold occupano spazio in rosa.
-10
-Qualora un societ` a eserciti l’opzione hold per un giocatore che retrocede
-in Serie B si presentano quattro scenari:
-1. Il giocatore torna in serie A in prestito: la squadra pu` o confermarlo in rosa o
-liberare lo slot per 0 crediti.
-2. Il giocatore torna in serie A a titolo definitivo: la squadra pu` o confermarlo in
-rosa o incassare i crediti del trasferimento.
-3. Il giocatore rimane nella squadra di appartenenza: la squadra libera lo slot
-per 0 crediti.
-4. Il giocatore viene venduto ad una societ` a non partecipante alla Serie A: la
-squadra incassa i crediti del trasferimento.
-Qualora, durante il mercato ordinario, una societ` a acquisti un giocatore
-arrivato in Serie A con la formula del prestito e proveniente dall’estero
-pu` o, a fine anno esercitare l’opzione hold su tale giocatore.
-Per tale giocatore, nel caso in cui venga esercitata l’opzione hold, si
-presentano 3 tre scenari:
-1. Il giocatore torna in serie A in prestito: la squadra pu` o confermarlo in rosa o
-liberare lo slot per 0 crediti.
-2. Il giocatore torna in serie A a titolo definitivo: la squadra pu` o confermarlo in
-rosa o incassare i crediti del trasferimento.
-3. Il giocatore viene venduto all’estero / rimane nella squadra di appartenenza:
-la squadra libera lo slot per 0 crediti.
-Qualora venga esercitata la hold su un giocatore ceduto all` ıestero si
-presentano i seguenti scenari:
-1. Il giocatore torna in serie A in prestito: la squadra pu` o confermarlo in rosa o
-liberare lo slot per 0 crediti.
-2. Il giocatore torna in serie A a titolo definitivo: la squadra pu` o confermarlo in
-rosa o incassare i crediti del secondo trasferimento.
-3. Il giocatore viene ceduto all’estero o resta nella squadra di provenienza: la
-squadra incassa i crediti del primo trasferimento.
-L’hold va comunicato al primo giorno di mercato assieme ai tagli e non ` e removibile
-(es. Berardi retrocede col Sassuolo, al primo Luglio viene esercitato l’hold e quindi
-11
-il suo slot rimane occupato fino alla chiusura del mercato reale o fino a quando
-Berardi non viene ceduto nel mercato reale).
-5.4 Cessioni giocatori
-I giocatori che lasceranno il campionato italiano verranno automaticamente rilas-
-ciati, e al club verr` a assegnato il corrispettivo della cifra per cui sono partiti nel
-mercato reale in crediti. Date e prezzi di trasferimento fanno fede a Transfer-
-markt.it. I giocatori in primavera non possono generare introiti.
-Esempio:
-Immobile viene acquistato dal Real Madrid per 50 milioni. Il club PincoPallini
-che aveva Immobile, perder` a Immobile ma gli verranno riconosciuti 50 crediti per
-la cessione e verranno aggiunti al suo ammontare.
-In caso di ulteriori clausole, si fa fede alla cifra globale.
-Esempio:
-Immobile viene acquistato per 25 milioni subito, 15 in 3 anni. I crediti che ricever` a
-PincoPallini sono quelli riportati su Transfermarkt.it. Non si applicano bonus su
-gol, presenze o ulteriori clausole.
-•Qualora Immobile cambiasse s` ı squadra estera, ma a parametro 0, i Pinco-
-Pallini perderanno Immobile ma senza ricevere alcun conguaglio.
-•Qualora Immobile andasse all’estero in prestito, il giocatore rimarr` a nella rosa
-del club che lo ha preso anche se inutilizzabile, ma non occuper` a alcuno slot.
-•Qualora Immobile venisse poi riscattato durante o a fine prestito, la societ` a
-detentrice di Immobile ricever` a al momento del pagamento reale, la cifra cor-
-rispettiva in crediti liberandosi cos` ı di Immobile, altrimenti, al ritorno in Italia,
-la squadra detentrice di Immobile dovr` a decidere se svincolarlo o fargi spazio
-in rosa.
-•Qualora Immobile venisse acquistato dall’estero ma lasciato in prestito in Italia
-un altro anno, i PincoPallini riceveranno i soldi della cessione e potranno
-usufruire di Immobile per la stagione in corso.
-•Qualora Immobile venisse acquistato dal Genoa per 10 milioni, il Fanta-
-allenatore potr` a decidere se incassare i 10 milioni e liberare Immobile oppure
-tenere Immobile ma senza incassare crediti.
-La decisione va comunicata entro breve tempo, altrimenti il giocatore rimarr` a
-in automatico nella rosa della FantaSquadra.
-Tutti gli importi verranno arrotondati ( ≥0.5 per eccesso; <0.5 per difetto).
-Tale regola vale anche per i prestiti con diritto o obbligo di riscatto (sia
-dall’estero che dalla Serie A).
-12
-N.B. Nel caso in cui una squadra si trovasse in negativo di crediti al 1 luglio, per
-esempio a causa di obblighi di riscatto o bonus da pagare, la squadra in questione
-avr` a il mercato bloccato in entrata fino al ritorno in positivo, inoltre ricever` a una
-penalit` a di punti in classifica pari al numero di crediti sforati.
-13
-6 Multe
-•Dimenticarsi la formazione 1 volta: bonus dimenticanza (chiudiamo occhio).
-•Dimenticarsi la formazione 2 volte: penalizzazione di 5 crediti sui prossimo
-bonus dell’anno successivo (+ pena in euro).
-•Dimenticarsi la formazione 3 volte: penalizzazione di 10 crediti sui prossimo
-bonus dell’anno successivo (+ pena in euro).
-Le sanzioni base partono da 5 crediti di penalit` a, aumentando in base alla gravit` a
-e alla recidiva delle infrazioni da parte di una squadra. Il tutto sotto valutazione
-del commissario.
-14
+L'hold va comunicato il primo giorno di mercato insieme ai tagli e non è removibile (es. Berardi retrocede col Sassuolo, il 1° luglio viene esercitato l'hold e il suo slot resta occupato fino alla chiusura del mercato reale o finché Berardi non viene ceduto nel mercato reale).
+
+Hold su un giocatore retrocesso in Serie B, quattro scenari:
+  1. Torna in Serie A in prestito: la squadra può confermarlo in rosa o liberare lo slot a 0 crediti.
+  2. Torna in Serie A a titolo definitivo: la squadra può confermarlo in rosa o incassare i crediti del trasferimento.
+  3. Rimane nella squadra di appartenenza: la squadra libera lo slot a 0 crediti.
+  4. Viene venduto a una società fuori dalla Serie A: la squadra incassa i crediti del trasferimento.
+
+Hold su un giocatore arrivato in Serie A in prestito dall'estero e acquistato durante il mercato ordinario (esercitabile a fine anno), tre scenari:
+  1. Torna in Serie A in prestito: la squadra può confermarlo in rosa o liberare lo slot a 0 crediti.
+  2. Torna in Serie A a titolo definitivo: la squadra può confermarlo in rosa o incassare i crediti del trasferimento.
+  3. Viene venduto all'estero / rimane nella squadra di appartenenza: la squadra libera lo slot a 0 crediti.
+
+Hold su un giocatore ceduto all'estero, tre scenari:
+  1. Torna in Serie A in prestito: la squadra può confermarlo in rosa o liberare lo slot a 0 crediti.
+  2. Torna in Serie A a titolo definitivo: la squadra può confermarlo in rosa o incassare i crediti del secondo trasferimento.
+  3. Viene ceduto all'estero o resta nella squadra di provenienza: la squadra incassa i crediti del primo trasferimento.
+
+--- 5.4 Cessioni giocatori ---
+I giocatori che lasciano il campionato italiano vengono automaticamente rilasciati e al club viene assegnato in crediti il corrispettivo della cifra per cui sono partiti nel mercato reale. Date e prezzi di trasferimento fanno fede su Transfermarkt.it. I giocatori in Primavera non generano introiti.
+Esempio: Immobile viene acquistato dal Real Madrid per 50 milioni. Il club che aveva Immobile lo perde ma riceve 50 crediti.
+In caso di ulteriori clausole vale la cifra globale riportata da Transfermarkt.it (es. 25 milioni subito + 15 in 3 anni): non si applicano bonus su gol, presenze o altre clausole.
+- Se il giocatore cambia squadra estera ma a parametro zero, il club lo perde senza ricevere alcun conguaglio.
+- Se il giocatore va all'estero in prestito, resta nella rosa del club anche se inutilizzabile, ma non occupa alcuno slot.
+- Se viene poi riscattato durante o a fine prestito, il club riceve la cifra in crediti al momento del pagamento reale e si libera del giocatore; altrimenti, al ritorno in Italia, deve decidere se svincolarlo o fargli spazio in rosa.
+- Se il giocatore viene acquistato dall'estero ma lasciato in prestito in Italia un altro anno, il club riceve i crediti della cessione e può usare il giocatore per la stagione in corso.
+- Se il giocatore viene acquistato da un altro club di Serie A (es. dal Genoa per 10 milioni), il fanta-allenatore può scegliere se incassare i crediti e liberare il giocatore, oppure tenerlo senza incassare crediti. La decisione va comunicata in breve tempo, altrimenti il giocatore resta automaticamente nella rosa.
+Tutti gli importi vengono arrotondati (≥ 0,5 per eccesso, < 0,5 per difetto). La regola vale anche per i prestiti con diritto o obbligo di riscatto (sia dall'estero sia dalla Serie A).
+Crediti negativi: se una squadra al 1° luglio è in negativo di crediti (es. per obblighi di riscatto o bonus da pagare), ha il mercato bloccato in entrata finché non torna in positivo e riceve una penalità in classifica pari al numero di crediti sforati.
+
+=== 6. MULTE ===
+
+- Formazione dimenticata 1 volta: bonus dimenticanza (si chiude un occhio).
+- Formazione dimenticata 2 volte: penalizzazione di 5 crediti sui bonus dell'anno successivo (+ pena in euro).
+- Formazione dimenticata 3 volte: penalizzazione di 10 crediti sui bonus dell'anno successivo (+ pena in euro).
+Le sanzioni base partono da 5 crediti di penalità e aumentano in base alla gravità e alla recidiva delle infrazioni. Tutto è a valutazione del commissario.
+
+=== 7. REGOLE APPLICATE DALL'APP ===
+
+Regole operative che l'app fa già rispettare in automatico.
+
+--- 7.1 Tagli dalla prima squadra ---
+- Un giocatore della prima squadra si può tagliare solo dopo 4 mesi dal suo arrivo in rosa. Per un giocatore promosso dalla Primavera i 4 mesi si contano dalla promozione.
+- Il costo del taglio è metà della quotazione attuale, arrotondata per eccesso (vedi 5.2), e la squadra deve avere crediti sufficienti.
+- Il taglio dalla Primavera non ha vincoli di tempo ed è gratuito.
+
+--- 7.2 Under 21 ---
+- L'anno di nascita da cui un giocatore conta come Under 21 è impostato dagli amministratori ogni stagione. Gli Under 21 (portieri esclusi) non si possono chiamare in asta: si acquisiscono solo tramite draft.
+
+--- 7.3 Prestiti ---
+- Un prestito scade il 1° luglio dell'anno indicato. Si può scegliere come scadenza la stagione in corso o la successiva.

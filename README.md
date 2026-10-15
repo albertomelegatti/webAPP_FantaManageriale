@@ -75,7 +75,7 @@ La ragione della seconda regola è concreta, non teorica: un vecchio bug in ques
 
 ### `app/services/` — la composizione
 
-`dashboard.py`, `mercato.py`, `rosa.py`, `listone.py`, `movimenti.py`, `chatbot.py`, `export_excel.py`. Un service esiste quando una vista ha bisogno di dati che arrivano da più repository e devono essere combinati, filtrati o aggregati prima di raggiungere il template — tipicamente per evitare che quella combinazione richieda una query per ogni riga di un elenco.
+`dashboard.py`, `mercato.py`, `rosa.py`, `listone.py`, `movimenti.py`, `chatbot.py` (con `chatbot_dati.py`, gli strumenti in sola lettura che il modello può chiamare), `export_excel.py`. Un service esiste quando una vista ha bisogno di dati che arrivano da più repository e devono essere combinati, filtrati o aggregati prima di raggiungere il template — tipicamente per evitare che quella combinazione richieda una query per ogni riga di un elenco.
 
 L'esempio più chiaro è `services/mercato.py`: la pagina degli scambi di una squadra mostra, per ogni proposta, i nomi dei giocatori coinvolti, la descrizione delle eventuali pick di draft e quella degli eventuali prestiti collegati. Risolvere ciascuno di questi per ogni riga, dentro il ciclo di rendering, costava 27 interrogazioni e 23 prelievi dal pool di connessioni per una pagina con 17 scambi — perché una delle funzioni coinvolte apriva una propria connessione invece di ricevere quella già aperta dalla route. Il service raccoglie tutti gli identificativi da tutte le righe prima del ciclo, li risolve in blocco con query fisse, e li ricompone dopo: il numero di interrogazioni non dipende più da quanti scambi ci sono.
 
@@ -89,7 +89,7 @@ Oggi un solo modulo, `scambio.py`: modella con `pydantic` la proposta di scambio
 
 ### `app/blueprints/` — l'instradamento HTTP
 
-Un blueprint per area funzionale: `public.py` (pagine pubbliche: home, listone, aste in sola lettura, movimenti, albo d'oro, health check), `auth.py` (login/logout/cambio password), `user.py` (la home della squadra dopo il login), `mercato.py`, `aste.py`, `prestiti.py`, `rosa.py`, `vetrina.py` (le aree operative di ciascuna squadra), `admin.py` (pannello di amministrazione della lega), `chat.py` (assistente sul regolamento), `webhook.py` (riceve eventi da Supabase), `jobs.py` (endpoint per uno scraping periodico, pensato per essere richiamato da un servizio esterno di uptime-monitoring al posto di un vero scheduler).
+Un blueprint per area funzionale: `public.py` (pagine pubbliche: home, listone, aste in sola lettura, movimenti, albo d'oro, health check), `auth.py` (login/logout/cambio password), `user.py` (la home della squadra dopo il login), `mercato.py`, `aste.py`, `prestiti.py`, `rosa.py`, `vetrina.py` (le aree operative di ciascuna squadra), `admin.py` (pannello di amministrazione della lega), `chat.py` (assistente sul regolamento e sui dati della lega; modello configurabile con `CHATBOT_MODEL`), `webhook.py` (riceve eventi da Supabase), `jobs.py` (endpoint per uno scraping periodico, pensato per essere richiamato da un servizio esterno di uptime-monitoring al posto di un vero scheduler).
 
 Il compito di una funzione-route, nella sua forma ideale, è breve: leggere cosa è arrivato dalla richiesta, aprire una connessione, chiamare un service o un repository, passare il risultato al template.
 

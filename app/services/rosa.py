@@ -67,6 +67,14 @@ def taglio_bloccato_fino_a(cur, id_giocatore):
     return _sblocco_taglio(storico_rosa_repo.arrivi(cur, [id_giocatore]).get(int(id_giocatore)))
 
 
+def tagliabili_dal(cur, id_giocatori) -> dict:
+    """{id: giorno da cui si potra' tagliare} per chi e' ancora bloccato, in una
+    query sola. Chi non compare si puo' gia' tagliare."""
+    arrivi = storico_rosa_repo.arrivi(cur, id_giocatori)
+    sblocchi = {id_g: _sblocco_taglio(dal) for id_g, dal in arrivi.items()}
+    return {id_g: sblocco for id_g, sblocco in sblocchi.items() if sblocco}
+
+
 def giocatori_tagliabili(cur, nome_squadra: str) -> list[dict]:
     """I giocatori di cui la squadra detiene il cartellino, primavera esclusa:
     sono quelli che puo' tagliare. `tagliabile_dal` e' valorizzato per chi e'

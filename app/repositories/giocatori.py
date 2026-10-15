@@ -226,6 +226,21 @@ def prestabili_verso(cur, nome_squadra: str) -> list[dict]:
     return cur.fetchall()
 
 
+def cerca_per_nome(cur, testo: str, limite: int = 10) -> list[dict]:
+    """Giocatori il cui nome contiene `testo`, per il chatbot: chi scrive una
+    domanda cita quasi sempre solo il cognome. Prima i piu' quotati, cosi' fra
+    omonimi parziali emerge quello di cui si sta piu' probabilmente parlando."""
+    cur.execute(
+        """SELECT id, nome, ruolo, club, squadra_att, detentore_cartellino, tipo_contratto,
+                  quot_att_mantra, costo, data_nascita, scadenza_contratto, valore_mercato
+           FROM giocatore
+           WHERE nome ILIKE %s
+           ORDER BY quot_att_mantra DESC NULLS LAST, nome
+           LIMIT %s;""",
+        (f"%{testo}%", limite))
+    return cur.fetchall()
+
+
 def esiste_con_nome(cur, nome_giocatore: str) -> bool:
     """Confronto senza distinzione di maiuscole: due giocatori con lo stesso
     nome scritto diversamente sarebbero indistinguibili per gli utenti."""
