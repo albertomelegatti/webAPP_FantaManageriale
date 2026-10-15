@@ -18,11 +18,18 @@
 <div class="mb-2">{{ m.torna_indietro(url_for('public.home')) }}</div>
 <h2 class="mb-4 text-center text-lg font-bold">Crediti, Stadi e Slot</h2>
 
-<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+<!-- Una tabella alla volta, stesse tab della pagina squadra. -->
+<div class="tabs-squadra mb-4 flex gap-2 border-b border-line pb-2" role="tablist">
+    <button type="button" class="tab-squadra shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold"
+            role="tab" data-tab="crediti" aria-selected="true">Crediti e slot</button>
+    <button type="button" class="tab-squadra shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold"
+            role="tab" data-tab="stadi" aria-selected="false">Stadi</button>
+</div>
+
+<div>
 
     <!-- Crediti & Slot -->
-    <div class="rounded-2xl border border-line bg-panel p-4">
-        <h4 class="mb-3 text-sm font-bold uppercase tracking-wide text-muted">Crediti &amp; Slot</h4>
+    <div class="pannello-css rounded-2xl border border-line bg-panel p-4" data-panel="crediti" role="tabpanel">
         <table class="css-tabella w-full table-fixed text-sm">
             <colgroup>
                 <col style="width:44%"><col style="width:20%"><col style="width:22%"><col style="width:14%">
@@ -47,7 +54,8 @@
                             {{ s.slot_occupati }}<span class="text-muted">/{{ slot_rosa }}</span>
                         </div>
                         <div class="css-barra mt-1" role="img" aria-label="{{ s.slot_occupati }} slot occupati su {{ slot_rosa }}">
-                            <span class="{{ 'piena' if s.slot_occupati >= slot_rosa }}"
+                            {# Rossa solo oltre il limite: 30/30 e' una rosa completa, non un'irregolarita'. #}
+                            <span class="{{ 'oltre' if s.slot_occupati > slot_rosa }}"
                                   style="width: {{ [s.slot_occupati * 100 // slot_rosa, 100] | min }}%"></span>
                         </div>
                     </td>
@@ -61,8 +69,7 @@
     </div>
 
     <!-- Stadi -->
-    <div class="rounded-2xl border border-line bg-panel p-4">
-        <h4 class="mb-3 text-sm font-bold uppercase tracking-wide text-muted">Stadi</h4>
+    <div class="pannello-css hidden rounded-2xl border border-line bg-panel p-4" data-panel="stadi" role="tabpanel">
         <table class="css-tabella w-full table-fixed text-sm">
             <colgroup>
                 <col style="width:44%"><col style="width:33%"><col style="width:23%">
@@ -98,6 +105,15 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const tab = document.querySelectorAll('.tab-squadra');
+    const pannelli = document.querySelectorAll('.pannello-css');
+    tab.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            tab.forEach(t => t.setAttribute('aria-selected', String(t === btn)));
+            pannelli.forEach(p => p.classList.toggle('hidden', p.dataset.panel !== btn.dataset.tab));
+        });
+    });
+
     // Ordinamento cliccando sulle intestazioni. Si ordina su data-valore e non
     // sul testo visibile: "25/30" o "Liv. 3" non sono numeri.
     document.querySelectorAll('.css-tabella').forEach(function (table) {
