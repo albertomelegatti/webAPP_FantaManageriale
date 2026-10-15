@@ -1,5 +1,5 @@
 """
-Chatbot sul regolamento.
+Chatbot sul regolamento e sui dati della lega.
 """
 
 from flask import Blueprint, jsonify, render_template, request
@@ -13,11 +13,17 @@ chat_bp = Blueprint('chat', __name__)
 def chat_page():
     if request.method == "POST":
         data = request.get_json(silent=True) or {}
-        user_msg = data.get("question", "").strip()
 
-        if not user_msg:
+        # La conversazione intera la tiene il browser e la rimanda a ogni
+        # domanda; "question" resta per chi invia ancora una domanda singola.
+        messaggi = data.get("messages")
+        if not messaggi:
+            domanda = str(data.get("question", "")).strip()
+            messaggi = [{"role": "user", "content": domanda}] if domanda else []
+
+        if not messaggi:
             return jsonify({"answer": "⚠️ Inserisci una domanda valida."})
 
-        return jsonify({"answer": get_answer(user_msg)})
+        return jsonify({"answer": get_answer(messaggi)})
 
     return render_template("chat.html")
