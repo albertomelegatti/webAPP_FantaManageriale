@@ -1,35 +1,60 @@
 {% extends 'base_tailwind.html' %}
 
+{# a_capo: il nome va su piu' righe invece di essere troncato. Serve nella
+   tabella stadi, dove la colonna e' stretta perche' la divide col nome dello
+   stadio. #}
+{% macro squadra_cella(s, a_capo=False) -%}
+<td class="py-2 pr-2" data-valore="{{ s.nome }}">
+    <div class="flex min-w-0 items-center gap-2">
+        <img src="{{ url_for('static', filename='loghi/' ~ (s.username or 'svincolato') ~ '.png') }}?v={{ asset_v('loghi/' ~ (s.username or 'svincolato') ~ '.png') }}"
+             alt="" class="h-6 w-6 shrink-0 rounded-full bg-panel-2 object-contain">
+        <span class="min-w-0 font-medium {{ 'break-words' if a_capo else 'overflow-hidden text-ellipsis whitespace-nowrap' }}">{{ s.nome }}</span>
+    </div>
+</td>
+{%- endmacro %}
+
 {% block content %}
 {% import '_macros.html' as m %}
 <div class="mb-2">{{ m.torna_indietro(url_for('public.home')) }}</div>
+<h2 class="mb-4 text-center text-lg font-bold">Crediti, Stadi e Slot</h2>
+
 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 
     <!-- Crediti & Slot -->
     <div class="rounded-2xl border border-line bg-panel p-4">
-        <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Crediti &amp; Slot</h4>
-        <table class="w-full table-fixed text-sm sortable-table" id="creditiSlotTable">
+        <h4 class="mb-3 text-sm font-bold uppercase tracking-wide text-muted">Crediti &amp; Slot</h4>
+        <table class="css-tabella w-full table-fixed text-sm">
             <colgroup>
-                <col style="width:46%"><col style="width:24%"><col style="width:30%">
+                <col style="width:44%"><col style="width:20%"><col style="width:22%"><col style="width:14%">
             </colgroup>
             <thead>
                 <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
                     <th class="pb-2 font-semibold">Squadra</th>
-                    <th class="pb-2 text-center font-semibold">Crediti</th>
-                    <th class="pb-2 text-center font-semibold">Slot</th>
+                    <th class="pb-2 text-center font-semibold desc">Crediti</th>
+                    <th class="pb-2 text-center font-semibold">Rosa</th>
+                    <th class="pb-2 text-center font-semibold">Prest.</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-line">
-                {% for squadra in squadre %}
-                {% for slot_riga in slot %}
-                    {% if squadra.nome == slot_riga.squadra_att %}
+            <tbody>
+                {% for s in squadre %}
                 <tr>
-                    <td class="overflow-hidden text-ellipsis whitespace-nowrap py-2.5 pr-2 font-medium">{{ squadra.nome }}</td>
-                    <td class="py-2.5 text-center tabular-nums text-accent font-semibold">{{ squadra.crediti }}</td>
-                    <td class="py-2.5 text-center tabular-nums font-semibold">{{ slot_riga.slot_occupati }}/30 · {{ slot_riga.slot_in_prestito }}/2</td>
+                    {{ squadra_cella(s) }}
+                    <td class="py-2 text-center" data-valore="{{ s.crediti }}">
+                        <span class="text-base font-bold tabular-nums text-accent">{{ s.crediti }}</span>
+                    </td>
+                    <td class="py-2 px-1" data-valore="{{ s.slot_occupati }}">
+                        <div class="text-center text-xs font-semibold tabular-nums">
+                            {{ s.slot_occupati }}<span class="text-muted">/{{ slot_rosa }}</span>
+                        </div>
+                        <div class="css-barra mt-1" role="img" aria-label="{{ s.slot_occupati }} slot occupati su {{ slot_rosa }}">
+                            <span class="{{ 'piena' if s.slot_occupati >= slot_rosa }}"
+                                  style="width: {{ [s.slot_occupati * 100 // slot_rosa, 100] | min }}%"></span>
+                        </div>
+                    </td>
+                    <td class="py-2 text-center text-xs font-semibold tabular-nums" data-valore="{{ s.prestiti }}">
+                        {{ s.prestiti }}<span class="text-muted">/{{ slot_prestiti }}</span>
+                    </td>
                 </tr>
-                    {% endif %}
-                {% endfor %}
                 {% endfor %}
             </tbody>
         </table>
@@ -37,24 +62,33 @@
 
     <!-- Stadi -->
     <div class="rounded-2xl border border-line bg-panel p-4">
-        <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Stadi</h4>
-        <table class="w-full table-fixed text-sm sortable-table" id="stadiTable">
+        <h4 class="mb-3 text-sm font-bold uppercase tracking-wide text-muted">Stadi</h4>
+        <table class="css-tabella w-full table-fixed text-sm">
             <colgroup>
-                <col style="width:47%"><col style="width:39%"><col style="width:14%">
+                <col style="width:44%"><col style="width:33%"><col style="width:23%">
             </colgroup>
             <thead>
                 <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
                     <th class="pb-2 font-semibold">Squadra</th>
                     <th class="pb-2 font-semibold">Stadio</th>
-                    <th class="pb-2 text-center font-semibold">Liv.</th>
+                    <th class="pb-2 text-center font-semibold">Livello</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-line">
-                {% for stadio in stadi %}
+            <tbody>
+                {% for s in squadre | sort(attribute='nome') %}
                 <tr>
-                    <td class="break-words py-2.5 pr-2 align-top font-medium">{{ stadio.proprietario }}</td>
-                    <td class="break-words py-2.5 pr-2 align-top">{{ stadio.nome }}</td>
-                    <td class="py-2.5 text-center align-top tabular-nums font-semibold">{{ stadio.livello }}</td>
+                    {{ squadra_cella(s, a_capo=True) }}
+                    <td class="break-words py-2 pr-2 text-xs" data-valore="{{ s.stadio_nome or '' }}">
+                        {{ s.stadio_nome or '—' }}
+                    </td>
+                    <td class="py-2 text-center" data-valore="{{ s.stadio_livello or 0 }}">
+                        {% if s.stadio_nome %}
+                        <span class="css-livello" data-tip="Rendita annuale: {{ s.rendita }} crediti">Liv. {{ s.stadio_livello }}</span>
+                        <div class="mt-1 text-[11px] tabular-nums text-muted">+{{ s.rendita }}/anno</div>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -62,74 +96,32 @@
     </div>
 </div>
 
-<style>
-.sortable-table thead th {
-    cursor: pointer;
-    user-select: none;
-    position: relative;
-}
-.sortable-table thead th::after {
-    content: ' \2195';
-    color: var(--muted);
-    font-size: 0.85em;
-}
-.sortable-table thead th.asc::after {
-    content: ' \2191';
-    color: var(--accent);
-}
-.sortable-table thead th.desc::after {
-    content: ' \2193';
-    color: var(--accent);
-}
-</style>
-
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const sortableTables = ['creditiSlotTable', 'stadiTable'];
-
-    const extractNumber = (value) => {
-        const match = value.replace(',', '.').match(/-?\d+(\.\d+)?/);
-        return match ? parseFloat(match[0]) : NaN;
-    };
-
-    const attachSorting = (tableId) => {
-        const table = document.getElementById(tableId);
-        if (!table) return;
-
+document.addEventListener('DOMContentLoaded', function () {
+    // Ordinamento cliccando sulle intestazioni. Si ordina su data-valore e non
+    // sul testo visibile: "25/30" o "Liv. 3" non sono numeri.
+    document.querySelectorAll('.css-tabella').forEach(function (table) {
         const headers = table.querySelectorAll('thead th');
-
-        headers.forEach((header, index) => {
-            header.addEventListener('click', function() {
+        headers.forEach(function (header, index) {
+            header.addEventListener('click', function () {
                 const tbody = table.querySelector('tbody');
                 const rows = Array.from(tbody.querySelectorAll('tr'));
-
-                const isAsc = !this.classList.contains('asc');
+                const isAsc = !header.classList.contains('asc');
 
                 headers.forEach(h => h.classList.remove('asc', 'desc'));
-                this.classList.add(isAsc ? 'asc' : 'desc');
+                header.classList.add(isAsc ? 'asc' : 'desc');
 
-                rows.sort((a, b) => {
-                    const aValue = a.children[index].textContent.trim();
-                    const bValue = b.children[index].textContent.trim();
-
-                    const aNum = extractNumber(aValue);
-                    const bNum = extractNumber(bValue);
-
-                    if (!isNaN(aNum) && !isNaN(bNum)) {
-                        return isAsc ? aNum - bNum : bNum - aNum;
-                    }
-
-                    return isAsc
-                        ? aValue.localeCompare(bValue, 'it')
-                        : bValue.localeCompare(aValue, 'it');
+                const valore = row => row.children[index].dataset.valore ?? '';
+                rows.sort(function (a, b) {
+                    const va = valore(a), vb = valore(b);
+                    const na = parseFloat(va), nb = parseFloat(vb);
+                    const confronto = (!isNaN(na) && !isNaN(nb)) ? na - nb : va.localeCompare(vb, 'it');
+                    return isAsc ? confronto : -confronto;
                 });
-
                 rows.forEach(row => tbody.appendChild(row));
             });
         });
-    };
-
-    sortableTables.forEach(attachSorting);
+    });
 });
 </script>
 {% endblock %}

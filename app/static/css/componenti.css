@@ -841,3 +841,65 @@ body.trascinando .campetto-panca {
     font-size: 1.25rem;
     color: #ffb020;
 }
+
+/* --- Crediti, stadi e slot (crediti_stadi_slot.html) -----------------------
+   Tabelle ordinabili con righe staccate, mini barra di riempimento della rosa
+   e livello dello stadio come etichetta. */
+.css-tabella thead th {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.css-tabella thead th::after {
+    content: ' \2195';
+    color: var(--muted);
+    font-size: 0.85em;
+}
+
+.css-tabella thead th.asc::after {
+    content: ' \2191';
+    color: var(--accent);
+}
+
+.css-tabella thead th.desc::after {
+    content: ' \2193';
+    color: var(--accent);
+}
+
+.css-tabella tbody tr {
+    border-top: 1px solid var(--line);
+}
+
+.css-tabella tbody tr:hover {
+    background: var(--panel-2);
+}
+
+.css-barra {
+    height: 0.3rem;
+    border-radius: 999px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    overflow: hidden;
+}
+
+.css-barra span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+.css-barra span.piena {
+    background: var(--ko);
+}
+
+.css-livello {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    color: var(--accent);
+    background: color-mix(in oklab, var(--accent) 14%, transparent);
+}
