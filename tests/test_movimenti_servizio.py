@@ -85,3 +85,34 @@ class TestPaginaAlleggerita:
 
         assert len(html) < righe * 400, \
             f"{len(html)} byte per {righe} movimenti: la pagina sta rimandando il markup"
+
+
+@pytest.mark.db
+class TestMovimentiNellaDashboard:
+    """La tab Movimenti della dashboard: i dati arrivano da un endpoint a parte,
+    chiesto solo all'apertura della tab, cosi' la dashboard resta nel suo tetto
+    di query (tests/test_query_costanti.py)."""
+
+    def test_l_endpoint_restituisce_i_movimenti_della_squadra(self, app, cur, nome_squadra):
+        from app.repositories import movimenti as movimenti_repo
+        from app.services import movimenti as servizio
+
+        risposta = app.test_client().get(f"/squadra/{nome_squadra}/movimenti")
+
+        assert risposta.status_code == 200
+        dati = risposta.get_json()
+        assert dati["campi"] == list(servizio.CAMPI)
+        assert len(dati["righe"]) == len(movimenti_repo.per_squadra(cur, nome_squadra))
+
+    def test_squadra_inesistente_nessun_movimento(self, app):
+        risposta = app.test_client().get("/squadra/Squadra Che Non Esiste/movimenti")
+        assert risposta.status_code == 200
+        assert risposta.get_json()["righe"] == []
+
+    def test_la_dashboard_ha_gli_elementi_cercati_dallo_script(self, app, nome_squadra):
+        """dashboard_squadra.js li cerca per id: se sparissero dal template, la
+        tab resterebbe vuota senza errori visibili."""
+        html = app.test_client().get(f"/squadra/{nome_squadra}").get_data(as_text=True)
+        for id_elemento in ("movimentiBody", "movimentiStato", "movimentiStagione", "movimentiPaginazione"):
+            assert f'id="{id_elemento}"' in html, id_elemento
+        assert f'data-url="/squadra/' in html

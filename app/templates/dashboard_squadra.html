@@ -58,6 +58,7 @@
             <button type="button" class="tab-squadra shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold" data-tab="primavera" aria-selected="false">Primavera</button>
             <button type="button" class="tab-squadra shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold" data-tab="draft" aria-selected="false">Draft</button>
             <button type="button" class="tab-squadra shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold" data-tab="prestiti" aria-selected="false">Prestiti</button>
+            <button type="button" class="tab-squadra shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold" data-tab="movimenti" aria-selected="false">Movimenti</button>
         </div>
 
         <!-- Formazione -->
@@ -253,6 +254,18 @@
                 {% endif %}
             </div>
         </div>
+
+        <!-- Movimenti: arrivano dal server solo all'apertura della tab -->
+        <div class="pannello-squadra hidden" data-panel="movimenti"
+             data-url="{{ url_for('public.movimenti_squadra', nome_squadra=nome_squadra) }}">
+            {{ m.titolo_riquadro('Movimenti di mercato') }}
+            <select id="movimentiStagione" class="mb-2 hidden w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+                <option value="">Tutte le stagioni</option>
+            </select>
+            <div class="flex flex-col divide-y divide-line" id="movimentiBody"></div>
+            <p class="py-6 text-center text-sm text-muted" id="movimentiStato">Caricamento…</p>
+            <div class="mt-4 flex items-center justify-center gap-1" id="movimentiPaginazione"></div>
+        </div>
     </div>
 
 </div>
@@ -310,6 +323,7 @@
 </div>
 
 <script src="{{ url_for('static', filename='js/campioncino.js') }}?v={{ asset_v('js/campioncino.js') }}"></script>
+<script src="{{ url_for('static', filename='js/paginazione.js') }}?v={{ asset_v('js/paginazione.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard_squadra.js') }}?v={{ asset_v('js/dashboard_squadra.js') }}"></script>
 
 {% endblock %}

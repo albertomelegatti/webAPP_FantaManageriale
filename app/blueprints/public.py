@@ -84,6 +84,16 @@ def dashboard_squadra(nome_squadra):
     )
 
 
+@public_bp.route("/squadra/<nome_squadra>/movimenti")
+def movimenti_squadra(nome_squadra):
+    """I movimenti della squadra, in JSON. La dashboard li chiede solo quando
+    si apre la tab: caricarli insieme alla pagina costerebbe una query in piu'
+    a ogni visita, anche a chi non li guarda (vedi il tetto di query in
+    tests/test_query_costanti.py)."""
+    with connessione() as (conn, cur):
+        return jsonify(servizio_movimenti.dati_squadra(cur, nome_squadra))
+
+
 # Visualizza tutti gli eventi di mercato con filtri per stagione ed evento
 @public_bp.route("/movimenti_mercato")
 def movimenti_mercato():
