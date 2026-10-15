@@ -33,6 +33,15 @@ def _stagioni(movimenti: list[dict]) -> list[str]:
     return sorted({m["stagione"] for m in movimenti if m["stagione"]}, reverse=True)
 
 
+def dati_squadra(cur, nome_squadra: str) -> dict:
+    """I movimenti di una squadra, nella stessa forma compatta della pagina
+    generale, per la tab della dashboard."""
+    return {
+        "campi": list(CAMPI),
+        "righe": [_valori(m) for m in movimenti_repo.per_squadra(cur, nome_squadra)],
+    }
+
+
 def dati_pagina(cur) -> dict:
     movimenti = movimenti_repo.tutti(cur)
 
