@@ -903,3 +903,48 @@ body.trascinando .campetto-panca {
     color: var(--accent);
     background: color-mix(in oklab, var(--accent) 14%, transparent);
 }
+
+/* --- Vetrina della squadra (user_vetrina.html) ---------------------------- */
+
+/* La riga di un giocatore in vetrina prende il colore del suo stato (gli
+   stessi del badge in _macros.stato_vetrina_badge): barra a sinistra, bordo
+   e fondo tinti, e la select scritta nel colore dello stato. `data-stato`
+   lo aggiorna lo script della pagina a ogni cambio della select. */
+.vetrina-row {
+    transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.vetrina-row[data-stato="prestabile"] { --stato: var(--crit); }
+.vetrina-row[data-stato="vendibile"]  { --stato: var(--ok); }
+.vetrina-row[data-stato="cedibile"]   { --stato: var(--ko); }
+
+.vetrina-row[data-stato="prestabile"],
+.vetrina-row[data-stato="vendibile"],
+.vetrina-row[data-stato="cedibile"] {
+    border-color: color-mix(in oklab, var(--stato) 55%, transparent);
+    background-color: color-mix(in oklab, var(--stato) 9%, var(--panel));
+    box-shadow: inset 4px 0 0 var(--stato);
+}
+
+.vetrina-row[data-stato="prestabile"] .vetrina-stato-input,
+.vetrina-row[data-stato="vendibile"] .vetrina-stato-input,
+.vetrina-row[data-stato="cedibile"] .vetrina-stato-input {
+    border-color: var(--stato);
+    color: var(--stato);
+    font-weight: 700;
+}
+
+.vetrina-row .vetrina-stato-input option {
+    color: var(--text);
+    font-weight: 400;
+}
+
+.vetrina-conteggio {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    color: var(--accent);
+    background: color-mix(in oklab, var(--accent) 14%, transparent);
+}
