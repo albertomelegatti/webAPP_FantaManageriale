@@ -3,7 +3,10 @@
 {% block content %}
 {% import '_macros.html' as m %}
 <div class="mb-2">{{ m.torna_indietro(url_for('user.user_rosa_menu', nome_squadra=nome_squadra)) }}</div>
-<h2 class="mb-1 text-lg font-bold">Vetrina - {{ nome_squadra }}</h2>
+<h2 class="mb-1 flex items-center gap-2 text-lg font-bold">
+    Vetrina - {{ nome_squadra }}
+    {% if rosa %}<span id="vetrina-conteggio" class="vetrina-conteggio">{{ rosa|selectattr('stato_vetrina')|list|length }} in vetrina</span>{% endif %}
+</h2>
 <p class="mb-4 text-sm text-muted">Imposta per ogni giocatore lo stato di vetrina e aggiungi eventuali note.</p>
 
 <div id="vetrina-flash-container" class="mb-4"></div>
@@ -14,7 +17,7 @@
 
     <div class="flex flex-col gap-2">
         {% for giocatore in rosa %}
-        <div class="vetrina-row rounded-2xl border border-line bg-panel p-3" data-id="{{ giocatore.id }}" data-nome="{{ giocatore.nome }}">
+        <div class="vetrina-row rounded-2xl border border-line bg-panel p-3" data-id="{{ giocatore.id }}" data-nome="{{ giocatore.nome }}" data-stato="{{ giocatore.stato_vetrina or '' }}">
             <div class="flex items-center gap-2">
                 <div class="flex min-w-0 flex-1 items-center gap-1.5">
                     {{ m.campioncino_mini(giocatore.campioncino) }}
@@ -55,6 +58,22 @@
 {% endif %}
 
 <script>
+// Riga colorata e contatore seguono la select subito, prima del salvataggio
+// ("rimuovi" la riporta neutra: il giocatore esce dalla vetrina al salvataggio)
+function aggiornaConteggioVetrina() {
+    const conteggio = document.getElementById('vetrina-conteggio');
+    if (!conteggio) return;
+    const n = document.querySelectorAll('.vetrina-row[data-stato]:not([data-stato=""]):not([data-stato="rimuovi"])').length;
+    conteggio.textContent = `${n} in vetrina`;
+}
+
+document.querySelectorAll('.vetrina-stato-input').forEach(select => {
+    select.addEventListener('change', () => {
+        select.closest('.vetrina-row').dataset.stato = select.value;
+        aggiornaConteggioVetrina();
+    });
+});
+
 document.getElementById('vetrina-form')?.addEventListener('submit', function (event) {
     const form = this;
     const flashContainer = document.getElementById('vetrina-flash-container');
