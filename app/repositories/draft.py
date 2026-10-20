@@ -66,3 +66,22 @@ def pick_della_squadra(cur, nome_squadra: str) -> list[dict]:
            ORDER BY d.anno, d.numero;""",
         (nome_squadra,))
     return cur.fetchall()
+
+
+def storico(cur) -> list[dict]:
+    """Le scelte dei draft gia' svolti, per la pagina pubblica dello storico.
+
+    Solo le pick usate: quelle degli anni futuri esistono gia' in tabella ma
+    non hanno ancora un giocatore. La squadra che ha scelto e' il detentore
+    della pick, non quello originale: se la pick e' stata scambiata, ha scelto
+    chi l'aveva in mano. Il ruolo e' quello attuale del giocatore, l'unico
+    salvato.
+    """
+    cur.execute(
+        """SELECT d.anno, d.giro, d.numero, d.detentore_att AS squadra,
+                  s.username, g.nome AS giocatore, g.ruolo, g.id_fantacalcio
+           FROM draft d
+           JOIN giocatore g ON g.id = d.id_giocatore_scelto
+           LEFT JOIN squadra s ON s.nome = d.detentore_att
+           ORDER BY d.anno DESC, d.numero, d.giro;""")
+    return [{**r, "anno": _anno(r["anno"])} for r in cur.fetchall()]
