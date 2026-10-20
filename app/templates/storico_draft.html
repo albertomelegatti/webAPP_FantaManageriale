@@ -1,0 +1,93 @@
+{% extends 'base_tailwind.html' %}
+
+{% block content %}
+{% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('public.home')) }}</div>
+<h2 class="mb-4 text-center text-lg font-bold">Storico Draft</h2>
+
+{% set anni = scelte | map(attribute='anno') | unique | list %}
+
+{% if scelte %}
+<div class="mb-4 rounded-2xl border border-line bg-panel p-4">
+    <label for="filterAnno" class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Anno</label>
+    <select id="filterAnno" class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+        {% for anno in anni %}
+        <option value="{{ anno }}" {% if loop.first %}selected{% endif %}>{{ anno }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<!-- Tabellone: una colonna per giro (una sotto l'altra su telefono), le
+     scelte nell'ordine di chiamata. -->
+{% for anno in anni %}
+<div class="dr-tabellone" data-anno="{{ anno }}">
+    {% for giro, picks in scelte | selectattr('anno', 'equalto', anno) | groupby('giro') %}
+    <section class="dr-giro">
+        <h3 class="dr-giro-titolo">Giro {{ giro }}</h3>
+        {% for s in picks | sort(attribute='numero') %}
+        <div class="dr-tile {{ 'dr-prima' if s.numero == 1 }}">
+            <span class="dr-tile-num">{{ s.numero }}</span>
+            <img src="{{ url_for('static', filename='loghi/' ~ (s.username or 'svincolato') ~ '.png') }}?v={{ asset_v('loghi/' ~ (s.username or 'svincolato') ~ '.png') }}"
+                 alt="" class="dr-tile-logo">
+            <div class="min-w-0 flex-1">
+                <div class="truncate text-sm font-bold">{{ s.giocatore }}</div>
+                <div class="truncate text-[11px] text-muted">
+                    {% if s.ruolo %}{{ m.ruolo_colorato(s.ruolo) }} · {% endif %}{{ s.squadra }}
+                </div>
+            </div>
+            {% if s.campioncino %}<img src="{{ s.campioncino }}" alt="" class="dr-tile-foto" loading="lazy" onerror="this.remove()">{% endif %}
+        </div>
+        {% endfor %}
+    </section>
+    {% endfor %}
+</div>
+{% endfor %}
+{% else %}
+<p class="rounded-2xl border border-line bg-panel p-4 text-center text-sm text-muted">Nessun draft registrato.</p>
+{% endif %}
+
+<style>
+.dr-tabellone { display: grid; gap: 1rem; }
+@media (min-width: 768px) { .dr-tabellone { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* display: grid qui sopra vincerebbe su .hidden di Tailwind, che e' caricato
+   prima: senza questa regola il filtro per anno non nasconderebbe niente. */
+.dr-tabellone.hidden { display: none; }
+.dr-giro { display: flex; flex-direction: column; gap: 0.5rem; }
+.dr-giro-titolo {
+    padding: 0.4rem 0.75rem; border-radius: 0.75rem; text-align: center;
+    font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+    color: #fff; background: linear-gradient(135deg, var(--accent), color-mix(in oklab, var(--accent) 55%, #000));
+}
+.dr-tile {
+    display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.6rem;
+    border: 1px solid var(--line); border-radius: 0.9rem; background: var(--panel);
+    transition: transform .15s, border-color .15s;
+}
+.dr-tile:hover { transform: translateY(-2px); border-color: var(--accent); }
+.dr-tile-num {
+    width: 2rem; flex-shrink: 0; text-align: center; font-size: 1.25rem; font-weight: 900;
+    font-variant-numeric: tabular-nums; color: color-mix(in oklab, var(--accent) 80%, var(--text));
+}
+.dr-tile-logo { height: 1.75rem; width: 1.75rem; flex-shrink: 0; object-fit: contain; }
+.dr-tile-foto { height: 2.75rem; width: 2rem; flex-shrink: 0; object-fit: contain; }
+/* La prima scelta assoluta in oro, come il primo posto del podio nell'albo d'oro. */
+.dr-tile.dr-prima { border-color: #ffb020; background: linear-gradient(90deg, color-mix(in oklab, #ffb020 18%, var(--panel)), var(--panel)); }
+.dr-tile.dr-prima .dr-tile-num { color: #ffb020; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const filterAnno = document.getElementById('filterAnno');
+    if (!filterAnno) return;
+
+    function applyFilter() {
+        document.querySelectorAll('[data-anno]').forEach(el => {
+            el.classList.toggle('hidden', el.dataset.anno !== filterAnno.value);
+        });
+    }
+
+    filterAnno.addEventListener('change', applyFilter);
+    applyFilter(); // il select parte sull'ultimo anno: nascondi subito gli altri
+});
+</script>
+{% endblock %}

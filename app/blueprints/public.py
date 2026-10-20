@@ -1,6 +1,6 @@
 """
 Pagine pubbliche: home, elenco squadre, dashboard di una squadra, listone,
-aste, movimenti di mercato, crediti/stadi/slot, regolamento e health check.
+aste, movimenti di mercato, crediti/stadi/slot, storico draft, regolamento e health check.
 
 Corpo delle funzioni spostato da main.py senza modifiche di logica: cambiano
 solo il decoratore (da @app.route a @public_bp.route) e i nomi degli endpoint
@@ -22,6 +22,7 @@ from app.core.tempo import formatta_data
 from app.domini.ruoli import pulisci_ruolo
 from app.repositories import albo_oro as albo_oro_repo
 from app.repositories import aste as aste_repo
+from app.repositories import draft as draft_repo
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import squadre as squadre_repo
 from app.services import crediti_stadi_slot as servizio_crediti_stadi_slot
@@ -123,6 +124,15 @@ def albo_oro():
         righe = albo_oro_repo.leggi(cur)
 
     return render_template("albo_oro.html", righe=righe)
+
+
+@public_bp.route("/draft")
+def storico_draft():
+    with connessione() as (conn, cur):
+        scelte = [{**s, "campioncino": url_campioncino(s["id_fantacalcio"])}
+                  for s in draft_repo.storico(cur)]
+
+    return render_template("storico_draft.html", scelte=scelte)
 
 
 def _versioni_loghi(username: list[str]) -> dict:
