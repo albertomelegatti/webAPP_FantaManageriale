@@ -1,29 +1,68 @@
 {% extends 'base_tailwind.html' %}
 
 {% block content %}
-{% import '_macros.html' as m %}
 
-<div class="mb-6 flex flex-col items-center text-center">
-    <img src="{{ url_for('static', filename='images/logo-lgt-light.png') }}?v={{ asset_v('images/logo-lgt-light.png') }}" alt="Logo Lega Guru Tattici" class="h-40 w-40 object-contain dark:hidden">
-    <img src="{{ url_for('static', filename='images/logo-lgt-dark.png') }}?v={{ asset_v('images/logo-lgt-dark.png') }}" alt="Logo Lega Guru Tattici" class="hidden h-40 w-40 object-contain dark:block">
+{# Le voci della home, raggruppate per tema: (link, icona, titolo, descrizione). #}
+{% set sezioni = [
+    ('La lega', [
+        (url_for('public.squadre'), 'bi-shield-fill', 'Squadre', 'Rose e dashboard'),
+        (url_for('public.crediti_stadi_slot'), 'bi-building', 'Crediti, Stadi e Slot', 'Bilanci e impianti'),
+        (url_for('public.albo_oro'), 'bi-trophy-fill', "Albo d'Oro", 'I campioni di ogni stagione'),
+        (url_for('public.storico_draft'), 'bi-stars', 'Storico Draft', 'Le scelte anno per anno'),
+    ]),
+    ('Mercato', [
+        (url_for('public.listone'), 'bi-list-ul', 'Listone', 'Tutti i giocatori'),
+        (url_for('public.aste'), 'bi-hammer', 'Aste', 'Aste in corso'),
+        (url_for('vetrina.vetrina'), 'bi-shop-window', 'Vetrina', 'Giocatori sul mercato'),
+        (url_for('public.movimenti_mercato'), 'bi-arrow-left-right', 'Movimenti di Mercato', 'Acquisti, scambi, prestiti'),
+    ]),
+    ('Strumenti', [
+        (url_for('chat.chat_page'), 'bi-chat-dots-fill', 'Chatbot della lega', 'Chiedi qualsiasi cosa'),
+        ('/scarica_regolamento', 'bi-file-earmark-text', 'Regolamento', 'Il PDF ufficiale'),
+    ]),
+] %}
+
+<div class="mb-5 flex flex-col items-center text-center">
+    <img src="{{ url_for('static', filename='images/logo-lgt-light.png') }}?v={{ asset_v('images/logo-lgt-light.png') }}" alt="Logo Lega Guru Tattici" class="hm-logo dark:hidden">
+    <img src="{{ url_for('static', filename='images/logo-lgt-dark.png') }}?v={{ asset_v('images/logo-lgt-dark.png') }}" alt="Logo Lega Guru Tattici" class="hm-logo hidden dark:block">
 </div>
 
-<div class="flex flex-col gap-2">
-    {{ m.voce_menu(url_for('public.squadre'), 'bi-shield-fill', 'Squadre') }}
-    {{ m.voce_menu(url_for('public.crediti_stadi_slot'), 'bi-building', 'Crediti, Stadi e Slot') }}
-    {{ m.voce_menu(url_for('public.listone'), 'bi-list-ul', 'Listone') }}
-    {{ m.voce_menu(url_for('public.aste'), 'bi-hammer', 'Aste') }}
-    {{ m.voce_menu(url_for('vetrina.vetrina'), 'bi-shop-window', 'Vetrina') }}
-    {{ m.voce_menu(url_for('public.movimenti_mercato'), 'bi-arrow-left-right', 'Movimenti di Mercato') }}
-    {{ m.voce_menu(url_for('public.albo_oro'), 'bi-trophy-fill', "Albo d'Oro") }}
-    {{ m.voce_menu(url_for('public.storico_draft'), 'bi-stars', 'Storico Draft') }}
-    {{ m.voce_menu(url_for('chat.chat_page'), 'bi-chat-dots-fill', 'Chatbot della lega') }}
+<div class="hm-colonne">
+    {% for nome, voci in sezioni %}
+    <section>
+        <h3 class="hm-sezione">{{ nome }}</h3>
+        <div class="hm-pannello">
+            {% for href, icona, titolo, sotto in voci %}
+            <a href="{{ href }}" class="hm-riga">
+                <span class="hm-riga-icona"><i class="bi {{ icona }}"></i></span>
+                <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-semibold">{{ titolo }}</span>
+                    <span class="block text-[11px] text-muted">{{ sotto }}</span>
+                </span>
+                <i class="bi bi-chevron-right shrink-0 text-muted"></i>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
 </div>
 
-<div class="mt-6 text-center">
-    <a href="/scarica_regolamento" class="inline-flex items-center gap-1.5 text-sm text-muted hover:text-accent">
-        <i class="bi bi-file-earmark-text"></i> Regolamento
-    </a>
-</div>
-
+<style>
+.hm-logo { height: 6rem; width: 6rem; object-fit: contain; }
+.hm-sezione {
+    margin: 1.25rem 0 0.5rem; font-size: 0.7rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+}
+/* Su desktop le tre sezioni affiancate. */
+.hm-colonne { display: grid; gap: 0 1rem; }
+@media (min-width: 768px) { .hm-colonne { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.hm-pannello { overflow: hidden; border: 1px solid var(--line); border-radius: 1rem; background: var(--panel); }
+.hm-riga { display: flex; align-items: center; gap: 0.75rem; padding: 0.7rem 0.9rem; transition: background .15s; }
+.hm-riga + .hm-riga { border-top: 1px solid var(--line); }
+.hm-riga:hover { background: var(--panel-2); }
+.hm-riga-icona {
+    display: flex; height: 2rem; width: 2rem; flex-shrink: 0; align-items: center; justify-content: center;
+    font-size: 1.15rem; color: var(--accent);
+}
+</style>
 {% endblock %}
