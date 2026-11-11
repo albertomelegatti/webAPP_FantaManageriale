@@ -345,3 +345,58 @@ def slot_per_squadra(cur) -> dict[str, dict]:
            FROM giocatore GROUP BY squadra_att;""")
     return {r["squadra_att"]: {"giocatori": r["giocatori"], "prestiti": r["prestiti"]}
             for r in cur.fetchall()}
+
+
+# --- Draft live ---------------------------------------------------------------
+
+def conta_primavera(cur, nome_squadra: str) -> int:
+    """Gli slot Primavera occupati da una squadra."""
+    cur.execute(
+        "SELECT COUNT(*) AS n FROM giocatore WHERE squadra_att = %s AND tipo_contratto = 'Primavera';",
+        (nome_squadra,))
+    return cur.fetchone()["n"]
+
+
+def draftabili(cur, soglia_u21: int | None, id_giocatore: int | None = None) -> list[dict]:
+    """Gli svincolati che si possono scegliere al draft, o solo quello indicato.
+
+    Sono i nati nell'anno di soglia o dopo (stessa regola di aste e listone),
+    portieri compresi: restano acquistabili anche in asta, ma al draft si
+    possono scegliere come gli altri. Restano fuori:
+    - chi non ha la data di nascita sincronizzata: non si puo' dire se e' U21;
+    - chi e' stato promosso dalla Primavera e poi tagliato (regolamento 3.1:
+      non e' piu' draftabile, solo acquistabile dal mercato ordinario);
+    - chi e' oggetto di un'asta in corso, che lo assegnerebbe a un'altra squadra.
+    Senza soglia impostata il pool e' vuoto: meglio nessuna scelta che una sbagliata.
+    """
+    if soglia_u21 is None:
+        return []
+    cur.execute(
+        """SELECT g.id, g.nome, g.ruolo, g.club, g.quot_att_mantra, g.data_nascita,
+                  g.id_fantacalcio
+           FROM giocatore g
+           WHERE g.tipo_contratto = 'Svincolato'
+             AND EXTRACT(YEAR FROM g.data_nascita) >= %(soglia)s
+             AND NOT EXISTS (SELECT 1 FROM giocatore_storico s
+                             WHERE s.giocatore = g.id AND s.fonte = 'promozione')
+             AND NOT EXISTS (SELECT 1 FROM asta a
+                             WHERE a.giocatore = g.id
+                               AND a.stato IN ('mostra_interesse', 'in_corso'))
+             AND (%(id)s IS NULL OR g.id = %(id)s)
+           ORDER BY g.nome;""",
+        {"soglia": soglia_u21, "id": id_giocatore})
+    return cur.fetchall()
+
+
+def assegna_primavera(cur, id_giocatore: int, nome_squadra: str) -> bool:
+    """Svincolato -> Primavera della squadra, costo 0 (non tocca i crediti).
+
+    La condizione sul contratto fa da guardia di concorrenza: se nel frattempo
+    il giocatore ha trovato squadra, non scrive e restituisce False.
+    """
+    cur.execute(
+        """UPDATE giocatore
+           SET tipo_contratto = 'Primavera', squadra_att = %s, detentore_cartellino = %s
+           WHERE id = %s AND tipo_contratto = 'Svincolato';""",
+        (nome_squadra, nome_squadra, id_giocatore))
+    return cur.rowcount == 1

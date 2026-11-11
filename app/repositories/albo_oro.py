@@ -97,3 +97,17 @@ def sostituisci_stagione(cur, stagione: str, righe: list[dict]) -> None:
             """INSERT INTO albo_oro (stagione, competizione, fase, squadra, posizione, crediti_generati)
                VALUES (%s, %s, %s, %s, %s, %s);""",
             (stagione, r["competizione"], r["fase"], r["squadra"], r["posizione"], r["crediti_generati"]))
+
+
+def classifica_campionato(cur, stagione: str) -> list[tuple[str, int]]:
+    """[(squadra, posizione)] del Campionato di una stagione ("25-26").
+
+    Serve a ordinare il draft: vuota se la stagione non e' stata ancora
+    inserita nell'albo d'oro (dall'admin).
+    """
+    cur.execute(
+        """SELECT squadra, posizione FROM albo_oro
+           WHERE competizione = 'Campionato' AND stagione = %s
+           ORDER BY posizione;""",
+        (stagione,))
+    return [(r["squadra"], r["posizione"]) for r in cur.fetchall()]
