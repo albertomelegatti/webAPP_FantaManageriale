@@ -8,23 +8,47 @@ qui ci sono sempre tutte.
 
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import squadre as squadre_repo
+from app.repositories import stadio as stadio_repo
 
 # Limiti di rosa dal regolamento (3.2 e 3.4).
 SLOT_ROSA = 30
 SLOT_PRESTITI = 2
 
-# Rendita annuale per livello di stadio, dal regolamento (sezione 4).
+# Rendita annuale per livello di stadio, dal regolamento (sezione 4). E' il
+# valore di partenza: l'admin la modifica dalla pagina Stadi e il valore in uso
+# sta nella tabella stadio_livello (vedi rendite_in_uso). Questa tupla serve
+# solo finche' la tabella non e' stata creata.
 RENDITA_STADIO = (0, 4, 8, 14, 18, 25, 30, 39, 44)
 
 
-def rendita_stadio(livello) -> int:
-    if livello is None or not 0 <= livello < len(RENDITA_STADIO):
+def rendite_in_uso(cur) -> list[int]:
+    """Le rendite per livello correnti: quelle salvate, o il default."""
+    return stadio_repo.rendite(cur) or list(RENDITA_STADIO)
+
+
+def rendita_stadio(rendite, livello) -> int:
+    if livello is None or not 0 <= livello < len(rendite):
         return 0
-    return RENDITA_STADIO[livello]
+    return rendite[livello]
+
+
+def rendite_da_accreditare(squadre: list[dict], rendite) -> list[tuple[str, int]]:
+    """(squadra, crediti) per le squadre con uno stadio che rende qualcosa.
+
+    `squadre` e' l'elenco di squadre_repo.tutte_con_stadio(). Una squadra senza
+    stadio, o con uno stadio di livello 0, non riceve nulla.
+    """
+    accrediti = []
+    for s in squadre:
+        crediti = rendita_stadio(rendite, s["stadio_livello"])
+        if crediti > 0:
+            accrediti.append((s["nome"], crediti))
+    return accrediti
 
 
 def dati_pagina(cur) -> dict:
     slot = giocatori_repo.slot_per_squadra(cur)
+    rendite = rendite_in_uso(cur)
 
     squadre = []
     for s in squadre_repo.tutte_con_stadio(cur):
@@ -37,7 +61,7 @@ def dati_pagina(cur) -> dict:
             "prestiti": occupazione.get("prestiti", 0),
             "stadio_nome": s["stadio_nome"],
             "stadio_livello": s["stadio_livello"],
-            "rendita": rendita_stadio(s["stadio_livello"]),
+            "rendita": rendita_stadio(rendite, s["stadio_livello"]),
         })
 
     # Ordine iniziale per crediti: la pagina si apre sulla domanda che le si

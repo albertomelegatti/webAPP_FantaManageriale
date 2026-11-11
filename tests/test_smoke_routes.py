@@ -152,7 +152,7 @@ def test_logout_pulisce_la_sessione(client_squadra):
 def test_admin_puo_aprire_le_pagine_admin(client_admin):
     for url in ("/admin/", "/admin/crediti", "/admin/chiusura_mercato_aste",
                 "/admin/invia_comunicazione", "/admin/richiesta/modifica/contratto",
-                "/admin/verifica_corrispondenze_giocatori"):
+                "/admin/verifica_corrispondenze_giocatori", "/admin/albo_oro", "/admin/stadi"):
         risposta = client_admin.get(url)
         assert risposta.status_code < 500, f"{url} -> {risposta.status_code}"
 

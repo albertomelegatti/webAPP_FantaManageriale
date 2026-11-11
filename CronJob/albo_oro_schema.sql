@@ -6,7 +6,7 @@
 --
 -- La tabella è puramente storica: i crediti registrati qui sono già stati
 -- accreditati a suo tempo (es. via admin_crediti), questa li archivia soltanto
--- per la bacheca pubblica. Popolata via SQL a mano, l'applicazione non scrive.
+-- per la bacheca pubblica. Popolata dalla pagina admin Albo d'Oro (o via SQL a mano).
 
 CREATE TYPE competizione_albo AS ENUM ('Campionato', 'Coppa');
 

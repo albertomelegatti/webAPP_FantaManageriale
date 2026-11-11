@@ -1,0 +1,153 @@
+{% extends 'base_tailwind.html' %}
+
+{% block content %}
+{% import '_macros.html' as m %}
+{% set livello_max = rendite | length - 1 %}
+<div class="mb-2">{{ m.torna_indietro(url_for('admin.admin_home')) }}</div>
+<h2 class="mb-1 text-center text-lg font-bold">Stadi</h2>
+<p class="mb-4 text-center text-sm text-muted">
+    Nome e livello (0-{{ livello_max }}) dello stadio di ogni squadra, come nella tabella pubblica.
+    La rendita si aggiorna da sola in base al livello. Per una squadra senza stadio compila
+    entrambi i campi per crearlo; lasciandoli vuoti non succede nulla.
+</p>
+
+<form method="POST" action="{{ url_for('admin.admin_stadi') }}" id="form-stadi">
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <table class="css-tabella tabella-stadi w-full table-fixed text-sm">
+            <colgroup>
+                <col style="width:34%"><col style="width:41%"><col style="width:25%">
+            </colgroup>
+            <thead>
+                <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                    <th class="pb-2 font-semibold">Squadra</th>
+                    <th class="pb-2 font-semibold">Stadio</th>
+                    <th class="pb-2 text-center font-semibold">Livello</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in squadre %}
+                <tr>
+                    <td class="py-2 pr-2">
+                        <input type="hidden" name="squadra" value="{{ s.nome }}">
+                        <div class="flex min-w-0 items-center gap-2">
+                            <img src="{{ url_for('static', filename='loghi/' ~ (s.username or 'svincolato') ~ '.png') }}?v={{ asset_v('loghi/' ~ (s.username or 'svincolato') ~ '.png') }}"
+                                 alt="" class="h-6 w-6 shrink-0 rounded-full bg-panel-2 object-contain">
+                            <span class="min-w-0 break-words font-medium">{{ s.nome }}</span>
+                        </div>
+                    </td>
+                    <td class="py-2 pr-2">
+                        <input type="text" name="nome_{{ s.nome }}" maxlength="60" placeholder="Nome stadio"
+                               aria-label="Nome stadio di {{ s.nome }}" value="{{ s.stadio_nome or '' }}"
+                               class="w-full rounded-xl border border-line bg-panel-2 px-2 py-1.5 text-xs outline-none focus:border-accent">
+                    </td>
+                    <td class="py-2 text-center">
+                        <input type="number" name="livello_{{ s.nome }}" min="0" max="{{ livello_max }}" step="1" placeholder="—"
+                               aria-label="Livello stadio di {{ s.nome }}"
+                               value="{{ s.stadio_livello if s.stadio_livello is not none else '' }}"
+                               class="livello-input w-16 rounded-xl border border-line bg-panel-2 px-1 py-1.5 text-center text-sm font-bold text-accent outline-none focus:border-accent">
+                        <div class="rendita mt-1 text-[11px] tabular-nums text-muted">
+                            {% if s.stadio_livello is not none %}+{{ rendite[s.stadio_livello] if s.stadio_livello < rendite | length else 0 }}/anno{% else %}—{% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <button type="submit"
+            class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white">
+        <i class="bi bi-save-fill"></i> Salva Tutto
+    </button>
+</form>
+
+<!-- Rendita annuale per livello: la scala del regolamento (sezione 4), modificabile qui. -->
+<form method="POST" action="{{ url_for('admin.admin_rendite_stadi') }}" id="form-rendite" class="mt-8">
+    <h3 class="mb-1 text-center text-base font-bold">Rendita annuale per livello</h3>
+    <p class="mb-3 text-center text-sm text-muted">
+        Crediti di rendita annuale di ogni livello, come li mostra la pagina Crediti, Stadi e Slot.
+        Cambia solo il valore mostrato: non accredita nulla alle squadre e non modifica il testo del regolamento.
+    </p>
+    {% if not rendite_modificabili %}
+    <p class="mb-3 rounded-2xl border border-ko/40 bg-ko/10 p-3 text-sm">
+        <i class="bi bi-exclamation-triangle-fill text-ko"></i>
+        Le rendite non sono ancora modificabili: manca la tabella <code>stadio_livello</code>.
+        Lancia <code>CronJob/stadio_livello_schema.sql</code> sul database (prima dev, poi prod).
+        Intanto vale la scala di default qui sotto.
+    </p>
+    {% endif %}
+    <div class="rounded-2xl border border-line bg-panel p-4">
+        <table class="css-tabella tabella-stadi w-full table-fixed text-sm">
+            <colgroup><col style="width:50%"><col style="width:50%"></colgroup>
+            <thead>
+                <tr class="text-left text-[11px] uppercase tracking-wide text-muted">
+                    <th class="pb-2 font-semibold">Livello</th>
+                    <th class="pb-2 text-center font-semibold">Rendita annuale</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rendite %}
+                <tr>
+                    <td class="py-2 pr-2"><span class="css-livello">Liv. {{ loop.index0 }}</span></td>
+                    <td class="py-2 text-center">
+                        <input type="number" name="rendita_{{ loop.index0 }}" min="0" max="1000" step="1" required
+                               value="{{ r }}" aria-label="Rendita del livello {{ loop.index0 }}"
+                               {% if not rendite_modificabili %}disabled{% endif %}
+                               class="rendita-input w-20 rounded-xl border border-line bg-panel-2 px-1 py-1.5 text-center text-sm font-bold tabular-nums text-accent outline-none focus:border-accent disabled:opacity-50">
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <button type="submit" {% if not rendite_modificabili %}disabled{% endif %}
+            class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">
+        <i class="bi bi-save-fill"></i> Salva rendite
+    </button>
+</form>
+
+<!-- Accredito della rendita annuale a tutte le squadre -->
+<form method="POST" action="{{ url_for('admin.admin_accredita_rendite') }}" class="mt-8"
+      onsubmit="if (!confirm('Accreditare la rendita annuale degli stadi a {{ accrediti_squadre }} squadre (totale {{ accrediti_totale }} crediti)? Da qui non si annulla.')) return false; this.querySelector('button').disabled = true;">
+    <input type="hidden" name="token" value="{{ token_rendite }}">
+    <h3 class="mb-1 text-center text-base font-bold">Accredita le rendite</h3>
+    <p class="mb-3 text-center text-sm text-muted">
+        Aggiunge ai crediti di ogni squadra la rendita annuale del suo stadio, secondo le rendite
+        <strong>salvate</strong> qui sopra (non i valori modificati e non ancora salvati).
+        Ora: {{ accrediti_totale }} crediti a {{ accrediti_squadre }} squadre. Va fatto una volta all'anno.
+    </p>
+    <button type="submit"
+            class="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white">
+        <i class="bi bi-coin"></i> Accredita rendite a tutte le squadre
+    </button>
+</form>
+
+<style>
+/* Le intestazioni della tabella pubblica ordinano al click; qui non c'e' ordinamento. */
+.tabella-stadi thead th { cursor: default; }
+.tabella-stadi thead th::after { content: none; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var formStadi = document.getElementById('form-stadi');
+    var campiRendita = Array.from(document.querySelectorAll('.rendita-input'));
+
+    function testoRendita(livello) {
+        var campo = campiRendita[livello];
+        return (livello >= 0 && campo && campo.value !== '') ? '+' + campo.value + '/anno' : '—';
+    }
+
+    // La rendita sotto ogni livello segue il livello digitato e i valori della scala qui sotto.
+    formStadi.addEventListener('input', function (e) {
+        if (!e.target.classList.contains('livello-input')) return;
+        e.target.parentElement.querySelector('.rendita').textContent = testoRendita(parseInt(e.target.value, 10));
+    });
+    document.getElementById('form-rendite').addEventListener('input', function () {
+        formStadi.querySelectorAll('.livello-input').forEach(function (campo) {
+            campo.parentElement.querySelector('.rendita').textContent = testoRendita(parseInt(campo.value, 10));
+        });
+    });
+});
+</script>
+{% endblock %}
