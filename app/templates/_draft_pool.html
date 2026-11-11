@@ -21,7 +21,7 @@
             <div class="truncate text-sm font-bold">{{ g.nome }}</div>
             <div class="truncate text-[11px] text-muted">{{ m.ruolo_colorato(g.ruolo) }} · {{ g.club }} · {{ g.data_nascita.year }}</div>
         </div>
-        <button type="submit" class="shrink-0 rounded-xl bg-accent px-3 py-1.5 text-xs font-bold text-white">{{ bottone }}</button>
+        <button type="submit" class="dr-btn dr-btn-sm shrink-0"><i class="bi bi-check-lg"></i> {{ bottone }}</button>
     </form>
     {% endfor %}
 </div>

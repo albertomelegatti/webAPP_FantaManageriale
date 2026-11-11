@@ -1028,3 +1028,34 @@ body.trascinando .campetto-panca {
 @media (prefers-reduced-motion: reduce) {
     .dr-overlay-logo, .dr-overlay-foto, .dr-overlay-num, .dr-overlay-nome, .dr-overlay-sotto { animation: none; }
 }
+
+/* Draft: pulsanti, stato e piccole utility (le utility Tailwind nuove non sono nel CSS compilato). */
+.dr-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+    padding: .5rem .9rem; border: 1px solid var(--accent); border-radius: .8rem;
+    background: var(--accent); color: #fff; font-size: .9rem; font-weight: 700; line-height: 1.2;
+    cursor: pointer; text-decoration: none;
+    transition: transform .12s ease, box-shadow .12s ease, filter .12s ease, background-color .12s ease, border-color .12s ease;
+}
+.dr-btn:hover { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 6px 14px color-mix(in oklab, var(--accent) 35%, transparent); }
+.dr-btn:active { transform: translateY(0) scale(.97); box-shadow: none; filter: brightness(.95); }
+.dr-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dr-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; filter: none; }
+.dr-btn-sec { background: var(--panel-2); color: var(--text); border-color: var(--line); }
+.dr-btn-sec:hover { border-color: var(--accent); color: var(--accent); filter: none; box-shadow: none; }
+.dr-btn-sm { padding: .35rem .7rem; font-size: .8rem; border-radius: .7rem; }
+.dr-btn-pieno { width: 100%; padding: .65rem 1rem; }
+@media (prefers-reduced-motion: reduce) { .dr-btn { transition: none; } .dr-btn:hover, .dr-btn:active { transform: none; } }
+
+.dr-stato { display: flex; align-items: center; gap: .5rem; font-size: 1.1rem; font-weight: 800; }
+.dr-stato-punto { height: .7rem; width: .7rem; border-radius: 9999px; background: var(--muted); }
+.dr-stato-aperto .dr-stato-punto { background: var(--ok); box-shadow: 0 0 0 4px color-mix(in oklab, var(--ok) 25%, transparent); }
+.dr-stato-preparato .dr-stato-punto { background: #ffb020; }
+.dr-stato-chiuso .dr-stato-punto { background: var(--ko); }
+
+.dr-w400 { font-weight: 400; }
+.dr-w800 { font-weight: 800; }
+.dr-w900 { font-weight: 900; }
+.dr-link { text-decoration: underline; text-underline-offset: 2px; }
+.dr-link:hover { color: var(--accent); }
+.dr-scroll { max-height: 18rem; overflow-y: auto; }

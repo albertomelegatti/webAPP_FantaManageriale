@@ -44,16 +44,15 @@ class TestAccesso:
         corpo = _pagina(_client(app, nome_squadra).get(f"/user/squadra_login/{nome_squadra}"))
         assert "/draft/live/" in corpo and "Draft Live" in corpo
 
-    def test_il_bottone_e_bloccato_se_non_c_e_un_draft_aperto(self, app, cur, db_isolato, draft, nome_squadra):
+    def test_il_bottone_non_compare_se_non_c_e_un_draft_aperto(self, app, cur, db_isolato, draft, nome_squadra):
         # `draft` lo lascia preparato, non aperto.
         corpo = _pagina(_client(app, nome_squadra).get(f"/user/squadra_login/{nome_squadra}"))
-        assert "Nessun draft aperto" in corpo
-        assert 'href="/draft/live/"' not in corpo
+        assert "Draft Live" not in corpo
+        assert "/draft/live" not in corpo
 
     def test_il_bottone_e_attivo_a_draft_aperto(self, app, aperto, nome_squadra):
         corpo = _pagina(_client(app, nome_squadra).get(f"/user/squadra_login/{nome_squadra}"))
-        assert 'href="/draft/live/"' in corpo
-        assert "Nessun draft aperto" not in corpo
+        assert 'href="/draft/live/"' in corpo and "Draft Live" in corpo
 
     def test_il_bottone_non_sta_nella_home_pubblica(self, app):
         assert "/draft/live" not in _pagina(app.test_client().get("/"))

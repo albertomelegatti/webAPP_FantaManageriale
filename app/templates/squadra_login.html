@@ -35,7 +35,7 @@
     {{ m.voce_menu(url_for('user.user_mercato_menu', nome_squadra=nome_squadra), 'bi-graph-up-arrow', 'Mercato') }}
     {{ m.voce_menu(url_for('user.user_rosa_menu', nome_squadra=nome_squadra), 'bi-people-fill', 'Gestione Rosa') }}
     {{ m.voce_menu(url_for('formazione.user_formazione', nome_squadra=nome_squadra), 'bi-diagram-3-fill', 'Formazione') }}
-    {{ m.voce_menu(url_for('draft.live'), 'bi-broadcast', 'Draft Live', disabilitato=not draft_aperto, info='Nessun draft aperto' if not draft_aperto else none) }}
+    {% if draft_aperto %}{{ m.voce_menu(url_for('draft.live'), 'bi-broadcast', 'Draft Live') }}{% endif %}
     {{ m.voce_menu('/cambia_password', 'bi-lock-fill', 'Cambia Password') }}
     {{ m.voce_menu('/logout', 'bi-box-arrow-right', 'Logout') }}
 </div>

@@ -8,7 +8,7 @@
 {% if not vista %}
 <p class="rounded-2xl border border-line bg-panel p-4 text-center text-sm text-muted">
     Nessun draft in corso. Le scelte dei draft passati sono nello
-    <a href="{{ url_for('public.storico_draft') }}" class="font-semibold underline">storico</a>.
+    <a href="{{ url_for('public.storico_draft') }}" class="font-semibold dr-link">storico</a>.
 </p>
 {% else %}
 
@@ -17,7 +17,7 @@
 <div class="mb-4 rounded-2xl border border-line bg-panel p-4 text-center">
     {% if stato == 'aperto' and vista.in_corso %}
         <div class="text-[11px] font-bold uppercase tracking-wide text-muted">On the clock · pick n. {{ vista.in_corso.numero }} · giro {{ vista.in_corso.giro }}</div>
-        <div class="mt-1 text-lg font-extrabold">{{ vista.in_corso.detentore_att }}</div>
+        <div class="mt-1 text-lg dr-w800">{{ vista.in_corso.detentore_att }}</div>
         {% if vista.in_corso.detentore_att != vista.in_corso.detentore_originale %}
         <div class="text-[11px] text-muted">pick di {{ vista.in_corso.detentore_originale }}</div>
         {% endif %}
@@ -32,7 +32,7 @@
 
 {% if tocca_a_me %}
 <div class="mb-4 rounded-2xl border border-accent bg-panel p-4">
-    <h3 class="mb-3 text-sm font-extrabold">È il tuo turno: scegli un giocatore</h3>
+    <h3 class="mb-3 text-sm dr-w800">È il tuo turno: scegli un giocatore</h3>
     {% with pool=pool, anno=vista.anno, pick=vista.in_corso, azione=url_for('draft.scegli'), bottone='Scegli' %}
     {% include '_draft_pool.html' %}
     {% endwith %}
