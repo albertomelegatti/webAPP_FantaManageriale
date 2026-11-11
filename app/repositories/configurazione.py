@@ -40,9 +40,8 @@ def aste_aperte(cur) -> bool:
 
 
 def stato_gate(cur) -> dict:
-    """Stato completo di mercato e aste in un'unica lettura: le pagine di menu
-    mostrano le voci disabilitate con la data di chiusura nel tooltip, quindi
-    servono insieme sia le date sia i due booleani."""
+    """Stato completo di mercato e aste in un'unica lettura: le date di chiusura
+    e i due booleani insieme (dashboard squadra, pagina admin, chatbot)."""
     config = leggi(cur)
     mercato_chiusura = config["mercato_chiusura"] if config else None
     aste_chiusura = config["aste_chiusura"] if config else None

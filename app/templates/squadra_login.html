@@ -31,12 +31,52 @@
     </div>
 </div>
 
-<div class="flex flex-col gap-2">
-    {{ m.voce_menu(url_for('user.user_mercato_menu', nome_squadra=nome_squadra), 'bi-graph-up-arrow', 'Mercato') }}
-    {{ m.voce_menu(url_for('user.user_rosa_menu', nome_squadra=nome_squadra), 'bi-people-fill', 'Gestione Rosa') }}
-    {{ m.voce_menu(url_for('formazione.user_formazione', nome_squadra=nome_squadra), 'bi-diagram-3-fill', 'Formazione') }}
-    {% if draft_aperto %}{{ m.voce_menu(url_for('draft.live'), 'bi-broadcast', 'Draft Live') }}{% endif %}
-    {{ m.voce_menu('/cambia_password', 'bi-lock-fill', 'Cambia Password') }}
-    {{ m.voce_menu('/logout', 'bi-box-arrow-right', 'Logout') }}
+{# Le voci, raggruppate come nella home admin. Quelle che stavano nei sottomenu
+   (Mercato, Prestiti, Gestione Rosa) sono qui direttamente. Una voce chiusa
+   (aste, mercato) non si mostra affatto. #}
+{% macro riga(href, icona, titolo, sotto, aperta=true) %}
+{% if aperta %}
+<a href="{{ href }}" class="hm-riga">
+    <span class="hm-riga-icona"><i class="bi {{ icona }}"></i></span>
+    <span class="min-w-0 flex-1">
+        <span class="block text-sm font-semibold">{{ titolo }}</span>
+        <span class="block text-[11px] text-muted">{{ sotto }}</span>
+    </span>
+    <i class="bi bi-chevron-right shrink-0 text-muted"></i>
+</a>
+{% endif %}
+{% endmacro %}
+
+<div class="hm-colonne">
+    <section>
+        <h3 class="hm-sezione">Mercato</h3>
+        <div class="hm-pannello">
+            {{ riga(url_for('aste.user_aste', nome_squadra=nome_squadra), 'bi-cash-coin', 'Aste', 'Aste in corso e nuove chiamate', aste_aperte) }}
+            {{ riga(url_for('mercato.user_mercato', nome_squadra=nome_squadra), 'bi-arrow-left-right', 'Proposte di mercato', 'Scambi con le altre squadre', mercato_aperto) }}
+            {{ riga(url_for('prestiti.user_prestiti', nome_squadra=nome_squadra), 'bi-file-earmark-plus-fill', 'Richieste di prestito', 'Proponi e rispondi ai prestiti', mercato_aperto) }}
+            {{ riga(url_for('rosa.user_gestione_prestiti', nome_squadra=nome_squadra), 'bi-tools', 'Gestione prestiti', 'I prestiti in corso') }}
+            {{ riga(url_for('rosa.user_vetrina', nome_squadra=nome_squadra), 'bi-shop-window', 'Vetrina', 'I giocatori in vetrina') }}
+        </div>
+    </section>
+
+    <section>
+        <h3 class="hm-sezione">Rosa</h3>
+        <div class="hm-pannello">
+            {{ riga(url_for('formazione.user_formazione', nome_squadra=nome_squadra), 'bi-diagram-3-fill', 'Formazione', 'Schiera i titolari') }}
+            {{ riga(url_for('rosa.user_tagli', nome_squadra=nome_squadra), 'bi-file-earmark-text-fill', 'Gestione contratti', 'Tagli e modifiche di contratto') }}
+            {{ riga(url_for('rosa.user_primavera', nome_squadra=nome_squadra), 'bi-flower3', 'Primavera', 'Promuovi o taglia i giovani') }}
+        </div>
+    </section>
+
+    <section>
+        <h3 class="hm-sezione">Altro</h3>
+        <div class="hm-pannello">
+            {% if draft_aperto %}
+            {{ riga(url_for('draft.live'), 'bi-broadcast', 'Draft Live', 'Il draft U21 in diretta') }}
+            {% endif %}
+            {{ riga('/cambia_password', 'bi-lock-fill', 'Cambia password', 'Aggiorna le credenziali') }}
+            {{ riga('/logout', 'bi-box-arrow-right', 'Logout', "Esci dall'area squadra") }}
+        </div>
+    </section>
 </div>
 {% endblock %}
