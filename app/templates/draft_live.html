@@ -2,7 +2,7 @@
 
 {% block content %}
 {% import '_macros.html' as m %}
-<div class="mb-2">{{ m.torna_indietro(url_for('public.home')) }}</div>
+<div class="mb-2">{% if squadra %}{{ m.torna_indietro(url_for('user.squadra_login', nome_squadra=squadra)) }}{% else %}{{ m.torna_indietro(url_for('admin.admin_home')) }}{% endif %}</div>
 <h2 class="mb-4 text-center text-lg font-bold">Draft Live{% if vista %} {{ vista.anno }}{% endif %}</h2>
 
 {% if not vista %}
@@ -39,10 +39,6 @@
 </div>
 {% elif stato == 'aperto' and squadra %}
 <p class="mb-4 text-center text-[11px] text-muted">Non è il turno della tua squadra: puoi seguire il draft da qui.</p>
-{% elif stato == 'aperto' %}
-<p class="mb-4 text-center text-[11px] text-muted">
-    <a href="{{ url_for('auth.login') }}" class="font-semibold underline">Accedi con la tua squadra</a> per scegliere quando tocca a te.
-</p>
 {% endif %}
 
 {% include '_draft_tabellone.html' %}

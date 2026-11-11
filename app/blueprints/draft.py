@@ -1,8 +1,9 @@
-"""Draft U21 live: il tabellone per tutti, la scelta per la squadra on the clock.
+"""Draft U21 live: il tabellone e la scelta per la squadra on the clock.
 
-La pagina e' leggibile senza accedere. Scegliere richiede il login della
-squadra, e vale solo quando la pick in corso e' sua: l'admin sceglie per gli
-assenti dalla propria pagina (vedi admin.py).
+La pagina e' riservata a chi ha fatto il login: ci si arriva dalla dashboard
+della squadra, non dalla home pubblica. Scegliere vale solo quando la pick in
+corso e' della propria squadra; l'admin sceglie per gli assenti dalla propria
+pagina (vedi admin.py).
 """
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
@@ -55,9 +56,16 @@ def annuncia(cur, anno: int, esito: dict, *, evento: str, da_admin: bool = False
         telegram_utils.draft_concluso(anno, draft_live.riepilogo(cur, anno))
 
 
+@draft_bp.before_request
+def richiedi_login():
+    if not session.get("logged_in"):
+        flash("Accedi per seguire il draft.", "warning")
+        return redirect(url_for("auth.login"))
+
+
 @draft_bp.route("/")
 def live():
-    squadra = session.get("nome_squadra") if session.get("logged_in") else None
+    squadra = session.get("nome_squadra")
 
     with connessione() as (conn, cur):
         sessione = sessione_repo.ultima(cur)
@@ -76,10 +84,11 @@ def live():
 
 @draft_bp.route("/scegli", methods=["POST"])
 def scegli():
-    squadra = session.get("nome_squadra") if session.get("logged_in") else None
+    squadra = session.get("nome_squadra")
     if not squadra:
-        flash("Accedi con la tua squadra per scegliere.", "warning")
-        return redirect(url_for("auth.login"))
+        # Un admin e' loggato ma non ha una squadra: sceglie dalla sua pagina.
+        flash("Solo una squadra puo' scegliere da qui: l'admin usa la pagina Draft U21.", "warning")
+        return redirect(url_for("draft.live"))
 
     try:
         anno = int(request.form["anno"])

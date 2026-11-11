@@ -32,22 +32,39 @@ def _stato_pick(cur, numero):
     return cur.fetchone()
 
 
-class TestPaginaPubblica:
-    def test_senza_draft_non_si_rompe(self, app, cur, db_isolato):
+class TestAccesso:
+    def test_senza_login_si_va_al_login(self, app, aperto):
+        risposta = app.test_client().get("/draft/live/")
+        assert risposta.status_code == 302 and "/login" in risposta.headers["Location"]
+
+    def test_l_admin_puo_guardare(self, app, aperto):
+        assert _client(app, admin=True).get("/draft/live/").status_code == 200
+
+    def test_il_bottone_sta_nella_dashboard_della_squadra(self, app, nome_squadra):
+        corpo = _pagina(_client(app, nome_squadra).get(f"/user/squadra_login/{nome_squadra}"))
+        assert "/draft/live/" in corpo and "Draft Live" in corpo
+
+    def test_il_bottone_non_sta_nella_home_pubblica(self, app):
+        assert "/draft/live" not in _pagina(app.test_client().get("/"))
+
+
+class TestPaginaLive:
+    def test_senza_draft_non_si_rompe(self, app, cur, db_isolato, nome_squadra):
         cur.execute("DELETE FROM draft_sessione;")
         db_isolato.commit()
-        risposta = app.test_client().get("/draft/live/")
+        risposta = _client(app, nome_squadra).get("/draft/live/")
         assert risposta.status_code == 200
         assert "Nessun draft in corso" in _pagina(risposta)
 
     def test_draft_non_aperto(self, app, draft):
-        risposta = app.test_client().get("/draft/live/")
+        prima, seconda = draft
+        risposta = _client(app, prima).get("/draft/live/")
         assert risposta.status_code == 200
         assert "non è ancora aperto" in _pagina(risposta)
 
     def test_mostra_chi_e_on_the_clock(self, app, aperto):
         prima, seconda = aperto
-        corpo = _pagina(app.test_client().get("/draft/live/"))
+        corpo = _pagina(_client(app, prima).get("/draft/live/"))
         assert "On the clock" in corpo
         assert seconda in corpo
 
@@ -58,8 +75,8 @@ class TestPaginaPubblica:
         # annullerebbe il giocatore appena inserito.
         db_isolato.commit()
 
-        assert "Giovane Visibile" not in _pagina(app.test_client().get("/draft/live/"))
         assert "Giovane Visibile" not in _pagina(_client(app, prima).get("/draft/live/"))
+        assert "Giovane Visibile" not in _pagina(_client(app, admin=True).get("/draft/live/"))
         corpo = _pagina(_client(app, seconda).get("/draft/live/"))
         assert "Giovane Visibile" in corpo
         assert "È il tuo turno" in corpo
@@ -69,7 +86,7 @@ class TestPaginaPubblica:
         g = _giocatore(cur, "Giovane Scelto")
         _client(app, seconda).post("/draft/live/scegli", data={
             "anno": ANNO, "id_pick": _id_pick(cur, 1), "id_giocatore": g})
-        assert "Giovane Scelto" in _pagina(app.test_client().get("/draft/live/"))
+        assert "Giovane Scelto" in _pagina(_client(app, prima).get("/draft/live/"))
 
 
 def _id_pick(cur, numero):
