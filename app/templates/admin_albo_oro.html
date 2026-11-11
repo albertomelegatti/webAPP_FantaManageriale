@@ -1,0 +1,163 @@
+{% extends 'base_tailwind.html' %}
+
+{% block content %}
+{% import '_macros.html' as m %}
+<div class="mb-2">{{ m.torna_indietro(url_for('admin.admin_home')) }}</div>
+<h2 class="mb-1 text-center text-lg font-bold">Albo d'Oro</h2>
+<p class="mb-4 text-center text-sm text-muted">
+    Compila le posizioni come le vedono gli utenti. Una posizione senza squadra resta vuota.
+    I crediti sono solo archiviati: <strong>non vengono accreditati</strong> alle squadre
+    (si fa da Gestione Crediti).
+</p>
+
+{# Select della squadra + crediti: i due campi di ogni posizione, stessi nomi letti da piazzamenti_da_form #}
+{% macro campi(prefisso, slot, classe_select='') %}
+<select name="{{ prefisso }}_squadra_{{ slot.posizione }}" data-logo-select aria-label="Squadra in posizione {{ slot.posizione }}"
+        class="albo-select min-w-0 rounded-xl border border-line bg-panel-2 px-2 py-1.5 text-sm outline-none focus:border-accent {{ classe_select }}">
+    <option value="">—</option>
+    {% for s in squadre %}
+    <option value="{{ s.nome }}" data-username="{{ s.username }}" {% if s.nome == slot.squadra %}selected{% endif %}>{{ s.nome }}</option>
+    {% endfor %}
+</select>
+{% endmacro %}
+
+{% macro crediti(prefisso, slot) %}
+<input type="number" name="{{ prefisso }}_crediti_{{ slot.posizione }}" min="0" step="1" value="{{ slot.crediti }}"
+       aria-label="Crediti della posizione {{ slot.posizione }}"
+       class="albo-crediti shrink-0 rounded-xl border border-line bg-panel-2 px-1 py-1.5 text-center text-xs font-semibold tabular-nums text-accent outline-none focus:border-accent">
+{% endmacro %}
+
+{% macro logo(slot, classe) %}
+{% set username = (squadre | selectattr('nome', 'equalto', slot.squadra) | map(attribute='username') | first) if slot.squadra else 'svincolato' %}
+<img data-logo src="{{ url_for('static', filename='loghi/' ~ (username or 'svincolato') ~ '.png') }}" alt="" class="{{ classe }}">
+{% endmacro %}
+
+{% macro riga(prefisso, slot) %}
+<div class="flex items-center gap-2 rounded-xl border border-line bg-panel px-3 py-2">
+    <span class="w-5 shrink-0 text-center text-xs font-bold text-muted">{{ slot.posizione }}</span>
+    {{ logo(slot, 'h-6 w-6 shrink-0 rounded-full bg-panel-2 object-contain') }}
+    {{ campi(prefisso, slot, 'flex-1') }}
+    {{ crediti(prefisso, slot) }}
+</div>
+{% endmacro %}
+
+{% if stagioni %}
+<form method="GET" action="{{ url_for('admin.admin_albo_oro') }}" class="mb-4 rounded-2xl border border-line bg-panel p-4">
+    <label for="sel-stagione" class="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-muted">Stagione</label>
+    <div class="flex items-center gap-2">
+        <select id="sel-stagione" name="stagione" onchange="this.form.submit()"
+                class="min-w-0 flex-1 rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm">
+            {% if stagione not in stagioni %}<option value="{{ stagione }}" selected>{{ stagione }} (nuova)</option>{% endif %}
+            {% for s in stagioni %}
+            <option value="{{ s }}" {% if s == stagione %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</form>
+{% endif %}
+
+<form method="GET" action="{{ url_for('admin.admin_albo_oro') }}" class="mb-4 flex items-center gap-2 rounded-2xl border border-line bg-panel p-3">
+    <label for="nuova-stagione" class="shrink-0 text-xs font-semibold text-muted">Nuova stagione</label>
+    <input type="text" id="nuova-stagione" name="stagione" required pattern="\d\d-\d\d" maxlength="5" placeholder="26-27"
+           class="min-w-0 flex-1 rounded-xl border border-line bg-panel-2 px-3 py-1.5 text-sm outline-none focus:border-accent">
+    <button type="submit" class="shrink-0 rounded-xl border border-line px-3 py-1.5 text-xs font-semibold text-muted hover:border-accent hover:text-accent">
+        Apri
+    </button>
+</form>
+
+{% if vista %}
+<form method="POST" action="{{ url_for('admin.admin_albo_oro') }}" id="form-albo"
+      data-loghi="{{ url_for('static', filename='loghi/') }}">
+    <input type="hidden" name="stagione" value="{{ stagione }}">
+
+    <div class="mb-4 rounded-2xl border border-line bg-panel p-4">
+        <h3 class="mb-3 text-base font-bold">Stagione {{ stagione }}</h3>
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <!-- Campionato -->
+            <div class="rounded-xl border border-line bg-panel-2 p-3">
+                <h4 class="mb-3 text-sm font-bold uppercase tracking-wide text-muted">Campionato</h4>
+                <input type="hidden" name="camp_n" value="{{ vista.campionato | length }}">
+                <div class="podio-riga mb-4">
+                    {% for slot in vista.campionato[:3] %}
+                    <div class="podio-card pos-{{ slot.posizione }}">
+                        <span class="podio-medaglia">{{ slot.posizione }}°</span>
+                        {{ logo(slot, 'podio-logo') }}
+                        {{ campi('camp', slot, 'w-full') }}
+                        {{ crediti('camp', slot) }}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    {% for slot in vista.campionato[3:] %}
+                    {{ riga('camp', slot) }}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Coppa: una sezione per fase. Le fasi finali prima dei gironi, come
+                 sulla pagina pubblica; il tabellone li' e' ricavato da queste
+                 posizioni, quindi qui si compilano soltanto i piazzamenti. -->
+            <div class="rounded-xl border border-line bg-panel-2 p-3">
+                <h4 class="mb-2 text-sm font-bold uppercase tracking-wide text-muted">Coppa</h4>
+                {% for fase in vista.coppa %}
+                {% set prefisso = 'fase_' ~ loop.index0 %}
+                <input type="hidden" name="fase_idx" value="{{ loop.index0 }}">
+                <input type="hidden" name="{{ prefisso }}_nome" value="{{ fase.nome }}">
+                <input type="hidden" name="{{ prefisso }}_n" value="{{ fase.slot | length }}">
+                <h5 class="mb-1.5 {{ 'mt-3' if not loop.first else '' }} text-xs font-semibold text-muted">{{ fase.nome }}</h5>
+                <div class="flex flex-col gap-1.5">
+                    {% for slot in fase.slot %}
+                    {{ riga(prefisso, slot) }}
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+                <!-- Fase con un nome diverso da quelle sopra -->
+                {% set altra = vista.coppa | length %}
+                <input type="hidden" name="fase_idx" value="{{ altra }}">
+                <input type="hidden" name="fase_{{ altra }}_n" value="4">
+                <h5 class="mb-1.5 mt-3 text-xs font-semibold text-muted">Altra fase</h5>
+                <input type="text" name="fase_{{ altra }}_nome" maxlength="40" placeholder="Nome fase (lascia vuoto se non serve)"
+                       class="mb-1.5 w-full rounded-xl border border-line bg-panel px-3 py-1.5 text-sm outline-none focus:border-accent">
+                <div class="flex flex-col gap-1.5">
+                    {% for i in range(1, 5) %}
+                    {{ riga('fase_' ~ altra, {'posizione': i, 'squadra': '', 'crediti': 0}) }}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit"
+            class="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white">
+        <i class="bi bi-save-fill"></i> Salva stagione {{ stagione }}
+    </button>
+</form>
+{% else %}
+<p class="py-4 text-center text-sm text-muted">Nessuna stagione ancora: aprine una nuova qui sopra.</p>
+{% endif %}
+
+<style>
+.albo-crediti { width: 3.5rem; }
+.podio-card .albo-select { font-size: 0.7rem; padding: 0.25rem 0.15rem; }
+.podio-card .albo-crediti { width: 100%; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('form-albo');
+    if (!form) return;
+    var base = form.dataset.loghi;
+    // Il logo segue la squadra scelta, come nella pagina pubblica.
+    form.addEventListener('change', function (e) {
+        var select = e.target.closest('[data-logo-select]');
+        if (!select) return;
+        var opzione = select.selectedOptions[0];
+        var username = (opzione && opzione.dataset.username) || 'svincolato';
+        var img = select.parentElement.querySelector('[data-logo]');
+        if (img) img.src = base + username + '.png';
+    });
+});
+</script>
+{% endblock %}

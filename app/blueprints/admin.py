@@ -1,28 +1,42 @@
 import json
+import secrets
 import psycopg2
 from app import telegram_utils
 from datetime import date, datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session
 from app.core.db import connessione
 from app.domini.matching_transfermarkt import candidati_fuzzy
+from app.core.errori import ErroreDominio
+from app.domini import albo_oro as dominio_albo_oro
 from app.domini.movimenti import squadre_citate
 
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data, oggi
 from app.domini.ruoli import pulisci_ruolo
+from app.repositories import albo_oro as albo_oro_repo
 from app.repositories import configurazione as configurazione_repo
 from app.repositories import fantacalcio as fantacalcio_repo
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import richieste as richieste_repo
 from app.repositories import squadre as squadre_repo
+from app.repositories import stadio as stadio_repo
 from app.repositories import storico_rosa as storico_rosa_repo
 from app.repositories import transfermarkt as transfermarkt_repo
 from app.repositories import vetrina as vetrina_repo
 from app.services import fantacalcio as servizio_fantacalcio
+from app.services.crediti_stadi_slot import RENDITA_STADIO, rendite_da_accreditare, rendite_in_uso
 
 logger = get_logger(__name__)
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+
+@admin_bp.before_request
+def richiedi_admin():
+    """Ogni pagina di /admin e' riservata all'admin: senza il flag di sessione
+    impostato dal login (vedi auth.py) si torna alla home."""
+    if not session.get("is_admin"):
+        return redirect(url_for("public.home"))
+
 
 # Rotta per area admin
 @admin_bp.route("/")
@@ -451,3 +465,144 @@ def admin_arrivi_in_rosa():
 
     squadre = sorted({r["squadra"] for r in righe})
     return render_template("admin_arrivi_in_rosa.html", righe=righe, squadre=squadre, oggi=oggi().isoformat())
+
+
+@admin_bp.route("/albo_oro", methods=["GET", "POST"])
+def admin_albo_oro():
+    """Albo d'oro di una stagione come sulla pagina pubblica, ma compilabile.
+
+    Registra soltanto lo storico: i crediti indicati NON vengono accreditati
+    alle squadre (si fa da Gestione Crediti). Il salvataggio riscrive tutta
+    la stagione con quello che c'e' nella griglia.
+    """
+    with connessione() as (conn, cur):
+        squadre = squadre_repo.nomi_e_username(cur)
+        nomi = [s["nome"] for s in squadre]
+
+        if request.method == "POST":
+            try:
+                stagione = dominio_albo_oro.stagione_valida(request.form.get("stagione"))
+                righe = dominio_albo_oro.piazzamenti_da_form(request.form, nomi)
+                if not righe and albo_oro_repo.per_stagione(cur, stagione):
+                    raise ErroreDominio(
+                        "❌ Nessun piazzamento compilato: salvataggio annullato per non "
+                        "svuotare la stagione per errore.")
+                albo_oro_repo.sostituisci_stagione(cur, stagione, righe)
+                conn.commit()
+                flash(f"✅ Albo d'oro {stagione} salvato ({len(righe)} piazzamenti).", "success")
+                return redirect(url_for("admin.admin_albo_oro", stagione=stagione))
+            except ErroreDominio as e:
+                conn.rollback()
+                flash(e.messaggio_utente, "danger")
+                return redirect(url_for("admin.admin_albo_oro",
+                                        stagione=request.form.get("stagione") or None))
+
+        stagioni = albo_oro_repo.stagioni(cur)
+        richiesta = request.args.get("stagione", "").strip()
+        stagione = stagioni[0] if stagioni else ""
+        if richiesta:
+            try:
+                stagione = dominio_albo_oro.stagione_valida(richiesta)
+            except ErroreDominio as e:
+                flash(e.messaggio_utente, "danger")
+        vista = (dominio_albo_oro.vista_stagione(albo_oro_repo.per_stagione(cur, stagione), len(nomi))
+                 if stagione else None)
+
+    return render_template("admin_albo_oro.html", stagioni=stagioni, stagione=stagione,
+                           vista=vista, squadre=squadre)
+
+
+@admin_bp.route("/stadi", methods=["GET", "POST"])
+def admin_stadi():
+    """Nome e livello dello stadio di ogni squadra (crea lo stadio se manca)."""
+    with connessione() as (conn, cur):
+        if request.method == "POST":
+            squadre_valide = set(squadre_repo.nomi(cur))
+            livello_max = len(rendite_in_uso(cur)) - 1
+            n_salvati = 0
+            try:
+                for squadra in request.form.getlist("squadra"):
+                    if squadra not in squadre_valide:
+                        continue
+                    nome = request.form.get(f"nome_{squadra}", "")
+                    livello = request.form.get(f"livello_{squadra}", "")
+                    if not nome.strip() and not livello.strip():
+                        continue  # squadra senza stadio e campi lasciati vuoti
+                    nome, livello = dominio_albo_oro.stadio_valido(nome, livello, livello_max)
+                    stadio_repo.imposta(cur, squadra, nome, livello)
+                    n_salvati += 1
+                conn.commit()
+                flash(f"✅ Stadi salvati ({n_salvati}).", "success")
+            except ErroreDominio as e:
+                conn.rollback()
+                flash(e.messaggio_utente, "danger")
+            except psycopg2.errors.UniqueViolation:
+                conn.rollback()
+                flash("❌ Esiste già uno stadio con quel nome.", "danger")
+            return redirect(url_for("admin.admin_stadi"))
+
+        squadre = squadre_repo.tutte_con_stadio(cur)
+        salvate = stadio_repo.rendite(cur)
+
+    rendite = salvate or list(RENDITA_STADIO)
+    accrediti = rendite_da_accreditare(squadre, rendite)
+    # Gettone monouso per il pulsante di accredito: vale per questa pagina e
+    # si consuma al primo invio, cosi' un doppio clic o un reinvio del form
+    # non accredita due volte.
+    session["token_rendite"] = secrets.token_hex(16)
+
+    return render_template("admin_stadi.html", squadre=squadre, rendite=rendite,
+                           rendite_modificabili=salvate is not None,
+                           accrediti_squadre=len(accrediti),
+                           accrediti_totale=sum(c for _, c in accrediti),
+                           token_rendite=session["token_rendite"])
+
+
+@admin_bp.route("/stadi/accredita_rendite", methods=["POST"])
+def admin_accredita_rendite():
+    """Accredita a ogni squadra la rendita annuale del proprio stadio.
+
+    Usa le rendite salvate (non i valori digitati e non ancora salvati nel
+    form). Somma ai crediti attuali, come una Gestione Crediti.
+    """
+    token = session.pop("token_rendite", None)
+    if not token or not secrets.compare_digest(token, request.form.get("token", "")):
+        flash("⚠️ Accredito non eseguito: la pagina era scaduta o l'operazione è già stata fatta. "
+              "Controlla i crediti e ricarica prima di riprovare.", "warning")
+        return redirect(url_for("admin.admin_stadi"))
+
+    with connessione() as (conn, cur):
+        accrediti = rendite_da_accreditare(squadre_repo.tutte_con_stadio(cur), rendite_in_uso(cur))
+        for nome, crediti in accrediti:
+            squadre_repo.aggiungi_crediti(cur, nome, crediti)
+        conn.commit()
+
+    logger.info("Rendite stadi accreditate a %s squadre (totale %s)", len(accrediti), sum(c for _, c in accrediti))
+    flash(f"✅ Rendite accreditate a {len(accrediti)} squadre (totale {sum(c for _, c in accrediti)} crediti).", "success")
+    return redirect(url_for("admin.admin_stadi"))
+
+
+@admin_bp.route("/stadi/rendite", methods=["POST"])
+def admin_rendite_stadi():
+    """Rendita annuale per livello di stadio (la scala del regolamento, sezione 4).
+
+    Cambia solo quanto la pagina Crediti, Stadi e Slot mostra come rendita:
+    nessun credito viene accreditato alle squadre. Il testo del regolamento
+    (letto dal chatbot) non cambia da qui.
+    """
+    with connessione() as (conn, cur):
+        salvate = stadio_repo.rendite(cur)
+        if salvate is None:
+            flash("❌ Tabella delle rendite non ancora creata: lancia CronJob/stadio_livello_schema.sql.", "danger")
+            return redirect(url_for("admin.admin_stadi"))
+        try:
+            nuove = [dominio_albo_oro.rendita_valida(request.form.get(f"rendita_{livello}"), livello)
+                     for livello in range(len(salvate))]
+            for livello, rendita in enumerate(nuove):
+                stadio_repo.imposta_rendita(cur, livello, rendita)
+            conn.commit()
+            flash("✅ Rendite degli stadi salvate.", "success")
+        except ErroreDominio as e:
+            conn.rollback()
+            flash(e.messaggio_utente, "danger")
+    return redirect(url_for("admin.admin_stadi"))

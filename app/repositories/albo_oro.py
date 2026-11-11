@@ -3,8 +3,9 @@
 Una riga per squadra/posizione/fase/stagione. Puramente storica: i crediti
 registrati qui sono già stati accreditati a suo tempo (es. via admin_crediti),
 questa tabella si limita ad archiviarli per la bacheca pubblica. Popolata via
-SQL a mano (vedi lo schema condiviso fuori dal repository), nessuna scrittura
-da app.
+SQL a mano (vedi lo schema condiviso fuori dal repository) e, da qui, anche
+dall'admin (pagina Albo d'Oro): le scritture non toccano mai i crediti delle
+squadre, per lo stesso motivo.
 """
 
 
@@ -61,3 +62,38 @@ def palmares(cur, nome_squadra: str) -> dict:
         "campionati": [r["stagione"] for r in righe if r["competizione"] == "Campionato"],
         "coppe": [r["stagione"] for r in righe if r["competizione"] == "Coppa"],
     }
+
+
+def stagioni(cur) -> list[str]:
+    """Le stagioni presenti, dalla piu' recente."""
+    cur.execute("SELECT DISTINCT stagione FROM albo_oro ORDER BY stagione DESC;")
+    return [r["stagione"] for r in cur.fetchall()]
+
+
+def per_stagione(cur, stagione: str) -> list[dict]:
+    """Le righe di una stagione, nello stesso ordine di leggi()."""
+    cur.execute(
+        """
+        SELECT id, stagione, competizione, fase, squadra, posizione, crediti_generati
+        FROM albo_oro
+        WHERE stagione = %s
+        ORDER BY competizione, (fase NOT ILIKE 'Final%%'), fase NULLS FIRST, posizione;
+        """,
+        (stagione,)
+    )
+    return cur.fetchall()
+
+
+def sostituisci_stagione(cur, stagione: str, righe: list[dict]) -> None:
+    """Riscrive tutti i piazzamenti di una stagione con quelli dati.
+
+    Cancellare e reinserire (nella transazione del chiamante) invece di
+    aggiornare riga per riga evita i conflitti transitori degli indici
+    unici quando due squadre si scambiano la posizione.
+    """
+    cur.execute("DELETE FROM albo_oro WHERE stagione = %s;", (stagione,))
+    for r in righe:
+        cur.execute(
+            """INSERT INTO albo_oro (stagione, competizione, fase, squadra, posizione, crediti_generati)
+               VALUES (%s, %s, %s, %s, %s, %s);""",
+            (stagione, r["competizione"], r["fase"], r["squadra"], r["posizione"], r["crediti_generati"]))
