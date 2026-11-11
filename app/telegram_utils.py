@@ -1094,6 +1094,31 @@ def draft_concluso(anno, per_squadra):
         squadre_evento=list(per_squadra))
 
 
+def _righe_accrediti(accrediti):
+    """[('Squadra', 100)] -> '• Squadra: +100 crediti', una per riga."""
+    return "\n".join(f"• {squadra}: +{crediti} {'credito' if crediti == 1 else 'crediti'}"
+                     for squadra, crediti in accrediti)
+
+
+def accredito_competizione(stagione, competizione, accrediti):
+    """I premi di una competizione, accreditati alle squadre."""
+    articolata = "del Campionato" if competizione == "Campionato" else "della Coppa"
+    send_message(
+        nome_squadra='gruppo_comunicazioni',
+        text_to_send=f"💰 COMUNICAZIONE UFFICIALE\n"
+                     f"Accreditati i crediti {articolata} {stagione}:\n\n{_righe_accrediti(accrediti)}",
+        squadre_evento=[squadra for squadra, _ in accrediti])
+
+
+def accredito_rendite_stadi(stagione, accrediti):
+    """La rendita annuale degli stadi, accreditata alle squadre."""
+    send_message(
+        nome_squadra='gruppo_comunicazioni',
+        text_to_send=f"🏟️ COMUNICAZIONE UFFICIALE\n"
+                     f"Accreditate le rendite degli stadi, stagione {stagione}:\n\n{_righe_accrediti(accrediti)}",
+        squadre_evento=[squadra for squadra, _ in accrediti])
+
+
 def send_message(id=None, nome_squadra=None, text_to_send=None, squadre_evento=None):
     """Invia un messaggio Telegram.
 

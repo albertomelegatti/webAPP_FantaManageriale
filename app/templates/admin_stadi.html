@@ -106,20 +106,34 @@
     </button>
 </form>
 
-<!-- Accredito della rendita annuale a tutte le squadre -->
-<form method="POST" action="{{ url_for('admin.admin_accredita_rendite') }}" class="mt-8"
-      onsubmit="if (!confirm('Accreditare la rendita annuale degli stadi a {{ accrediti_squadre }} squadre (totale {{ accrediti_totale }} crediti)? Da qui non si annulla.')) return false; this.querySelector('button').disabled = true;">
+<!-- Accredito della rendita annuale a tutte le squadre: una sola volta per stagione (registro accrediti_annuali) -->
+<form method="POST" action="{{ url_for('admin.admin_accredita_rendite') }}" class="mt-6"
+      onsubmit="if (!confirm('Accreditare la rendita annuale degli stadi a {{ accrediti_squadre }} squadre (totale {{ accrediti_totale }} crediti) per la stagione {{ stagione_accredito }}? Da qui non si annulla e non si può ripetere.')) return false; this.querySelector('button').disabled = true;">
     <input type="hidden" name="token" value="{{ token_rendite }}">
-    <h3 class="mb-1 text-center text-base font-bold">Accredita le rendite</h3>
+    <h3 class="mb-1 text-center text-base font-bold">Accredita le rendite {{ stagione_accredito }}</h3>
     <p class="mb-3 text-center text-sm text-muted">
         Aggiunge ai crediti di ogni squadra la rendita annuale del suo stadio, secondo le rendite
-        <strong>salvate</strong> qui sopra (non i valori modificati e non ancora salvati).
-        Ora: {{ accrediti_totale }} crediti a {{ accrediti_squadre }} squadre. Va fatto una volta all'anno.
+        <strong>salvate</strong> qui sopra (non i valori modificati e non ancora salvati), e manda la
+        comunicazione sul gruppo. Ora: {{ accrediti_totale }} crediti a {{ accrediti_squadre }} squadre.
+        Si può fare <strong>una sola volta per stagione</strong>.
     </p>
-    <button type="submit"
-            class="flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white">
+    {% if not stato_accredito.registro_ok %}
+    <p class="mb-3 rounded-xl border border-line bg-panel-2 p-3 text-sm">
+        ⚠️ Registro degli accrediti non ancora creato: lancia <code>CronJob/accrediti_annuali_schema.sql</code>
+        prima di accreditare.
+    </p>
+    {% endif %}
+    {% if stato_accredito.registro %}
+    <p class="rounded-xl border border-line bg-panel-2 p-3 text-center text-sm font-semibold">
+        ✅ Rendite {{ stagione_accredito }} già accreditate
+        {% if stato_accredito.registro.storico %}in precedenza{% else %}il {{ stato_accredito.registro.eseguito_il.strftime('%d/%m/%Y') }} da {{ stato_accredito.registro.eseguito_da }}{% endif %}
+    </p>
+    {% else %}
+    <button type="submit" {% if not stato_accredito.registro_ok %}disabled{% endif %}
+            class="dr-btn dr-btn-pieno">
         <i class="bi bi-coin"></i> Accredita rendite a tutte le squadre
     </button>
+    {% endif %}
 </form>
 
 <style>
