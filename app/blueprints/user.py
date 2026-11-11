@@ -5,6 +5,7 @@ from app.core.logging import get_logger
 from app.repositories import albo_oro as albo_oro_repo
 from app.repositories import aste as aste_repo
 from app.repositories import configurazione as configurazione_repo
+from app.repositories import draft_sessione as draft_sessione_repo
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import squadre as squadre_repo
 
@@ -36,8 +37,9 @@ def squadra_login(nome_squadra):
 
         crediti = squadre_repo.crediti(cur, nome_squadra)
         palmares = albo_oro_repo.palmares(cur, nome_squadra)
+        draft_aperto = draft_sessione_repo.aperto(cur) is not None
 
-    return render_template("squadra_login.html", nome_squadra=nome_squadra, username=username, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num, crediti=crediti, palmares=palmares)
+    return render_template("squadra_login.html", nome_squadra=nome_squadra, username=username, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num, crediti=crediti, palmares=palmares, draft_aperto=draft_aperto)
 
 
 def _info_chiusura(chiusura, aperto, testo):
