@@ -5,6 +5,7 @@ from app import telegram_utils
 from datetime import date, datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session
 from app.core.db import connessione
+from app.core.formato import url_campioncino
 from app.domini.matching_transfermarkt import candidati_fuzzy
 from app.core.errori import ErroreDominio
 from app.domini import albo_oro as dominio_albo_oro
@@ -13,8 +14,11 @@ from app.domini.movimenti import squadre_citate
 from app.core.logging import get_logger
 from app.core.tempo import formatta_data, oggi
 from app.domini.ruoli import pulisci_ruolo
+from app.blueprints.draft import annuncia as annuncia_draft
 from app.repositories import albo_oro as albo_oro_repo
 from app.repositories import configurazione as configurazione_repo
+from app.repositories import draft as draft_repo
+from app.repositories import draft_sessione as draft_sessione_repo
 from app.repositories import fantacalcio as fantacalcio_repo
 from app.repositories import giocatori as giocatori_repo
 from app.repositories import richieste as richieste_repo
@@ -23,6 +27,7 @@ from app.repositories import stadio as stadio_repo
 from app.repositories import storico_rosa as storico_rosa_repo
 from app.repositories import transfermarkt as transfermarkt_repo
 from app.repositories import vetrina as vetrina_repo
+from app.services import draft_live as servizio_draft
 from app.services import fantacalcio as servizio_fantacalcio
 from app.services.crediti_stadi_slot import RENDITA_STADIO, rendite_da_accreditare, rendite_in_uso
 
@@ -510,6 +515,92 @@ def admin_albo_oro():
 
     return render_template("admin_albo_oro.html", stagioni=stagioni, stagione=stagione,
                            vista=vista, squadre=squadre)
+
+
+@admin_bp.route("/draft")
+def admin_draft():
+    """Gestione del draft U21: ordine, apertura, scelte per le squadre assenti."""
+    with connessione() as (conn, cur):
+        anno = request.args.get("anno", type=int)
+        if anno is None:
+            aperto = draft_sessione_repo.aperto(cur)
+            anno = aperto["anno"] if aperto else draft_repo.primo_anno_da_giocare(cur)
+        if anno is None:
+            return render_template("admin_draft.html", vista=None)
+
+        vista = servizio_draft.vista(cur, anno)
+        anteprima = None
+        if not vista["sessione"] or vista["sessione"]["stato"] == "preparato":
+            anteprima = servizio_draft.anteprima_ordine(cur, anno)
+        pool = []
+        if vista["in_corso"]:
+            pool = [{**g, "campioncino": url_campioncino(g["id_fantacalcio"])}
+                    for g in servizio_draft.pool(cur)]
+
+    return render_template("admin_draft.html", vista=vista, anteprima=anteprima, pool=pool)
+
+
+def _azione_draft(azione, messaggio, evento=None):
+    """Esegue un'azione del draft in una transazione e annuncia l'esito.
+
+    `azione(cur, anno)` ritorna l'esito; `messaggio(esito)` e' il testo di
+    successo. Il commit e' qui, e Telegram parte dopo: una richiesta annullata
+    non annuncia niente.
+    """
+    anno = request.form.get("anno", type=int)
+    if anno is None:
+        flash("❌ Richiesta non valida.", "danger")
+        return redirect(url_for("admin.admin_draft"))
+
+    with connessione() as (conn, cur):
+        try:
+            esito = azione(cur, anno)
+            conn.commit()
+        except servizio_draft.SceltaNonValida as e:
+            conn.rollback()
+            flash(f"❌ {e}", "danger")
+            return redirect(url_for("admin.admin_draft", anno=anno))
+        if evento:
+            annuncia_draft(cur, anno, esito, evento=evento, da_admin=True)
+
+    flash(f"✅ {messaggio(esito)}", "success")
+    return redirect(url_for("admin.admin_draft", anno=anno))
+
+
+def _admin_draft_da():
+    return f"admin:{session.get('username', 'admin')}"
+
+
+@admin_bp.route("/draft/genera", methods=["POST"])
+def admin_draft_genera():
+    return _azione_draft(servizio_draft.genera_ordine,
+                         lambda n: f"Ordine generato: {n} pick numerate.")
+
+
+@admin_bp.route("/draft/apri", methods=["POST"])
+def admin_draft_apri():
+    return _azione_draft(servizio_draft.apri, lambda esito: "Draft aperto.", evento="apertura")
+
+
+@admin_bp.route("/draft/scegli", methods=["POST"])
+def admin_draft_scegli():
+    """L'admin sceglie per la squadra on the clock (assente)."""
+    id_pick = request.form.get("id_pick", type=int)
+    id_giocatore = request.form.get("id_giocatore", type=int)
+    return _azione_draft(
+        lambda cur, anno: servizio_draft.scegli(
+            cur, anno, id_pick, id_giocatore, squadra=None, e_admin=True, da=_admin_draft_da()),
+        lambda esito: f"Scelto {esito['giocatore']['nome']} per {esito['pick']['detentore_att']}.",
+        evento="scelta")
+
+
+@admin_bp.route("/draft/salta", methods=["POST"])
+def admin_draft_salta():
+    id_pick = request.form.get("id_pick", type=int)
+    return _azione_draft(
+        lambda cur, anno: servizio_draft.salta(cur, anno, id_pick, da=_admin_draft_da()),
+        lambda esito: f"Pick n. {esito['pick']['numero']} saltata.",
+        evento="salto")
 
 
 @admin_bp.route("/stadi", methods=["GET", "POST"])

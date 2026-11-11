@@ -27,6 +27,7 @@ def _registra_blueprint(app):
     from app.blueprints.aste import aste_bp
     from app.blueprints.auth import auth_bp
     from app.blueprints.chat import chat_bp
+    from app.blueprints.draft import draft_bp
     from app.blueprints.formazione import formazione_bp
     from app.blueprints.jobs import jobs_bp
     from app.blueprints.mercato import mercato_bp
@@ -40,6 +41,7 @@ def _registra_blueprint(app):
     app.register_blueprint(public_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(chat_bp)
+    app.register_blueprint(draft_bp)
     app.register_blueprint(formazione_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(user_bp)

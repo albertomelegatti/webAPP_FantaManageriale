@@ -46,35 +46,6 @@
 <p class="rounded-2xl border border-line bg-panel p-4 text-center text-sm text-muted">Nessun draft registrato.</p>
 {% endif %}
 
-<style>
-.dr-tabellone { display: grid; gap: 1rem; }
-@media (min-width: 768px) { .dr-tabellone { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-/* display: grid qui sopra vincerebbe su .hidden di Tailwind, che e' caricato
-   prima: senza questa regola il filtro per anno non nasconderebbe niente. */
-.dr-tabellone.hidden { display: none; }
-.dr-giro { display: flex; flex-direction: column; gap: 0.5rem; }
-.dr-giro-titolo {
-    padding: 0.4rem 0.75rem; border-radius: 0.75rem; text-align: center;
-    font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
-    color: #fff; background: linear-gradient(135deg, var(--accent), color-mix(in oklab, var(--accent) 55%, #000));
-}
-.dr-tile {
-    display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.6rem;
-    border: 1px solid var(--line); border-radius: 0.9rem; background: var(--panel);
-    transition: transform .15s, border-color .15s;
-}
-.dr-tile:hover { transform: translateY(-2px); border-color: var(--accent); }
-.dr-tile-num {
-    width: 2rem; flex-shrink: 0; text-align: center; font-size: 1.25rem; font-weight: 900;
-    font-variant-numeric: tabular-nums; color: color-mix(in oklab, var(--accent) 80%, var(--text));
-}
-.dr-tile-logo { height: 1.75rem; width: 1.75rem; flex-shrink: 0; object-fit: contain; }
-.dr-tile-foto { height: 2.75rem; width: 2rem; flex-shrink: 0; object-fit: contain; }
-/* La prima scelta assoluta in oro, come il primo posto del podio nell'albo d'oro. */
-.dr-tile.dr-prima { border-color: #ffb020; background: linear-gradient(90deg, color-mix(in oklab, #ffb020 18%, var(--panel)), var(--panel)); }
-.dr-tile.dr-prima .dr-tile-num { color: #ffb020; }
-</style>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const filterAnno = document.getElementById('filterAnno');

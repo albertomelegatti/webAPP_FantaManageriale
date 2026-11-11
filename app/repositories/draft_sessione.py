@@ -57,3 +57,9 @@ def chiudi(cur, anno: int) -> bool:
            WHERE anno = %s AND stato = 'aperto' RETURNING anno;""",
         (anno,))
     return cur.fetchone() is not None
+
+
+def ultima(cur) -> dict | None:
+    """La sessione dell'anno piu' recente, in qualunque stato."""
+    cur.execute("SELECT * FROM draft_sessione ORDER BY anno DESC LIMIT 1;")
+    return cur.fetchone()

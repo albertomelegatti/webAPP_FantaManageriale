@@ -183,3 +183,28 @@ def salta_pick(cur, id_pick: int, da: str) -> bool:
            WHERE id = %s AND id_giocatore_scelto IS NULL AND NOT saltata;""",
         (da, id_pick))
     return cur.rowcount == 1
+
+
+def pick_con_dettagli(cur, anno: int) -> list[dict]:
+    """Le pick di un draft con giocatore scelto e squadra, per i tabelloni."""
+    cur.execute(
+        """SELECT d.id, d.giro, d.numero, d.detentore_att, d.detentore_originale,
+                  d.saltata, d.scelta_il, d.scelta_da,
+                  g.nome AS giocatore, g.ruolo, g.id_fantacalcio,
+                  s.username
+           FROM draft d
+           LEFT JOIN giocatore g ON g.id = d.id_giocatore_scelto
+           LEFT JOIN squadra s ON s.nome = d.detentore_att
+           WHERE EXTRACT(YEAR FROM d.anno) = %s
+           ORDER BY d.numero NULLS LAST, d.giro, d.id;""",
+        (anno,))
+    return cur.fetchall()
+
+
+def primo_anno_da_giocare(cur) -> int | None:
+    """Il piu' vecchio anno con pick ancora libere: e' il draft "in corso"."""
+    cur.execute(
+        """SELECT MIN(EXTRACT(YEAR FROM anno))::int AS anno FROM draft
+           WHERE id_giocatore_scelto IS NULL AND NOT saltata;""")
+    riga = cur.fetchone()
+    return riga["anno"] if riga else None

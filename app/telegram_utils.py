@@ -1042,6 +1042,58 @@ def salva_movimento(text_to_send, squadre):
 
 
 
+def _elenco_con_e(voci):
+    """['A', 'B', 'C'] -> 'A, B e C'."""
+    voci = list(voci)
+    return ", ".join(voci[:-1]) + " e " + voci[-1] if len(voci) > 1 else (voci[0] if voci else "")
+
+
+def _riga_turno(prossima):
+    """La riga finale 'Tocca a ...' dei messaggi del draft, o '' a draft finito."""
+    if not prossima:
+        return ""
+    return f"\n\nOra tocca a {prossima['detentore_att']} (pick n. {prossima['numero']})."
+
+
+def draft_aperto(anno, prossima):
+    send_message(
+        nome_squadra='gruppo_comunicazioni',
+        text_to_send=f"📢 COMUNICAZIONE UFFICIALE\nSi apre il draft U21 {anno}."
+                     + _riga_turno(prossima),
+        squadre_evento=[prossima["detentore_att"]] if prossima else [])
+
+
+def draft_scelta(anno, squadra, giocatore, numero, prossima, da_admin=False):
+    """Una scelta del draft. `da_admin`: l'admin ha scelto per una squadra assente."""
+    per_conto = " (scelta effettuata dall'admin)" if da_admin else ""
+    send_message(
+        nome_squadra='gruppo_comunicazioni',
+        text_to_send=f"🎓 DRAFT U21 {anno}\n"
+                     f"Pick n. {numero}: {squadra} sceglie {giocatore}{per_conto}."
+                     + _riga_turno(prossima),
+        squadre_evento=[squadra])
+
+
+def draft_pick_saltata(anno, squadra, numero, motivo, prossima):
+    send_message(
+        nome_squadra='gruppo_comunicazioni',
+        text_to_send=f"⏭️ DRAFT U21 {anno}\n"
+                     f"Pick n. {numero} di {squadra} saltata: {motivo}."
+                     + _riga_turno(prossima),
+        squadre_evento=[squadra])
+
+
+def draft_concluso(anno, per_squadra):
+    """Riepilogo finale: una riga per squadra, nella voce delle altre comunicazioni."""
+    righe = [f"• {squadra}: {_elenco_con_e(giocatori)}"
+             for squadra, giocatori in per_squadra.items()]
+    send_message(
+        nome_squadra='gruppo_comunicazioni',
+        text_to_send=f"📢 COMUNICAZIONE UFFICIALE\nSi è concluso il draft U21 {anno}."
+                     + ("\n\n" + "\n".join(righe) if righe else ""),
+        squadre_evento=list(per_squadra))
+
+
 def send_message(id=None, nome_squadra=None, text_to_send=None, squadre_evento=None):
     """Invia un messaggio Telegram.
 

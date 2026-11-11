@@ -1,0 +1,52 @@
+{# Elenco dei giocatori che si possono scegliere, con ricerca e un pulsante per riga.
+   Variabili: `pool`, `anno`, `pick` (la pick in corso), `azione` (URL del POST),
+   `bottone` (testo del pulsante). La scelta non e' annullabile: conferma. #}
+{% import '_macros.html' as m %}
+<div class="mb-3">
+    <input type="search" id="dr-cerca" placeholder="Cerca per nome, ruolo o club"
+           class="w-full rounded-xl border border-line bg-panel-2 px-3 py-2 text-sm" autocomplete="off">
+</div>
+
+{% if pool %}
+<div class="rounded-2xl border border-line bg-panel" id="dr-pool">
+    {% for g in pool %}
+    <form method="post" action="{{ azione }}" class="dr-pool-riga"
+          data-testo="{{ (g.nome ~ ' ' ~ g.ruolo ~ ' ' ~ g.club) | lower }}"
+          onsubmit="return confirm('Confermi la scelta di {{ g.nome | replace("'", "") }}? Non si può annullare.');">
+        <input type="hidden" name="anno" value="{{ anno }}">
+        <input type="hidden" name="id_pick" value="{{ pick.id }}">
+        <input type="hidden" name="id_giocatore" value="{{ g.id }}">
+        {% if g.campioncino %}<img src="{{ g.campioncino }}" alt="" class="dr-tile-foto" loading="lazy" onerror="this.remove()">{% endif %}
+        <div class="min-w-0 flex-1">
+            <div class="truncate text-sm font-bold">{{ g.nome }}</div>
+            <div class="truncate text-[11px] text-muted">{{ m.ruolo_colorato(g.ruolo) }} · {{ g.club }} · {{ g.data_nascita.year }}</div>
+        </div>
+        <button type="submit" class="shrink-0 rounded-xl bg-accent px-3 py-1.5 text-xs font-bold text-white">{{ bottone }}</button>
+    </form>
+    {% endfor %}
+</div>
+<p id="dr-nessuno" class="hidden rounded-2xl border border-line bg-panel p-4 text-center text-sm text-muted">Nessun giocatore corrisponde alla ricerca.</p>
+{% else %}
+<p class="rounded-2xl border border-line bg-panel p-4 text-center text-sm text-muted">
+    Nessun giocatore disponibile al draft: il pool è vuoto.
+</p>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const campo = document.getElementById('dr-cerca');
+    const righe = Array.from(document.querySelectorAll('#dr-pool .dr-pool-riga'));
+    const nessuno = document.getElementById('dr-nessuno');
+    if (!campo || !righe.length) return;
+    campo.addEventListener('input', function() {
+        const q = campo.value.trim().toLowerCase();
+        let visibili = 0;
+        righe.forEach(r => {
+            const ok = !q || r.dataset.testo.includes(q);
+            r.classList.toggle('hidden', !ok);
+            if (ok) visibili++;
+        });
+        nessuno.classList.toggle('hidden', visibili > 0);
+    });
+});
+</script>

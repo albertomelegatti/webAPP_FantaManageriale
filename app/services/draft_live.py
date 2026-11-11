@@ -15,6 +15,10 @@ Regole (regolamento 3.1):
 - quando non resta nessuna pick da usare il draft si chiude da solo.
 """
 
+from app.domini.draft_ordine import (
+    OrdineNonValido, ordine_da_classifica, stagione_della_classifica)
+from app.domini.ruoli import pulisci_ruolo
+from app.repositories import albo_oro as albo_oro_repo
 from app.repositories import configurazione as configurazione_repo
 from app.repositories import draft as draft_repo
 from app.repositories import draft_sessione as sessione_repo
@@ -132,3 +136,91 @@ def salta(cur, anno: int, id_pick: int, *, da: str) -> dict:
         raise SceltaNonValida("La pick risulta gia' usata.")
     saltate = _salta_pick_senza_slot(cur, anno)
     return {"pick": pick, "saltate": saltate, "concluso": _chiudi_se_finito(cur, anno)}
+
+
+# --- Ordine ---------------------------------------------------------------------
+
+def anteprima_ordine(cur, anno: int) -> dict:
+    """L'ordine che uscirebbe dalla classifica, senza scrivere niente.
+
+    Ritorna {stagione, ordine, problema}: `ordine` e' [{numero, giro, squadra,
+    detentore}] (detentore = chi sceglie, se la pick e' stata scambiata) oppure
+    None, con `problema` che spiega perche' (classifica assente o incoerente).
+    """
+    stagione = stagione_della_classifica(anno)
+    classifica = albo_oro_repo.classifica_campionato(cur, stagione)
+    if not classifica:
+        return {"stagione": stagione, "ordine": None,
+                "problema": f"Manca la classifica del Campionato {stagione} nell'Albo d'oro."}
+    try:
+        ordine = ordine_da_classifica(classifica)
+    except OrdineNonValido as e:
+        return {"stagione": stagione, "ordine": None,
+                "problema": f"La classifica {stagione} non e' utilizzabile: {e}"}
+
+    detentori = {(p["giro"], p["detentore_originale"]): p["detentore_att"]
+                 for p in draft_repo.pick_dell_anno(cur, anno)}
+    for p in ordine:
+        p["detentore"] = detentori.get((p["giro"], p["squadra"]))
+    return {"stagione": stagione, "ordine": ordine, "problema": None}
+
+
+def genera_ordine(cur, anno: int) -> int:
+    """Scrive i numeri delle pick dalla classifica e prepara la sessione.
+
+    Si puo' ripetere finche' il draft non e' aperto (per esempio dopo aver
+    corretto la classifica nell'Albo d'oro). Ritorna il numero di pick.
+    """
+    sessione = sessione_repo.leggi(cur, anno)
+    if sessione and sessione["stato"] != "preparato":
+        raise SceltaNonValida(f"Il draft {anno} e' gia' {sessione['stato']}: l'ordine non si rigenera.")
+
+    anteprima = anteprima_ordine(cur, anno)
+    if anteprima["ordine"] is None:
+        raise SceltaNonValida(anteprima["problema"])
+    try:
+        draft_repo.assegna_numeri(cur, anno, anteprima["ordine"])
+    except ValueError as e:
+        raise SceltaNonValida(str(e)) from e
+    sessione_repo.prepara(cur, anno)
+    return len(anteprima["ordine"])
+
+
+# --- Vista ----------------------------------------------------------------------
+
+def vista(cur, anno: int) -> dict:
+    """Tutto cio' che serve a disegnare il tabellone di un draft.
+
+    Ogni pick ha uno `stato`: scelta, saltata, in_corso (solo a draft aperto) o
+    attesa. Anche a ordine non generato le pick sono elencate, senza numero.
+    """
+    sessione = sessione_repo.leggi(cur, anno)
+    pick = draft_repo.pick_con_dettagli(cur, anno)
+    in_corso = draft_repo.pick_in_corso(cur, anno) if sessione and sessione["stato"] == "aperto" else None
+    for p in pick:
+        p["ruolo"] = pulisci_ruolo(p["ruolo"])
+        if p["giocatore"]:
+            p["stato"] = "scelta"
+        elif p["saltata"]:
+            p["stato"] = "saltata"
+        elif in_corso and p["id"] == in_corso["id"]:
+            p["stato"] = "in_corso"
+        else:
+            p["stato"] = "attesa"
+    return {"anno": anno, "sessione": sessione, "pick": pick, "in_corso": in_corso,
+            "ha_ordine": any(p["numero"] is not None for p in pick)}
+
+
+def pool(cur) -> list[dict]:
+    """Gli svincolati che si possono scegliere al draft, per l'elenco della pagina."""
+    return [{**g, "ruolo": pulisci_ruolo(g["ruolo"])}
+            for g in giocatori_repo.draftabili(cur, configurazione_repo.soglia_u21(cur))]
+
+
+def riepilogo(cur, anno: int) -> dict[str, list[str]]:
+    """{squadra: [giocatori scelti]} di un draft, per la comunicazione finale."""
+    per_squadra: dict[str, list[str]] = {}
+    for p in sorted(draft_repo.pick_con_dettagli(cur, anno), key=lambda p: p["numero"] or 0):
+        if p["giocatore"]:
+            per_squadra.setdefault(p["detentore_att"], []).append(p["giocatore"])
+    return per_squadra
