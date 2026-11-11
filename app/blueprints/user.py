@@ -38,46 +38,18 @@ def squadra_login(nome_squadra):
         crediti = squadre_repo.crediti(cur, nome_squadra)
         palmares = albo_oro_repo.palmares(cur, nome_squadra)
         draft_aperto = draft_sessione_repo.aperto(cur) is not None
-
-    return render_template("squadra_login.html", nome_squadra=nome_squadra, username=username, slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati, prestiti_in_num=prestiti_in_num, crediti=crediti, palmares=palmares, draft_aperto=draft_aperto)
-
-
-def _info_chiusura(chiusura, aperto, testo):
-    """Testo per il tooltip di una voce di menu disabilitata, es. 'Chiuso dal 02/09/2026'."""
-    if aperto or not chiusura:
-        return None
-    return f"{testo} dal {chiusura.strftime('%d/%m/%Y')}"
-
-
-@user_bp.route("/mercato_menu/<nome_squadra>")
-def user_mercato_menu(nome_squadra):
-    with connessione() as (conn, cur):
         stato_gate = configurazione_repo.stato_gate(cur)
+
     return render_template(
-        "user_mercato_menu.html",
-        nome_squadra=nome_squadra,
+        "squadra_login.html", nome_squadra=nome_squadra, username=username,
+        slot_giocatori=slot_giocatori, slot_aste=slot_aste, slot_occupati=slot_occupati,
+        prestiti_in_num=prestiti_in_num, crediti=crediti, palmares=palmares,
+        draft_aperto=draft_aperto,
+        # Le voci di mercato e aste stanno direttamente in dashboard e, a gate
+        # chiuso, non si mostrano.
         mercato_aperto=stato_gate["mercato_aperto"],
         aste_aperte=stato_gate["aste_aperte"],
-        mercato_info=_info_chiusura(stato_gate["mercato_chiusura"], stato_gate["mercato_aperto"], "Chiuso"),
-        aste_info=_info_chiusura(stato_gate["aste_chiusura"], stato_gate["aste_aperte"], "Chiuse"),
     )
-
-
-@user_bp.route("/prestiti_menu/<nome_squadra>")
-def user_prestiti_menu(nome_squadra):
-    with connessione() as (conn, cur):
-        stato_gate = configurazione_repo.stato_gate(cur)
-    return render_template(
-        "user_prestiti_menu.html",
-        nome_squadra=nome_squadra,
-        mercato_aperto=stato_gate["mercato_aperto"],
-        mercato_info=_info_chiusura(stato_gate["mercato_chiusura"], stato_gate["mercato_aperto"], "Chiuso"),
-    )
-
-
-@user_bp.route("/rosa_menu/<nome_squadra>")
-def user_rosa_menu(nome_squadra):
-    return render_template("user_rosa_menu.html", nome_squadra=nome_squadra)
 
 
 def format_partecipanti(partecipanti):
