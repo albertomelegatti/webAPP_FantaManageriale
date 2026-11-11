@@ -8,6 +8,7 @@ from app.core.db import connessione
 from app.core.formato import url_campioncino
 from app.domini.matching_transfermarkt import candidati_fuzzy
 from app.core.errori import ErroreDominio
+from app.domini import accrediti as dominio_accrediti
 from app.domini import albo_oro as dominio_albo_oro
 from app.domini.movimenti import squadre_citate
 
@@ -27,6 +28,7 @@ from app.repositories import stadio as stadio_repo
 from app.repositories import storico_rosa as storico_rosa_repo
 from app.repositories import transfermarkt as transfermarkt_repo
 from app.repositories import vetrina as vetrina_repo
+from app.services import accrediti as servizio_accrediti
 from app.services import draft_live as servizio_draft
 from app.services import fantacalcio as servizio_fantacalcio
 from app.services.crediti_stadi_slot import RENDITA_STADIO, rendite_da_accreditare, rendite_in_uso
@@ -512,9 +514,42 @@ def admin_albo_oro():
                 flash(e.messaggio_utente, "danger")
         vista = (dominio_albo_oro.vista_stagione(albo_oro_repo.per_stagione(cur, stagione), len(nomi))
                  if stagione else None)
+        accrediti = servizio_accrediti.stato_albo(cur, stagione) if stagione else None
 
     return render_template("admin_albo_oro.html", stagioni=stagioni, stagione=stagione,
-                           vista=vista, squadre=squadre)
+                           vista=vista, squadre=squadre, accrediti=accrediti)
+
+
+@admin_bp.route("/albo_oro/accredita", methods=["POST"])
+def admin_albo_oro_accredita():
+    """Accredita alle squadre i premi di una competizione di una stagione, UNA volta sola.
+
+    Somma i crediti dei piazzamenti salvati (non quelli digitati e non ancora
+    salvati). Il registro accrediti_annuali impedisce il secondo accredito della
+    stessa stagione e competizione. Dopo il commit parte la comunicazione Telegram.
+    """
+    try:
+        stagione = dominio_albo_oro.stagione_valida(request.form.get("stagione"))
+    except ErroreDominio as e:
+        flash(e.messaggio_utente, "danger")
+        return redirect(url_for("admin.admin_albo_oro"))
+    competizione = request.form.get("competizione", "")
+
+    with connessione() as (conn, cur):
+        try:
+            esito = servizio_accrediti.accredita_albo(cur, stagione, competizione, _admin_da())
+            conn.commit()
+        except ErroreDominio as e:
+            conn.rollback()
+            flash(e.messaggio_utente, "danger")
+            return redirect(url_for("admin.admin_albo_oro", stagione=stagione))
+
+    telegram_utils.accredito_competizione(stagione, competizione, esito["accrediti"])
+    logger.info("Crediti %s %s accreditati a %s squadre (totale %s)", competizione, stagione,
+                len(esito["accrediti"]), esito["totale"])
+    flash(f"✅ Crediti {competizione} {stagione} accreditati a {len(esito['accrediti'])} squadre "
+          f"(totale {esito['totale']} crediti).", "success")
+    return redirect(url_for("admin.admin_albo_oro", stagione=stagione))
 
 
 @admin_bp.route("/draft")
@@ -567,7 +602,7 @@ def _azione_draft(azione, messaggio, evento=None):
     return redirect(url_for("admin.admin_draft", anno=anno))
 
 
-def _admin_draft_da():
+def _admin_da():
     return f"admin:{session.get('username', 'admin')}"
 
 
@@ -589,7 +624,7 @@ def admin_draft_scegli():
     id_giocatore = request.form.get("id_giocatore", type=int)
     return _azione_draft(
         lambda cur, anno: servizio_draft.scegli(
-            cur, anno, id_pick, id_giocatore, squadra=None, e_admin=True, da=_admin_draft_da()),
+            cur, anno, id_pick, id_giocatore, squadra=None, e_admin=True, da=_admin_da()),
         lambda esito: f"Scelto {esito['giocatore']['nome']} per {esito['pick']['detentore_att']}.",
         evento="scelta")
 
@@ -598,7 +633,7 @@ def admin_draft_scegli():
 def admin_draft_salta():
     id_pick = request.form.get("id_pick", type=int)
     return _azione_draft(
-        lambda cur, anno: servizio_draft.salta(cur, anno, id_pick, da=_admin_draft_da()),
+        lambda cur, anno: servizio_draft.salta(cur, anno, id_pick, da=_admin_da()),
         lambda esito: f"Pick n. {esito['pick']['numero']} saltata.",
         evento="salto")
 
@@ -642,7 +677,12 @@ def admin_stadi():
     # non accredita due volte.
     session["token_rendite"] = secrets.token_hex(16)
 
+    stagione_accredito = dominio_accrediti.stagione_corrente(oggi())
+    with connessione() as (conn, cur):
+        stato_accredito = servizio_accrediti.stato_rendite(cur, stagione_accredito)
+
     return render_template("admin_stadi.html", squadre=squadre, rendite=rendite,
+                           stagione_accredito=stagione_accredito, stato_accredito=stato_accredito,
                            rendite_modificabili=salvate is not None,
                            accrediti_squadre=len(accrediti),
                            accrediti_totale=sum(c for _, c in accrediti),
@@ -662,14 +702,20 @@ def admin_accredita_rendite():
               "Controlla i crediti e ricarica prima di riprovare.", "warning")
         return redirect(url_for("admin.admin_stadi"))
 
+    stagione = dominio_accrediti.stagione_corrente(oggi())
     with connessione() as (conn, cur):
-        accrediti = rendite_da_accreditare(squadre_repo.tutte_con_stadio(cur), rendite_in_uso(cur))
-        for nome, crediti in accrediti:
-            squadre_repo.aggiungi_crediti(cur, nome, crediti)
-        conn.commit()
+        try:
+            esito = servizio_accrediti.accredita_rendite(cur, stagione, _admin_da())
+            conn.commit()
+        except ErroreDominio as e:
+            conn.rollback()
+            flash(e.messaggio_utente, "danger")
+            return redirect(url_for("admin.admin_stadi"))
 
-    logger.info("Rendite stadi accreditate a %s squadre (totale %s)", len(accrediti), sum(c for _, c in accrediti))
-    flash(f"✅ Rendite accreditate a {len(accrediti)} squadre (totale {sum(c for _, c in accrediti)} crediti).", "success")
+    telegram_utils.accredito_rendite_stadi(stagione, esito["accrediti"])
+    logger.info("Rendite stadi %s accreditate a %s squadre (totale %s)", stagione,
+                len(esito["accrediti"]), esito["totale"])
+    flash(f"✅ Rendite accreditate a {len(esito['accrediti'])} squadre (totale {esito['totale']} crediti).", "success")
     return redirect(url_for("admin.admin_stadi"))
 
 

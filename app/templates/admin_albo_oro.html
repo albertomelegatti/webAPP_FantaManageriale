@@ -6,8 +6,8 @@
 <h2 class="mb-1 text-center text-lg font-bold">Albo d'Oro</h2>
 <p class="mb-4 text-center text-sm text-muted">
     Compila le posizioni come le vedono gli utenti. Una posizione senza squadra resta vuota.
-    I crediti sono solo archiviati: <strong>non vengono accreditati</strong> alle squadre
-    (si fa da Gestione Crediti).
+    Salvare la stagione archivia i crediti ma <strong>non li accredita</strong> alle squadre:
+    si fa con i pulsanti "Accredita" in fondo, una sola volta per competizione.
 </p>
 
 {# Select della squadra + crediti: i due campi di ogni posizione, stessi nomi letti da piazzamenti_da_form #}
@@ -134,6 +134,56 @@
         <i class="bi bi-save-fill"></i> Salva stagione {{ stagione }}
     </button>
 </form>
+
+{# Accredito dei premi: una volta per stagione e competizione (registro accrediti_annuali). #}
+{% if accrediti %}
+<div class="mt-6">
+    <h3 class="mb-1 text-center text-base font-bold">Accredita i crediti {{ stagione }}</h3>
+    <p class="mb-3 text-center text-sm text-muted">
+        Somma alle squadre i crediti dei piazzamenti <strong>già salvati</strong> qui sopra e manda
+        la comunicazione sul gruppo. Si può fare <strong>una sola volta</strong> per competizione e stagione:
+        dopo, correggere i crediti nella griglia non li accredita di nuovo.
+    </p>
+    {% if not accrediti.registro_ok %}
+    <p class="mb-3 rounded-xl border border-line bg-panel-2 p-3 text-sm">
+        ⚠️ Registro degli accrediti non ancora creato: lancia <code>CronJob/accrediti_annuali_schema.sql</code>
+        prima di accreditare.
+    </p>
+    {% endif %}
+
+    {% for c in accrediti.competizioni %}
+    <form method="POST" action="{{ url_for('admin.admin_albo_oro_accredita') }}"
+          class="mb-3 rounded-2xl border border-line bg-panel p-4"
+          onsubmit="if (!confirm('Accreditare {{ c.totale }} {{ 'credito' if c.totale == 1 else 'crediti' }} a {{ c.accrediti | length }} {{ 'squadra' if (c.accrediti | length) == 1 else 'squadre' }} per {{ c.competizione }} {{ stagione }}? Da qui non si annulla e non si può ripetere.')) return false; this.querySelector('button').disabled = true;">
+        <input type="hidden" name="stagione" value="{{ stagione }}">
+        <input type="hidden" name="competizione" value="{{ c.competizione }}">
+        <div class="mb-2 flex items-baseline justify-between gap-2">
+            <span class="text-sm font-bold">{{ c.competizione }}</span>
+            <span class="text-xs text-muted">{{ c.accrediti | length }} {{ 'squadra' if (c.accrediti | length) == 1 else 'squadre' }} · {{ c.totale }} {{ 'credito' if c.totale == 1 else 'crediti' }}</span>
+        </div>
+        {% if c.accrediti %}
+        <div class="mb-3 text-xs text-muted">
+            {% for squadra, crediti in c.accrediti %}{{ squadra }} <strong class="text-accent">+{{ crediti }}</strong>{% if not loop.last %} · {% endif %}{% endfor %}
+        </div>
+        {% endif %}
+
+        {% if c.registro %}
+        <p class="rounded-xl border border-line bg-panel-2 p-3 text-center text-sm font-semibold">
+            ✅ Già accreditato
+            {% if c.registro.storico %}a suo tempo (stagione archiviata){% else %}il {{ c.registro.eseguito_il.strftime('%d/%m/%Y') }} da {{ c.registro.eseguito_da }}{% endif %}
+        </p>
+        {% elif c.totale == 0 %}
+        <p class="text-center text-sm text-muted">Nessun credito da accreditare: compila e salva i piazzamenti.</p>
+        {% else %}
+        <button type="submit" {% if not accrediti.registro_ok %}disabled{% endif %}
+                class="dr-btn dr-btn-pieno">
+            <i class="bi bi-coin"></i> Accredita {{ c.totale }} {{ 'credito' if c.totale == 1 else 'crediti' }} a {{ c.accrediti | length }} {{ 'squadra' if (c.accrediti | length) == 1 else 'squadre' }}
+        </button>
+        {% endif %}
+    </form>
+    {% endfor %}
+</div>
+{% endif %}
 {% else %}
 <p class="py-4 text-center text-sm text-muted">Nessuna stagione ancora: aprine una nuova qui sopra.</p>
 {% endif %}

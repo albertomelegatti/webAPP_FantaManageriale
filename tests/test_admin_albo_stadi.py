@@ -330,6 +330,17 @@ def _crediti_tutti(cur):
 
 @pytest.mark.db
 class TestAccreditoRendite:
+    @pytest.fixture(autouse=True)
+    def _registro_libero(self, cur, db_isolato):
+        """L'accredito si fa una volta per stagione: se su dev e' gia' stato fatto davvero,
+        la riga del registro bloccherebbe questi test. La si toglie, nella transazione di prova."""
+        from app.core.tempo import oggi
+        from app.domini.accrediti import chiave_rendite_stadi, stagione_corrente
+
+        cur.execute("DELETE FROM accrediti_annuali WHERE chiave = %s;",
+                    (chiave_rendite_stadi(stagione_corrente(oggi())),))
+        db_isolato.commit()
+
     def _attesi(self, cur):
         from app.repositories import squadre as squadre_repo
         from app.services.crediti_stadi_slot import rendite_da_accreditare, rendite_in_uso
