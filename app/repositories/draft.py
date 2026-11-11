@@ -190,6 +190,7 @@ def pick_con_dettagli(cur, anno: int) -> list[dict]:
     cur.execute(
         """SELECT d.id, d.giro, d.numero, d.detentore_att, d.detentore_originale,
                   d.saltata, d.scelta_il, d.scelta_da,
+                  EXTRACT(EPOCH FROM (now() - d.scelta_il))::int AS secondi_da_scelta,
                   g.nome AS giocatore, g.ruolo, g.id_fantacalcio,
                   s.username
            FROM draft d

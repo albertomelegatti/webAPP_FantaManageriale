@@ -40,9 +40,19 @@ class TestAccesso:
     def test_l_admin_puo_guardare(self, app, aperto):
         assert _client(app, admin=True).get("/draft/live/").status_code == 200
 
-    def test_il_bottone_sta_nella_dashboard_della_squadra(self, app, nome_squadra):
+    def test_il_bottone_sta_nella_dashboard_della_squadra(self, app, aperto, nome_squadra):
         corpo = _pagina(_client(app, nome_squadra).get(f"/user/squadra_login/{nome_squadra}"))
         assert "/draft/live/" in corpo and "Draft Live" in corpo
+
+    def test_il_bottone_non_compare_se_non_c_e_un_draft_aperto(self, app, cur, db_isolato, draft, nome_squadra):
+        # `draft` lo lascia preparato, non aperto.
+        corpo = _pagina(_client(app, nome_squadra).get(f"/user/squadra_login/{nome_squadra}"))
+        assert "Draft Live" not in corpo
+        assert "/draft/live" not in corpo
+
+    def test_il_bottone_e_attivo_a_draft_aperto(self, app, aperto, nome_squadra):
+        corpo = _pagina(_client(app, nome_squadra).get(f"/user/squadra_login/{nome_squadra}"))
+        assert 'href="/draft/live/"' in corpo and "Draft Live" in corpo
 
     def test_il_bottone_non_sta_nella_home_pubblica(self, app):
         assert "/draft/live" not in _pagina(app.test_client().get("/"))
@@ -92,6 +102,64 @@ class TestPaginaLive:
 def _id_pick(cur, numero):
     cur.execute("SELECT id FROM draft WHERE numero = %s;", (numero,))
     return cur.fetchone()["id"]
+
+
+class TestAnimazioneScelta:
+    """L'overlay con logo e campioncino: il server decide se mostrarlo."""
+
+    def _scegli_seconda(self, app, cur, seconda, nome="Giovane Animato"):
+        g = _giocatore(cur, nome)
+        cur.execute("UPDATE giocatore SET id_fantacalcio = 12345 WHERE id = %s;", (g,))
+        _client(app, seconda).post("/draft/live/scegli", data={
+            "anno": ANNO, "id_pick": _id_pick(cur, 1), "id_giocatore": g})
+        return g
+
+    def test_senza_scelte_non_c_e_overlay(self, app, aperto):
+        prima, seconda = aperto
+        assert 'id="dr-overlay"' not in _pagina(_client(app, prima).get("/draft/live/"))
+
+    def test_dopo_una_scelta_l_overlay_mostra_giocatore_squadra_e_foto(self, app, cur, aperto):
+        prima, seconda = aperto
+        self._scegli_seconda(app, cur, seconda)
+
+        corpo = _pagina(_client(app, prima).get("/draft/live/"))
+        assert 'id="dr-overlay"' in corpo
+        sezione = corpo[corpo.index('id="dr-overlay"'):]
+        assert "Giovane Animato" in sezione and "Pick n. 1" in sezione
+        assert "12345.png" in sezione                 # il campioncino
+        assert "loghi/" in sezione                    # il logo della squadra
+
+    def test_la_vede_anche_chi_ha_scelto(self, app, cur, aperto):
+        prima, seconda = aperto
+        self._scegli_seconda(app, cur, seconda)
+        assert 'id="dr-overlay"' in _pagina(_client(app, seconda).get("/draft/live/"))
+
+    def test_una_scelta_vecchia_non_si_anima(self, app, cur, db_isolato, aperto):
+        prima, seconda = aperto
+        self._scegli_seconda(app, cur, seconda)
+        cur.execute("UPDATE draft SET scelta_il = now() - interval '1 hour' WHERE numero = 1;")
+        db_isolato.commit()
+        assert 'id="dr-overlay"' not in _pagina(_client(app, prima).get("/draft/live/"))
+
+    def test_anima_l_ultima_scelta_non_la_prima(self, app, cur, db_isolato, aperto):
+        prima, seconda = aperto
+        self._scegli_seconda(app, cur, seconda, "Primo Scelto")
+        cur.execute("UPDATE draft SET scelta_il = now() - interval '1 minute' WHERE numero = 1;")
+        g2 = _giocatore(cur, "Secondo Scelto")
+        db_isolato.commit()
+        _client(app, prima).post("/draft/live/scegli", data={
+            "anno": ANNO, "id_pick": _id_pick(cur, 2), "id_giocatore": g2})
+
+        corpo = _pagina(_client(app, prima).get("/draft/live/"))
+        overlay = corpo[corpo.index('id="dr-overlay"'):corpo.index("<script>", corpo.index('id="dr-overlay"'))]
+        assert "Secondo Scelto" in overlay and "Pick n. 2" in overlay
+        assert "Primo Scelto" not in overlay
+
+    def test_la_pick_saltata_non_si_anima(self, app, cur, aperto):
+        prima, seconda = aperto
+        _client(app, admin=True).post("/admin/draft/salta", data={
+            "anno": ANNO, "id_pick": _id_pick(cur, 1)})
+        assert 'id="dr-overlay"' not in _pagina(_client(app, prima).get("/draft/live/"))
 
 
 class TestScelta:

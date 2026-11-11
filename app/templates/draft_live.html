@@ -8,7 +8,7 @@
 {% if not vista %}
 <p class="rounded-2xl border border-line bg-panel p-4 text-center text-sm text-muted">
     Nessun draft in corso. Le scelte dei draft passati sono nello
-    <a href="{{ url_for('public.storico_draft') }}" class="font-semibold underline">storico</a>.
+    <a href="{{ url_for('public.storico_draft') }}" class="font-semibold dr-link">storico</a>.
 </p>
 {% else %}
 
@@ -17,7 +17,7 @@
 <div class="mb-4 rounded-2xl border border-line bg-panel p-4 text-center">
     {% if stato == 'aperto' and vista.in_corso %}
         <div class="text-[11px] font-bold uppercase tracking-wide text-muted">On the clock · pick n. {{ vista.in_corso.numero }} · giro {{ vista.in_corso.giro }}</div>
-        <div class="mt-1 text-lg font-extrabold">{{ vista.in_corso.detentore_att }}</div>
+        <div class="mt-1 text-lg dr-w800">{{ vista.in_corso.detentore_att }}</div>
         {% if vista.in_corso.detentore_att != vista.in_corso.detentore_originale %}
         <div class="text-[11px] text-muted">pick di {{ vista.in_corso.detentore_originale }}</div>
         {% endif %}
@@ -32,7 +32,7 @@
 
 {% if tocca_a_me %}
 <div class="mb-4 rounded-2xl border border-accent bg-panel p-4">
-    <h3 class="mb-3 text-sm font-extrabold">È il tuo turno: scegli un giocatore</h3>
+    <h3 class="mb-3 text-sm dr-w800">È il tuo turno: scegli un giocatore</h3>
     {% with pool=pool, anno=vista.anno, pick=vista.in_corso, azione=url_for('draft.scegli'), bottone='Scegli' %}
     {% include '_draft_pool.html' %}
     {% endwith %}
@@ -42,6 +42,51 @@
 {% endif %}
 
 {% include '_draft_tabellone.html' %}
+
+{# Animazione della scelta. Il server la passa solo se la scelta e' recente; qui ogni
+   browser la vede una volta per pick (localStorage). #}
+{% if ultima_scelta %}
+{% set logo = 'loghi/' ~ (ultima_scelta.username or 'svincolato') ~ '.png' %}
+<div id="dr-overlay" class="dr-overlay" hidden role="dialog" aria-label="Scelta del draft"
+     data-pick="{{ ultima_scelta.id }}" data-anno="{{ vista.anno }}">
+    <div class="dr-overlay-card">
+        <img src="{{ url_for('static', filename=logo) }}?v={{ asset_v(logo) }}" alt="" class="dr-overlay-logo">
+        {% if ultima_scelta.campioncino %}
+        <img src="{{ ultima_scelta.campioncino }}" alt="" class="dr-overlay-foto" onerror="this.remove()">
+        {% endif %}
+        <div class="dr-overlay-num">Pick n. {{ ultima_scelta.numero }}</div>
+        <div class="dr-overlay-nome">{{ ultima_scelta.giocatore }}</div>
+        <div class="dr-overlay-sotto">
+            {% if ultima_scelta.ruolo %}{{ ultima_scelta.ruolo }} · {% endif %}{{ ultima_scelta.detentore_att }}
+        </div>
+    </div>
+</div>
+<script>
+(function() {
+    const overlay = document.getElementById('dr-overlay');
+    if (!overlay) return;
+    const DURATA_MS = 6000;
+    const chiave = 'dr-visto-' + overlay.dataset.anno;
+    try {
+        // Senza localStorage non si puo' ricordare cosa si e' gia' visto, e con la
+        // pagina che si ricarica da sola l'animazione ripartirebbe ogni 20 secondi.
+        if (localStorage.getItem(chiave) === overlay.dataset.pick) return;
+        localStorage.setItem(chiave, overlay.dataset.pick);
+    } catch (e) { return; }
+
+    overlay.hidden = false;
+    let chiuso = false;
+    function chiudi() {
+        if (chiuso) return;
+        chiuso = true;
+        overlay.classList.add('dr-uscita');
+        setTimeout(function() { overlay.hidden = true; }, 400);
+    }
+    overlay.addEventListener('click', chiudi);
+    setTimeout(chiudi, DURATA_MS);
+})();
+</script>
+{% endif %}
 
 {% if stato == 'aperto' %}
 {# Il tabellone non si aggiorna da solo in tempo reale: ricarica ogni 20 secondi,

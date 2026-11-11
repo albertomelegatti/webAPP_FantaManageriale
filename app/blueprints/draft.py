@@ -20,6 +20,11 @@ logger = get_logger(__name__)
 
 draft_bp = Blueprint("draft", __name__, url_prefix="/draft/live")
 
+# Una scelta si anima solo se e' piu' recente di cosi': la pagina si ricarica ogni
+# 20 secondi, quindi chi la guarda la vede in tempo, mentre chi la apre piu' tardi
+# non rivede l'ultima scelta del draft.
+FINESTRA_ANIMAZIONE_SECONDI = 90
+
 
 def annuncia(cur, anno: int, esito: dict, *, evento: str, da_admin: bool = False) -> None:
     """Messaggi Telegram per l'esito di un'operazione del draft.
@@ -78,8 +83,14 @@ def live():
         pool = [{**g, "campioncino": url_campioncino(g["id_fantacalcio"])}
                 for g in draft_live.pool(cur)] if tocca_a_me else []
 
+    ultima = vista["ultima_scelta"]
+    if ultima and ultima["secondi_da_scelta"] <= FINESTRA_ANIMAZIONE_SECONDI:
+        ultima = {**ultima, "campioncino": url_campioncino(ultima["id_fantacalcio"])}
+    else:
+        ultima = None
+
     return render_template("draft_live.html", vista=vista, squadra=squadra,
-                           tocca_a_me=tocca_a_me, pool=pool)
+                           tocca_a_me=tocca_a_me, pool=pool, ultima_scelta=ultima)
 
 
 @draft_bp.route("/scegli", methods=["POST"])

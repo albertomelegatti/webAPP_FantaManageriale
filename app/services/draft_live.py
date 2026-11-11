@@ -207,7 +207,13 @@ def vista(cur, anno: int) -> dict:
             p["stato"] = "in_corso"
         else:
             p["stato"] = "attesa"
+    # L'ultima scelta fatta, per l'animazione della pagina live. L'eta' e' calcolata
+    # dal database (now() - scelta_il) e non dal browser: gli orologi dei telefoni
+    # sono sfasati, e un anticipo o un ritardo farebbe saltare o ripetere l'animazione.
+    scelte = [p for p in pick if p["stato"] == "scelta" and p["scelta_il"] is not None]
+    ultima_scelta = max(scelte, key=lambda p: p["scelta_il"]) if scelte else None
     return {"anno": anno, "sessione": sessione, "pick": pick, "in_corso": in_corso,
+            "ultima_scelta": ultima_scelta,
             "ha_ordine": any(p["numero"] is not None for p in pick)}
 
 
