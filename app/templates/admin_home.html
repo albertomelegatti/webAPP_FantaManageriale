@@ -1,17 +1,50 @@
 {% extends 'base_tailwind.html' %}
 
 {% block content %}
-{% import '_macros.html' as m %}
-<h2 class="mb-4 text-center text-lg font-bold">Home Admin</h2>
 
-<div class="flex flex-col gap-2">
-    {{ m.voce_menu(url_for('admin.admin_crediti'), 'bi-coin', 'Gestione Crediti') }}
-    {{ m.voce_menu(url_for('admin.invia_comunicazione'), 'bi-megaphone-fill', 'Invio Messaggio') }}
-    {{ m.voce_menu(url_for('admin.richiesta_modifica_contratto'), 'bi-file-earmark-text-fill', 'Richieste Modifica Contratto') }}
-    {{ m.voce_menu(url_for('admin.admin_chiusura_mercato_aste'), 'bi-calendar-x-fill', 'Chiusura Mercato e Aste') }}
-    {{ m.voce_menu(url_for('admin.admin_verifica_corrispondenze'), 'bi-people-fill', 'Verifica Corrispondenze Giocatori') }}
-    {{ m.voce_menu(url_for('admin.admin_verifica_campioncini'), 'bi-person-badge-fill', 'Verifica Campioncini Giocatori') }}
-    {{ m.voce_menu(url_for('admin.admin_arrivi_in_rosa'), 'bi-calendar-check-fill', 'Arrivi in Rosa') }}
-    {{ m.voce_menu('/logout', 'bi-box-arrow-right', 'Logout') }}
+{# Le voci della home admin, raggruppate per tema: (link, icona, titolo, descrizione). #}
+{% set sezioni = [
+    ('La lega', [
+        (url_for('admin.admin_crediti'), 'bi-coin', 'Gestione Crediti', 'Crediti di ogni squadra'),
+        (url_for('admin.admin_stadi'), 'bi-building-fill', 'Stadi', 'Livelli, rendite e accredito'),
+        (url_for('admin.admin_albo_oro'), 'bi-trophy-fill', "Albo d'Oro", 'Piazzamenti per stagione'),
+        (url_for('admin.admin_chiusura_mercato_aste'), 'bi-calendar-x-fill', 'Chiusura Mercato e Aste', 'Date di chiusura e soglia U21'),
+    ]),
+    ('Giocatori', [
+        (url_for('admin.richiesta_modifica_contratto'), 'bi-file-earmark-text-fill', 'Richieste Modifica Contratto', 'Accetta o rifiuta'),
+        (url_for('admin.admin_arrivi_in_rosa'), 'bi-calendar-check-fill', 'Arrivi in Rosa', 'Date di arrivo mancanti'),
+        (url_for('admin.admin_verifica_corrispondenze'), 'bi-people-fill', 'Verifica Corrispondenze', 'Abbinamenti Transfermarkt'),
+        (url_for('admin.admin_verifica_campioncini'), 'bi-person-badge-fill', 'Verifica Campioncini', 'Abbinamenti fantacalcio.it'),
+    ]),
+    ('Strumenti', [
+        (url_for('admin.invia_comunicazione'), 'bi-megaphone-fill', 'Invio Messaggio', 'Comunicazione al gruppo'),
+        ('/logout', 'bi-box-arrow-right', 'Logout', "Esci dall'area admin"),
+    ]),
+] %}
+
+<div class="mb-5 flex flex-col items-center text-center">
+    <img src="{{ url_for('static', filename='images/logo-lgt-light.png') }}?v={{ asset_v('images/logo-lgt-light.png') }}" alt="Logo Lega Guru Tattici" class="hm-logo dark:hidden">
+    <img src="{{ url_for('static', filename='images/logo-lgt-dark.png') }}?v={{ asset_v('images/logo-lgt-dark.png') }}" alt="Logo Lega Guru Tattici" class="hm-logo hidden dark:block">
+    <h2 class="mt-2 text-lg font-bold">Home Admin</h2>
+</div>
+
+<div class="hm-colonne">
+    {% for nome, voci in sezioni %}
+    <section>
+        <h3 class="hm-sezione">{{ nome }}</h3>
+        <div class="hm-pannello">
+            {% for href, icona, titolo, sotto in voci %}
+            <a href="{{ href }}" class="hm-riga">
+                <span class="hm-riga-icona"><i class="bi {{ icona }}"></i></span>
+                <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-semibold">{{ titolo }}</span>
+                    <span class="block text-[11px] text-muted">{{ sotto }}</span>
+                </span>
+                <i class="bi bi-chevron-right shrink-0 text-muted"></i>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
 </div>
 {% endblock %}
