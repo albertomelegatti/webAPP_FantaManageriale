@@ -1,0 +1,55 @@
+{% extends 'base_tailwind.html' %}
+
+{% block content %}
+{% import '_macros.html' as m %}
+<div class="mb-2">{% if squadra %}{{ m.torna_indietro(url_for('user.squadra_login', nome_squadra=squadra)) }}{% else %}{{ m.torna_indietro(url_for('admin.admin_home')) }}{% endif %}</div>
+<h2 class="mb-4 text-center text-lg font-bold">Draft Live{% if vista %} {{ vista.anno }}{% endif %}</h2>
+
+{% if not vista %}
+<p class="rounded-2xl border border-line bg-panel p-4 text-center text-sm text-muted">
+    Nessun draft in corso. Le scelte dei draft passati sono nello
+    <a href="{{ url_for('public.storico_draft') }}" class="font-semibold underline">storico</a>.
+</p>
+{% else %}
+
+{# Stato: chi sta scegliendo, o perche' non si puo' ancora scegliere. #}
+{% set stato = vista.sessione.stato %}
+<div class="mb-4 rounded-2xl border border-line bg-panel p-4 text-center">
+    {% if stato == 'aperto' and vista.in_corso %}
+        <div class="text-[11px] font-bold uppercase tracking-wide text-muted">On the clock · pick n. {{ vista.in_corso.numero }} · giro {{ vista.in_corso.giro }}</div>
+        <div class="mt-1 text-lg font-extrabold">{{ vista.in_corso.detentore_att }}</div>
+        {% if vista.in_corso.detentore_att != vista.in_corso.detentore_originale %}
+        <div class="text-[11px] text-muted">pick di {{ vista.in_corso.detentore_originale }}</div>
+        {% endif %}
+    {% elif stato == 'preparato' %}
+        <div class="text-sm font-semibold">Il draft non è ancora aperto.</div>
+        <div class="mt-1 text-[11px] text-muted">L'ordine di scelta è
+            {% if vista.ha_ordine %}già definito{% else %}ancora da definire{% endif %}.</div>
+    {% else %}
+        <div class="text-sm font-semibold">Il draft è concluso.</div>
+    {% endif %}
+</div>
+
+{% if tocca_a_me %}
+<div class="mb-4 rounded-2xl border border-accent bg-panel p-4">
+    <h3 class="mb-3 text-sm font-extrabold">È il tuo turno: scegli un giocatore</h3>
+    {% with pool=pool, anno=vista.anno, pick=vista.in_corso, azione=url_for('draft.scegli'), bottone='Scegli' %}
+    {% include '_draft_pool.html' %}
+    {% endwith %}
+</div>
+{% elif stato == 'aperto' and squadra %}
+<p class="mb-4 text-center text-[11px] text-muted">Non è il turno della tua squadra: puoi seguire il draft da qui.</p>
+{% endif %}
+
+{% include '_draft_tabellone.html' %}
+
+{% if stato == 'aperto' %}
+{# Il tabellone non si aggiorna da solo in tempo reale: ricarica ogni 20 secondi,
+   tranne quando e' il tuo turno (ricaricare farebbe perdere la ricerca digitata). #}
+{% if not tocca_a_me %}
+<script>setTimeout(function() { location.reload(); }, 20000);</script>
+{% endif %}
+{% endif %}
+
+{% endif %}
+{% endblock %}

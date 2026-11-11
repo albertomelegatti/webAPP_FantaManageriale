@@ -1,0 +1,29 @@
+{# Il tabellone di un draft: una colonna per giro, le pick in ordine di chiamata.
+   Variabile: `vista` (vedi services/draft_live.vista). Stati: scelta, saltata,
+   in_corso, attesa. #}
+{% import '_macros.html' as m %}
+<div class="dr-tabellone">
+    {% for giro, picks in vista.pick | groupby('giro') %}
+    <section class="dr-giro">
+        <h3 class="dr-giro-titolo">Giro {{ giro }}</h3>
+        {% for p in picks %}
+        <div class="dr-tile dr-{{ p.stato }} {{ 'dr-prima' if p.numero == 1 and p.stato == 'scelta' }}">
+            <span class="dr-tile-num">{{ p.numero or '–' }}</span>
+            <img src="{{ url_for('static', filename='loghi/' ~ (p.username or 'svincolato') ~ '.png') }}?v={{ asset_v('loghi/' ~ (p.username or 'svincolato') ~ '.png') }}"
+                 alt="" class="dr-tile-logo">
+            <div class="min-w-0 flex-1">
+                <div class="truncate text-sm font-bold">
+                    {% if p.stato == 'scelta' %}{{ p.giocatore }}
+                    {% elif p.stato == 'saltata' %}Pick saltata
+                    {% elif p.stato == 'in_corso' %}Sta scegliendo…
+                    {% else %}<span class="text-muted">In attesa</span>{% endif %}
+                </div>
+                <div class="truncate text-[11px] text-muted">
+                    {% if p.stato == 'scelta' and p.ruolo %}{{ m.ruolo_colorato(p.ruolo) }} · {% endif %}{{ p.detentore_att }}{% if p.detentore_originale != p.detentore_att %} (pick di {{ p.detentore_originale }}){% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </section>
+    {% endfor %}
+</div>
